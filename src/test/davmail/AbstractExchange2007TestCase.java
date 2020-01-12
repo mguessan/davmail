@@ -21,6 +21,10 @@ package davmail;
 
 import java.io.IOException;
 
+/**
+ * Abstract test case to check Exchange 2007 access.
+ * Required to check Dav and EWS access to Exchange
+ */
 public class AbstractExchange2007TestCase extends AbstractDavMailTestCase {
     protected String domain;
     protected String email;

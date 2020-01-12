@@ -21,6 +21,7 @@ package davmail;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import junit.framework.TestCase;
+import org.apache.log4j.Level;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -32,7 +33,7 @@ import java.io.IOException;
 
 /**
  * DavMail generic test case.
- * Loads DavMail settings
+ * Loads DavMail test settings from test.properties
  */
 public abstract class AbstractDavMailTestCase extends TestCase {
     protected static boolean loaded;
@@ -55,7 +56,9 @@ public abstract class AbstractDavMailTestCase extends TestCase {
                 }
                 Settings.setDefaultSettings();
                 Settings.setProperty("davmail.server", "true");
-                Settings.load(new FileInputStream(testFile));
+                try (FileInputStream fis = new FileInputStream(testFile)) {
+                    Settings.load(fis);
+                }
                 Settings.updateLoggingConfig();
                 if (Settings.getProperty("davmail.username") != null) {
                     username = Settings.getProperty("davmail.username");
@@ -73,10 +76,9 @@ public abstract class AbstractDavMailTestCase extends TestCase {
             }
 
             if (Settings.getBooleanProperty("davmail.enableKerberos", false)) {
-                System.setProperty("java.security.krb5.realm", "CORP.COMPANY.COM");
-                System.setProperty("java.security.krb5.kdc", "192.168.184.129");
+                System.setProperty("java.security.krb5.realm", Settings.getProperty("java.security.krb5.realm"));
+                System.setProperty("java.security.krb5.kdc", Settings.getProperty("java.security.krb5.kdc"));
             }
-
 
             DavGatewaySSLProtocolSocketFactory.register();
             // force server mode
@@ -84,10 +86,21 @@ public abstract class AbstractDavMailTestCase extends TestCase {
         }
     }
 
+    /**
+     * Create MIME message with default recipient
+     * @return mime message
+     * @throws MessagingException on error
+     */
     protected MimeMessage createMimeMessage() throws MessagingException {
         return createMimeMessage("test@test.local");
     }
 
+    /**
+     * Create test MIME message
+     * @param recipient to recipient
+     * @return mime message
+     * @throws MessagingException on error
+     */
     protected MimeMessage createMimeMessage(@SuppressWarnings("SameParameterValue") String recipient) throws MessagingException {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("To", recipient);
@@ -96,10 +109,25 @@ public abstract class AbstractDavMailTestCase extends TestCase {
         return mimeMessage;
     }
 
+    /**
+     * Convert MIME message to byte array.
+     * @param mimeMessage mime message
+     * @return content
+     * @throws IOException on error
+     * @throws MessagingException on error
+     */
     @SuppressWarnings("unused")
     protected byte[] getMimeBody(MimeMessage mimeMessage) throws IOException, MessagingException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         mimeMessage.writeTo(baos);
         return baos.toByteArray();
+    }
+
+    /**
+     * enable wire debug logging (for Http Client 4)
+     */
+    protected void enableWireDebugLogging() {
+        Settings.setLoggingLevel("org.apache.http.wire", Level.DEBUG);
+        Settings.setLoggingLevel("org.apache.http", Level.DEBUG);
     }
 }
