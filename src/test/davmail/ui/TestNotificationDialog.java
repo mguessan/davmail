@@ -21,20 +21,19 @@ package davmail.ui;
 import junit.framework.TestCase;
 
 import javax.swing.*;
-import java.io.IOException;
 
 /**
  * Test Notification Frame
  */
 public class TestNotificationDialog extends TestCase {
-    public void testCreateNotificationFrame() throws IOException, ClassNotFoundException, UnsupportedLookAndFeelException, IllegalAccessException, InstantiationException {
+    public void testCreateNotificationFrame() throws ClassNotFoundException, UnsupportedLookAndFeelException, IllegalAccessException, InstantiationException {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         NotificationDialog notificationDialog = new NotificationDialog("to", "cc", "subject", "description");
         notificationDialog.setVisible(true);
         System.out.println(notificationDialog.getSendNotification());
     }
 
-    public void testCreateNotificationFromEWSFrame() throws IOException, ClassNotFoundException, UnsupportedLookAndFeelException, IllegalAccessException, InstantiationException {
+    public void testCreateNotificationFromEWSFrame() throws ClassNotFoundException, UnsupportedLookAndFeelException, IllegalAccessException, InstantiationException {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         NotificationDialog notificationDialog = new NotificationDialog("subject", "description");
         notificationDialog.setVisible(true);
