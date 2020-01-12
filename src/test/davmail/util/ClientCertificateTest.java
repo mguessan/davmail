@@ -34,20 +34,32 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 
-import javax.net.ssl.*;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.KeyStoreBuilderParameters;
+import javax.net.ssl.ManagerFactoryParameters;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509KeyManager;
 import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.smartcardio.*;
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.security.*;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
+
+//import javax.smartcardio.*;
 
 /**
  * Test HTTPS mutual authentication
@@ -84,7 +96,7 @@ public class ClientCertificateTest extends TestCase {
         assertEquals(HttpStatus.SC_OK, getMethod.getStatusCode());
         System.out.println(getMethod.getResponseBodyAsString());
     }
-
+/*
     public void testCardReaders() throws CardException {
         for (CardTerminal terminal : TerminalFactory.getDefault().terminals().list()) {
             System.out.println("Card terminal: " + terminal.getName() + " " + (terminal.isCardPresent() ? "Card present" : "No card"));
@@ -112,20 +124,21 @@ public class ClientCertificateTest extends TestCase {
             }
         }
     }
-
+*/
     public void testWindowsSmartCard() {
         try {
             KeyStore ks = KeyStore.getInstance("Windows-MY");
             ks.load(null, null);
-            java.util.Enumeration en = ks.aliases();
+            java.util.Enumeration<String> en = ks.aliases();
 
             while (en.hasMoreElements()) {
-                String aliasKey = (String) en.nextElement();
+                String aliasKey = en.nextElement();
                 X509Certificate c = (X509Certificate) ks.getCertificate(aliasKey);
                 System.out.println("---> alias : " + aliasKey + " " + c.getSubjectDN());
 
                 //PrivateKey key = (PrivateKey) ks.getKey(aliasKey, "Passw0rd".toCharArray());
                 Certificate[] chain = ks.getCertificateChain(aliasKey);
+                System.out.println(Arrays.asList(chain));
             }
 
         } catch (Exception ioe) {
@@ -182,7 +195,7 @@ public class ClientCertificateTest extends TestCase {
     }
 
 
-    private SSLContext createSSLContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, KeyManagementException, KeyStoreException, IOException, CertificateException, UnrecoverableKeyException, InstantiationException, ClassNotFoundException, IllegalAccessException {
+    private SSLContext createSSLContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, KeyManagementException, KeyStoreException, IOException, CertificateException, InstantiationException, ClassNotFoundException, IllegalAccessException {
         // PKCS11 client certificate settings
         String pkcs11Library = Settings.getProperty("davmail.ssl.pkcs11Library");
 
@@ -210,9 +223,10 @@ public class ClientCertificateTest extends TestCase {
         }
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
 
-        ArrayList<KeyStore.Builder> keyStoreBuilders = new ArrayList<KeyStore.Builder>();
+        ArrayList<KeyStore.Builder> keyStoreBuilders = new ArrayList<>();
         // PKCS11 (smartcard) keystore with password callback
         KeyStore.Builder scBuilder = KeyStore.Builder.newInstance("PKCS11", null, getProtectionParameter(null));
+        System.out.println(scBuilder);
         //keyStoreBuilders.add(scBuilder);
 
         String clientKeystoreFile = Settings.getProperty("davmail.ssl.clientKeystoreFile");
@@ -272,18 +286,16 @@ public class ClientCertificateTest extends TestCase {
             return new KeyStore.PasswordProtection(password.toCharArray());
         } else {
             // request password at runtime through a callback
-            return new KeyStore.CallbackHandlerProtection(new CallbackHandler() {
-                public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-                    if (callbacks.length > 0 && callbacks[0] instanceof PasswordCallback) {
-                        PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(((PasswordCallback) callbacks[0]).getPrompt());
-                        ((PasswordCallback) callbacks[0]).setPassword(passwordPromptDialog.getPassword());
-                    }
+            return new KeyStore.CallbackHandlerProtection(callbacks -> {
+                if (callbacks.length > 0 && callbacks[0] instanceof PasswordCallback) {
+                    PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(((PasswordCallback) callbacks[0]).getPrompt());
+                    ((PasswordCallback) callbacks[0]).setPassword(passwordPromptDialog.getPassword());
                 }
             });
         }
     }
 
-    public void testClientSocketFactory() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, UnrecoverableKeyException, InvalidAlgorithmParameterException, InstantiationException, ClassNotFoundException, IllegalAccessException {
+    public void testClientSocketFactory() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, InvalidAlgorithmParameterException, InstantiationException, ClassNotFoundException, IllegalAccessException {
 
 
 
