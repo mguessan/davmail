@@ -24,14 +24,12 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import davmail.http.HttpClientAdapter;
+import davmail.http.request.GetRequest;
 import davmail.imap.ImapServer;
 import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.ui.tray.DavGatewayTray;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
@@ -244,11 +242,10 @@ public final class DavGateway {
         String version = null;
         if (!Settings.getBooleanProperty("davmail.disableUpdateCheck")) {
             try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT)) {
-                HttpGet getRequest = new HttpGet(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
-                try (CloseableHttpResponse response = httpClientAdapter.execute(getRequest)) {
-                    version = new BasicResponseHandler().handleResponse(response);
-                    LOGGER.debug("DavMail released version: " + version);
-                }
+                GetRequest getRequest = new GetRequest(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
+                getRequest = httpClientAdapter.executeFollowRedirect(getRequest);
+                version = getRequest.getResponseBodyAsString();
+                LOGGER.debug("DavMail released version: " + version);
             } catch (IOException e) {
                 DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));
             }
