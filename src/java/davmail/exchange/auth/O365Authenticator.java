@@ -309,6 +309,13 @@ public class O365Authenticator implements ExchangeAuthenticator {
         }
         String query = location.getQuery();
 
+        if (query == null)
+        {
+            // URI likes urn:ietf:wg:oauth:2.0:oob?code=... have a null "query",
+            // so in that case fallback to using getSchemeSpecificPart.
+            query = location.getSchemeSpecificPart();
+        }
+
         if (query.contains("code=") && query.contains("&session_state=")) {
             String code = query.substring(query.indexOf("code=") + 5, query.indexOf("&session_state="));
             LOGGER.debug("Authentication Code: " + code);
