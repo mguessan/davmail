@@ -739,7 +739,11 @@ public class ImapConnection extends AbstractConnection {
         }
 
         if (tokens != null && tokens.length == 3) {
-            userName = tokens[0] + '\\' + tokens[1];
+            if (tokens[1].length() > 0) {
+                userName = tokens[0] + '\\' + tokens[1];
+            } else {
+                userName = tokens[0];
+            }
             baseMailboxPath = "/users/" + tokens[2] + '/';
         }
     }
