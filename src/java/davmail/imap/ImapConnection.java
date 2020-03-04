@@ -1063,7 +1063,7 @@ public class ImapConnection extends AbstractConnection {
             } else if (token.startsWith("OR ")) {
                 condition = appendOrSearchParams(token, conditions);
             } else if ("CHARSET".equals(token)) {
-                String charset = tokens.nextQuotedToken().toUpperCase();
+                String charset = tokens.nextToken().toUpperCase();
                 if (!("ASCII".equals(charset) || "UTF-8".equals(charset) || "US-ASCII".equals(charset))) {
                     throw new IOException("Unsupported charset " + charset);
                 }
