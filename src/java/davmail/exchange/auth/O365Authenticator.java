@@ -308,6 +308,10 @@ public class O365Authenticator implements ExchangeAuthenticator {
             location = processDeviceLogin(httpClientAdapter, location);
         }
         String query = location.getQuery();
+        if (query == null) {
+            // failover for null query with non https URI like urn:ietf:wg:oauth:2.0:oob?code=...
+            query = location.getSchemeSpecificPart();
+        }
 
         if (query.contains("code=") && query.contains("&session_state=")) {
             String code = query.substring(query.indexOf("code=") + 5, query.indexOf("&session_state="));
