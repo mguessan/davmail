@@ -263,9 +263,13 @@ public class VCalendar extends VObject {
                         if (dtEnd != null && dtEnd.getParam("TZID") != null) {
                             dtEnd.setParam("TZID", tzid);
                         }
-                        VProperty reccurrenceId = vObject.getProperty("RECURRENCE-ID");
-                        if (reccurrenceId != null && reccurrenceId.getParam("TZID") != null) {
-                            reccurrenceId.setParam("TZID", tzid);
+                        VProperty recurrenceId = vObject.getProperty("RECURRENCE-ID");
+                        if (recurrenceId != null && recurrenceId.getParam("TZID") != null) {
+                            recurrenceId.setParam("TZID", tzid);
+                        }
+                        VProperty exDate = vObject.getProperty("EXDATE");
+                        if (exDate != null && exDate.getParam("TZID") != null) {
+                            exDate.setParam("TZID", tzid);
                         }
                     }
                     // remove unsupported attachment reference
