@@ -87,6 +87,26 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
     }
 
     /**
+	 * Various Cookie Names prefixes found on custom Exchange authentication replies (used in isAuthenticated())
+     */
+    protected static final ArrayList<String> COOKIE_NAMES = new ArrayList<>();
+    static {
+        COOKIE_NAMES.add("cadata");
+        COOKIE_NAMES.add("sessionid");
+        COOKIE_NAMES.add("ClientId");
+        COOKIE_NAMES.add("UserContext");
+    }
+
+    /**
+     * Various form names or ids found on custom Exchange authentication forms (used in buildLogonMethod())
+     */
+    protected static final ArrayList<String[]> FORM_NAMES = new ArrayList<>();
+    static {
+        FORM_NAMES.add(new String[] {"name", "logonForm"});
+        FORM_NAMES.add(new String[] {"id", "loginForm"});
+    }
+
+    /**
      * Various OTP (one time password) fields found on custom Exchange authentication forms.
      * Used to open OTP dialog
      */
@@ -268,13 +288,11 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         } else {
             // check cookies
             for (Cookie cookie : httpClient.getState().getCookies()) {
-                // Exchange 2003 cookies
-                if (cookie.getName().startsWith("cadata") || "sessionid".equals(cookie.getName())
-                        // Exchange 2007 cookie
-                        || "UserContext".equals(cookie.getName())
-                ) {
-                    authenticated = true;
-                    break;
+                for (String cookie_prefix : COOKIE_NAMES) {
+                    if (cookie.getName().startsWith(cookie_prefix)) {
+                        authenticated = true;
+                        break;
+                    }
                 }
             }
         }
@@ -321,14 +339,16 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                 logonForm = (TagNode) forms.get(0);
             } else if (forms.size() > 1) {
                 for (Object form : forms) {
-                    if ("logonForm".equals(((TagNode) form).getAttributeByName("name"))) {
-                        logonForm = ((TagNode) form);
+                    // Check for possible form names or ids (See definitions above)
+                    for (String[] attr_name : FORM_NAMES) {
+                        if (attr_name[1].equals(((TagNode) form).getAttributeByName(attr_name[0]))) {
+                            logonForm = ((TagNode) form);
+                        }
                     }
                 }
             }
             if (logonForm != null) {
                 String logonMethodPath = logonForm.getAttributeByName("action");
-
                 // workaround for broken form with empty action
                 if (logonMethodPath != null && logonMethodPath.length() == 0) {
                     logonMethodPath = "/owa/auth.owa";
@@ -436,7 +456,6 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
     protected HttpMethod postLogonMethod(HttpClient httpClient, HttpMethod logonMethod, String password) throws IOException {
 
         setAuthFormFields(logonMethod, httpClient, password);
-
         // add exchange 2010 PBack cookie in compatibility mode
         httpClient.getState().addCookie(new Cookie(httpClient.getHostConfiguration().getHost(), "PBack", "0", "/", null, false));
 
