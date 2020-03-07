@@ -193,6 +193,8 @@ public class HttpClientAdapter implements Closeable {
                 .setDefaultRequestConfig(getRequestConfig())
                 .setUserAgent(getUserAgent())
                 .setDefaultAuthSchemeRegistry(getAuthSchemeRegistry())
+                // httpClient is not shared between clients, do not track connection state
+                .disableConnectionState()
                 .setConnectionManager(connectionManager);
 
         SystemDefaultRoutePlanner routePlanner = new SystemDefaultRoutePlanner(ProxySelector.getDefault());
