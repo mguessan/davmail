@@ -87,6 +87,7 @@ import java.util.List;
 public class HttpClientAdapter implements Closeable {
     static final Logger LOGGER = Logger.getLogger("davmail.http.HttpClientAdapter");
 
+    static final String[] SUPPORTED_PROTOCOLS = new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"};
     static final Registry<ConnectionSocketFactory> SCHEME_REGISTRY;
     static String WORKSTATION_NAME = "UNKNOWN";
     static final int MAX_REDIRECTS = 10;
@@ -105,6 +106,7 @@ public class HttpClientAdapter implements Closeable {
         RegistryBuilder<ConnectionSocketFactory> schemeRegistry = RegistryBuilder.create();
         schemeRegistry.register("http", new PlainConnectionSocketFactory());
         schemeRegistry.register("https", new SSLConnectionSocketFactory(new DavGatewaySSLSocketFactory(),
+                SUPPORTED_PROTOCOLS, null,
                 SSLConnectionSocketFactory.getDefaultHostnameVerifier()));
 
         SCHEME_REGISTRY = schemeRegistry.build();
