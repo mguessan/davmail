@@ -26,6 +26,8 @@ import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.IOUtil;
+
 import org.apache.log4j.Logger;
 
 import javax.naming.InvalidNameException;
@@ -122,6 +124,7 @@ public class LdapConnection extends AbstractConnection {
         CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("homeStreet", "mozillahomestreet");
         CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("businesshomepage", "mozillaworkurl");
         CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("nickname", "mozillanickname");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("msexchangecertificate", "usercertificate;binary");
     }
 
     /**
@@ -287,6 +290,9 @@ public class LdapConnection extends AbstractConnection {
 
         // iCal search attribute
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-serviceslocator", "apple-serviceslocator");
+        
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("usercertificate;binary", "msexchangecertificate");
+        
     }
 
     /**
@@ -967,6 +973,8 @@ public class LdapConnection extends AbstractConnection {
                     for (Object value : (Iterable) values) {
                         responseBer.encodeString((String) value, isLdapV3());
                     }
+                } else if (values instanceof byte[]) {
+                	responseBer.encodeOctetString((byte[])values, BerEncoder.ASN_OCTET_STR);
                 } else {
                     throw new DavMailException("EXCEPTION_UNSUPPORTED_VALUE", values);
                 }
@@ -1019,7 +1027,7 @@ public class LdapConnection extends AbstractConnection {
 
         boolean isFullSearch();
 
-        boolean isMatch(Map<String, String> person);
+        boolean isMatch(ExchangeSession.Contact person);
     }
 
     class CompoundFilter implements LdapFilter {
@@ -1104,7 +1112,7 @@ public class LdapConnection extends AbstractConnection {
          * @param person person attributes map
          * @return true if filter match
          */
-        public boolean isMatch(Map<String, String> person) {
+        public boolean isMatch(ExchangeSession.Contact person) {
             if (type == LDAP_FILTER_OR) {
                 for (LdapFilter child : criteria) {
                     if (!child.isFullSearch()) {
@@ -1279,13 +1287,14 @@ public class LdapConnection extends AbstractConnection {
             return condition;
         }
 
-        public boolean isMatch(Map<String, String> person) {
+        public boolean isMatch(ExchangeSession.Contact person) {
             if (canIgnore) {
                 // Ignore this filter
                 return true;
             }
+            String contactAttributeName = getContactAttributeName(attributeName);
 
-            String personAttributeValue = person.get(attributeName);
+            String personAttributeValue = person.get(contactAttributeName);
 
             if (personAttributeValue == null) {
                 // No value to allow for filter match
@@ -1687,6 +1696,10 @@ public class LdapConnection extends AbstractConnection {
                         // failover, should not happen
                         ldapPerson.put("apple-generateduid", ldapPerson.get("uid"));
                     }
+                }
+                if (ldapPerson.containsKey("usercertificate;binary")) {
+                	String certificate = (String) ldapPerson.get("usercertificate;binary");
+                	ldapPerson.put("usercertificate;binary", IOUtil.decodeBase64(certificate));
                 }
 
                 // iCal: replace current user alias with login name

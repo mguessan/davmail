@@ -3030,6 +3030,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         GALFIND_ATTRIBUTE_MAP.put("homePhone", "HomePhone");
         GALFIND_ATTRIBUTE_MAP.put("pager", "Pager");
+        GALFIND_ATTRIBUTE_MAP.put("msexchangecertificate", "MSExchangeCertificate");
     }
 
     protected static final HashSet<String> IGNORE_ATTRIBUTE_SET = new HashSet<>();
