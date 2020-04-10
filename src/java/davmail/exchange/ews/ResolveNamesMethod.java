@@ -162,7 +162,7 @@ public class ResolveNamesMethod extends EWSMethod {
                     String value = reader.getText();
                     if ((value != null) && !value.isEmpty()) {
                         if (!firstValueRead) {
-                            // Only first value will be read
+                            // Only first certificate value will be read
                             certificate = value;
                         } else {
                             LOGGER.debug("ResolveNames multiple certificates found, tagLocaleName="
