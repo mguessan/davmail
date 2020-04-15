@@ -70,15 +70,9 @@
         <svn refid="svn.settings">
             <wcversion path="."/>
         </svn>
-        <!-- try to get svn revision from git -->
-        <!--exec executable="git" outputproperty="revision.max">
-            <arg value = "svn" />
-            <arg value = "find-rev" />
-            <arg value = "HEAD" />
-        </exec-->
         <!-- failover value for revision -->
         <property name="revision.max" value=""/>
-        <property name="release" value="${version}.${revision.max}"/>
+        <property name="release" value="${version}-${revision.max}"/>
     </target>
 
     <target name="gitsvnrelease" if="is.git">
@@ -90,7 +84,7 @@
             <arg value="HEAD" />
         </exec>
         <property name="revision.max" value=""/>
-        <property name="release" value="${version}.${revision.max}"/>
+        <property name="release" value="${version}-${revision.max}"/>
     </target>
 
     <target name="defaultrelease" unless="is.svn">
