@@ -1,10 +1,173 @@
-##DavMail 5.4.0 2019-11-11
+## DavMail 5.5.0 2019-04-15
+This release contains a lot of bugfixes, enhancements and some user contributions from Github.
+Most activity is related to HttpClient 4 refactoring, this will probably be the latest version based in HttpClient 3.
+Minimum Java version is now 8, also dropped Growl support on MacOS.
+Notable changes for end users are Oauth token persistence to avoid frequent O365 authentications and OIDC support for
+personal outlook accounts.
+Known issues: some users reported regressions with form authentication, please report such regressions with log files.
+
+### IMAP:
+- IMAP: catch non IOException errors in FolderLoadThread
+- IMAP: fix https://github.com/mguessan/davmail/pull/91 Allow user name to be specified as user@domain.com in addition to domain\user to access shared mailbox
+- IMAP: unquote CHARSET in IMAP search
+- IMAP: cleanup test cases
+
+### Documentation:
+- Doc: describe new Office 365 authentication modes
+- Doc: remove deprecated enableEWS reference
+- Doc: Document new connection modes in template davmail.properties
+- Doc: Add all time downloads badge
+- Doc: push sonarcloud badges
+
+### Enhancements:
+- Apply xml transformer settings recommended by Sonar
+- dos2unix template davmail.properties file
+- prepare migration to https://davmail.sourceforge.io
+- Settings: cleanup from audit
+- Latest edge user agent does not work, use Outlook 2013 instead
+- Convert HTTP code to Java 8
+- Cleanup from audit
+- Fix sonar detected vulnerability
+- Update to Java 8 and code cleanup
+- Comment HttpURLConnectionWrapper
+- Fix regression in AbstractServer
+- Remove unused label
+- Cleanup from audit at Java 8 language level
+
+### Security:
+- Enable TLSv1.1 and TLSv1.2
+
+### HttpClient 4:
+- HC4: httpClient is not shared between clients, do not track connection state to enable NTLM connection pooling
+- HC4: set default connection per route to 5
+- HC4: refactor Exchange 2007 test cases
+- HC4: Prepare switch, create a temporary HC4WebDav mode
+- HC4: ExchangeSession cleanup
+- HC4: unit test cleanup
+- HC4: make ExchangeSession independent of HttpClient implementation
+- HC4: remove reference to old HttpStatus in HttpClientAdapter
+- HC4: more HC4ExchangeFormAuthenticator refactoring and fixes
+- HC4: test form authentication failure
+- HC4: more DavExchangeSession refactoring
+- HC4: more form authenticator fixes
+- HC4: create ResponseWrapper interface for PostRequest and GetRequest
+- HC4: new executeFollowRedirect implementation and get user agent from settings
+- HC4: cleanup from audit and fix regression, need to follow redirect after OWA authentication
+- HC4: more authentication test case
+- HC4: Implement single thread connection evictor
+- HC4: improve PostRequest and RestRequest
+- HC4: implement executePostRequest with test case
+- HC4: new GetRequest implementation with test case
+- HC4: more request refactoring
+- Refactor RestRequest to use ResponseHandler mode only
+- Refactor TestHttpClientAdapter
+- HC4: improve RestRequest
+- HC4: remove old HttpException and move to HttpResponseException
+- HC4: switch to HttpGet
+- HC4: add buildHttpException to HttpClientAdapter
+- HC4: cleanup from audit
+- HC4: keep statusLine in request
+- HC4: cleanup to finalize migration
+- HC4: convert encodeAndFixUrl
+- HC4: Remove old HttpStatus dependency
+- Remove HttpException dependency
+- HC4: convert Head and Post methods
+- HC4: convert GetMethod to HttpGet
+- HC4: convert remaining http client 3 methods
+- HC4: Implement create/delete folder
+- HC4: implement Exchange WebDav search request
+- HC4: Fix initial uri in HttpClientAdapter
+- HC4: convert internalGetFolder
+- HC4: refactor TestCaldavHttpClient4
+- HC4: more test cases on session creation
+- HC4: convert getWellKnownFolders, first working version of session creation
+- HC4: convert checkPublicFolder
+- HC4: get httpClientAdapter from HC4ExchangeFormAuthenticator
+- HC4: Main test case for HC4DavExchangeSession
+- HC4: convert getEmailAndAliasFromOptions
+- HC4: convert getMailpathFromWelcomePage
+- HC4: baseline DavExchangeSession for HttpClient 4 migration
+- HTTP: Improve HttpClientAdapter, enable kerberos support according to setting
+- HttpClient4: improve HttpClientAdapter
+- HttpClient4: Test timeouts with proxy
+- Refactor TestHttpClient4 with try with resource
+
+### Caldav:
+- Caldav: fix https://github.com/mguessan/davmail/pull/88 EXDATE timezone issue
+
+### O365:
+- O365: fix https://github.com/mguessan/davmail/pull/92 failover for null query with non https URI
+- O365: refactor O365Authenticator and fix regressions
+- O365: switch to new executeFollowRedirect implementation
+- O365: refactor O365Authenticator
+- Refactor O365InteractiveJSLogger to work with more JDK versions
+
+### Test:
+- Test: improve notification dialog test
+- Test: Improve client certificate test
+- Improve getReleasedVersion test case
+- Test: Improve base test cases
+- Add new harmcrest-core junit dependency ant enable IMAP test cases
+- Test: update junit to 4.12
+- Run a SSL server socket
+- Test: cleanup code
+- Improve TestDavGateway
+- Make AbstractDavMailTestCase abstract
+- HttpClient: improve test cases
+
+### Build:
+- Fix file name for Appveyor trunk builds
+- Fix git svn warning
+- try to get svn revision from git
+- Set jacoco path in sonar config
+- fix test-compile language level
+- Upload coverage report to sourceforge for AppVeyor
+- Prepare Jacoco coverage report
+- Cleanup unused ant check
+- Exclude Sonar working directory from package
+- Appveyor: try to run sonar from Appveyor build
+
+### EWS:
+- EWS: make getPageSize static
+- EWS: merge PR Allow to configure EWS folder fetch page size https://github.com/mguessan/davmail/pull/79
+- EWS: fix response handling
+- EWS: fix O365Authenticator
+- EWS: fix regression in O365Token
+- EWS: handle malformed id_token
+- EWS: refactor authenticators to use davmail.enableOidc
+- EWS: create a new davmail.enableOidc setting tp switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison 
+- EWS: Prepare OIDC support, add v2.0 url in interactive authenticator
+- EWS: Prepare OIDC support, decode id_token
+- EWS: enable davmail.oauth.persistToken by default
+
+### DAV:
+- DAV: MOVE returns SC_CONFLICT on missing target folder
+- Dav: Update to Java 8
+
+### SMTP:
+- SMTP: improve error message handling
+- SMTP: fix smtp test cases
+
+### LDAP:
+- LDAP: clean test case
+- LDAP: fix dn authentication
+- LDAP: Ber code cleanup from audit
+- LDAP: update LdapConnection to Java 8
+- LDAP: make parseIntWithTag protected to call it from LdapConnection
+- Use imported Ber implementation instead of com.sun.jndi.ldap
+- Import Ber implementation from OpenJDK to avoid compilation warnings
+
+### OSX:
+- OSX: drop Growl support 
+
+
+## DavMail 5.4.0 2019-11-11
 Main new feature is experimental support for stored Oauth tokens with davmail.oauth.persistToken=true,
 tokens are stored encrypted with client provided password.
 Also improved SPECIAL-USE IMAP support and fixed a few regressions related to ExchangeSessionFactory refactoring
 and a lot of bug fixed from user feedback.
 
-###Enhancements:
+### Enhancements:
 - Add sonar target to ant build
 - Sonar configuration
 - Add sonarqube-ant-task to lib
@@ -25,31 +188,31 @@ and a lot of bug fixed from user feedback.
 - Refactor settings save to preserve comments
 - Force Trusty in Travis config
 
-###Appveyor:
+### Appveyor:
 - Appveyor: Update to ant 1.10.7
 - Appveyor: test JDK 12 and 13 build
 
-###Security:
+### Security:
 - Security: secure XML transformer
 - Security: Untrusted XML should be parsed without resolving external data
 
-###SWT:
+### SWT:
 - SWT: Refactor the synchronisation mechanism to not use a Thread instance as a monitor
 
-###LDAP:
+### LDAP:
 - LDAP: Add a note to Thunderbird directory config on uid=username syntax
 
-###IMAP:
+### IMAP:
 - IMAP: implement RETURN (SPECIAL-USE) in IMAP list command, return special folders only, fix for https://sourceforge.net/p/davmail/bugs/721
 - IMAP: allow recursive search on public folders
 
-###Carddav:
+### Carddav:
 - Carddav: iOS does not support VCard 4, detect its old Carddav client and send VCard 3 content, exclude unsupported distribution list items
 
-###Caldav:
+### Caldav:
 - Caldav: do not try to send cancel notifications on shared and public calendars
 
-###EWS:
+### EWS:
 - EWS: allow O365Manual in headless mode
 - EWS: implement command line mode for O365ManualAuthenticator, as suggested in https://github.com/mguessan/davmail/issues/48
 - EWS: exchangecookie is not a good check of successful authentication
@@ -60,31 +223,31 @@ and a lot of bug fixed from user feedback.
 - EWS: fix access to /public folder
 - EWS: Try to improve O365 authentication with ADFS tenants
 
-###Documentation:
+### Documentation:
 - Doc: fix trusterbird link on home page
 
-###Linux:
+### Linux:
 - Linux: switch spec file to java-1.8.0
 - Linux: prepare rhel8 support
 
-###SMTP:
+### SMTP:
 - SMTP: fix #720 Davmail returns 503 instead of 530 when trying to send mail before authentication
 
 ## DavMail 5.3.1 2019-08-12
 Bugfix release to fix NTLM authentication for some Exchange on premise instances.
 Also includes a new OSX handlers implementation required to support recent OSX JDKs.
 
-###Enhancements:
+### Enhancements:
 - Reprocess credentials in addNTLM
 - Use github download link instead of direct sourceforge link in About dialog
 - Improve ExchangeFormAuthenticator logging
 
-###EWS:
+### EWS:
 - EWS: fix possible bug with username with authenticatorClass
 - EWS: add an Open button to O365ManualAuthenticatorDialog in case links are not working
 - EWS: fix regression in OWA authentication mode, enable NTLM if required by EWS endpoint
 
-###OSX:
+### OSX:
 - OSX: comment zulufx jre embed
 - OSX: prepare zulufx jre embed
 - OSX: drop old OSXAdapter
@@ -97,14 +260,14 @@ Major update with a focus on O365 and MFA support, this release includes a new d
 setting to filter users by email or domain. We now have a more modern responsive site thanks to new Maven skin.
 Migration to HttpClient 4 is in progress but not finished yet.
 
-###Enhancements:
+### Enhancements:
 - Cleanup from audit
 - Update Maven POM
 - Implement a new davmail.userWhiteList setting to only allow limited users and/or domains, see https://github.com/mguessan/davmail/issues/47
 value is a comma separated list of emails or domains (user@company.com or @company.com)
 - Cleanup: remove duplicate code
 
-###IMAP:
+### IMAP:
 - IMAP: additional folder test case
 - IMAP: Fix #714 StringIndexOutOfBoundsException with NOT UID condition
 - IMAP: fix https://github.com/mguessan/davmail/issues/35, Result of of a mailbox search is different between search and uid_search
@@ -113,7 +276,7 @@ value is a comma separated list of emails or domains (user@company.com or @compa
 - IMAP: fix #708 issue with folder name that starts with Inbox
 - IMAP: encode greater than character in folder name
 
-###HTTP:
+### HTTP:
 - Fix logger and remove old httpClient dependency in HttpClientAdapter
 - HTTP: Full Http Client 4 form authentication module
 - HTTP: experimental Http Client 4 authenticator
@@ -143,11 +306,11 @@ value is a comma separated list of emails or domains (user@company.com or @compa
 - HTTP: reenable basic proxy authentication on Java >= 1.8.111: jdk.http.auth.tunneling.disabledSchemes=""
 - HTTP: Implement JCIFS NTLM authentication with HttpClient 4
 
-###GUI:
+### GUI:
 - GUI: translate disableTrayActivitySwitch messages
 - GUI: merge Add davmail.disableTrayActivitySwitch to disable tray icon activity, see https://github.com/mguessan/davmail/pull/28
 
-###EWS:
+### EWS:
 - EWS: O365Manual add mode in Settings
 - EWS: O365Manual enable in ExchangeSessionFactory
 - EWS: O365Manual missing label
@@ -182,35 +345,35 @@ value is a comma separated list of emails or domains (user@company.com or @compa
 - EWS: new AutoDiscoverMethod implementation
 - EWS: improve O365 token logging
 
-###Linux:
+### Linux:
 - Linux: adjust AWT tray icon for Linux Mint Cinnamon
 - Linux: Merge patch, add JFX_CLASSPATH when SWT3 is available
 - Linux: Fix spec file for copr
 
-###Unix:
+### Unix:
 - Unix: failover to xdg-open on both Linux and Freebsd
 
-###Documentation:
+### Documentation:
 - Doc: fix title in page
 - Doc: improved site skin with collapsible sidebar
 - Doc: upgrade Maven Javadoc plugin
 - Doc: Switch to modern responsive Maven fluido skin
 - Doc: Switch to modern responsive Maven reflow skin
 
-###DAV:
+### DAV:
 - DAV: cleanup from audit
 - DAV: remove dependency to old URIException
 
-###Caldav:
+### Caldav:
 - Caldav: cleanup from audit
 - Caldav: send 404 not found instead of 400 for unknown requests
 - Caldav: Do not try to update event is X-MOZ-FAKED-MASTER is set
 - Caldav: fix test case
 
-###OSX:
+### OSX:
 - OSX: merge patch #54 Set NSSupportsAutomaticGraphicsSwitching to Yes to prevent macOS GPU access
 
-###SWT:
+### SWT:
 - SWT: merge duplicate code
 
 ## DavMail 5.2.0 2019-02-10
@@ -218,7 +381,7 @@ Includes improved ADFS compatibility and support Okta authentication in interact
 a fix for Thunderbird dismiss issue, a few LDAP and IMAP enhancements (TRYCREATE support).
 Also upgraded libraries to prepare HttpClient 4 upgrade.
 
-###EWS:
+### EWS:
 - EWS: improve O365 mode handling, force url
 - EWS: detect Okta authentication and explicitly fail in this case with O365Authenticator
 - EWS: O365StoredTokenAuthenticator test case
@@ -231,7 +394,7 @@ Also upgraded libraries to prepare HttpClient 4 upgrade.
 - EWS: detect devicelogin after O365 ADFS authentication, try to follow redirect
 - EWS: adjust 0365Token log statement level
 
-###Caldav:
+### Caldav:
 - Caldav: explicitly detect Thunderbird dismiss/snooze events to update only mozilla custom properties
 - Caldav: fix #705 daily recurrence issue
 - Caldav: experimental, return created item URL in Location header
@@ -241,15 +404,15 @@ Also upgraded libraries to prepare HttpClient 4 upgrade.
 - Caldav: fix recurrence options and implement interval over EWS
 - Caldav: fix montly recurrence handling
 
-###IMAP:
+### IMAP:
 - IMAP: fix #704 implement [TRYCREATE] on folder not found
 - IMAP: Fix FETCH RFC822 request for python imap client.
 - IMAP: Additional fix for slash in folder name
 
-###Carddav:
+### Carddav:
 - Carddav: fix regression, override getAllContacts to list contacts and distribution lists
 
-###LDAP:
+### LDAP:
 - LDAP: cleanup from audit and support simple rdn authentication, see https://github.com/mguessan/davmail/pull/18
 - LDAP: implement hassubordinates attribute
 - LDAP: fix contact filter over EWS
@@ -260,7 +423,7 @@ Also upgraded libraries to prepare HttpClient 4 upgrade.
 - LDAP: encode uid value in dn, see https://github.com/mguessan/davmail/pull/18
 - LDAP: add mappings for HomePhone and Pager attributes
 
-###Documentation
+### Documentation:
 - Doc: fix https://github.com/mguessan/davmail/pull/21
 - Doc: Improve documentation of client connection timeout, merge https://github.com/mguessan/davmail/pull/20
 - Doc: remove alt from OpenHub link
@@ -273,7 +436,7 @@ Also upgraded libraries to prepare HttpClient 4 upgrade.
 - Doc: update Debian package description
 - Doc: fix openhub link
 
-###HTTP:
+### HTTP:
 - HTTP: switch from URIUtil to URIBuilder in Caldav test cases
 - HTTP: more Caldav test cases with HttpClientAdapter
 - HTTP: implement caldav report and search test case with HttpClientAdapter
@@ -288,7 +451,7 @@ Also upgraded libraries to prepare HttpClient 4 upgrade.
 - HTTP: Basic HttpClient 4 test cases
 - Update jackrabbit to 2.14.6 (latest version to support httpclient 3.1
 
-###Linux:
+### Linux:
 - Linux: adjust tray icon for XFCE and KDE
 - Linux: try to adjust tray icon for XFCE
 - Linux: fix swt jar exists test in launch script
@@ -299,7 +462,7 @@ Also upgraded libraries to prepare HttpClient 4 upgrade.
 - SWT: Improve code to make it compatible with older SWT libraries in Ubuntu 18.
 - Linux: fix spec file regression
 
-###Maven:
+### Maven:
 - Maven: reenable site plugins in pom
 
 

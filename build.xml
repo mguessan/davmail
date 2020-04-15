@@ -1,6 +1,6 @@
 <project name="DavMail" default="dist" basedir=".">
     <property file="user.properties"/>
-    <property name="version" value="5.4.0"/>
+    <property name="version" value="5.5.0"/>
 
     <path id="classpath">
         <pathelement location="classes"/>
@@ -71,11 +71,11 @@
             <wcversion path="."/>
         </svn>
         <!-- try to get svn revision from git -->
-        <exec executable="git" outputproperty="revision.max">
+        <!--exec executable="git" outputproperty="revision.max">
             <arg value = "svn" />
             <arg value = "find-rev" />
             <arg value = "HEAD" />
-        </exec>
+        </exec-->
         <!-- failover value for revision -->
         <property name="revision.max" value=""/>
         <property name="release" value="${version}.${revision.max}"/>
