@@ -741,7 +741,7 @@ public class ImapConnection extends AbstractConnection {
         if (tokens != null && tokens.length == 3) {
             userName = tokens[0] + '\\' + tokens[1];
             baseMailboxPath = "/users/" + tokens[2] + '/';
-        } else if (tokens != null && tokens.length == 2) {
+        } else if (tokens != null && tokens.length == 2 && tokens[1].contains("@")) {
             userName = tokens[0];
             baseMailboxPath = "/users/" + tokens[1] + '/';
         }
