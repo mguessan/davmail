@@ -433,6 +433,7 @@
                 <exclude name="target/**"/>
                 <exclude name="archive/**"/>
                 <exclude name="user.properties"/>
+                <exclude name=".scannerwork"/>
             </tarfileset>
         </tar>
         <!-- davmail source only package for GNU/Linux distributions -->
