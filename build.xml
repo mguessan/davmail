@@ -433,7 +433,10 @@
                 <exclude name="target/**"/>
                 <exclude name="archive/**"/>
                 <exclude name="user.properties"/>
-                <exclude name=".scannerwork"/>
+                <exclude name=".scannerwork/**"/>
+                <exclude name="*.ipr"/>
+                <exclude name="*.iws"/>
+                <exclude name="test.properties"/>
             </tarfileset>
         </tar>
         <!-- davmail source only package for GNU/Linux distributions -->
@@ -454,7 +457,10 @@
                 <exclude name="src/osx/**"/>
                 <exclude name="src/contribs/**"/>
                 <exclude name="*.nsi"/>
-                <exclude name=".scannerwork"/>
+                <exclude name=".scannerwork/**"/>
+                <exclude name="*.ipr"/>
+                <exclude name="*.iws"/>
+                <exclude name="test.properties"/>
             </tarfileset>
         </tar>
     </target>
