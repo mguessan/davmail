@@ -1,3 +1,19 @@
+## DavMail 5.5.1 2019-04-19
+Fix regression on domain\username authentication over IMAP and some cleanup
+
+### IMAP:
+- IMAP: fix https://github.com/mguessan/davmail/issues/100 regression with domain\username authentication
+
+### O365:
+- O365: set jdk.http.ntlm.transparentAuth=allHosts to enable NTLM for ADFS support
+
+### Build:
+- dist cleanup
+- Update release guide with Fedora copr instructions
+- Exclude .sonarwork from source package
+- Build: fix release file name
+
+
 ## DavMail 5.5.0 2019-04-15
 This release contains a lot of bugfixes, enhancements and some user contributions from Github.
 Most activity is related to HttpClient 4 refactoring, this will probably be the latest version based in HttpClient 3.

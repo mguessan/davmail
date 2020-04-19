@@ -39,7 +39,26 @@
   <developer_name>Mickaël Guessant</developer_name>
   <content_rating type="oars-1.1" />
   <releases>
-    <release version="5.5.0" date="2019-04-15">
+      <release version="5.5.1" date="2019-04-19">
+      <description>
+          <p>
+              Fix regression on domain\username authentication over IMAP and some cleanup
+
+              ### IMAP:
+              - IMAP: fix https://github.com/mguessan/davmail/issues/100 regression with domain\username authentication
+
+              ### O365:
+              - O365: set jdk.http.ntlm.transparentAuth=allHosts to enable NTLM for ADFS support
+
+              ### Build:
+              - dist cleanup
+              - Update release guide with Fedora copr instructions
+              - Exclude .sonarwork from source package
+              - Build: fix release file name
+          </p>
+      </description>
+      </release>
+      <release version="5.5.0" date="2019-04-15">
       <description>
         <p>
             This release contains a lot of bugfixes, enhancements and some user contributions from Github.
