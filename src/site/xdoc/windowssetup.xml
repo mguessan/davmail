@@ -13,7 +13,7 @@
         <section name="DavMail Setup on windows">
             <p>Prerequisite : OpenJDK 8 or later.
                 On windows,
-                <a href="https://www.azul.com/downloads/zulu-community/?os=windows&architecture=x86-64-bit&package=jre-fx">Zulu JRE FX</a>
+                <a href="https://www.azul.com/downloads/zulu-community/?os=windows&amp;architecture=x86-64-bit&amp;package=jre-fx">Zulu JRE FX</a>
                 is a good option to have OpenJFX available for O365Interactive.
             </p>
 
