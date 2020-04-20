@@ -46,7 +46,7 @@
                 <code>davmail -notray</code>
             </subsection>
             <subsection name="Manual setup">
-                <p>Prerequisite: OpenJDK 6 or later or Sun (Oracle) JRE 6 or later.
+                <p>Prerequisite: OpenJDK 8 or later or Sun (Oracle) JRE 8 or later.
                     If SWT is available it provides an improved tray icon.
                     If you do not want any tray icon run DavMail with the <code>-notray</code> option.
                 </p>

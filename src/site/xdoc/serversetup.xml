@@ -11,7 +11,7 @@
     <body>
 
         <section name="DavMail Setup as a standalone server">
-            <p>Prerequisite : Sun (Oracle) JRE or OpenJDK 6 to 11.
+            <p>Prerequisite : Sun (Oracle) JRE or OpenJDK 8 or later.
             </p>
 
             <p>Davmail Gateway can run in server mode as a gateway between the mail
@@ -221,7 +221,7 @@ davmail.enableKerberos=false]]>
         </section>
 
         <section name="DavMail Setup as a JEE Web Application">
-            <p>Prerequisites : Oracle JRE 6 or later or OpenJDK 6 or later and any JEE compliant web container
+            <p>Prerequisites : Oracle JRE 8 or later or OpenJDK 8 or later and any JEE compliant web container
             </p>
 
             <p>Davmail Gateway can now be deployed in any JEE application server using
