@@ -158,8 +158,7 @@ public class ResolveNamesMethod extends EWSMethod {
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Base64Binary".equals(tagLocalName)) {
-                    reader.next();
-                    String value = reader.getText();
+                    String value = reader.getElementText();
                     if ((value != null) && !value.isEmpty()) {
                         if (!firstValueRead) {
                             // Only first certificate value will be read
