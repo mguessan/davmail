@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.ResourceBundle;
 import java.util.TimeZone;
 import java.util.UUID;
 
@@ -174,7 +175,16 @@ public class TestCaldavRecurringEvent extends AbstractDavMailTestCase {
         VCalendar createdEvent = new VCalendar(item.getBody(), session.getEmail(), session.getVTimezone());
         dumpEvent(createdEvent);
 
+        // need to find current session timezone
+        String tzid = session.getVTimezone().getPropertyValue("TZID");
+        System.out.println(tzid);
+        // convert to standard timezone
+        ResourceBundle tzBundle = ResourceBundle.getBundle("stdtimezones");
+        String stdtzid = tzBundle.getString(tzid);
+        TimeZone javaTimezone = TimeZone.getTimeZone(stdtzid);
+
         Calendar nextWeek = Calendar.getInstance();
+        nextWeek.setTimeZone(javaTimezone);
         nextWeek.set(Calendar.HOUR, 10);
         nextWeek.set(Calendar.MINUTE, 0);
         nextWeek.set(Calendar.SECOND, 0);
