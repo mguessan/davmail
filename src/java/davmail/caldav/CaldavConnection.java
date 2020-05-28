@@ -56,6 +56,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Pattern;
+
 
 /**
  * Handle a caldav connection.
@@ -66,6 +68,7 @@ public class CaldavConnection extends AbstractConnection {
      */
     protected static final int MAX_KEEP_ALIVE_TIME = 300;
     protected final Logger wireLogger = Logger.getLogger(this.getClass());
+    protected final String contextPath;
 
     protected boolean closed;
 
@@ -79,11 +82,12 @@ public class CaldavConnection extends AbstractConnection {
         ical_allowed_abs_path.clear('@');
     }
 
-    static String encodePath(CaldavRequest request, String path) {
+    protected String encodePath(CaldavRequest request, String path) {
+        // restore the context path that was removed in #run()
         if (request.isIcal5()) {
-            return URIUtil.encode(path, ical_allowed_abs_path);
+            return URIUtil.encode(contextPath + path, ical_allowed_abs_path);
         } else {
-            return URIUtil.encodePath(path);
+            return URIUtil.encodePath(contextPath + path);
         }
     }
 
@@ -96,6 +100,10 @@ public class CaldavConnection extends AbstractConnection {
         super(CaldavConnection.class.getSimpleName(), clientSocket, "UTF-8");
         // set caldav logging to davmail logging level
         wireLogger.setLevel(Settings.getLoggingLevel("davmail"));
+
+        // prevent trailing '/' in the context path, also for the root context
+        contextPath = Settings.getProperty("davmail.caldavContextPath", "")
+                              .replaceFirst("/+$", "");
     }
 
     protected Map<String, String> parseHeaders() throws IOException {
@@ -150,6 +158,7 @@ public class CaldavConnection extends AbstractConnection {
     public void run() {
         String line;
         StringTokenizer tokens;
+        final Pattern SLASHES_RE = Pattern.compile("/{2,}");
 
         try {
             while (!closed) {
@@ -163,6 +172,13 @@ public class CaldavConnection extends AbstractConnection {
                 Map<String, String> headers = parseHeaders();
                 String encodedPath = StringUtil.encodePlusSign(tokens.nextToken());
                 String path = URIUtil.decode(encodedPath);
+                path = SLASHES_RE.matcher(path).replaceAll("/");
+                if (!path.startsWith(contextPath + '/')) {
+                    throw new DavMailException("EXCEPTION_CONTEXT_PATH_MISMATCH", path, contextPath);
+                }
+                // remove the context path; it will be restored in #encodePath(CaldavRequest, String)
+                // and in #sendWellKnown()
+                path = path.substring(contextPath.length());
                 String content = getContent(headers.get("content-length"));
                 setSocketTimeout(headers.get("keep-alive"));
                 // client requested connection close
@@ -504,9 +520,9 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("owner")) {
             if ("users".equals(request.getPathElement(1))) {
-                response.appendHrefProperty("D:owner", "/principals/users/" + request.getPathElement(2));
+                response.appendHrefProperty("D:owner", encodePath(request, "/principals/users/" + request.getPathElement(2)));
             } else {
-                response.appendHrefProperty("D:owner", "/principals" + request.getPath());
+                response.appendHrefProperty("D:owner", encodePath(request, "/principals" + request.getPath()));
             }
         }
         if (request.hasProperty("getcontenttype")) {
@@ -917,11 +933,11 @@ public class CaldavConnection extends AbstractConnection {
     public void sendRoot(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse("/");
+        response.startResponse(encodePath(request, "/"));
         response.startPropstat();
 
         if (request.hasProperty("principal-collection-set")) {
-            response.appendHrefProperty("D:principal-collection-set", "/principals/users/");
+            response.appendHrefProperty("D:principal-collection-set", encodePath(request, "/principals/users/"));
         }
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", "ROOT");
@@ -936,7 +952,7 @@ public class CaldavConnection extends AbstractConnection {
         response.endResponse();
         if (request.depth == 1) {
             // iPhone workaround: send calendar subfolder
-            response.startResponse("/users/" + session.getEmail() + "/calendar");
+            response.startResponse(encodePath(request, "/users/" + session.getEmail() + "/calendar"));
             response.startPropstat();
             if (request.hasProperty("resourcetype")) {
                 response.appendProperty("D:resourcetype", "<D:collection/>" +
@@ -951,7 +967,7 @@ public class CaldavConnection extends AbstractConnection {
             response.endPropStatOK();
             response.endResponse();
 
-            response.startResponse("/users");
+            response.startResponse(encodePath(request, "/users"));
             response.startPropstat();
             if (request.hasProperty("displayname")) {
                 response.appendProperty("D:displayname", "users");
@@ -962,7 +978,7 @@ public class CaldavConnection extends AbstractConnection {
             response.endPropStatOK();
             response.endResponse();
 
-            response.startResponse("/principals");
+            response.startResponse(encodePath(request, "/principals"));
             response.startPropstat();
             if (request.hasProperty("displayname")) {
                 response.appendProperty("D:displayname", "principals");
@@ -986,7 +1002,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendDirectory(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse("/directory/");
+        response.startResponse(encodePath(request, "/directory/"));
         response.startPropstat();
         if (request.hasProperty("current-user-privilege-set")) {
             response.appendProperty("D:current-user-privilege-set", "<D:privilege><D:read/></D:privilege>");
@@ -1004,7 +1020,7 @@ public class CaldavConnection extends AbstractConnection {
      */
     public void sendWellKnown() throws IOException {
         HashMap<String, String> headers = new HashMap<>();
-        headers.put("Location", "/");
+        headers.put("Location", contextPath + "/");
         sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, headers);
     }
 
@@ -1067,7 +1083,7 @@ public class CaldavConnection extends AbstractConnection {
         } else {
             // public calendar, send root href as inbox url (always empty) for Lightning
             if (request.isLightning() && request.hasProperty("schedule-inbox-URL")) {
-                response.appendHrefProperty("C:schedule-inbox-URL", "/");
+                response.appendHrefProperty("C:schedule-inbox-URL", encodePath(request, "/"));
             }
             // send user outbox
             if (request.hasProperty("schedule-outbox-URL")) {
