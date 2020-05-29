@@ -36,6 +36,7 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.http.HttpStatus;
 import org.apache.log4j.Logger;
+import org.htmlcleaner.BaseToken;
 import org.htmlcleaner.CommentNode;
 import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
@@ -314,15 +315,15 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
         try {
             TagNode node = cleaner.clean(initmethod.getResponseBodyAsStream());
-            List forms = node.getElementListByName("form", true);
+            List<? extends TagNode> forms = node.getElementListByName("form", true);
             TagNode logonForm = null;
             // select form
             if (forms.size() == 1) {
-                logonForm = (TagNode) forms.get(0);
+                logonForm = forms.get(0);
             } else if (forms.size() > 1) {
-                for (Object form : forms) {
-                    if ("logonForm".equals(((TagNode) form).getAttributeByName("name"))) {
-                        logonForm = ((TagNode) form);
+                for (TagNode form : forms) {
+                    if ("logonForm".equals(form.getAttributeByName("name"))) {
+                        logonForm = form;
                     }
                 }
             }
@@ -337,12 +338,12 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                 logonMethod = new PostMethod(getAbsoluteUri(initmethod, logonMethodPath));
 
                 // retrieve lost inputs attached to body
-                List inputList = node.getElementListByName("input", true);
+                List<? extends TagNode> inputList = node.getElementListByName("input", true);
 
-                for (Object input : inputList) {
-                    String type = ((TagNode) input).getAttributeByName("type");
-                    String name = ((TagNode) input).getAttributeByName("name");
-                    String value = ((TagNode) input).getAttributeByName("value");
+                for (TagNode input : inputList) {
+                    String type = input.getAttributeByName("type");
+                    String name = input.getAttributeByName("name");
+                    String value = input.getAttributeByName("value");
                     if ("hidden".equalsIgnoreCase(type) && name != null && value != null) {
                         ((PostMethod) logonMethod).addParameter(name, value);
                     }
@@ -381,9 +382,9 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                 }
             } else {
-                List frameList = node.getElementListByName("frame", true);
+                List<? extends TagNode> frameList = node.getElementListByName("frame", true);
                 if (frameList.size() == 1) {
-                    String src = ((TagNode) frameList.get(0)).getAttributeByName("src");
+                    String src = frameList.get(0).getAttributeByName("src");
                     if (src != null) {
                         LOGGER.debug("Frames detected in form page, try frame content");
                         initmethod.releaseConnection();
@@ -392,10 +393,10 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                 } else {
                     // another failover for script based logon forms (Exchange 2007)
-                    List scriptList = node.getElementListByName("script", true);
-                    for (Object script : scriptList) {
-                        List contents = ((TagNode) script).getAllChildren();
-                        for (Object content : contents) {
+                    List<? extends TagNode> scriptList = node.getElementListByName("script", true);
+                    for (TagNode script : scriptList) {
+                        List<? extends BaseToken> contents = script.getAllChildren();
+                        for (BaseToken content : contents) {
                             if (content instanceof CommentNode) {
                                 String scriptValue = ((CommentNode) content).getCommentedContent();
                                 String sUrl = StringUtil.getToken(scriptValue, "var a_sUrl = \"", "\"");
@@ -487,11 +488,11 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
         try {
             TagNode node = cleaner.clean(logonMethod.getResponseBodyAsStream());
-            List forms = node.getElementListByName("form", true);
+            List<? extends TagNode> forms = node.getElementListByName("form", true);
             TagNode languageForm;
             // select form
             if (forms.size() == 1) {
-                languageForm = (TagNode) forms.get(0);
+                languageForm = forms.get(0);
             } else {
                 throw new IOException("Form not found");
             }
@@ -499,22 +500,22 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
             postLanguageFormMethod = new PostMethod(getAbsoluteUri(logonMethod, languageMethodPath));
 
-            List inputList = languageForm.getElementListByName("input", true);
-            for (Object input : inputList) {
-                String name = ((TagNode) input).getAttributeByName("name");
-                String value = ((TagNode) input).getAttributeByName("value");
+            List<? extends TagNode> inputList = languageForm.getElementListByName("input", true);
+            for (TagNode input : inputList) {
+                String name = input.getAttributeByName("name");
+                String value = input.getAttributeByName("value");
                 if (name != null && value != null) {
                     postLanguageFormMethod.addParameter(name, value);
                 }
             }
-            List selectList = languageForm.getElementListByName("select", true);
-            for (Object select : selectList) {
-                String name = ((TagNode) select).getAttributeByName("name");
-                List optionList = ((TagNode) select).getElementListByName("option", true);
+            List<? extends TagNode> selectList = languageForm.getElementListByName("select", true);
+            for (TagNode select : selectList) {
+                String name = select.getAttributeByName("name");
+                List<? extends TagNode> optionList = select.getElementListByName("option", true);
                 String value = null;
-                for (Object option : optionList) {
-                    if (((TagNode) option).getAttributeByName("selected") != null) {
-                        value = ((TagNode) option).getAttributeByName("value");
+                for (TagNode option : optionList) {
+                    if (option.getAttributeByName("selected") != null) {
+                        value = option.getAttributeByName("value");
                         break;
                     }
                 }
