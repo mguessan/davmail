@@ -320,7 +320,9 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                 logonForm = forms.get(0);
             } else if (forms.size() > 1) {
                 for (TagNode form : forms) {
-                    if ("logonForm".equals(form.getAttributeByName("name"))) {
+                    if ("logonForm".equals(form.getAttributeByName("name"))
+                            || "loginForm".equals(form.getAttributeByName("id")) // ADFS 3.0 SSO form
+                    ) {
                         logonForm = form;
                     }
                 }
