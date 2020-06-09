@@ -26,6 +26,20 @@
                     <th>Sample value</th>
                 </tr>
                 <tr>
+                    <td>Exchange protocol</td>
+                    <td>Exchange/Office 365 connection mode:<br/>
+                        <ul>
+                            <li>O365Modern Office 365 modern authentication (Oauth2)</li>
+                            <li>O365Interactive Office 365 with interactive browser window, not available in headless mode (OpenJFX required)</li>
+                            <li>O365Manual Office 365 with interactive dialog, not available in headless mode</li>
+                            <li>O365 Office 365 EWS mode</li>
+                            <li>EWS Exchange 2007 and later</li>
+                            <li>WebDav Exchange 2007 and earliear WebDav mode</li>
+                            <li>Auto WebDav mode with EWS failover</li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr>
                     <td>OWA url</td>
                     <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL
                         <br/>

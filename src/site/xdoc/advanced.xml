@@ -23,11 +23,6 @@
                         <th>Sample value</th>
                     </tr>
                     <tr>
-                        <td>Enable EWS</td>
-                        <td>Enable EWS mode on Exchange 2010 or Exchange 2007 with Webdav disabled</td>
-                        <td>false</td>
-                    </tr>
-                    <tr>
                         <td>Default domain</td>
                         <td>Default windows domain name</td>
                         <td>DOMAIN</td>

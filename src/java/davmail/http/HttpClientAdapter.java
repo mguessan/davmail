@@ -81,13 +81,14 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.security.Security;
+import java.util.HashSet;
 import java.util.List;
 
 public class HttpClientAdapter implements Closeable {
     static final Logger LOGGER = Logger.getLogger("davmail.http.HttpClientAdapter");
 
+    static final String[] SUPPORTED_PROTOCOLS = new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"};
     static final Registry<ConnectionSocketFactory> SCHEME_REGISTRY;
-    static final RequestConfig DEFAULT_REQUEST_CONFIG;
     static String WORKSTATION_NAME = "UNKNOWN";
     static final int MAX_REDIRECTS = 10;
 
@@ -105,6 +106,7 @@ public class HttpClientAdapter implements Closeable {
         RegistryBuilder<ConnectionSocketFactory> schemeRegistry = RegistryBuilder.create();
         schemeRegistry.register("http", new PlainConnectionSocketFactory());
         schemeRegistry.register("https", new SSLConnectionSocketFactory(new DavGatewaySSLSocketFactory(),
+                SUPPORTED_PROTOCOLS, null,
                 SSLConnectionSocketFactory.getDefaultHostnameVerifier()));
 
         SCHEME_REGISTRY = schemeRegistry.build();
@@ -114,13 +116,6 @@ public class HttpClientAdapter implements Closeable {
         } catch (Throwable t) {
             // ignore
         }
-
-        DEFAULT_REQUEST_CONFIG = RequestConfig.custom()
-                // socket connect timeout
-                .setConnectTimeout(Settings.getIntProperty("davmail.exchange.connectionTimeout", 10) * 1000)
-                // inactivity timeout
-                .setSocketTimeout(Settings.getIntProperty("davmail.exchange.soTimeout", 120) * 1000)
-                .build();
 
         // set system property *before* calling ProxySelector.getDefault()
         if (Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE)) {
@@ -190,15 +185,18 @@ public class HttpClientAdapter implements Closeable {
 
         if (enablePool) {
             connectionManager = new PoolingHttpClientConnectionManager(SCHEME_REGISTRY);
+            ((PoolingHttpClientConnectionManager)connectionManager).setDefaultMaxPerRoute(5);
             startEvictorThread();
         } else {
             connectionManager = new BasicHttpClientConnectionManager(SCHEME_REGISTRY);
         }
         HttpClientBuilder clientBuilder = HttpClientBuilder.create()
                 .disableRedirectHandling()
-                .setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG)
+                .setDefaultRequestConfig(getRequestConfig())
                 .setUserAgent(getUserAgent())
                 .setDefaultAuthSchemeRegistry(getAuthSchemeRegistry())
+                // httpClient is not shared between clients, do not track connection state
+                .disableConnectionState()
                 .setConnectionManager(connectionManager);
 
         SystemDefaultRoutePlanner routePlanner = new SystemDefaultRoutePlanner(ProxySelector.getDefault());
@@ -300,6 +298,24 @@ public class HttpClientAdapter implements Closeable {
         }
 
         return registryBuilder.build();
+    }
+
+    private RequestConfig getRequestConfig() {
+        HashSet<String> authSchemes = new HashSet<>();
+        authSchemes.add(AuthSchemes.NTLM);
+        authSchemes.add(AuthSchemes.BASIC);
+        authSchemes.add(AuthSchemes.DIGEST);
+        if (Settings.getBooleanProperty("davmail.enableKerberos")) {
+            authSchemes.add(AuthSchemes.SPNEGO);
+            authSchemes.add(AuthSchemes.KERBEROS);
+        }
+        return RequestConfig.custom()
+                // socket connect timeout
+                .setConnectTimeout(Settings.getIntProperty("davmail.exchange.connectionTimeout", 10) * 1000)
+                // inactivity timeout
+                .setSocketTimeout(Settings.getIntProperty("davmail.exchange.soTimeout", 120) * 1000)
+                .setTargetPreferredAuthSchemes(authSchemes)
+                .build();
     }
 
     private void parseUserName(String username) {

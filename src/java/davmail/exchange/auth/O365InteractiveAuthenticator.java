@@ -78,6 +78,8 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     public void authenticate() throws IOException {
         // allow cross domain requests for Okta form support
         System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
+        // enable NTLM for ADFS support
+        System.setProperty("jdk.http.ntlm.transparentAuth", "allHosts");
 
         // common DavMail client id
         final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");

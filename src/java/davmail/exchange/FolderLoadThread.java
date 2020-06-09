@@ -46,6 +46,9 @@ public class FolderLoadThread extends Thread {
             folder.loadMessages();
         } catch (IOException e) {
             exception = e;
+        } catch (Exception e) {
+            LOGGER.error(e+" "+e.getMessage(), e);
+            exception = new IOException(e.getMessage(), e);
         } finally {
             isComplete = true;
         }

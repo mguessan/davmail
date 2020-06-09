@@ -239,7 +239,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
     private String authenticateRedirectADFS(HttpClientAdapter httpClientAdapter, String federationRedirectUrl, String authorizeUrl) throws IOException {
         // get ADFS login form
         GetRequest logonFormMethod = new GetRequest(federationRedirectUrl);
-        String responseBodyAsString = httpClientAdapter.executeGetRequest(logonFormMethod);
+        logonFormMethod = httpClientAdapter.executeFollowRedirect(logonFormMethod);
+        String responseBodyAsString = logonFormMethod.getResponseBodyAsString();
         return authenticateADFS(httpClientAdapter, responseBodyAsString, authorizeUrl);
     }
 

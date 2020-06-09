@@ -26,3 +26,5 @@ mvn install:install-file -DgroupId=org.codehaus.woodstox -DartifactId=woodstox-c
 - connect to https://build.opensuse.org/
 - upload src package
 - update spec file
+- connect to https://copr.fedorainfracloud.org/coprs/mguessan/davmail
+- launch a build with source rpm from opensuse

@@ -28,7 +28,11 @@ import davmail.exception.DavMailException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.InsufficientStorageException;
-import davmail.exchange.*;
+import davmail.exchange.ExchangeSession;
+import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.FolderLoadThread;
+import davmail.exchange.MessageCreateThread;
+import davmail.exchange.MessageLoadThread;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -36,9 +40,20 @@ import org.apache.http.client.HttpResponseException;
 import org.apache.log4j.Logger;
 
 import javax.mail.MessagingException;
-import javax.mail.internet.*;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimePart;
+import javax.mail.internet.MimeUtility;
 import javax.mail.util.SharedByteArrayInputStream;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -412,7 +427,7 @@ public class ImapConnection extends AbstractConnection {
                                                 throw e;
                                             } catch (IOException e) {
                                                 DavGatewayTray.log(e);
-                                                LOGGER.warn("Ignore broken message " + rangeIterator.currentIndex+ ' ' +e.getMessage());
+                                                LOGGER.warn("Ignore broken message " + rangeIterator.currentIndex + ' ' + e.getMessage());
                                             }
 
                                         }
@@ -741,14 +756,14 @@ public class ImapConnection extends AbstractConnection {
         if (tokens != null && tokens.length == 3) {
             userName = tokens[0] + '\\' + tokens[1];
             baseMailboxPath = "/users/" + tokens[2] + '/';
-        } else if (tokens != null && tokens.length == 2) {
+        } else if (tokens != null && tokens.length == 2 && tokens[1].contains("@")) {
             userName = tokens[0];
             baseMailboxPath = "/users/" + tokens[1] + '/';
         }
     }
 
     protected String encodeFolderPath(String folderPath) {
-        return BASE64MailboxEncoder.encode(folderPath).replaceAll("\"","\\\\\"");
+        return BASE64MailboxEncoder.encode(folderPath).replaceAll("\"", "\\\\\"");
     }
 
     protected String decodeFolderPath(String folderPath) {
@@ -855,14 +870,13 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
                 } else if ("RFC822.SIZE".equals(param)) {
                     int size;
-                    if ( (  parameters.contains("BODY.PEEK[HEADER.FIELDS (")
+                    if ((parameters.contains("BODY.PEEK[HEADER.FIELDS (")
                             // exclude mutt header request
-                            && !parameters.contains("X-LABEL") )
+                            && !parameters.contains("X-LABEL"))
                             || parameters.equals("RFC822.SIZE RFC822.HEADER FLAGS") // icedove
-							|| Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize") )
-					{   // Send approximate size
+                            || Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize")) {   // Send approximate size
                         size = message.size;
-						LOGGER.debug(String.format("Message %s sent approximate size %d bytes", message.getImapUid(), size));
+                        LOGGER.debug(String.format("Message %s sent approximate size %d bytes", message.getImapUid(), size));
                     } else {
                         size = messageWrapper.getMimeMessageSize();
                     }
@@ -1118,8 +1132,9 @@ public class ImapConnection extends AbstractConnection {
 
     /**
      * Check NOT UID condition.
+     *
      * @param notUidRange excluded uid range
-     * @param imapUid current message imap uid
+     * @param imapUid     current message imap uid
      * @return true if not excluded
      */
     private boolean isNotExcluded(String notUidRange, long imapUid) {
@@ -1127,7 +1142,7 @@ public class ImapConnection extends AbstractConnection {
             return true;
         }
         String imapUidAsString = String.valueOf(imapUid);
-        for (String rangeValue: notUidRange.split(",")) {
+        for (String rangeValue : notUidRange.split(",")) {
             if (imapUidAsString.equals(rangeValue)) {
                 return false;
             }
@@ -1345,18 +1360,40 @@ public class ImapConnection extends AbstractConnection {
                 buffer.append(" NIL");
             }
         }
+        int bodySize = getBodyPartSize(bodyPart);
         appendBodyStructureValue(buffer, bodyPart.getContentID());
         appendBodyStructureValue(buffer, bodyPart.getDescription());
         appendBodyStructureValue(buffer, bodyPart.getEncoding());
-        appendBodyStructureValue(buffer, bodyPart.getSize());
+        appendBodyStructureValue(buffer, bodySize);
         if ("MESSAGE".equals(type) || "TEXT".equals(type)) {
             // line count not implemented in JavaMail, return fake line count
-            appendBodyStructureValue(buffer, bodyPart.getSize() / 80);
+            appendBodyStructureValue(buffer, bodySize / 80);
         } else {
             // do not send line count for non text bodyparts
             appendBodyStructureValue(buffer, -1);
         }
         buffer.append(')');
+    }
+
+    /**
+     * Compute body part size with failover.
+     * @param bodyPart MIME body part
+     * @return body part size or 0 on error
+     */
+    private int getBodyPartSize(MimePart bodyPart) {
+        int bodySize = 0;
+        try {
+            bodySize = bodyPart.getSize();
+            if (bodySize == -1) {
+                // failover, try to get size
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bodyPart.writeTo(baos);
+                bodySize = baos.size();
+            }
+        } catch (IOException | MessagingException e) {
+            LOGGER.warn("Unable to get body part size " + e.getMessage(), e);
+        }
+        return bodySize;
     }
 
     protected void appendBodyStructureValue(StringBuilder buffer, String value) {
@@ -1421,8 +1458,8 @@ public class ImapConnection extends AbstractConnection {
     protected ExchangeSession.Condition appendNotSearchParams(String token, SearchConditions conditions) throws IOException {
         ImapTokenizer innerTokens = new ImapTokenizer(token);
         ExchangeSession.Condition cond = buildConditions(conditions, innerTokens);
-        if (cond==null || cond.isEmpty()) {
-          return null;
+        if (cond == null || cond.isEmpty()) {
+            return null;
         }
         return session.not(cond);
     }
@@ -1434,7 +1471,7 @@ public class ImapConnection extends AbstractConnection {
                 // conditions.deleted = Boolean.FALSE;
                 return session.isNull("deleted");
             } else if ("KEYWORD".equals(nextToken)) {
-                return appendNotSearchParams(nextToken+" "+tokens.nextToken(), conditions);
+                return appendNotSearchParams(nextToken + " " + tokens.nextToken(), conditions);
             } else if ("UID".equals(nextToken)) {
                 conditions.notUidRange = tokens.nextToken();
             } else {
@@ -1504,13 +1541,13 @@ public class ImapConnection extends AbstractConnection {
             }
         } else //noinspection StatementWithEmptyBody
             if ("OLD".equals(token) || "RECENT".equals(token) || "ALL".equals(token)) {
-            // ignore
-        } else if (token.indexOf(':') >= 0 || token.matches("\\d+")) {
-            // range search
-            conditions.indexRange = token;
-        } else {
-            throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", token);
-        }
+                // ignore
+            } else if (token.indexOf(':') >= 0 || token.matches("\\d+")) {
+                // range search
+                conditions.indexRange = token;
+            } else {
+                throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", token);
+            }
         // client side search token
         return null;
     }
@@ -1606,10 +1643,10 @@ public class ImapConnection extends AbstractConnection {
                     }
                 } else //noinspection StatementWithEmptyBody
                     if ("\\Draft".equalsIgnoreCase(flag)) {
-                    // ignore, draft is readonly after create
-                } else if (message.keywords != null) {
-                    properties.put("keywords", message.removeFlag(flag));
-                }
+                        // ignore, draft is readonly after create
+                    } else if (message.keywords != null) {
+                        properties.put("keywords", message.removeFlag(flag));
+                    }
             }
         } else if ("+Flags".equalsIgnoreCase(action) || "+FLAGS.SILENT".equalsIgnoreCase(action)) {
             ImapTokenizer flagtokenizer = new ImapTokenizer(flags);
@@ -1647,10 +1684,10 @@ public class ImapConnection extends AbstractConnection {
                     }
                 } else //noinspection StatementWithEmptyBody
                     if ("\\Draft".equalsIgnoreCase(flag)) {
-                    // ignore, draft is readonly after create
-                } else {
-                    properties.put("keywords", message.addFlag(flag));
-                }
+                        // ignore, draft is readonly after create
+                    } else {
+                        properties.put("keywords", message.addFlag(flag));
+                    }
             }
         } else if ("FLAGS".equalsIgnoreCase(action) || "FLAGS.SILENT".equalsIgnoreCase(action)) {
             // flag list with default values
@@ -1679,13 +1716,13 @@ public class ImapConnection extends AbstractConnection {
                     junk = true;
                 } else //noinspection StatementWithEmptyBody
                     if ("\\Draft".equalsIgnoreCase(flag)) {
-                    // ignore, draft is readonly after create
-                } else {
-                    if (keywords == null) {
-                        keywords = new HashSet<>();
+                        // ignore, draft is readonly after create
+                    } else {
+                        if (keywords == null) {
+                            keywords = new HashSet<>();
+                        }
+                        keywords.add(flag);
                     }
-                    keywords.add(flag);
-                }
             }
             if (keywords != null) {
                 properties.put("keywords", message.setFlags(keywords));
@@ -1802,7 +1839,7 @@ public class ImapConnection extends AbstractConnection {
             size++;
             if (((state != State.BODY && writeHeaders) || (state == State.BODY && writeBody)) &&
                     (size > startIndex) && (bufferSize < maxSize)
-                    ) {
+            ) {
                 super.write(b);
                 bufferSize++;
             }
@@ -2071,7 +2108,7 @@ public class ImapConnection extends AbstractConnection {
                         } else if (currentQuote == '"' && currentChar == '"' ||
                                 currentQuote == '(' && currentChar == ')' ||
                                 currentQuote == '[' && currentChar == ']'
-                                ) {
+                        ) {
                             // end quote
                             quotes.pop();
                         } else {
@@ -2082,7 +2119,7 @@ public class ImapConnection extends AbstractConnection {
                 currentIndex++;
             }
             String result = new String(value, startIndex, currentIndex - startIndex);
-            startIndex = currentIndex+1;
+            startIndex = currentIndex + 1;
             return result;
         }
     }

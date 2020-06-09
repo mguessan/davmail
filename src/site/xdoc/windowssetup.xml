@@ -11,9 +11,10 @@
     <body>
 
         <section name="DavMail Setup on windows">
-            <p>Prerequisite : Sun JRE 5, 6 or 7. Tray icon is now implemented with SWT and compatible with
-                Java 5. You may use DavMail with an older version, but the gateway will run as a
-                command line application.
+            <p>Prerequisite : OpenJDK 8 or later.
+                On windows,
+                <a href="https://www.azul.com/downloads/zulu-community/?os=windows&amp;architecture=x86-64-bit&amp;package=jre-fx">Zulu JRE FX</a>
+                is a good option to have OpenJFX available for O365Interactive.
             </p>
 
             <p>If Java is not available, DavMail Jsmooth launcher will trigger java download and
