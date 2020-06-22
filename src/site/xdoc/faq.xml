@@ -332,6 +332,8 @@ calendar.debug.log.verbose=true]]></source>
                 </p>
                 <p>The server sets a timeout on the socket which listens for client connections, controlled by the property <code>davmail.clientSoTimeout</code>. If there is no activity before the timeout period elapses, the connection will be closed. Setting this to <code>0</code> will disable the socket timeout.
                 </p>
+                <p>If you have enabled the IDLE extension in DavMail, check your client is checking for new mail more frequently than the timeout you have set.
+                </p>
                 <p>
                     <strong>Message deleted over IMAP still visible through OWA</strong>
                 </p>
