@@ -21,16 +21,17 @@ package davmail.exchange.ews;
 import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exchange.XMLStreamUtil;
-import davmail.http.DavGatewayHttpClientFacade;
+import davmail.http.HttpClientAdapter;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpConnection;
-import org.apache.commons.httpclient.HttpState;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.RequestEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.AbstractHttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.codehaus.stax2.typed.TypedXMLStreamReader;
@@ -38,15 +39,28 @@ import org.codehaus.stax2.typed.TypedXMLStreamReader;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 /**
  * EWS SOAP method.
  */
-public abstract class EWSMethod extends PostMethod {
+public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSMethod> {
+    protected static final String CONTENT_TYPE = ContentType.create("text/xml", StandardCharsets.UTF_8).toString();
     protected static final Logger LOGGER = Logger.getLogger(EWSMethod.class);
     protected static final int CHUNK_LENGTH = 131072;
 
@@ -92,6 +106,7 @@ public abstract class EWSMethod extends PostMethod {
 
     protected String serverVersion;
     protected String timezoneContext;
+    private HttpResponse response;
 
     /**
      * Build EWS method
@@ -111,23 +126,41 @@ public abstract class EWSMethod extends PostMethod {
      * @param responseCollectionName item response collection name
      */
     public EWSMethod(String itemType, String methodName, String responseCollectionName) {
-        super("/ews/exchange.asmx");
+        super(URI.create("/ews/exchange.asmx"));
         this.itemType = itemType;
         this.methodName = methodName;
         this.responseCollectionName = responseCollectionName;
         if (Settings.getBooleanProperty("davmail.acceptEncodingGzip", true) &&
                 !Level.DEBUG.toString().equals(Settings.getProperty("log4j.logger.httpclient.wire"))) {
-            setRequestHeader("Accept-Encoding", "gzip");
+            setHeader("Accept-Encoding", "gzip");
         }
 
-        setRequestEntity(new RequestEntity() {
+        AbstractHttpEntity httpEntity = new AbstractHttpEntity() {
             byte[] content;
 
+            @Override
             public boolean isRepeatable() {
                 return true;
             }
 
-            public void writeRequest(OutputStream outputStream) throws IOException {
+            @Override
+            public long getContentLength() {
+                if (content == null) {
+                    content = generateSoapEnvelope();
+                }
+                return content.length;
+            }
+
+            @Override
+            public InputStream getContent() throws UnsupportedOperationException {
+                if (content == null) {
+                    content = generateSoapEnvelope();
+                }
+                return new ByteArrayInputStream(content);
+            }
+
+            @Override
+            public void writeTo(OutputStream outputStream) throws IOException {
                 boolean firstPass = content == null;
                 if (content == null) {
                     content = generateSoapEnvelope();
@@ -151,23 +184,14 @@ public abstract class EWSMethod extends PostMethod {
                 }
             }
 
-            public long getContentLength() {
-                if (content == null) {
-                    content = generateSoapEnvelope();
-                }
-                return content.length;
+            @Override
+            public boolean isStreaming() {
+                return false;
             }
+        };
 
-            public String getContentType() {
-                return "text/xml; charset=UTF-8";
-            }
-        });
-    }
-
-
-    @Override
-    public String getName() {
-        return "POST";
+        httpEntity.setContentType(CONTENT_TYPE);
+        setEntity(httpEntity);
     }
 
     protected void addAdditionalProperty(FieldURI additionalProperty) {
@@ -771,7 +795,7 @@ public abstract class EWSMethod extends PostMethod {
                     && !"ErrorMailRecipientNotFound".equals(errorDetail)
                     && !"ErrorItemNotFound".equals(errorDetail)
                     && !"ErrorCalendarOccurrenceIsDeletedFromRecurrence".equals(errorDetail)
-                    ) {
+            ) {
                 throw new EWSException(errorDetail
                         + ' ' + ((errorDescription != null) ? errorDescription : "")
                         + ' ' + ((errorValue != null) ? errorValue : "")
@@ -779,18 +803,17 @@ public abstract class EWSMethod extends PostMethod {
             }
         }
         if (getStatusCode() == HttpStatus.SC_BAD_REQUEST || getStatusCode() == HttpStatus.SC_INSUFFICIENT_STORAGE) {
-            throw new EWSException(getStatusText());
+            throw new EWSException(response.getStatusLine().getReasonPhrase());
         }
     }
 
-    @Override
     public int getStatusCode() {
         if ("ErrorAccessDenied".equals(errorDetail)) {
             return HttpStatus.SC_FORBIDDEN;
         } else if ("ErrorItemNotFound".equals(errorDetail)) {
             return HttpStatus.SC_NOT_FOUND;
         } else {
-            return super.getStatusCode();
+            return response.getStatusLine().getStatusCode();
         }
     }
 
@@ -851,7 +874,7 @@ public abstract class EWSMethod extends PostMethod {
                 if (event == XMLStreamConstants.CHARACTERS) {
                     result.append(reader.getText());
                 } else if ("MessageXml".equals(localName) && event == XMLStreamConstants.START_ELEMENT) {
-                    for (int i = 0;i<reader.getAttributeCount();i++) {
+                    for (int i = 0; i < reader.getAttributeCount(); i++) {
                         if (result.length() > 0) {
                             result.append(", ");
                         }
@@ -884,7 +907,7 @@ public abstract class EWSMethod extends PostMethod {
                 && !"ErrorNameResolutionMultipleResults".equals(result)
                 && !"ErrorNameResolutionNoResults".equals(result)
                 && !"ErrorFolderExists".equals(result)
-                ) {
+        ) {
             errorDetail = result;
         }
         if (XMLStreamUtil.isStartTag(reader, "faultstring")) {
@@ -1004,7 +1027,7 @@ public abstract class EWSMethod extends PostMethod {
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("EmailAddress".equals(tagLocalName) && member == null) {
-                    member = "mailto:"+XMLStreamUtil.getElementText(reader);
+                    member = "mailto:" + XMLStreamUtil.getElementText(reader);
                 }
             }
         }
@@ -1166,19 +1189,23 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     @Override
-    protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
-        Header contentTypeHeader = getResponseHeader("Content-Type");
+    public EWSMethod handleResponse(HttpResponse response) {
+        this.response = response;
+        org.apache.http.Header contentTypeHeader = response.getFirstHeader("Content-Type");
         if (contentTypeHeader != null && "text/xml; charset=utf-8".equals(contentTypeHeader.getValue())) {
-            try {
-                if (DavGatewayHttpClientFacade.isGzipEncoded(this)) {
-                    processResponseStream(new GZIPInputStream(getResponseBodyAsStream()));
+            try (
+                    InputStream inputStream = response.getEntity().getContent();
+            ) {
+                if (HttpClientAdapter.isGzipEncoded(response)) {
+                    processResponseStream(new GZIPInputStream(inputStream));
                 } else {
-                    processResponseStream(getResponseBodyAsStream());
+                    processResponseStream(inputStream);
                 }
             } catch (IOException e) {
                 LOGGER.error("Error while parsing soap response: " + e, e);
             }
         }
+        return this;
     }
 
     protected void processResponseStream(InputStream inputStream) {

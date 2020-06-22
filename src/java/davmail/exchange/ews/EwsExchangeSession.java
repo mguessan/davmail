@@ -29,13 +29,14 @@ import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.exchange.auth.O365Token;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.http.HttpClientAdapter;
+import davmail.http.request.GetRequest;
 import davmail.ui.NotificationDialog;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HttpClientParams;
+import org.apache.http.client.methods.CloseableHttpResponse;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -138,7 +139,7 @@ public class EwsExchangeSession extends ExchangeSession {
         // Unable to map CANCELLED: cancelled events are directly deleted on Exchange
     }
 
-    protected HttpClient httpClient;
+    protected HttpClientAdapter httpClient;
 
     protected Map<String, String> folderIdMap;
     protected boolean directEws;
@@ -168,7 +169,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    public EwsExchangeSession(HttpClient httpClient, String userName) throws IOException {
+    public EwsExchangeSession(HttpClientAdapter httpClient, String userName) throws IOException {
         this.httpClient = httpClient;
         this.userName = userName;
         if (userName.contains("@")) {
@@ -177,7 +178,7 @@ public class EwsExchangeSession extends ExchangeSession {
         buildSessionInfo(null);
     }
 
-    public EwsExchangeSession(HttpClient httpClient, URI uri, String userName) throws IOException {
+    public EwsExchangeSession(HttpClientAdapter httpClient, URI uri, String userName) throws IOException {
         this.httpClient = httpClient;
         this.userName = userName;
         if (userName.contains("@")) {
@@ -187,7 +188,7 @@ public class EwsExchangeSession extends ExchangeSession {
         buildSessionInfo(uri);
     }
 
-    public EwsExchangeSession(HttpClient httpClient, O365Token token, String userName) throws IOException {
+    public EwsExchangeSession(HttpClientAdapter httpClient, O365Token token, String userName) throws IOException {
         this.httpClient = httpClient;
         this.userName = userName;
         if (userName.contains("@")) {
@@ -200,6 +201,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     /**
      * EWS fetch page size.
+     *
      * @return page size
      */
     private static int getPageSize() {
@@ -228,14 +230,15 @@ public class EwsExchangeSession extends ExchangeSession {
                 DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
         int status = executeMethod(checkMethod);
         // add NTLM if required
-        if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
+        // TODO: check authentication with/without NTLM
+        /*if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
                 && DavGatewayHttpClientFacade.acceptsNTLMOnly(checkMethod) && !DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
             LOGGER.debug("Received " + status + " unauthorized at " + checkMethod.getURI() + ", retrying with NTLM");
             DavGatewayHttpClientFacade.addNTLM(httpClient);
             checkMethod = new GetFolderMethod(BaseShape.ID_ONLY,
                     DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
             status = executeMethod(checkMethod);
-        }
+        }*/
         if (status == HttpStatus.SC_UNAUTHORIZED) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
         } else if (status != HttpStatus.SC_OK) {
@@ -245,7 +248,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void buildSessionInfo(java.net.URI uri) throws IOException {
-            // send a first request to get server version
+        // send a first request to get server version
         checkEndPointUrl();
 
         // new approach based on ConvertId to find primary email address
@@ -278,7 +281,7 @@ public class EwsExchangeSession extends ExchangeSession {
         // TODO: no longer needed
         // options page is not available in direct EWS mode
         //if (!directEws && (email == null || alias == null)) {
-            // retrieve email and alias from options page
+        // retrieve email and alias from options page
         //    getEmailAndAliasFromOptions();
         //}
 
@@ -305,9 +308,10 @@ public class EwsExchangeSession extends ExchangeSession {
         currentMailboxPath = "/users/" + email.toLowerCase();
 
         // enable preemptive authentication on non NTLM endpoints
-        if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
+        // TODO: enable preemptive auth ?
+        /*if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
             httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
-        }
+        }*/
 
         // direct EWS: get primary smtp email address with ResolveNames
         if (directEws && email == null) {
@@ -345,7 +349,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected String getEmailSuffixFromHostname() {
-        String domain = httpClient.getHostConfiguration().getHost();
+        String domain = httpClient.getHost();
         int start = domain.lastIndexOf('.', domain.lastIndexOf('.') - 1);
         if (start >= 0) {
             return '@' + domain.substring(start + 1);
@@ -2757,11 +2761,12 @@ public class EwsExchangeSession extends ExchangeSession {
     protected String getTimezoneidFromOptions() {
         String result = null;
         // get time zone setting from html body
-        BufferedReader optionsPageReader = null;
-        GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=Regional");
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
-            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), StandardCharsets.UTF_8));
+        String optionsPath = "/owa/?ae=Options&t=Regional";
+        GetRequest optionsMethod = new GetRequest(optionsPath);
+        try (
+                CloseableHttpResponse response = httpClient.execute(optionsMethod);
+                BufferedReader optionsPageReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))
+        ) {
             String line;
             // find timezone
             //noinspection StatementWithEmptyBody
@@ -2781,16 +2786,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
         } catch (IOException e) {
-            LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-        } finally {
-            if (optionsPageReader != null) {
-                try {
-                    optionsPageReader.close();
-                } catch (IOException e) {
-                    LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-                }
-            }
-            optionsMethod.releaseConnection();
+            LOGGER.error("Error parsing options page at " + optionsPath);
         }
 
         return result;
@@ -2985,19 +2981,17 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected void internalExecuteMethod(EWSMethod ewsMethod) throws IOException {
-        try {
-            ewsMethod.setServerVersion(serverVersion);
-            if (token != null) {
-                ewsMethod.setRequestHeader("Authorization", "Bearer " + token.getAccessToken());
-            }
-            httpClient.executeMethod(ewsMethod);
-            if (serverVersion == null) {
-                serverVersion = ewsMethod.getServerVersion();
-            }
-            ewsMethod.checkSuccess();
-        } finally {
-            ewsMethod.releaseConnection();
+        ewsMethod.setServerVersion(serverVersion);
+        if (token != null) {
+            ewsMethod.setHeader("Authorization", "Bearer " + token.getAccessToken());
         }
+        try (CloseableHttpResponse response = httpClient.execute(ewsMethod)) {
+            ewsMethod.handleResponse(response);
+        }
+        if (serverVersion == null) {
+            serverVersion = ewsMethod.getServerVersion();
+        }
+        ewsMethod.checkSuccess();
     }
 
     protected static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<>();
@@ -3273,7 +3267,7 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     public void close() {
-        DavGatewayHttpClientFacade.close(httpClient);
+        httpClient.close();
     }
 
 }
