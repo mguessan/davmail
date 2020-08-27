@@ -20,4 +20,4 @@ jobs:
       with:
         java-version: 1.8
     - name: Build with ant
-      run: ant
+      run: ANT_OPTS="-Dfile.encoding=UTF-8" ant
