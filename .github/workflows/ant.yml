@@ -21,3 +21,13 @@ jobs:
         java-version: 1.8
     - name: Build with ant
       run: ANT_OPTS="-Dfile.encoding=UTF-8" ant
+    - name: Archive artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-jar-zip-deb-exe-war
+        path: |
+          dist/*.jar
+          dist/*.zip
+          dist/*.deb
+          dist/*.exe
+          dist/*.war
