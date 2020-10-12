@@ -1,0 +1,33 @@
+# This workflow will build a Java project with ant
+
+name: Java CI with ant
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Build with ant
+      run: ANT_OPTS="-Dfile.encoding=UTF-8" ant
+    - name: Archive artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-jar-zip-deb-exe-war
+        path: |
+          dist/*.jar
+          dist/*.zip
+          dist/*.deb
+          dist/*.exe
+          dist/*.war

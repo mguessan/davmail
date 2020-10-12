@@ -47,6 +47,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -219,8 +220,9 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
             if (isHttpAuthentication && !DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
                 httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
             }
-
-            exchangeUri = java.net.URI.create(method.getURI().getURI());
+            String uri = method.getURI().getURI();
+            String encodedUri = URLEncoder.encode(uri, StandardCharsets.UTF_8.toString());
+            exchangeUri = java.net.URI.create(encodedUri);
             method.releaseConnection();
 
         } catch (DavMailAuthenticationException exc) {
