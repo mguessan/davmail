@@ -19,6 +19,7 @@
 
 package davmail.exchange.auth;
 
+import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.http.HttpClientAdapter;
@@ -26,12 +27,15 @@ import davmail.http.request.GetRequest;
 import davmail.http.request.PostRequest;
 import davmail.http.request.ResponseWrapper;
 import davmail.http.request.RestRequest;
+import davmail.ui.MessageDialog;
+
 import org.apache.http.HttpStatus;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import java.awt.HeadlessException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -401,68 +405,82 @@ public class O365Authenticator implements ExchangeAuthenticator {
         beginAuthMethod.setRequestHeader("hpgrequestid", hpgrequestid);
 
         // only support PhoneAppNotification
-        JSONObject beginAuthJson = new JSONObject();
-        beginAuthJson.put("AuthMethodId", "PhoneAppNotification");
-        beginAuthJson.put("Ctx", context);
-        beginAuthJson.put("FlowToken", flowToken);
-        beginAuthJson.put("Method", "BeginAuth");
-        beginAuthMethod.setJsonBody(beginAuthJson);
-
-        config = httpClientAdapter.executeRestRequest(beginAuthMethod);
-        LOGGER.debug(config);
-
-        if (!config.getBoolean("Success")) {
-            throw new IOException("Authentication failed: " + config);
+        MessageDialog messageDialog;
+        try {
+            messageDialog = new MessageDialog(BundleMessage.format("UI_O365Modern_MFA_PHONE_NOTIFICATION")); 
+        } catch (HeadlessException e) {
+            messageDialog = null;
+            LOGGER.debug(e);
         }
+        try {
+            JSONObject beginAuthJson = new JSONObject();
+            beginAuthJson.put("AuthMethodId", "PhoneAppNotification");
+            beginAuthJson.put("Ctx", context);
+            beginAuthJson.put("FlowToken", flowToken);
+            beginAuthJson.put("Method", "BeginAuth");
+            beginAuthMethod.setJsonBody(beginAuthJson);
 
-        context = config.getString("Ctx");
-        flowToken = config.getString("FlowToken");
-        String sessionId = config.getString("SessionId");
-
-        int i = 0;
-        boolean success = false;
-        while (!success && i++ < 12) {
-
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                LOGGER.debug("Interrupted");
-                Thread.currentThread().interrupt();
-            }
-
-            RestRequest endAuthMethod = new RestRequest(urlEndAuth);
-            endAuthMethod.setRequestHeader("Accept", "application/json");
-            endAuthMethod.setRequestHeader("canary", apiCanary);
-            endAuthMethod.setRequestHeader("client-request-id", clientRequestId);
-            endAuthMethod.setRequestHeader("hpgact", hpgact);
-            endAuthMethod.setRequestHeader("hpgid", hpgid);
-            endAuthMethod.setRequestHeader("hpgrequestid", hpgrequestid);
-
-            JSONObject endAuthJson = new JSONObject();
-            endAuthJson.put("AuthMethodId", "PhoneAppNotification");
-            endAuthJson.put("Ctx", context);
-            endAuthJson.put("FlowToken", flowToken);
-            endAuthJson.put("Method", "EndAuth");
-            endAuthJson.put("PollCount", "1");
-            endAuthJson.put("SessionId", sessionId);
-            // Documentation reference will be helpful, something from StackOverflow: https://stackoverflow.com/questions/57999231/building-processauth-post-using-python-requests
-            // When in beginAuthMethod is used 'AuthMethodId': 'OneWaySMS', then in endAuthMethod is send SMS code via attribute 'AdditionalAuthData'
-            // endAuthJson.put("AdditionalAuthData", smsCode);
-
-            endAuthMethod.setJsonBody(endAuthJson);
-
-            config = httpClientAdapter.executeRestRequest(endAuthMethod);
+            config = httpClientAdapter.executeRestRequest(beginAuthMethod);
             LOGGER.debug(config);
-            String resultValue = config.getString("ResultValue");
-            if ("PhoneAppDenied".equals(resultValue) || "PhoneAppNoResponse".equals(resultValue)) {
-                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_REASON", resultValue);
+
+            if (!config.getBoolean("Success")) {
+                throw new IOException("Authentication failed: " + config);
             }
-            if (config.getBoolean("Success")) {
-                success = true;
+
+            context = config.getString("Ctx");
+            flowToken = config.getString("FlowToken");
+            String sessionId = config.getString("SessionId");
+
+            int i = 0;
+            boolean success = false;
+            while (!success && i++ < 12) {
+
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    LOGGER.debug("Interrupted");
+                    Thread.currentThread().interrupt();
+                }
+
+                RestRequest endAuthMethod = new RestRequest(urlEndAuth);
+                endAuthMethod.setRequestHeader("Accept", "application/json");
+                endAuthMethod.setRequestHeader("canary", apiCanary);
+                endAuthMethod.setRequestHeader("client-request-id", clientRequestId);
+                endAuthMethod.setRequestHeader("hpgact", hpgact);
+                endAuthMethod.setRequestHeader("hpgid", hpgid);
+                endAuthMethod.setRequestHeader("hpgrequestid", hpgrequestid);
+
+                JSONObject endAuthJson = new JSONObject();
+                endAuthJson.put("AuthMethodId", "PhoneAppNotification");
+                endAuthJson.put("Ctx", context);
+                endAuthJson.put("FlowToken", flowToken);
+                endAuthJson.put("Method", "EndAuth");
+                endAuthJson.put("PollCount", "1");
+                endAuthJson.put("SessionId", sessionId);
+                // Documentation reference will be helpful, something from StackOverflow: https://stackoverflow.com/questions/57999231/building-processauth-post-using-python-requests
+                // When in beginAuthMethod is used 'AuthMethodId': 'OneWaySMS', then in endAuthMethod is send SMS code via attribute 'AdditionalAuthData'
+                // endAuthJson.put("AdditionalAuthData", smsCode);
+
+                endAuthMethod.setJsonBody(endAuthJson);
+
+                config = httpClientAdapter.executeRestRequest(endAuthMethod);
+                LOGGER.debug(config);
+                String resultValue = config.getString("ResultValue");
+                if ("PhoneAppDenied".equals(resultValue) || "PhoneAppNoResponse".equals(resultValue)) {
+                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_REASON", resultValue);
+                }
+                if (config.getBoolean("Success")) {
+                    success = true;
+                }
             }
-        }
-        if (!success) {
-            throw new IOException("Authentication failed: " + config);
+            if (!success) {
+                throw new IOException("Authentication failed: " + config);
+            }
+        } finally {
+            if (messageDialog != null) {
+                messageDialog.setVisible(false);
+                messageDialog.dispose();
+            }
         }
 
         String authMethod = "PhoneAppOTP";
