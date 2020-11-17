@@ -236,7 +236,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     }
 
-    private String authenticateRedirectADFS(HttpClientAdapter httpClientAdapter, String federationRedirectUrl, String authorizeUrl) throws IOException {
+    private String authenticateRedirectADFS(HttpClientAdapter httpClientAdapter, String federationRedirectUrl, String authorizeUrl) throws JSONException, IOException {
         // get ADFS login form
         GetRequest logonFormMethod = new GetRequest(federationRedirectUrl);
         logonFormMethod = httpClientAdapter.executeFollowRedirect(logonFormMethod);
@@ -244,7 +244,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         return authenticateADFS(httpClientAdapter, responseBodyAsString, authorizeUrl);
     }
 
-    private String authenticateADFS(HttpClientAdapter httpClientAdapter, String responseBodyAsString, String authorizeUrl) throws IOException {
+    private String authenticateADFS(HttpClientAdapter httpClientAdapter, String responseBodyAsString, String authorizeUrl) throws JSONException, IOException {
         URI location;
 
         if (responseBodyAsString.contains("login.microsoftonline.com")) {
@@ -322,7 +322,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         throw new IOException("Unknown ADFS authentication failure");
     }
 
-    private URI processDeviceLogin(HttpClientAdapter httpClient, URI location) throws IOException {
+    private URI processDeviceLogin(HttpClientAdapter httpClient, URI location) throws JSONException, IOException {
         URI result = location;
         LOGGER.debug("Proceed to device authentication");
         GetRequest deviceLoginMethod = new GetRequest(location);
@@ -339,8 +339,12 @@ public class O365Authenticator implements ExchangeAuthenticator {
             processMethod.setParameter("ctx", ctx);
             processMethod.setParameter("flowtoken", flowtoken);
 
-            httpClient.executePostRequest(processMethod);
+            responseBodyAsString = httpClient.executePostRequest(processMethod);
             result = processMethod.getRedirectLocation();
+
+            if (result == null && responseBodyAsString != null && responseBodyAsString.indexOf("arrUserProofs") > 0) {
+                result = handleMfa(httpClient, processMethod, username, null);
+            }
 
             if (result == null) {
                 throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
@@ -356,6 +360,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
         String urlBeginAuth = config.getString("urlBeginAuth");
         String urlEndAuth = config.getString("urlEndAuth");
+        String urlProcessAuth = config.optString("urlPost", "https://login.microsoftonline.com/" + tenantId + "/SAS/ProcessAuth");
 
         boolean isMFAMethodSupported = false;
 
@@ -382,10 +387,15 @@ public class O365Authenticator implements ExchangeAuthenticator {
         String hpgact = config.getString("hpgact");
         String hpgid = config.getString("hpgid");
 
+        String clientRqId = clientRequestId;
+        if (clientRqId == null) {
+            clientRqId = config.getString("correlationId");
+        }
+
         RestRequest beginAuthMethod = new RestRequest(urlBeginAuth);
         beginAuthMethod.setRequestHeader("Accept", "application/json");
         beginAuthMethod.setRequestHeader("canary", apiCanary);
-        beginAuthMethod.setRequestHeader("client-request-id", clientRequestId);
+        beginAuthMethod.setRequestHeader("client-request-id", clientRqId);
         beginAuthMethod.setRequestHeader("hpgact", hpgact);
         beginAuthMethod.setRequestHeader("hpgid", hpgid);
         beginAuthMethod.setRequestHeader("hpgrequestid", hpgrequestid);
@@ -435,6 +445,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
             endAuthJson.put("Method", "EndAuth");
             endAuthJson.put("PollCount", "1");
             endAuthJson.put("SessionId", sessionId);
+            // Documentation reference will be helpful, something from StackOverflow: https://stackoverflow.com/questions/57999231/building-processauth-post-using-python-requests
+            // When in beginAuthMethod is used 'AuthMethodId': 'OneWaySMS', then in endAuthMethod is send SMS code via attribute 'AdditionalAuthData'
+            // endAuthJson.put("AdditionalAuthData", smsCode);
 
             endAuthMethod.setJsonBody(endAuthJson);
 
@@ -459,7 +472,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         flowToken = config.getString("FlowToken");
 
         // process auth
-        PostRequest processAuthMethod = new PostRequest("https://login.microsoftonline.com/" + tenantId + "/SAS/ProcessAuth");
+        PostRequest processAuthMethod = new PostRequest(urlProcessAuth);
         processAuthMethod.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         processAuthMethod.setParameter("type", type);
         processAuthMethod.setParameter("request", context);
