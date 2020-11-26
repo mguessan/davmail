@@ -104,24 +104,24 @@ public class O365Authenticator implements ExchangeAuthenticator {
     }
 
     public void authenticate() throws IOException {
-        HttpClientAdapter httpClientAdapter = null;
-        try {
-            // common DavMail client id
-            String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
-            // standard native app redirectUri
-            String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
-            // company tenantId or common
-            tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
+        // common DavMail client id
+        String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
+        // standard native app redirectUri
+        String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
+        // company tenantId or common
+        tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
-            // first try to load stored token
-            token = O365Token.load(tenantId, clientId, redirectUri, username, password);
-            if (token != null) {
-                return;
-            }
+        // first try to load stored token
+        token = O365Token.load(tenantId, clientId, redirectUri, username, password);
+        if (token != null) {
+            return;
+        }
 
-            String url = O365Authenticator.buildAuthorizeUrl(tenantId, clientId, redirectUri, username);
+        String url = O365Authenticator.buildAuthorizeUrl(tenantId, clientId, redirectUri, username);
 
-            httpClientAdapter = new HttpClientAdapter(url, userid, password);
+        try (
+                HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url, userid, password)
+        ){
 
             GetRequest getRequest = new GetRequest(url);
             String responseBodyAsString = executeFollowRedirect(httpClientAdapter, getRequest);
@@ -227,11 +227,6 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
         } catch (JSONException e) {
             throw new IOException(e + " " + e.getMessage());
-        } finally {
-            // do not keep login connections open
-            if (httpClientAdapter != null) {
-                httpClientAdapter.close();
-            }
         }
 
     }
