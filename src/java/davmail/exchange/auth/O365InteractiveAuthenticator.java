@@ -25,8 +25,9 @@ import davmail.exchange.ews.BaseShape;
 import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
 import davmail.exchange.ews.GetUserConfigurationMethod;
-import davmail.http.DavGatewayHttpClientFacade;
-import org.apache.commons.httpclient.HttpClient;
+import davmail.http.HttpClientAdapter;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -76,6 +77,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
 
     public void authenticate() throws IOException {
+
         // allow cross domain requests for Okta form support
         System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
         // enable NTLM for ADFS support
@@ -171,24 +173,22 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             Settings.setDefaultSettings();
             //Settings.setConfigFilePath("davmail-interactive.properties");
             //Settings.load();
-            //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+
 
             O365InteractiveAuthenticator authenticator = new O365InteractiveAuthenticator();
             authenticator.setUsername("");
             authenticator.authenticate();
 
+            HttpClientAdapter httpClientAdapter = new HttpClientAdapter(authenticator.getExchangeUri(), true);
+
             // switch to EWS url
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.ewsUrl.toString());
-
             GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
-            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
-            try {
-                //checkMethod.setServerVersion(serverVersion);
-                httpClient.executeMethod(checkMethod);
-
+            checkMethod.setHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
+            try (
+                    CloseableHttpResponse response = httpClientAdapter.execute(checkMethod)
+            ) {
+                checkMethod.handleResponse(response);
                 checkMethod.checkSuccess();
-            } finally {
-                checkMethod.releaseConnection();
             }
             System.out.println("Retrieved folder id " + checkMethod.getResponseItem().get("FolderId"));
 
@@ -196,8 +196,13 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             int i = 0;
             while (i++ < 12 * 60 * 2) {
                 GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
-                getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
-                httpClient.executeMethod(getUserConfigurationMethod);
+                getUserConfigurationMethod.setHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
+                try (
+                        CloseableHttpResponse response = httpClientAdapter.execute(getUserConfigurationMethod)
+                ) {
+                    getUserConfigurationMethod.handleResponse(response);
+                    getUserConfigurationMethod.checkSuccess();
+                }
                 System.out.println(getUserConfigurationMethod.getResponseItem());
 
                 Thread.sleep(5000);
