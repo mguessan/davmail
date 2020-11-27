@@ -43,6 +43,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeSet;
 
+import static org.apache.http.util.TextUtils.isEmpty;
+
 /**
  * Settings facade.
  * DavMail settings are stored in the .davmail.properties file in current
@@ -357,7 +359,7 @@ public final class Settings {
                 Enumeration<?> propertyEnumeration = properties.propertyNames();
                 while (propertyEnumeration.hasMoreElements()) {
                     String propertyName = (String) propertyEnumeration.nextElement();
-                    writer.write(propertyName+"="+ escapeValue(properties.getProperty(propertyName)));
+                    writer.write(propertyName + "=" + escapeValue(properties.getProperty(propertyName)));
                     writer.newLine();
                 }
             } catch (IOException e) {
@@ -387,7 +389,7 @@ public final class Settings {
      * Convert input property line to new line with value from properties.
      * Preserve comments
      *
-     * @param line input line
+     * @param line       input line
      * @param properties new property values
      * @return new line
      */
@@ -404,22 +406,23 @@ public final class Settings {
             String value = properties.getProperty(key);
             if (value != null) {
                 // build property with new value
-                line = key+"="+ escapeValue(value);
+                line = key + "=" + escapeValue(value);
                 // remove property from source
                 properties.remove(key);
             }
         }
-        return line+comment;
+        return line + comment;
     }
 
     /**
      * Escape backslash in value.
+     *
      * @param value value
      * @return escaped value
      */
     private static String escapeValue(String value) {
         StringBuilder buffer = new StringBuilder();
-        for (char c:value.toCharArray()) {
+        for (char c : value.toCharArray()) {
             if (c == '\\') {
                 buffer.append('\\');
             }
@@ -547,13 +550,80 @@ public final class Settings {
     }
 
     public static synchronized String loadRefreshToken(String username) {
-        return Settings.getProperty("davmail.oauth."+username.toLowerCase()+".refreshToken");
+        String tokenFilePath = Settings.getProperty("davmail.oauth.tokenFilePath");
+        if (isEmpty(tokenFilePath)) {
+            return Settings.getProperty("davmail.oauth." + username.toLowerCase() + ".refreshToken");
+        } else {
+            return loadtokenFromFile(tokenFilePath, username.toLowerCase());
+        }
     }
 
-    public static synchronized void storeRefreshToken(String refreshToken, String username) {
-        Settings.setProperty("davmail.oauth."+username.toLowerCase()+".refreshToken", refreshToken);
-        Settings.save();
+
+    public static synchronized void storeRefreshToken(String username, String refreshToken) {
+        String tokenFilePath = Settings.getProperty("davmail.oauth.tokenFilePath");
+        if (isEmpty(tokenFilePath)) {
+            Settings.setProperty("davmail.oauth." + username.toLowerCase() + ".refreshToken", refreshToken);
+            Settings.save();
+        } else {
+            savetokentoFile(tokenFilePath, username.toLowerCase(), refreshToken);
+        }
     }
+
+    /**
+     * Persist token in davmail.oauth.tokenFilePath.
+     *
+     * @param tokenFilePath token file path
+     * @param username      username
+     * @param refreshToken  Oauth refresh token
+     */
+    private static void savetokentoFile(String tokenFilePath, String username, String refreshToken) {
+        try {
+            checkCreateTokenFilePath(tokenFilePath);
+            Properties properties = new Properties();
+            try (FileInputStream fis = new FileInputStream(tokenFilePath)) {
+                properties.load(fis);
+            }
+            properties.setProperty(username, refreshToken);
+            try (FileOutputStream fos = new FileOutputStream(tokenFilePath)) {
+                properties.store(fos, "Oauth tokens");
+            }
+        } catch (IOException e) {
+            Logger.getLogger(Settings.class).warn(e + " " + e.getMessage());
+        }
+    }
+
+    /**
+     * Load token from davmail.oauth.tokenFilePath.
+     *
+     * @param tokenFilePath token file path
+     * @param username      username
+     * @return encrypted token value
+     */
+    private static String loadtokenFromFile(String tokenFilePath, String username) {
+        try {
+            checkCreateTokenFilePath(tokenFilePath);
+            Properties properties = new Properties();
+            try (FileInputStream fis = new FileInputStream(tokenFilePath)) {
+                properties.load(fis);
+            }
+            return properties.getProperty(username);
+        } catch (IOException e) {
+            Logger.getLogger(Settings.class).warn(e + " " + e.getMessage());
+        }
+        return null;
+    }
+
+    private static void checkCreateTokenFilePath(String tokenFilePath) throws IOException {
+        File file = new File(tokenFilePath);
+        File parentFile = file.getParentFile();
+        if (parentFile != null) {
+            //noinspection ResultOfMethodCallIgnored
+            parentFile.mkdirs();
+        }
+        //noinspection ResultOfMethodCallIgnored
+        file.createNewFile();
+    }
+
     /**
      * Build logging properties prefix.
      *
