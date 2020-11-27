@@ -8,7 +8,7 @@
     <version>5.5.1</version>
     <name>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway</name>
     <organization>
-        <name>Mickaël Guessant</name>
+        <name>MickaÃ«l Guessant</name>
     </organization>
     <url>http://www.sourceforge.net/projects/davmail</url>
     <inceptionYear>2001</inceptionYear>
@@ -35,7 +35,7 @@
     </properties>
     <developers>
         <developer>
-            <name>Mickaël Guessant</name>
+            <name>MickaÃ«l Guessant</name>
             <id>mguessan</id>
             <email>mguessan@free.fr</email>
             <url>http://mguessan.free.fr</url>
@@ -164,7 +164,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
