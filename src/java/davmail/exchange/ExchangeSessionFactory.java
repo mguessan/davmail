@@ -25,7 +25,7 @@ import davmail.exception.DavMailException;
 import davmail.exception.WebdavNotAvailableException;
 import davmail.exchange.auth.ExchangeAuthenticator;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
-import davmail.exchange.dav.HC4DavExchangeSession;
+import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.HttpClientAdapter;
@@ -208,7 +208,7 @@ public final class ExchangeSessionFactory {
                     exchangeFormAuthenticator.setPassword(poolKey.password);
                     exchangeFormAuthenticator.authenticate();
                     try {
-                        session = new HC4DavExchangeSession(exchangeFormAuthenticator.getHttpClientAdapter(),
+                        session = new DavExchangeSession(exchangeFormAuthenticator.getHttpClientAdapter(),
                                 exchangeFormAuthenticator.getExchangeUri(),
                                 exchangeFormAuthenticator.getUsername());
                     } catch (WebdavNotAvailableException e) {
