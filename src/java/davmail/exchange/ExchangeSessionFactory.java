@@ -29,9 +29,9 @@ import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.HttpClientAdapter;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
+import davmail.http.request.GetRequest;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
 
 import java.awt.*;
 import java.io.IOException;
@@ -185,8 +185,8 @@ public final class ExchangeSessionFactory {
                     session = new EwsExchangeSession(httpClientAdapter, authenticator.getToken(), poolKey.userName);
 
                 } else if (Settings.EWS.equals(mode) || Settings.O365.equals(mode)
-                            // direct EWS even if mode is different
-                            || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
+                        // direct EWS even if mode is different
+                        || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                     if (poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                         ExchangeSession.LOGGER.debug("Direct EWS authentication");
                         HttpClientAdapter httpClientAdapter = new HttpClientAdapter(poolKey.url, poolKey.userName, poolKey.password, true);
@@ -244,6 +244,7 @@ public final class ExchangeSessionFactory {
      * Check if whitelist is empty or email is allowed.
      * userWhiteList is a comma separated list of values.
      * \@company.com means all domain users are allowed
+     *
      * @param email user email
      */
     private static void checkWhiteList(String email) throws DavMailAuthenticationException {
@@ -306,11 +307,12 @@ public final class ExchangeSessionFactory {
         if (url == null || (!url.startsWith("http://") && !url.startsWith("https://"))) {
             throw new DavMailException("LOG_INVALID_URL", url);
         }
-        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(url);
-        GetMethod testMethod = new GetMethod(url);
-        try {
+        try (
+                HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url);
+                CloseableHttpResponse response = httpClientAdapter.execute(new GetRequest(url))
+        ) {
             // get webMail root url (will not follow redirects)
-            int status = DavGatewayHttpClientFacade.executeTestMethod(httpClient, testMethod);
+            int status = response.getStatusLine().getStatusCode();
             ExchangeSession.LOGGER.debug("Test configuration status: " + status);
             if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
                     && !DavGatewayHttpClientFacade.isRedirect(status)) {
@@ -322,8 +324,6 @@ public final class ExchangeSessionFactory {
             errorSent = false;
         } catch (Exception exc) {
             handleNetworkDown(exc);
-        } finally {
-            testMethod.releaseConnection();
         }
 
     }
