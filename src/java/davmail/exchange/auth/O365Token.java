@@ -175,7 +175,7 @@ public class O365Token {
         O365Token token = new O365Token(tenantId, clientId, redirectUri, code);
         if (Settings.getBooleanProperty("davmail.oauth.persistToken", true)) {
             try {
-                Settings.storeRefreshToken(encryptToken(token.getRefreshToken(), password), token.getUsername());
+                Settings.storeRefreshToken(token.getUsername(), encryptToken(token.getRefreshToken(), password));
             } catch (IOException e) {
                 LOGGER.warn("Unable to store refreshToken: "+e.getMessage());
             }
