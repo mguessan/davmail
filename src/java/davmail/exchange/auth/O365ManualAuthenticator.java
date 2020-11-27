@@ -76,6 +76,14 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
         this.password = password;
     }
 
+    /**
+     * Return a pool enabled HttpClientAdapter instance to access O365
+     * @return HttpClientAdapter instance
+     */
+    @Override
+    public HttpClientAdapter getHttpClientAdapter() {
+        return new HttpClientAdapter(getExchangeUri(), username, password, true);
+    }
 
     public void authenticate() throws IOException {
         // common DavMail client id

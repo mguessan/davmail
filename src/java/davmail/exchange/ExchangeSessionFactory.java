@@ -219,7 +219,7 @@ public final class ExchangeSessionFactory {
                     exchangeFormAuthenticator.setPassword(poolKey.password);
                     exchangeFormAuthenticator.authenticate();
                     try {
-                        session = new DavExchangeSession(exchangeFormAuthenticator.getHttpClient(),
+                        session = new HC4DavExchangeSession(exchangeFormAuthenticator.getHttpClientAdapter(),
                                 exchangeFormAuthenticator.getExchangeUri(),
                                 exchangeFormAuthenticator.getUsername());
                     } catch (WebdavNotAvailableException e) {

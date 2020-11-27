@@ -20,6 +20,7 @@
 package davmail.exchange.auth;
 
 import davmail.Settings;
+import davmail.http.HttpClientAdapter;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -36,6 +37,7 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
     URI ewsUrl = URI.create(resource + "/EWS/Exchange.asmx");
 
     private String username;
+    private String password;
     private O365Token token;
 
     @Override
@@ -45,7 +47,16 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
 
     @Override
     public void setPassword(String password) {
-        // unused
+        this.password = password;
+    }
+
+    /**
+     * Return a pool enabled HttpClientAdapter instance to access O365
+     * @return HttpClientAdapter instance
+     */
+    @Override
+    public HttpClientAdapter getHttpClientAdapter() {
+        return new HttpClientAdapter(getExchangeUri(), username, password, true);
     }
 
     @Override

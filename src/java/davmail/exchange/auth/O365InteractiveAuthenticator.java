@@ -75,6 +75,14 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         this.password = password;
     }
 
+    /**
+     * Return a pool enabled HttpClientAdapter instance to access O365
+     * @return HttpClientAdapter instance
+     */
+    @Override
+    public HttpClientAdapter getHttpClientAdapter() {
+        return new HttpClientAdapter(getExchangeUri(), username, password, true);
+    }
 
     public void authenticate() throws IOException {
 
