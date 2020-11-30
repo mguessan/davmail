@@ -113,20 +113,20 @@ public class O365Authenticator implements ExchangeAuthenticator {
     }
 
     public void authenticate() throws IOException {
-        // common DavMail client id
-        String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
-        // standard native app redirectUri
-        String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
-        // company tenantId or common
-        tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
+            // common DavMail client id
+            String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
+            // standard native app redirectUri
+            String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
+            // company tenantId or common
+            tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
-        // first try to load stored token
-        token = O365Token.load(tenantId, clientId, redirectUri, username, password);
-        if (token != null) {
-            return;
-        }
+            // first try to load stored token
+            token = O365Token.load(tenantId, clientId, redirectUri, username, password);
+            if (token != null) {
+                return;
+            }
 
-        String url = O365Authenticator.buildAuthorizeUrl(tenantId, clientId, redirectUri, username);
+            String url = O365Authenticator.buildAuthorizeUrl(tenantId, clientId, redirectUri, username);
 
         try (
                 HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url, userid, password)
@@ -240,7 +240,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     }
 
-    private String authenticateRedirectADFS(HttpClientAdapter httpClientAdapter, String federationRedirectUrl, String authorizeUrl) throws IOException {
+    private String authenticateRedirectADFS(HttpClientAdapter httpClientAdapter, String federationRedirectUrl, String authorizeUrl) throws IOException, JSONException {
         // get ADFS login form
         GetRequest logonFormMethod = new GetRequest(federationRedirectUrl);
         logonFormMethod = httpClientAdapter.executeFollowRedirect(logonFormMethod);
@@ -248,7 +248,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         return authenticateADFS(httpClientAdapter, responseBodyAsString, authorizeUrl);
     }
 
-    private String authenticateADFS(HttpClientAdapter httpClientAdapter, String responseBodyAsString, String authorizeUrl) throws IOException {
+    private String authenticateADFS(HttpClientAdapter httpClientAdapter, String responseBodyAsString, String authorizeUrl) throws IOException, JSONException {
         URI location;
 
         if (responseBodyAsString.contains("login.microsoftonline.com")) {
@@ -326,7 +326,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         throw new IOException("Unknown ADFS authentication failure");
     }
 
-    private URI processDeviceLogin(HttpClientAdapter httpClient, URI location) throws IOException {
+    private URI processDeviceLogin(HttpClientAdapter httpClient, URI location) throws IOException, JSONException {
         URI result = location;
         LOGGER.debug("Proceed to device authentication");
         GetRequest deviceLoginMethod = new GetRequest(location);
@@ -343,8 +343,13 @@ public class O365Authenticator implements ExchangeAuthenticator {
             processMethod.setParameter("ctx", ctx);
             processMethod.setParameter("flowtoken", flowtoken);
 
-            httpClient.executePostRequest(processMethod);
+            responseBodyAsString = httpClient.executePostRequest(processMethod);
             result = processMethod.getRedirectLocation();
+
+            // MFA triggered after device authentication
+            if (result == null && responseBodyAsString != null && responseBodyAsString.indexOf("arrUserProofs") > 0) {
+                result = handleMfa(httpClient, processMethod, username, null);
+            }
 
             if (result == null) {
                 throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
@@ -354,12 +359,14 @@ public class O365Authenticator implements ExchangeAuthenticator {
         return result;
     }
 
-    private URI handleMfa(HttpClientAdapter httpClientAdapter, PostRequest logonMethod, String username, String clientRequestId) throws JSONException, IOException {
+    private URI handleMfa(HttpClientAdapter httpClientAdapter, PostRequest logonMethod, String username, String clientRequestId) throws IOException, JSONException {
         JSONObject config = extractConfig(logonMethod.getResponseBodyAsString());
         LOGGER.debug("Config=" + config);
 
         String urlBeginAuth = config.getString("urlBeginAuth");
         String urlEndAuth = config.getString("urlEndAuth");
+        // Get processAuth url from config
+        String urlProcessAuth = config.optString("urlPost", "https://login.microsoftonline.com/" + tenantId + "/SAS/ProcessAuth");
 
         boolean isMFAMethodSupported = false;
 
@@ -386,10 +393,16 @@ public class O365Authenticator implements ExchangeAuthenticator {
         String hpgact = config.getString("hpgact");
         String hpgid = config.getString("hpgid");
 
+        // clientRequestId is null coming from device login
+        String correlationId = clientRequestId;
+        if (correlationId == null) {
+            correlationId = config.getString("correlationId");
+        }
+
         RestRequest beginAuthMethod = new RestRequest(urlBeginAuth);
         beginAuthMethod.setRequestHeader("Accept", "application/json");
         beginAuthMethod.setRequestHeader("canary", apiCanary);
-        beginAuthMethod.setRequestHeader("client-request-id", clientRequestId);
+        beginAuthMethod.setRequestHeader("client-request-id", correlationId);
         beginAuthMethod.setRequestHeader("hpgact", hpgact);
         beginAuthMethod.setRequestHeader("hpgid", hpgid);
         beginAuthMethod.setRequestHeader("hpgrequestid", hpgrequestid);
@@ -463,7 +476,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         flowToken = config.getString("FlowToken");
 
         // process auth
-        PostRequest processAuthMethod = new PostRequest("https://login.microsoftonline.com/" + tenantId + "/SAS/ProcessAuth");
+        PostRequest processAuthMethod = new PostRequest(urlProcessAuth);
         processAuthMethod.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         processAuthMethod.setParameter("type", type);
         processAuthMethod.setParameter("request", context);
