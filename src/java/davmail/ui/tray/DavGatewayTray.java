@@ -244,13 +244,16 @@ public final class DavGatewayTray {
         }
 
         if (!Settings.getBooleanProperty("davmail.server")) {
-            if ("GNOME-Classic:GNOME".equals(currentDesktop) || "ubuntu:GNOME".equals(currentDesktop)) {
-                LOGGER.info("System tray is not supported on Gnome, will switch to frame mode");
-            } else if (!notray) {
+            if (!notray) {
                 if ("Unity".equals(currentDesktop)) {
                     LOGGER.info("Detected Unity desktop, please follow instructions at " +
                             "http://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
                             "or run DavMail in server mode");
+                } else if (currentDesktop != null && currentDesktop.contains("GNOME")) {
+                    LOGGER.info("Detected Gnome desktop, please follow instructions at " +
+                            "http://davmail.sourceforge.net/linuxsetup.html or " +
+                            "https://extensions.gnome.org/extension/1503/tray-icons/ " +
+                            "to restore normal systray or run DavMail in server mode");
                 }
                 if (Settings.O365_INTERACTIVE.equals(Settings.getProperty("davmail.mode"))) {
                     LOGGER.info("O365Interactive is not compatible with SWT, do not try to create SWT tray");
@@ -357,6 +360,7 @@ public final class DavGatewayTray {
         boolean isXFCE = "XFCE".equals(xdgCurrentDesktop);
         boolean isUnity = "Unity".equals(xdgCurrentDesktop);
         boolean isCinnamon = "X-Cinnamon".equals(xdgCurrentDesktop);
+        boolean isGnome = xdgCurrentDesktop != null && xdgCurrentDesktop.contains("GNOME");
 
         if (backgroundColorString == null || backgroundColorString.length() == 0) {
             // define color for default theme
@@ -372,6 +376,9 @@ public final class DavGatewayTray {
             if (isCinnamon) {
                 backgroundColorString = "#2E2E2E";
             }
+            if (isGnome) {
+                backgroundColorString = "#000000";
+            }
         }
 
         int imageType = BufferedImage.TYPE_INT_ARGB;
@@ -384,7 +391,7 @@ public final class DavGatewayTray {
             imageType = BufferedImage.TYPE_INT_RGB;
         }
 
-        if (backgroundColor != null || isKDE || isUnity || isXFCE) {
+        if (backgroundColor != null || isKDE || isUnity || isXFCE || isGnome) {
             int width = image.getWidth();
             int height = image.getHeight();
             int x = 0;
@@ -399,7 +406,7 @@ public final class DavGatewayTray {
                 height = 24;
                 x = 4;
                 y = 4;
-            } else if (isCinnamon) {
+            } else if (isCinnamon | isGnome) {
                 width = 24;
                 height = 24;
                 x = 4;
