@@ -9,6 +9,8 @@
 [![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=bugs)](https://sonarcloud.io/dashboard/index/mguessan_davmail)
 [![SonarCloud Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=vulnerabilities)](https://sonarcloud.io/dashboard/index/mguessan_davmail)
 
+:warning: **HttpClient 4 migration in progress**: Trunk will not be as stable as usual
+
 Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway allowing users to use any mail client with Exchange, even from the internet through Outlook Web Access on any platform, tested on MacOSX, Linux and Windows
 
 ![DavMail Architecture](src/site/resources/images/davmailArchitecture.png)

@@ -32,32 +32,38 @@ import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.exchange.XMLStreamUtil;
-import davmail.http.DavGatewayHttpClientFacade;
+import davmail.http.HttpClientAdapter;
 import davmail.http.URIUtil;
+import davmail.http.request.ExchangePropPatchRequest;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpConnection;
-import org.apache.commons.httpclient.HttpState;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.URI;
-import org.apache.commons.httpclient.URIException;
-import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
-import org.apache.commons.httpclient.methods.DeleteMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.HeadMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.PutMethod;
+import org.apache.http.Consts;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpResponseException;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.client.utils.URIUtils;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
-import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
-import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
-import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
-import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
+import org.apache.jackrabbit.webdav.client.methods.HttpCopy;
+import org.apache.jackrabbit.webdav.client.methods.HttpMove;
+import org.apache.jackrabbit.webdav.client.methods.HttpPropfind;
+import org.apache.jackrabbit.webdav.client.methods.HttpProppatch;
 import org.apache.jackrabbit.webdav.property.DavProperty;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
@@ -82,6 +88,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.NoRouteToHostException;
 import java.net.SocketException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -94,7 +101,7 @@ import java.util.zip.GZIPInputStream;
  * Webdav Exchange adapter.
  * Compatible with Exchange 2003 and 2007 with webdav available.
  */
-@SuppressWarnings({"rawtypes", "deprecation"})
+@SuppressWarnings("rawtypes")
 public class DavExchangeSession extends ExchangeSession {
     protected enum FolderQueryTraversal {
         Shallow, Deep
@@ -132,6 +139,11 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     /**
+     * HttpClient 4 adapter to replace httpClient
+     */
+    private HttpClientAdapter httpClientAdapter;
+
+    /**
      * Various standard mail boxes Urls
      */
     protected String inboxUrl;
@@ -156,23 +168,64 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected static final String USERS = "/users/";
 
-    protected HttpClient httpClient;
+    /**
+     * HttpClient4 conversion.
+     * TODO: move up to ExchangeSession
+     */
+    protected void getEmailAndAliasFromOptions() {
+        // get user mail URL from html body
+        HttpGet optionsMethod = new HttpGet("/owa/?ae=Options&t=About");
+        try (
+                CloseableHttpResponse response = httpClientAdapter.execute(optionsMethod, cloneContext());
+                InputStream inputStream = response.getEntity().getContent();
+                BufferedReader optionsPageReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+        ) {
+            String line;
+
+            // find email and alias
+            //noinspection StatementWithEmptyBody
+            while ((line = optionsPageReader.readLine()) != null
+                    && (line.indexOf('[') == -1
+                    || line.indexOf('@') == -1
+                    || line.indexOf(']') == -1
+                    || !line.toLowerCase().contains(MAILBOX_BASE))) {
+            }
+            if (line != null) {
+                int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
+                int end = line.indexOf('<', start);
+                alias = line.substring(start, end);
+                end = line.lastIndexOf(']');
+                start = line.lastIndexOf('[', end) + 1;
+                email = line.substring(start, end);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error parsing options page at " + optionsMethod.getURI());
+        }
+    }
+
+    /**
+     * Create a separate Http context to protect session cookies.
+     *
+     * @return HttpClientContext instance with cookies
+     */
+    private HttpClientContext cloneContext() {
+        // Create a local context to avoid cookie reset on error
+        BasicCookieStore cookieStore = new BasicCookieStore();
+        cookieStore.addCookies(httpClientAdapter.getCookies().toArray(new org.apache.http.cookie.Cookie[0]));
+        HttpClientContext context = HttpClientContext.create();
+        context.setCookieStore(cookieStore);
+        return context;
+    }
 
     @Override
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
         // experimental: try to reset session timeout
         if ("Exchange2007".equals(serverVersion)) {
-            GetMethod getMethod = null;
-            try {
-                getMethod = new GetMethod("/owa/");
-                getMethod.setFollowRedirects(false);
-                httpClient.executeMethod(getMethod);
+            HttpGet getMethod = new HttpGet("/owa/");
+            try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)) {
+                LOGGER.debug(response.getStatusLine().getStatusCode() + " at /owa/");
             } catch (IOException e) {
                 LOGGER.warn(e.getMessage());
-            } finally {
-                if (getMethod != null) {
-                    getMethod.releaseConnection();
-                }
             }
         }
 
@@ -351,10 +404,9 @@ public class DavExchangeSession extends ExchangeSession {
     protected Map<String, Map<String, String>> galFind(String query) throws IOException {
         Map<String, Map<String, String>> results;
         String path = getCmdBasePath() + "?Cmd=galfind" + query;
-        GetMethod getMethod = new GetMethod(path);
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-            results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
+        HttpGet httpGet = new HttpGet(path);
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
+            results = XMLStreamUtil.getElementContentsAsMap(response.getEntity().getContent(), "item", "AN");
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(path + ": " + results.size() + " result(s)");
             }
@@ -362,8 +414,6 @@ public class DavExchangeSession extends ExchangeSession {
             LOGGER.debug("GET " + path + " failed: " + e + ' ' + e.getMessage());
             disableGalFind = true;
             throw e;
-        } finally {
-            getMethod.releaseConnection();
         }
         return results;
     }
@@ -474,11 +524,9 @@ public class DavExchangeSession extends ExchangeSession {
     public void galLookup(Contact contact) {
         if (!disableGalLookup) {
             LOGGER.debug("galLookup(" + contact.get("smtpemail1") + ')');
-            GetMethod getMethod = null;
-            try {
-                getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + contact.get("smtpemail1")));
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-                Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
+            HttpGet httpGet = new HttpGet(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + contact.get("smtpemail1")));
+            try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
+                Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(response.getEntity().getContent(), "person", "alias");
                 // add detailed information
                 if (!results.isEmpty()) {
                     Map<String, String> personGalLookupDetails = results.get(contact.get("uid").toLowerCase());
@@ -489,10 +537,6 @@ public class DavExchangeSession extends ExchangeSession {
             } catch (IOException e) {
                 LOGGER.warn("Unable to gallookup person: " + contact + ", disable GalLookup");
                 disableGalLookup = true;
-            } finally {
-                if (getMethod != null) {
-                    getMethod.releaseConnection();
-                }
             }
         }
     }
@@ -513,20 +557,17 @@ public class DavExchangeSession extends ExchangeSession {
                 "&end=" + end +
                 "&interval=" + interval +
                 "&u=SMTP:" + attendee;
-        GetMethod getMethod = new GetMethod(freebusyUrl);
-        getMethod.setRequestHeader("Content-Type", "text/xml");
+        HttpGet httpGet = new HttpGet(freebusyUrl);
+        httpGet.setHeader("Content-Type", "text/xml");
         String fbdata;
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-            fbdata = StringUtil.getLastToken(getMethod.getResponseBodyAsString(), "<a:fbdata>", "</a:fbdata>");
-        } finally {
-            getMethod.releaseConnection();
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
+            fbdata = StringUtil.getLastToken(new BasicResponseHandler().handleResponse(response), "<a:fbdata>", "</a:fbdata>");
         }
         return fbdata;
     }
 
-    public DavExchangeSession(HttpClient httpClient, java.net.URI uri, String userName) throws IOException {
-        this.httpClient = httpClient;
+    public DavExchangeSession(HttpClientAdapter httpClientAdapter, java.net.URI uri, String userName) throws IOException {
+        this.httpClientAdapter = httpClientAdapter;
         this.userName = userName;
         buildSessionInfo(uri);
     }
@@ -540,50 +581,6 @@ public class DavExchangeSession extends ExchangeSession {
         getWellKnownFolders();
     }
 
-    protected void getEmailAndAliasFromOptions() {
-        synchronized (httpClient.getState()) {
-            Cookie[] currentCookies = httpClient.getState().getCookies();
-            // get user mail URL from html body
-            BufferedReader optionsPageReader = null;
-            GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
-            try {
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
-                optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), StandardCharsets.UTF_8));
-                String line;
-
-                // find email and alias
-                //noinspection StatementWithEmptyBody
-                while ((line = optionsPageReader.readLine()) != null
-                        && (line.indexOf('[') == -1
-                        || line.indexOf('@') == -1
-                        || line.indexOf(']') == -1
-                        || !line.toLowerCase().contains(MAILBOX_BASE))) {
-                }
-                if (line != null) {
-                    int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
-                    int end = line.indexOf('<', start);
-                    alias = line.substring(start, end);
-                    end = line.lastIndexOf(']');
-                    start = line.lastIndexOf('[', end) + 1;
-                    email = line.substring(start, end);
-                }
-            } catch (IOException e) {
-                // restore cookies on error
-                httpClient.getState().addCookies(currentCookies);
-                LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-            } finally {
-                if (optionsPageReader != null) {
-                    try {
-                        optionsPageReader.close();
-                    } catch (IOException e) {
-                        LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-                    }
-                }
-                optionsMethod.releaseConnection();
-            }
-        }
-    }
-
     static final String BASE_HREF = "<base href=\"";
 
     /**
@@ -595,12 +592,13 @@ public class DavExchangeSession extends ExchangeSession {
     protected String getMailpathFromWelcomePage(java.net.URI uri) {
         String welcomePageMailPath = null;
         // get user mail URL from html body (multi frame)
-        BufferedReader mainPageReader = null;
-        GetMethod method = null;
-        try {
-            method = new GetMethod(uri.toString());
-            httpClient.executeMethod(method);
-            mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), StandardCharsets.UTF_8));
+        HttpGet method = new HttpGet(uri.toString());
+
+        try (
+                CloseableHttpResponse response = httpClientAdapter.execute(method);
+                InputStream inputStream = response.getEntity().getContent();
+                BufferedReader mainPageReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+        ) {
             String line;
             //noinspection StatementWithEmptyBody
             while ((line = mainPageReader.readLine()) != null && !line.toLowerCase().contains(BASE_HREF)) {
@@ -615,18 +613,7 @@ public class DavExchangeSession extends ExchangeSession {
                 LOGGER.debug("Base href found in body, mailPath is " + welcomePageMailPath);
             }
         } catch (IOException e) {
-            LOGGER.error("Error parsing main page at " + method.getPath(), e);
-        } finally {
-            if (mainPageReader != null) {
-                try {
-                    mainPageReader.close();
-                } catch (IOException e) {
-                    LOGGER.error("Error parsing main page at " + method.getPath());
-                }
-            }
-            if (method != null) {
-                method.releaseConnection();
-            }
+            LOGGER.error("Error parsing main page at " + method.getURI(), e);
         }
         return welcomePageMailPath;
     }
@@ -822,50 +809,43 @@ public class DavExchangeSession extends ExchangeSession {
     protected void fixClientHost(java.net.URI currentUri) {
         // update client host, workaround for Exchange 2003 mailbox with an Exchange 2007 frontend
         if (currentUri != null && currentUri.getHost() != null && currentUri.getScheme() != null) {
-            httpClient.getHostConfiguration().setHost(currentUri.getHost(), currentUri.getPort(), currentUri.getScheme());
+            httpClientAdapter.setUri(currentUri);
         }
     }
 
     protected void checkPublicFolder() {
-        synchronized (httpClient.getState()) {
-            Cookie[] currentCookies = httpClient.getState().getCookies();
-            // check public folder access
-            try {
-                publicFolderUrl = httpClient.getHostConfiguration().getHostURL() + PUBLIC_ROOT;
-                DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
-                davPropertyNameSet.add(Field.getPropertyName("displayname"));
-                PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, davPropertyNameSet, 0);
-                try {
-                    DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                } catch (IOException e) {
-                    // workaround for NTLM authentication only on /public
-                    if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
-                        DavGatewayHttpClientFacade.addNTLM(httpClient);
-                        DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                    }
-                }
-                // update public folder URI
-                publicFolderUrl = propFindMethod.getURI().getURI();
-            } catch (IOException e) {
-                // restore cookies on error
-                httpClient.getState().addCookies(currentCookies);
-                LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
-                // default public folder path
-                publicFolderUrl = PUBLIC_ROOT;
-            }
+        // check public folder access
+        try {
+            publicFolderUrl = URIUtils.resolve(httpClientAdapter.getUri(), PUBLIC_ROOT).toString();
+            DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+            davPropertyNameSet.add(Field.getPropertyName("displayname"));
+
+            HttpPropfind httpPropfind = new HttpPropfind(publicFolderUrl, davPropertyNameSet, 0);
+            httpClientAdapter.executeDavRequest(httpPropfind);
+            // update public folder URI
+            publicFolderUrl = httpPropfind.getURI().toString();
+
+        } catch (IOException e) {
+            LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
+            // default public folder path
+            publicFolderUrl = PUBLIC_ROOT;
         }
     }
 
+
     protected void getWellKnownFolders() throws DavMailException {
         // Retrieve well known URLs
-        MultiStatusResponse[] responses;
         try {
-            responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                    httpClient, URIUtil.encodePath(mailPath), 0, WELL_KNOWN_FOLDERS);
+            HttpPropfind httpPropfind = new HttpPropfind(mailPath, WELL_KNOWN_FOLDERS, 0);
+            MultiStatus multiStatus;
+            try (CloseableHttpResponse response = httpClientAdapter.execute(httpPropfind)) {
+                multiStatus = httpPropfind.getResponseBodyAsMultiStatus(response);
+            }
+            MultiStatusResponse[] responses = multiStatus.getResponses();
             if (responses.length == 0) {
                 throw new WebdavNotAvailableException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
             }
-            DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
+            DavPropertySet properties = responses[0].getProperties(org.apache.http.HttpStatus.SC_OK);
             inboxUrl = getURIPropertyIfExists(properties, "inbox");
             inboxName = getFolderName(inboxUrl);
             deleteditemsUrl = getURIPropertyIfExists(properties, "deleteditems");
@@ -897,7 +877,7 @@ public class DavExchangeSession extends ExchangeSession {
                     " Outbox URL: " + outboxUrl +
                     " Public folder URL: " + publicFolderUrl
             );
-        } catch (IOException e) {
+        } catch (IOException | DavException e) {
             LOGGER.error(e.getMessage());
             throw new WebdavNotAvailableException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
         }
@@ -1248,21 +1228,19 @@ public class DavExchangeSession extends ExchangeSession {
             return propertyValues;
         }
 
-        protected ExchangePropPatchMethod internalCreateOrUpdate(String encodedHref) throws IOException {
-            ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(encodedHref, buildProperties());
-            propPatchMethod.setRequestHeader("Translate", "f");
+        protected ExchangePropPatchRequest internalCreateOrUpdate(String encodedHref) throws IOException {
+            ExchangePropPatchRequest propPatchRequest = new ExchangePropPatchRequest(encodedHref, buildProperties());
+            propPatchRequest.setHeader("Translate", "f");
             if (etag != null) {
-                propPatchMethod.setRequestHeader("If-Match", etag);
+                propPatchRequest.setHeader("If-Match", etag);
             }
             if (noneMatch != null) {
-                propPatchMethod.setRequestHeader("If-None-Match", noneMatch);
+                propPatchRequest.setHeader("If-None-Match", noneMatch);
             }
-            try {
-                httpClient.executeMethod(propPatchMethod);
-            } finally {
-                propPatchMethod.releaseConnection();
+            try (CloseableHttpResponse response = httpClientAdapter.execute(propPatchRequest)) {
+                LOGGER.debug("internalCreateOrUpdate returned " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
             }
-            return propPatchMethod;
+            return propPatchRequest;
         }
 
         /**
@@ -1274,10 +1252,14 @@ public class DavExchangeSession extends ExchangeSession {
         @Override
         public ItemResult createOrUpdate() throws IOException {
             String encodedHref = URIUtil.encodePath(getHref());
-            ExchangePropPatchMethod propPatchMethod = internalCreateOrUpdate(encodedHref);
-            int status = propPatchMethod.getStatusCode();
+            ExchangePropPatchRequest propPatchRequest = internalCreateOrUpdate(encodedHref);
+            int status = propPatchRequest.getStatusLine().getStatusCode();
             if (status == HttpStatus.SC_MULTI_STATUS) {
-                status = propPatchMethod.getResponseStatusCode();
+                try {
+                    status = propPatchRequest.getResponseStatusCode();
+                } catch (HttpResponseException e) {
+                    throw new IOException(e.getMessage(), e);
+                }
                 //noinspection VariableNotUsedInsideIf
                 if (status == HttpStatus.SC_CREATED) {
                     LOGGER.debug("Created contact " + encodedHref);
@@ -1291,18 +1273,22 @@ public class DavExchangeSession extends ExchangeSession {
                 if (responses.length == 1) {
                     encodedHref = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "permanenturl");
                     LOGGER.warn("Contact found, permanenturl is " + encodedHref);
-                    propPatchMethod = internalCreateOrUpdate(encodedHref);
-                    status = propPatchMethod.getStatusCode();
+                    propPatchRequest = internalCreateOrUpdate(encodedHref);
+                    status = propPatchRequest.getStatusLine().getStatusCode();
                     if (status == HttpStatus.SC_MULTI_STATUS) {
-                        status = propPatchMethod.getResponseStatusCode();
+                        try {
+                            status = propPatchRequest.getResponseStatusCode();
+                        } catch (HttpResponseException e) {
+                            throw new IOException(e.getMessage(), e);
+                        }
                         LOGGER.debug("Updated contact " + encodedHref);
                     } else {
-                        LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
+                        LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchRequest.getStatusLine());
                     }
                 }
 
             } else {
-                LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
+                LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchRequest.getStatusLine().getReasonPhrase());
             }
             ItemResult itemResult = new ItemResult();
             // 440 means forbidden on Exchange
@@ -1315,24 +1301,25 @@ public class DavExchangeSession extends ExchangeSession {
                 String contactPictureUrl = URIUtil.encodePath(getHref() + "/ContactPicture.jpg");
                 String photo = get("photo");
                 if (photo != null) {
-                    final PutMethod putmethod = new PutMethod(contactPictureUrl);
                     try {
+                        final HttpPut httpPut = new HttpPut(contactPictureUrl);
                         // need to update photo
                         byte[] resizedImageBytes = IOUtil.resizeImage(IOUtil.decodeBase64(photo), 90);
 
-                        putmethod.setRequestHeader("Overwrite", "t");
-                        putmethod.setRequestHeader("Content-Type", "image/jpeg");
-                        putmethod.setRequestEntity(new ByteArrayRequestEntity(resizedImageBytes, "image/jpeg"));
+                        httpPut.setHeader("Overwrite", "t");
+                        // TODO: required ?
+                        httpPut.setHeader("Content-Type", "image/jpeg");
+                        httpPut.setEntity(new ByteArrayEntity(resizedImageBytes, ContentType.IMAGE_JPEG));
 
-                        status = httpClient.executeMethod(putmethod);
-                        if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
-                            throw new IOException("Unable to update contact picture: " + status + ' ' + putmethod.getStatusLine());
+                        try (CloseableHttpResponse response = httpClientAdapter.execute(httpPut)) {
+                            status = response.getStatusLine().getStatusCode();
+                            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
+                                throw new IOException("Unable to update contact picture: " + status + ' ' + response.getStatusLine().getReasonPhrase());
+                            }
                         }
                     } catch (IOException e) {
                         LOGGER.error("Error in contact photo create or update", e);
                         throw e;
-                    } finally {
-                        putmethod.releaseConnection();
                     }
 
                     Set<PropertyValue> picturePropertyValues = new HashSet<>();
@@ -1340,39 +1327,33 @@ public class DavExchangeSession extends ExchangeSession {
                     // picturePropertyValues.add(Field.createPropertyValue("renderingPosition", "-1"));
                     picturePropertyValues.add(Field.createPropertyValue("attachExtension", ".jpg"));
 
-                    final ExchangePropPatchMethod attachmentPropPatchMethod = new ExchangePropPatchMethod(contactPictureUrl, picturePropertyValues);
-                    try {
-                        status = httpClient.executeMethod(attachmentPropPatchMethod);
+                    final ExchangePropPatchRequest attachmentPropPatchRequest = new ExchangePropPatchRequest(contactPictureUrl, picturePropertyValues);
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(attachmentPropPatchRequest)) {
+                        attachmentPropPatchRequest.handleResponse(response);
+                        status = response.getStatusLine().getStatusCode();
                         if (status != HttpStatus.SC_MULTI_STATUS) {
-                            LOGGER.error("Error in contact photo create or update: " + attachmentPropPatchMethod.getStatusCode());
+                            LOGGER.error("Error in contact photo create or update: " + response.getStatusLine().getStatusCode());
                             throw new IOException("Unable to update contact picture");
                         }
-                    } finally {
-                        attachmentPropPatchMethod.releaseConnection();
                     }
 
                 } else {
                     // try to delete picture
-                    DeleteMethod deleteMethod = new DeleteMethod(contactPictureUrl);
-                    try {
-                        status = httpClient.executeMethod(deleteMethod);
+                    HttpDelete httpDelete = new HttpDelete(contactPictureUrl);
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
+                        status = response.getStatusLine().getStatusCode();
                         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
                             LOGGER.error("Error in contact photo delete: " + status);
                             throw new IOException("Unable to delete contact picture");
                         }
-                    } finally {
-                        deleteMethod.releaseConnection();
                     }
                 }
                 // need to retrieve new etag
-                HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(getHref()));
-                try {
-                    httpClient.executeMethod(headMethod);
-                    if (headMethod.getResponseHeader("ETag") != null) {
-                        itemResult.etag = headMethod.getResponseHeader("ETag").getValue();
+                HttpHead headMethod = new HttpHead(URIUtil.encodePath(getHref()));
+                try (CloseableHttpResponse response = httpClientAdapter.execute(headMethod)) {
+                    if (response.getFirstHeader("ETag") != null) {
+                        itemResult.etag = response.getFirstHeader("ETag").getValue();
                     }
-                } finally {
-                    headMethod.releaseConnection();
                 }
             }
             return itemResult;
@@ -1391,7 +1372,7 @@ public class DavExchangeSession extends ExchangeSession {
          * Build Event instance from response info.
          *
          * @param multiStatusResponse response
-         * @throws URIException on error
+         * @throws IOException on error
          */
         public Event(MultiStatusResponse multiStatusResponse) throws IOException {
             setHref(URIUtil.decode(multiStatusResponse.getHref()));
@@ -1407,7 +1388,6 @@ public class DavExchangeSession extends ExchangeSession {
         protected String getPermanentUrl() {
             return permanentUrl;
         }
-
 
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
@@ -1440,14 +1420,11 @@ public class DavExchangeSession extends ExchangeSession {
                 try {
                     result = getICSFromInternetContentProperty();
                     if (result == null) {
-                        GetMethod method = new GetMethod(encodeAndFixUrl(permanentUrl));
-                        method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
-                        method.setRequestHeader("Translate", "f");
-                        try {
-                            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-                            result = getICS(method.getResponseBodyAsStream());
-                        } finally {
-                            method.releaseConnection();
+                        HttpGet httpGet = new HttpGet(encodeAndFixUrl(permanentUrl));
+                        httpGet.setHeader("Content-Type", "text/xml; charset=utf-8");
+                        httpGet.setHeader("Translate", "f");
+                        try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
+                            result = getICS(response.getEntity().getContent());
                         }
                     }
                 } catch (DavException | IOException | MessagingException e) {
@@ -1459,7 +1436,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (result == null) {
                 try {
                     result = getICSFromItemProperties();
-                } catch (HttpResponseException e) {
+                } catch (IOException e) {
                     deleteBroken();
                     throw e;
                 }
@@ -1474,7 +1451,7 @@ public class DavExchangeSession extends ExchangeSession {
             return result;
         }
 
-        private byte[] getICSFromItemProperties() throws IOException {
+        private byte[] getICSFromItemProperties() throws HttpNotFoundException {
             byte[] result;
 
             // experimental: build VCALENDAR from properties
@@ -1629,7 +1606,7 @@ public class DavExchangeSession extends ExchangeSession {
                 result = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
             } catch (MessagingException | IOException e) {
                 LOGGER.warn("Unable to rebuild event content: " + e.getMessage(), e);
-                throw buildHttpNotFoundException(e);
+                throw new HttpNotFoundException("Unable to get event " + getName() + " subject: " + subject + " at " + permanentUrl + ": " + e.getMessage());
             }
 
             return result;
@@ -1640,31 +1617,31 @@ public class DavExchangeSession extends ExchangeSession {
             if (Settings.getBooleanProperty("davmail.deleteBroken")) {
                 LOGGER.warn("Deleting broken event at: " + permanentUrl);
                 try {
-                    DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, encodeAndFixUrl(permanentUrl));
-                } catch (IOException ioe) {
+                    HttpDelete httpDelete = new HttpDelete(encodeAndFixUrl(permanentUrl));
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
+                        LOGGER.warn("deleteBroken returned " + response.getStatusLine().getStatusCode());
+                    }
+                } catch (IOException e) {
                     LOGGER.warn("Unable to delete broken event at: " + permanentUrl);
                 }
             }
         }
 
-        protected PutMethod internalCreateOrUpdate(String encodedHref, byte[] mimeContent) throws IOException {
-            PutMethod putmethod = new PutMethod(encodedHref);
-            putmethod.setRequestHeader("Translate", "f");
-            putmethod.setRequestHeader("Overwrite", "f");
+        protected CloseableHttpResponse internalCreateOrUpdate(String encodedHref, byte[] mimeContent) throws IOException {
+            HttpPut httpPut = new HttpPut(encodedHref);
+            httpPut.setHeader("Translate", "f");
+            httpPut.setHeader("Overwrite", "f");
             if (etag != null) {
-                putmethod.setRequestHeader("If-Match", etag);
+                httpPut.setHeader("If-Match", etag);
             }
             if (noneMatch != null) {
-                putmethod.setRequestHeader("If-None-Match", noneMatch);
+                httpPut.setHeader("If-None-Match", noneMatch);
             }
-            putmethod.setRequestHeader("Content-Type", "message/rfc822");
-            putmethod.setRequestEntity(new ByteArrayRequestEntity(mimeContent, "message/rfc822"));
-            try {
-                httpClient.executeMethod(putmethod);
-            } finally {
-                putmethod.releaseConnection();
+            httpPut.setHeader("Content-Type", "message/rfc822");
+            httpPut.setEntity(new ByteArrayEntity(mimeContent, ContentType.getByMimeType("message/rfc822")));
+            try (CloseableHttpResponse response = httpClientAdapter.execute(httpPut)) {
+                return response;
             }
-            return putmethod;
         }
 
         /**
@@ -1704,33 +1681,35 @@ public class DavExchangeSession extends ExchangeSession {
                 propertyValues.add(Field.createPropertyValue("commonstart", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
                 propertyValues.add(Field.createPropertyValue("commonend", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
 
-                ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(encodedHref, propertyValues);
-                propPatchMethod.setRequestHeader("Translate", "f");
+                ExchangePropPatchRequest propPatchMethod = new ExchangePropPatchRequest(encodedHref, propertyValues);
+                propPatchMethod.setHeader("Translate", "f");
                 if (etag != null) {
-                    propPatchMethod.setRequestHeader("If-Match", etag);
+                    propPatchMethod.setHeader("If-Match", etag);
                 }
                 if (noneMatch != null) {
-                    propPatchMethod.setRequestHeader("If-None-Match", noneMatch);
+                    propPatchMethod.setHeader("If-None-Match", noneMatch);
                 }
-                try {
-                    int status = httpClient.executeMethod(propPatchMethod);
+                try (CloseableHttpResponse response = httpClientAdapter.execute(propPatchMethod)) {
+                    int status = response.getStatusLine().getStatusCode();
 
                     if (status == HttpStatus.SC_MULTI_STATUS) {
                         Item newItem = getItem(folderPath, itemName);
-                        itemResult.status = propPatchMethod.getResponseStatusCode();
+                        try {
+                            itemResult.status = propPatchMethod.getResponseStatusCode();
+                        } catch (HttpResponseException e) {
+                            throw new IOException(e.getMessage(), e);
+                        }
                         itemResult.etag = newItem.etag;
                     } else {
                         itemResult.status = status;
                     }
-                } finally {
-                    propPatchMethod.releaseConnection();
                 }
 
             } else {
                 String encodedHref = URIUtil.encodePath(getHref());
                 byte[] mimeContent = createMimeContent();
-                PutMethod putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
-                int status = putMethod.getStatusCode();
+                HttpResponse httpResponse = internalCreateOrUpdate(encodedHref, mimeContent);
+                int status = httpResponse.getStatusLine().getStatusCode();
 
                 if (status == HttpStatus.SC_OK) {
                     LOGGER.debug("Updated event " + encodedHref);
@@ -1743,16 +1722,16 @@ public class DavExchangeSession extends ExchangeSession {
                     if (responses.length == 1) {
                         encodedHref = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "permanenturl");
                         LOGGER.warn("Event found, permanenturl is " + encodedHref);
-                        putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
-                        status = putMethod.getStatusCode();
+                        httpResponse = internalCreateOrUpdate(encodedHref, mimeContent);
+                        status = httpResponse.getStatusLine().getStatusCode();
                         if (status == HttpStatus.SC_OK) {
                             LOGGER.debug("Updated event " + encodedHref);
                         } else {
-                            LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
+                            LOGGER.warn("Unable to create or update event " + status + ' ' + httpResponse.getStatusLine().getReasonPhrase());
                         }
                     }
                 } else {
-                    LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
+                    LOGGER.warn("Unable to create or update event " + status + ' ' + httpResponse.getStatusLine().getReasonPhrase());
                 }
 
                 // 440 means forbidden on Exchange
@@ -1763,8 +1742,8 @@ public class DavExchangeSession extends ExchangeSession {
                     status = HttpStatus.SC_OK;
                 }
                 itemResult.status = status;
-                if (putMethod.getResponseHeader("GetETag") != null) {
-                    itemResult.etag = putMethod.getResponseHeader("GetETag").getValue();
+                if (httpResponse.getFirstHeader("GetETag") != null) {
+                    itemResult.etag = httpResponse.getFirstHeader("GetETag").getValue();
                 }
 
                 // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
@@ -1775,14 +1754,16 @@ public class DavExchangeSession extends ExchangeSession {
                     propertyList.add(Field.createDavProperty("contentclass", contentClass));
                     // ... but also set PR_INTERNET_CONTENT to preserve custom properties
                     propertyList.add(Field.createDavProperty("internetContent", IOUtil.encodeBase64AsString(mimeContent)));
-                    PropPatchMethod propPatchMethod = new PropPatchMethod(encodedHref, propertyList);
-                    int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
-                    if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
-                        LOGGER.warn("Unable to patch event to trigger activeSync push");
-                    } else {
-                        // need to retrieve new etag
-                        Item newItem = getItem(folderPath, itemName);
-                        itemResult.etag = newItem.etag;
+                    HttpProppatch propPatchMethod = new HttpProppatch(encodedHref, propertyList);
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(propPatchMethod)) {
+                        int patchStatus = response.getStatusLine().getStatusCode();
+                        if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
+                            LOGGER.warn("Unable to patch event to trigger activeSync push");
+                        } else {
+                            // need to retrieve new etag
+                            Item newItem = getItem(folderPath, itemName);
+                            itemResult.etag = newItem.etag;
+                        }
                     }
                 }
             }
@@ -1832,12 +1813,12 @@ public class DavExchangeSession extends ExchangeSession {
                 }
             } else {
                 try {
-                    URI folderURI = new URI(href, false);
+                    java.net.URI folderURI = new java.net.URI(href);
                     folder.folderPath = folderURI.getPath();
                     if (folder.folderPath == null) {
-                        throw new URIException();
+                        throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", href);
                     }
-                } catch (URIException e) {
+                } catch (URISyntaxException e) {
                     throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", href);
                 }
             }
@@ -1875,8 +1856,11 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     protected Folder internalGetFolder(String folderPath) throws IOException {
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                httpClient, URIUtil.encodePath(getFolderPath(folderPath)), 0, FOLDER_PROPERTIES_NAME_SET);
+        MultiStatus multiStatus = httpClientAdapter.executeDavRequest(new HttpPropfind(
+                URIUtil.encodePath(getFolderPath(folderPath)),
+                FOLDER_PROPERTIES_NAME_SET, 0));
+        MultiStatusResponse[] responses = multiStatus.getResponses();
+
         Folder folder = null;
         if (responses.length > 0) {
             folder = buildFolder(responses[0]);
@@ -1919,17 +1903,26 @@ public class DavExchangeSession extends ExchangeSession {
         }
         propertyValues.add(Field.createPropertyValue("folderclass", folderClass));
 
-        // standard MkColMethod does not take properties, override PropPatchMethod instead
-        ExchangePropPatchMethod method = new ExchangePropPatchMethod(URIUtil.encodePath(getFolderPath(folderPath)), propertyValues) {
+        // standard MkColMethod does not take properties, override ExchangePropPatchRequest instead
+        ExchangePropPatchRequest propPatchRequest = new ExchangePropPatchRequest(URIUtil.encodePath(getFolderPath(folderPath)), propertyValues) {
             @Override
-            public String getName() {
+            public String getMethod() {
                 return "MKCOL";
             }
         };
-        int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
-        if (status == HttpStatus.SC_MULTI_STATUS) {
-            status = method.getResponseStatusCode();
+        int status;
+        try (CloseableHttpResponse response = httpClientAdapter.execute(propPatchRequest)) {
+            propPatchRequest.handleResponse(response);
+            status = response.getStatusLine().getStatusCode();
+            if (status == HttpStatus.SC_MULTI_STATUS) {
+                status = propPatchRequest.getResponseStatusCode();
+            } else if (status == HttpStatus.SC_METHOD_NOT_ALLOWED) {
+                LOGGER.info("Folder " + folderPath + " already exists");
+            }
+        } catch (HttpResponseException e) {
+            throw new IOException(e.getMessage(), e);
         }
+        LOGGER.debug("Create folder " + folderPath + " returned " + status);
         return status;
     }
 
@@ -1945,13 +1938,20 @@ public class DavExchangeSession extends ExchangeSession {
             }
         }
 
-        // standard MkColMethod does not take properties, override PropPatchMethod instead
-        ExchangePropPatchMethod method = new ExchangePropPatchMethod(URIUtil.encodePath(getFolderPath(folderPath)), propertyValues);
-        int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
-        if (status == HttpStatus.SC_MULTI_STATUS) {
-            status = method.getResponseStatusCode();
+        ExchangePropPatchRequest propPatchRequest = new ExchangePropPatchRequest(URIUtil.encodePath(getFolderPath(folderPath)), propertyValues);
+        try (CloseableHttpResponse response = httpClientAdapter.execute(propPatchRequest)) {
+            propPatchRequest.handleResponse(response);
+            int status = response.getStatusLine().getStatusCode();
+            if (status == HttpStatus.SC_MULTI_STATUS) {
+                try {
+                    status = propPatchRequest.getResponseStatusCode();
+                } catch (HttpResponseException e) {
+                    throw new IOException(e.getMessage(), e);
+                }
+            }
+
+            return status;
         }
-        return status;
     }
 
     /**
@@ -1959,7 +1959,13 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void deleteFolder(String folderPath) throws IOException {
-        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(folderPath)));
+        HttpDelete httpDelete = new HttpDelete(URIUtil.encodePath(getFolderPath(folderPath)));
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
+            int status = response.getStatusLine().getStatusCode();
+            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
+                throw HttpClientAdapter.buildHttpResponseException(httpDelete, response);
+            }
+        }
     }
 
     /**
@@ -1967,20 +1973,18 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void moveFolder(String folderPath, String targetPath) throws IOException {
-        MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(folderPath)),
+        HttpMove httpMove = new HttpMove(URIUtil.encodePath(getFolderPath(folderPath)),
                 URIUtil.encodePath(getFolderPath(targetPath)), false);
-        try {
-            int statusCode = httpClient.executeMethod(method);
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpMove)) {
+            int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new HttpPreconditionFailedException(BundleMessage.format("EXCEPTION_UNABLE_TO_MOVE_FOLDER"));
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
+                throw HttpClientAdapter.buildHttpResponseException(httpMove, response);
             } else if (folderPath.equalsIgnoreCase("/users/" + getEmail() + "/calendar")) {
-                // calendar renamed, need to reload well known folders 
+                // calendar renamed, need to reload well known folders
                 getWellKnownFolders();
             }
-        } finally {
-            method.releaseConnection();
         }
     }
 
@@ -1989,21 +1993,19 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void moveItem(String sourcePath, String targetPath) throws IOException {
-        MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(sourcePath)),
+        HttpMove httpMove = new HttpMove(URIUtil.encodePath(getFolderPath(sourcePath)),
                 URIUtil.encodePath(getFolderPath(targetPath)), false);
-        moveItem(method);
+        moveItem(httpMove);
     }
 
-    protected void moveItem(MoveMethod method) throws IOException {
-        try {
-            int statusCode = httpClient.executeMethod(method);
+    protected void moveItem(HttpMove httpMove) throws IOException {
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpMove)) {
+            int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_ITEM");
             } else if (statusCode != HttpStatus.SC_CREATED && statusCode != HttpStatus.SC_OK) {
-                throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
+                throw HttpClientAdapter.buildHttpResponseException(httpMove, response);
             }
-        } finally {
-            method.releaseConnection();
         }
     }
 
@@ -2247,8 +2249,8 @@ public class DavExchangeSession extends ExchangeSession {
         }
         searchRequest.append(" ORDER BY ").append(Field.getRequestPropertyString("imapUid")).append(" DESC");
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", searchRequest));
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
-                httpClient, encodeAndFixUrl(folderUrl), searchRequest.toString(), maxCount);
+        MultiStatusResponse[] responses = httpClientAdapter.executeSearchRequest(
+                encodeAndFixUrl(folderUrl), searchRequest.toString(), maxCount);
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_RESULT", responses.length));
         return responses;
     }
@@ -2279,9 +2281,10 @@ public class DavExchangeSession extends ExchangeSession {
         String itemPath = getFolderPath(folderPath) + '/' + emlItemName;
         MultiStatusResponse[] responses = null;
         try {
-            try {
-                responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
-            } catch (HttpNotFoundException e) {
+            HttpPropfind httpPropfind = new HttpPropfind(URIUtil.encodePath(itemPath), EVENT_REQUEST_PROPERTIES_NAME_SET, 0);
+            try (CloseableHttpResponse response = httpClientAdapter.execute(httpPropfind)) {
+                responses = httpPropfind.getResponseBodyAsMultiStatus(response).getResponses();
+            } catch (HttpNotFoundException | DavException e) {
                 // ignore
             }
             if (responses == null || responses.length == 0 && isMainCalendar(folderPath)) {
@@ -2289,7 +2292,12 @@ public class DavExchangeSession extends ExchangeSession {
                     itemName = itemName.substring(0, itemName.length() - 3) + "EML";
                 }
                 // look for item in tasks folder
-                responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(getFolderPath(TASKS) + '/' + emlItemName), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
+                HttpPropfind taskHttpPropfind = new HttpPropfind(URIUtil.encodePath(getFolderPath(TASKS) + '/' + emlItemName), EVENT_REQUEST_PROPERTIES_NAME_SET, 0);
+                try (CloseableHttpResponse response = httpClientAdapter.execute(taskHttpPropfind)) {
+                    responses = taskHttpPropfind.getResponseBodyAsMultiStatus(response).getResponses();
+                } catch (HttpNotFoundException | DavException e) {
+                    // ignore
+                }
             }
             if (responses == null || responses.length == 0) {
                 throw new HttpNotFoundException(itemPath + " not found");
@@ -2310,7 +2318,12 @@ public class DavExchangeSession extends ExchangeSession {
                 List<ExchangeSession.Event> events = getAllEvents(folderPath);
                 for (ExchangeSession.Event event : events) {
                     if (itemName.equals(event.getName())) {
-                        responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, encodeAndFixUrl(((DavExchangeSession.Event) event).getPermanentUrl()), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
+                        HttpPropfind permanentHttpPropfind = new HttpPropfind(encodeAndFixUrl(((DavExchangeSession.Event) event).getPermanentUrl()), EVENT_REQUEST_PROPERTIES_NAME_SET, 0);
+                        try (CloseableHttpResponse response = httpClientAdapter.execute(permanentHttpPropfind)) {
+                            responses = permanentHttpPropfind.getResponseBodyAsMultiStatus(response).getResponses();
+                        } catch (DavException e3) {
+                            // ignore
+                        }
                         break;
                     }
                 }
@@ -2347,17 +2360,16 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         ContactPhoto contactPhoto;
-        final GetMethod method = new GetMethod(URIUtil.encodePath(contact.getHref()) + "/ContactPicture.jpg");
-        method.setRequestHeader("Translate", "f");
-        method.setRequestHeader("Accept-Encoding", "gzip");
+        final HttpGet httpGet = new HttpGet(URIUtil.encodePath(contact.getHref()) + "/ContactPicture.jpg");
+        httpGet.setHeader("Translate", "f");
+        httpGet.setHeader("Accept-Encoding", "gzip");
 
         InputStream inputStream = null;
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-            if (DavGatewayHttpClientFacade.isGzipEncoded(method)) {
-                inputStream = (new GZIPInputStream(method.getResponseBodyAsStream()));
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
+            if (HttpClientAdapter.isGzipEncoded(response)) {
+                inputStream = (new GZIPInputStream(response.getEntity().getContent()));
             } else {
-                inputStream = method.getResponseBodyAsStream();
+                inputStream = response.getEntity().getContent();
             }
 
             contactPhoto = new ContactPhoto();
@@ -2375,7 +2387,6 @@ public class DavExchangeSession extends ExchangeSession {
                     LOGGER.debug(e);
                 }
             }
-            method.releaseConnection();
         }
         return contactPhoto;
     }
@@ -2396,11 +2407,18 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public void deleteItem(String folderPath, String itemName) throws IOException {
         String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
-        int status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
+        HttpDelete httpDelete = new HttpDelete(eventPath);
+        int status;
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
+            status = response.getStatusLine().getStatusCode();
+        }
         if (status == HttpStatus.SC_NOT_FOUND && isMainCalendar(folderPath)) {
             // retry in tasks folder
             eventPath = URIUtil.encodePath(getFolderPath(TASKS) + '/' + convertItemNameToEML(itemName));
-            status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
+            httpDelete = new HttpDelete(eventPath);
+            try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
+                status = response.getStatusLine().getStatusCode();
+            }
         }
         if (status == HttpStatus.SC_NOT_FOUND) {
             LOGGER.debug("Unable to delete " + itemName + ": item not found");
@@ -2414,8 +2432,10 @@ public class DavExchangeSession extends ExchangeSession {
         ArrayList<PropEntry> list = new ArrayList<>();
         list.add(Field.createDavProperty("processed", "true"));
         list.add(Field.createDavProperty("read", "1"));
-        PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
-        DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
+        HttpProppatch patchMethod = new HttpProppatch(eventPath, list);
+        try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)) {
+            LOGGER.debug("Processed " + itemName + " " + response.getStatusLine().getStatusCode());
+        }
     }
 
     @Override
@@ -2435,20 +2455,21 @@ public class DavExchangeSession extends ExchangeSession {
 
             String fakeEventUrl = null;
             if ("Exchange2003".equals(serverVersion)) {
-                PostMethod postMethod = new PostMethod(URIUtil.encodePath(folderPath));
-                postMethod.addParameter("Cmd", "saveappt");
-                postMethod.addParameter("FORMTYPE", "appointment");
-                try {
+                HttpPost httpPost = new HttpPost(URIUtil.encodePath(folderPath));
+                ArrayList<NameValuePair> parameters = new ArrayList<>();
+                parameters.add(new BasicNameValuePair("Cmd", "saveappt"));
+                parameters.add(new BasicNameValuePair("FORMTYPE", "appointment"));
+                httpPost.setEntity(new UrlEncodedFormEntity(parameters, Consts.UTF_8));
+
+                try (CloseableHttpResponse response = httpClientAdapter.execute(httpPost)) {
                     // create fake event
-                    int statusCode = httpClient.executeMethod(postMethod);
+                    int statusCode = response.getStatusLine().getStatusCode();
                     if (statusCode == HttpStatus.SC_OK) {
-                        fakeEventUrl = StringUtil.getToken(postMethod.getResponseBodyAsString(), "<span id=\"itemHREF\">", "</span>");
+                        fakeEventUrl = StringUtil.getToken(new BasicResponseHandler().handleResponse(response), "<span id=\"itemHREF\">", "</span>");
                         if (fakeEventUrl != null) {
                             fakeEventUrl = URIUtil.decode(fakeEventUrl);
                         }
                     }
-                } finally {
-                    postMethod.releaseConnection();
                 }
             }
             // failover for Exchange 2007, use PROPPATCH with forced timezone
@@ -2469,27 +2490,22 @@ public class DavExchangeSession extends ExchangeSession {
                     propertyList.add(Field.createDavProperty("timezoneid", timezoneId));
                 }
                 String patchMethodUrl = folderPath + '/' + UUID.randomUUID().toString() + ".EML";
-                PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(patchMethodUrl), propertyList);
-                try {
-                    int statusCode = httpClient.executeMethod(patchMethod);
+                HttpProppatch patchMethod = new HttpProppatch(URIUtil.encodePath(patchMethodUrl), propertyList);
+                try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)) {
+                    int statusCode = response.getStatusLine().getStatusCode();
                     if (statusCode == HttpStatus.SC_MULTI_STATUS) {
                         fakeEventUrl = patchMethodUrl;
                     }
-                } finally {
-                    patchMethod.releaseConnection();
                 }
             }
             if (fakeEventUrl != null) {
                 // get fake event body
-                GetMethod getMethod = new GetMethod(URIUtil.encodePath(fakeEventUrl));
-                getMethod.setRequestHeader("Translate", "f");
-                try {
-                    httpClient.executeMethod(getMethod);
+                HttpGet httpGet = new HttpGet(URIUtil.encodePath(fakeEventUrl));
+                httpGet.setHeader("Translate", "f");
+                try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
                     this.vTimezone = new VObject("BEGIN:VTIMEZONE" +
-                            StringUtil.getToken(getMethod.getResponseBodyAsString(), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
+                            StringUtil.getToken(new BasicResponseHandler().handleResponse(response), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
                             "END:VTIMEZONE\r\n");
-                } finally {
-                    getMethod.releaseConnection();
                 }
             }
 
@@ -2599,7 +2615,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName);
-        PropPatchMethod patchMethod;
+
         List<PropEntry> davProperties = buildProperties(properties);
 
         if (properties != null && properties.containsKey("draft")) {
@@ -2613,31 +2629,35 @@ public class DavExchangeSession extends ExchangeSession {
             davProperties.add(Field.createDavProperty("messageFormat", properties.get("messageFormat")));
         }
         if (!davProperties.isEmpty()) {
-            patchMethod = new PropPatchMethod(messageUrl, davProperties);
-            try {
+            HttpProppatch httpProppatch = new HttpProppatch(messageUrl, davProperties);
+            try (CloseableHttpResponse response = httpClientAdapter.execute(httpProppatch)) {
                 // update message with blind carbon copy and other flags
-                int statusCode = httpClient.executeMethod(patchMethod);
+                int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
+                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', response.getStatusLine().getReasonPhrase());
                 }
 
-            } finally {
-                patchMethod.releaseConnection();
             }
         }
 
         // update message body
-        PutMethod putmethod = new PutMethod(messageUrl);
-        putmethod.setRequestHeader("Translate", "f");
-        putmethod.setRequestHeader("Content-Type", "message/rfc822");
+        HttpPut putmethod = new HttpPut(messageUrl);
+        putmethod.setHeader("Translate", "f");
+        putmethod.setHeader("Content-Type", "message/rfc822");
 
         try {
             // use same encoding as client socket reader
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             mimeMessage.writeTo(baos);
             baos.close();
-            putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray()));
-            int code = httpClient.executeMethod(putmethod);
+            putmethod.setEntity(new ByteArrayEntity(baos.toByteArray()));
+
+            int code;
+            String reasonPhrase;
+            try (CloseableHttpResponse response = httpClientAdapter.execute(putmethod)) {
+                code = response.getStatusLine().getStatusCode();
+                reasonPhrase = response.getStatusLine().getReasonPhrase();
+            }
 
             // workaround for misconfigured Exchange server
             if (code == HttpStatus.SC_NOT_ACCEPTABLE) {
@@ -2667,35 +2687,38 @@ public class DavExchangeSession extends ExchangeSession {
                 } else if (contentType.startsWith("text/html")) {
                     propertyList.add(Field.createDavProperty("htmldescription", (String) mimePart.getContent()));
                 } else {
-                    LOGGER.warn("Unsupported content type: " + contentType + " message body will be empty");
+                    LOGGER.warn("Unsupported content type: " + contentType.replaceAll("[\n\r\t]", "_") + " message body will be empty");
                 }
 
                 propertyList.add(Field.createDavProperty("subject", mimeMessage.getHeader("subject", ",")));
-                PropPatchMethod propPatchMethod = new PropPatchMethod(messageUrl, propertyList);
-                try {
-                    int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
+                HttpProppatch propPatchMethod = new HttpProppatch(messageUrl, propertyList);
+                try (CloseableHttpResponse response = httpClientAdapter.execute(propPatchMethod)) {
+                    int patchStatus = response.getStatusLine().getStatusCode();
                     if (patchStatus == HttpStatus.SC_MULTI_STATUS) {
                         code = HttpStatus.SC_OK;
                     }
-                } finally {
-                    propPatchMethod.releaseConnection();
                 }
             }
+
 
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
 
                 // first delete draft message
                 if (!davProperties.isEmpty()) {
-                    try {
-                        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, messageUrl);
+                    HttpDelete httpDelete = new HttpDelete(messageUrl);
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
+                        int status = response.getStatusLine().getStatusCode();
+                        if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
+                            throw HttpClientAdapter.buildHttpResponseException(httpDelete, response);
+                        }
                     } catch (IOException e) {
                         LOGGER.warn("Unable to delete draft message");
                     }
                 }
                 if (code == HttpStatus.SC_INSUFFICIENT_STORAGE) {
-                    throw new InsufficientStorageException(putmethod.getStatusText());
+                    throw new InsufficientStorageException(reasonPhrase);
                 } else {
-                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, code, ' ', putmethod.getStatusLine());
+                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, code, ' ', reasonPhrase);
                 }
             }
         } catch (MessagingException e) {
@@ -2709,16 +2732,13 @@ public class DavExchangeSession extends ExchangeSession {
             if (mimeMessage.getHeader("Bcc") != null) {
                 davProperties = new ArrayList<>();
                 davProperties.add(Field.createDavProperty("bcc", mimeMessage.getHeader("Bcc", ",")));
-                patchMethod = new PropPatchMethod(messageUrl, davProperties);
-                try {
-                    // update message with blind carbon copy
-                    int statusCode = httpClient.executeMethod(patchMethod);
+                HttpProppatch httpProppatch = new HttpProppatch(messageUrl, davProperties);
+                // update message with blind carbon copy
+                try (CloseableHttpResponse response = httpClientAdapter.execute(httpProppatch)) {
+                    int statusCode = response.getStatusLine().getStatusCode();
                     if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                        throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
+                        throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', response.getStatusLine().getReasonPhrase());
                     }
-
-                } finally {
-                    patchMethod.releaseConnection();
                 }
             }
         } catch (MessagingException e) {
@@ -2732,20 +2752,18 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
-        PropPatchMethod patchMethod = new PropPatchMethod(encodeAndFixUrl(message.permanentUrl), buildProperties(properties)) {
+        HttpProppatch patchMethod = new HttpProppatch(encodeAndFixUrl(message.permanentUrl), buildProperties(properties)) {
             @Override
-            protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
+            public MultiStatus getResponseBodyAsMultiStatus(HttpResponse response) {
                 // ignore response body, sometimes invalid with exchange mapi properties
+                throw new UnsupportedOperationException();
             }
         };
-        try {
-            int statusCode = httpClient.executeMethod(patchMethod);
+        try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)) {
+            int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_UPDATE_MESSAGE");
             }
-
-        } finally {
-            patchMethod.releaseConnection();
         }
     }
 
@@ -2755,7 +2773,13 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
         LOGGER.debug("Delete " + message.permanentUrl + " (" + message.messageUrl + ')');
-        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, encodeAndFixUrl(message.permanentUrl));
+        HttpDelete httpDelete = new HttpDelete(encodeAndFixUrl(message.permanentUrl));
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
+            int status = response.getStatusLine().getStatusCode();
+            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
+                throw HttpClientAdapter.buildHttpResponseException(httpDelete, response);
+            }
+        }
     }
 
     /**
@@ -2797,13 +2821,13 @@ public class DavExchangeSession extends ExchangeSession {
                 properties.put("messageFormat", "2");
             }
             createMessage(DRAFTS, itemName, properties, mimeMessage);
-            MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(DRAFTS + '/' + itemName)),
+            HttpMove httpMove = new HttpMove(URIUtil.encodePath(getFolderPath(DRAFTS + '/' + itemName)),
                     URIUtil.encodePath(getFolderPath(SENDMSG)), false);
-            // set header if saveInSent is disabled 
+            // set header if saveInSent is disabled
             if (!Settings.getBooleanProperty("davmail.smtpSaveInSent", true)) {
-                method.setRequestHeader("Saveinsent", "f");
+                httpMove.setHeader("Saveinsent", "f");
             }
-            moveItem(method);
+            moveItem(httpMove);
         } catch (MessagingException e) {
             throw new IOException(e.getMessage());
         }
@@ -2858,47 +2882,48 @@ public class DavExchangeSession extends ExchangeSession {
                 messageProperties.add(Field.getPropertyName("date"));
                 messageProperties.add(Field.getPropertyName("htmldescription"));
                 messageProperties.add(Field.getPropertyName("body"));
-                PropFindMethod propFindMethod = new PropFindMethod(encodeAndFixUrl(message.permanentUrl), messageProperties, 0);
-                DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
-                if (responses.getResponses().length > 0) {
-                    MimeMessage mimeMessage = new MimeMessage((Session) null);
+                HttpPropfind httpPropfind = new HttpPropfind(encodeAndFixUrl(message.permanentUrl), messageProperties, 0);
+                try (CloseableHttpResponse response = httpClientAdapter.execute(httpPropfind)) {
+                    MultiStatus responses = httpPropfind.getResponseBodyAsMultiStatus(response);
+                    if (responses.getResponses().length > 0) {
+                        MimeMessage mimeMessage = new MimeMessage((Session) null);
 
-                    DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
-                    String propertyValue = getPropertyIfExists(properties, "contentclass");
-                    if (propertyValue != null) {
-                        mimeMessage.addHeader("Content-class", propertyValue);
-                    }
-                    propertyValue = getPropertyIfExists(properties, "date");
-                    if (propertyValue != null) {
-                        mimeMessage.setSentDate(parseDateFromExchange(propertyValue));
-                    }
-                    propertyValue = getPropertyIfExists(properties, "from");
-                    if (propertyValue != null) {
-                        mimeMessage.addHeader("From", propertyValue);
-                    }
-                    propertyValue = getPropertyIfExists(properties, "to");
-                    if (propertyValue != null) {
-                        mimeMessage.addHeader("To", propertyValue);
-                    }
-                    propertyValue = getPropertyIfExists(properties, "cc");
-                    if (propertyValue != null) {
-                        mimeMessage.addHeader("Cc", propertyValue);
-                    }
-                    propertyValue = getPropertyIfExists(properties, "subject");
-                    if (propertyValue != null) {
-                        mimeMessage.setSubject(propertyValue);
-                    }
-                    propertyValue = getPropertyIfExists(properties, "htmldescription");
-                    if (propertyValue != null) {
-                        mimeMessage.setContent(propertyValue, "text/html; charset=UTF-8");
-                    } else {
-                        propertyValue = getPropertyIfExists(properties, "body");
+                        DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
+                        String propertyValue = getPropertyIfExists(properties, "contentclass");
                         if (propertyValue != null) {
-                            mimeMessage.setText(propertyValue);
+                            mimeMessage.addHeader("Content-class", propertyValue);
                         }
+                        propertyValue = getPropertyIfExists(properties, "date");
+                        if (propertyValue != null) {
+                            mimeMessage.setSentDate(parseDateFromExchange(propertyValue));
+                        }
+                        propertyValue = getPropertyIfExists(properties, "from");
+                        if (propertyValue != null) {
+                            mimeMessage.addHeader("From", propertyValue);
+                        }
+                        propertyValue = getPropertyIfExists(properties, "to");
+                        if (propertyValue != null) {
+                            mimeMessage.addHeader("To", propertyValue);
+                        }
+                        propertyValue = getPropertyIfExists(properties, "cc");
+                        if (propertyValue != null) {
+                            mimeMessage.addHeader("Cc", propertyValue);
+                        }
+                        propertyValue = getPropertyIfExists(properties, "subject");
+                        if (propertyValue != null) {
+                            mimeMessage.setSubject(propertyValue);
+                        }
+                        propertyValue = getPropertyIfExists(properties, "htmldescription");
+                        if (propertyValue != null) {
+                            mimeMessage.setContent(propertyValue, "text/html; charset=UTF-8");
+                        } else {
+                            propertyValue = getPropertyIfExists(properties, "body");
+                            if (propertyValue != null) {
+                                mimeMessage.setText(propertyValue);
+                            }
+                        }
+                        mimeMessage.writeTo(baos);
                     }
-                    mimeMessage.writeTo(baos);
                 }
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray(), StandardCharsets.UTF_8));
@@ -2921,36 +2946,42 @@ public class DavExchangeSession extends ExchangeSession {
         return baos.toByteArray();
     }
 
-    protected String getEscapedUrlFromPath(String escapedPath) throws URIException {
-        URI uri = new URI(httpClient.getHostConfiguration().getHostURL(), true);
-        uri.setEscapedPath(escapedPath);
-        return uri.getEscapedURI();
-    }
-
-    protected String encodeAndFixUrl(String url) throws URIException {
-        String originalUrl = URIUtil.encodePath(url);
-        if (restoreHostName && originalUrl.startsWith("http")) {
-            String targetPath = new URI(originalUrl, true).getEscapedPath();
-            originalUrl = getEscapedUrlFromPath(targetPath);
+    /**
+     * sometimes permanenturis inside items are wrong after an Exchange version migration
+     * need to restore base uri to actual public Exchange uri
+     *
+     * @param url input uri
+     * @return fixed uri
+     * @throws IOException on error
+     */
+    protected String encodeAndFixUrl(String url) throws IOException {
+        String fixedurl = URIUtil.encodePath(url);
+        // sometimes permanenturis inside items are wrong after an Exchange version migration
+        // need to restore base uri to actual public Exchange uri
+        if (restoreHostName && fixedurl.startsWith("http")) {
+            try {
+                return URIUtils.rewriteURI(new java.net.URI(fixedurl), URIUtils.extractHost(httpClientAdapter.getUri())).toString();
+            } catch (URISyntaxException e) {
+                throw new IOException(e.getMessage(), e);
+            }
         }
-        return originalUrl;
+        return fixedurl;
     }
 
     protected InputStream getContentInputStream(String url) throws IOException {
         String encodedUrl = encodeAndFixUrl(url);
 
-        final GetMethod method = new GetMethod(encodedUrl);
-        method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
-        method.setRequestHeader("Translate", "f");
-        method.setRequestHeader("Accept-Encoding", "gzip");
+        final HttpGet httpGet = new HttpGet(encodedUrl);
+        httpGet.setHeader("Content-Type", "text/xml; charset=utf-8");
+        httpGet.setHeader("Translate", "f");
+        httpGet.setHeader("Accept-Encoding", "gzip");
 
         InputStream inputStream;
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-            if (DavGatewayHttpClientFacade.isGzipEncoded(method)) {
-                inputStream = new GZIPInputStream(method.getResponseBodyAsStream());
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
+            if (HttpClientAdapter.isGzipEncoded(response)) {
+                inputStream = new GZIPInputStream(response.getEntity().getContent());
             } else {
-                inputStream = method.getResponseBodyAsStream();
+                inputStream = response.getEntity().getContent();
             }
             inputStream = new FilterInputStream(inputStream) {
                 int totalCount;
@@ -2961,7 +2992,7 @@ public class DavExchangeSession extends ExchangeSession {
                     int count = super.read(buffer, offset, length);
                     totalCount += count;
                     if (totalCount - lastLogCount > 1024 * 128) {
-                        DavGatewayTray.debug(new BundleMessage("LOG_DOWNLOAD_PROGRESS", String.valueOf(totalCount / 1024), method.getURI()));
+                        DavGatewayTray.debug(new BundleMessage("LOG_DOWNLOAD_PROGRESS", String.valueOf(totalCount / 1024), httpGet.getURI()));
                         DavGatewayTray.switchIcon();
                         lastLogCount = totalCount;
                     }
@@ -2973,13 +3004,12 @@ public class DavExchangeSession extends ExchangeSession {
                     try {
                         super.close();
                     } finally {
-                        method.releaseConnection();
+                        httpGet.releaseConnection();
                     }
                 }
             };
 
-        } catch (HttpResponseException e) {
-            method.releaseConnection();
+        } catch (IOException e) {
             LOGGER.warn("Unable to retrieve message at: " + url);
             throw e;
         }
@@ -3001,15 +3031,16 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected void moveMessage(String sourceUrl, String targetFolder) throws IOException {
         String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
-        MoveMethod method = new MoveMethod(URIUtil.encodePath(sourceUrl), targetPath, false);
+        HttpMove method = new HttpMove(URIUtil.encodePath(sourceUrl), targetPath, false);
         // allow rename if a message with the same name exists
-        method.addRequestHeader("Allow-Rename", "t");
-        try {
-            int statusCode = httpClient.executeMethod(method);
-            if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
+        method.setHeader("Allow-Rename", "t");
+        try (CloseableHttpResponse response = httpClientAdapter.execute(method)) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode == HttpStatus.SC_PRECONDITION_FAILED ||
+                    statusCode == HttpStatus.SC_CONFLICT) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_MESSAGE");
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
+                throw HttpClientAdapter.buildHttpResponseException(method, response);
             }
         } finally {
             method.releaseConnection();
@@ -3031,18 +3062,16 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected void copyMessage(String sourceUrl, String targetFolder) throws IOException {
         String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
-        CopyMethod method = new CopyMethod(URIUtil.encodePath(sourceUrl), targetPath, false);
+        HttpCopy httpCopy = new HttpCopy(URIUtil.encodePath(sourceUrl), targetPath, false, false);
         // allow rename if a message with the same name exists
-        method.addRequestHeader("Allow-Rename", "t");
-        try {
-            int statusCode = httpClient.executeMethod(method);
+        httpCopy.addHeader("Allow-Rename", "t");
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpCopy)) {
+            int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_COPY_MESSAGE");
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
+                throw HttpClientAdapter.buildHttpResponseException(httpCopy, response);
             }
-        } finally {
-            method.releaseConnection();
         }
     }
 
@@ -3050,16 +3079,18 @@ public class DavExchangeSession extends ExchangeSession {
     protected void moveToTrash(ExchangeSession.Message message) throws IOException {
         String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + UUID.randomUUID().toString();
         LOGGER.debug("Deleting : " + message.permanentUrl + " to " + destination);
-        MoveMethod method = new MoveMethod(encodeAndFixUrl(message.permanentUrl), destination, false);
-        method.addRequestHeader("Allow-rename", "t");
+        HttpMove method = new HttpMove(encodeAndFixUrl(message.permanentUrl), destination, false);
+        method.addHeader("Allow-rename", "t");
 
-        int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
-        // do not throw error if already deleted
-        if (status != HttpStatus.SC_CREATED && status != HttpStatus.SC_NOT_FOUND) {
-            throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
-        }
-        if (method.getResponseHeader("Location") != null) {
-            destination = method.getResponseHeader("Location").getValue();
+        try (CloseableHttpResponse response = httpClientAdapter.execute(method)) {
+            int status = response.getStatusLine().getStatusCode();
+            // do not throw error if already deleted
+            if (status != HttpStatus.SC_CREATED && status != HttpStatus.SC_NOT_FOUND) {
+                throw HttpClientAdapter.buildHttpResponseException(method, response);
+            }
+            if (response.getFirstHeader("Location") != null) {
+                destination = method.getFirstHeader("Location").getValue();
+            }
         }
 
         LOGGER.debug("Deleted to :" + destination);
@@ -3069,26 +3100,24 @@ public class DavExchangeSession extends ExchangeSession {
         String result = null;
         DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
         davPropertyNameSet.add(Field.getPropertyName(propertyName));
-        PropFindMethod propFindMethod = new PropFindMethod(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
-        try {
-            try {
-                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
-            } catch (UnknownHostException e) {
-                propFindMethod.releaseConnection();
-                // failover for misconfigured Exchange server, replace host name in url
-                restoreHostName = true;
-                propFindMethod = new PropFindMethod(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
-                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+        HttpPropfind propFindMethod = new HttpPropfind(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
+        MultiStatus responses;
+        try (CloseableHttpResponse response = httpClientAdapter.execute(propFindMethod)) {
+            responses = propFindMethod.getResponseBodyAsMultiStatus(response);
+        } catch (UnknownHostException e) {
+            // failover for misconfigured Exchange server, replace host name in url
+            restoreHostName = true;
+            propFindMethod = new HttpPropfind(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
+            try (CloseableHttpResponse response = httpClientAdapter.execute(propFindMethod)) {
+                responses = propFindMethod.getResponseBodyAsMultiStatus(response);
             }
-
-            MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
-            if (responses.getResponses().length > 0) {
-                DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
-                result = getPropertyIfExists(properties, propertyName);
-            }
-        } finally {
-            propFindMethod.releaseConnection();
         }
+
+        if (responses.getResponses().length > 0) {
+            DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
+            result = getPropertyIfExists(properties, propertyName);
+        }
+
         return result;
     }
 
@@ -3136,6 +3165,11 @@ public class DavExchangeSession extends ExchangeSession {
         return value;
     }
 
+
+    @Override
+    public void close() {
+        httpClientAdapter.close();
+    }
 
     /**
      * Format date to exchange search format.
@@ -3198,14 +3232,5 @@ public class DavExchangeSession extends ExchangeSession {
             }
         }
         return result;
-    }
-
-    /**
-     * Close session.
-     * Shutdown http client connection manager
-     */
-    @Override
-    public void close() {
-        DavGatewayHttpClientFacade.close(httpClient);
     }
 }

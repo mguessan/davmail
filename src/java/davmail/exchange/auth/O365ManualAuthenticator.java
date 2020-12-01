@@ -27,8 +27,8 @@ import davmail.exchange.ews.BaseShape;
 import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
 import davmail.exchange.ews.GetUserConfigurationMethod;
-import davmail.http.DavGatewayHttpClientFacade;
-import org.apache.commons.httpclient.HttpClient;
+import davmail.http.HttpClientAdapter;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -76,6 +76,14 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
         this.password = password;
     }
 
+    /**
+     * Return a pool enabled HttpClientAdapter instance to access O365
+     * @return HttpClientAdapter instance
+     */
+    @Override
+    public HttpClientAdapter getHttpClientAdapter() {
+        return new HttpClientAdapter(getExchangeUri(), username, password, true);
+    }
 
     public void authenticate() throws IOException {
         // common DavMail client id
@@ -149,17 +157,15 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
             authenticator.authenticate();
 
             // switch to EWS url
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.ewsUrl.toString());
+            HttpClientAdapter httpClientAdapter = new HttpClientAdapter(authenticator.getExchangeUri(), true);
 
             GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
-            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
-            try {
-                //checkMethod.setServerVersion(serverVersion);
-                httpClient.executeMethod(checkMethod);
-
+            checkMethod.setHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
+            try (
+                    CloseableHttpResponse response = httpClientAdapter.execute(checkMethod)
+            ) {
+                checkMethod.handleResponse(response);
                 checkMethod.checkSuccess();
-            } finally {
-                checkMethod.releaseConnection();
             }
             System.out.println("Retrieved folder id " + checkMethod.getResponseItem().get("FolderId"));
 
@@ -167,8 +173,14 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
             int i = 0;
             while (i++ < 12 * 60 * 2) {
                 GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
-                getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
-                httpClient.executeMethod(getUserConfigurationMethod);
+                getUserConfigurationMethod.setHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
+                try (
+                        CloseableHttpResponse response = httpClientAdapter.execute(checkMethod)
+                ) {
+                    checkMethod.handleResponse(response);
+
+                    checkMethod.checkSuccess();
+                }
                 System.out.println(getUserConfigurationMethod.getResponseItem());
 
                 Thread.sleep(5000);

@@ -20,7 +20,6 @@
 package davmail.exchange.auth;
 
 import javafx.scene.web.WebEngine;
-import netscape.javascript.JSObject;
 import org.apache.log4j.Logger;
 
 import java.lang.reflect.InvocationTargetException;
@@ -39,7 +38,7 @@ public class O365InteractiveJSLogger {
             Class jsObjectClass = Class.forName("netscape.javascript.JSObject");
             Method setMemberMethod = jsObjectClass.getDeclaredMethod("setMember", String.class,Object.class);
 
-            JSObject window = (JSObject) webEngine.executeScript("window");
+            Object window = webEngine.executeScript("window");
             setMemberMethod.invoke(window, "davmail", new O365InteractiveJSLogger());
 
             webEngine.executeScript("console.log = function(message) { davmail.log(message); }");
