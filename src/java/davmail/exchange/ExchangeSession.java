@@ -79,8 +79,9 @@ public abstract class ExchangeSession {
     protected static final String TRASH = "Trash";
     protected static final String JUNK = "Junk";
     protected static final String UNSENT = "Unsent Messages";
+    protected static final String ARCHIVE = "Archive";
 
-    protected static final List<String> SPECIAL = Arrays.asList(SENT, DRAFTS, TRASH, JUNK);
+    protected static final List<String> SPECIAL = Arrays.asList(SENT, DRAFTS, TRASH, JUNK, ARCHIVE);
 
     static {
         // Adjust Mime decoder settings
