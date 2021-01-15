@@ -2895,13 +2895,18 @@ public class EwsExchangeSession extends ExchangeSession {
             internalExecuteMethod(ewsMethod);
         } catch (EWSThrottlingException e) {
             // default throttling delay is one minute
-            throttlingDelay = 60000;
+            throttlingDelay = 300000;
             if (ewsMethod.errorValue != null) {
                 // server provided a throttling delay, add 10 seconds
+                String remove = "Name: BackOffMilliseconds";
+                String ev = ewsMethod.errorValue;
+                if (ev.startsWith(remove)) {
+                    ev = ev.substring(remove.length());
+                }
                 try {
-                    throttlingDelay = Long.parseLong(ewsMethod.errorValue) + 10000;
+                    throttlingDelay = Long.parseLong(ev) + 10000;
                 } catch (NumberFormatException e2) {
-                    LOGGER.error("Unable to parse BackOffMilliseconds " + e2.getMessage());
+                    LOGGER.error("Unable to parse BackOffMilliseconds " + e2.getMessage() + " [" + ev + "]");
                 }
             }
             throttlingTimestamp = System.currentTimeMillis() + throttlingDelay;
