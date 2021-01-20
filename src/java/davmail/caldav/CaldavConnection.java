@@ -472,7 +472,7 @@ public class CaldavConnection extends AbstractConnection {
             response.appendProperty("D:resourcetype");
         }
         if (request.hasProperty("displayname")) {
-            response.appendProperty("D:displayname", item.getName());
+            response.appendProperty("D:displayname", StringUtil.xmlEncode(item.getName()));
         }
         response.endPropStatOK();
         response.endResponse();
