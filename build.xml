@@ -421,6 +421,20 @@
                 <exclude name="lib/hamcrest-core-*.jar"/>
             </fileset>
         </zip>
+        <antcall target="download-jre"/>
+        <zip file="dist/davmail-${release-name}-windows-standalone.zip">
+            <fileset dir="dist">
+                <include name="jre/**"/>
+                <include name="lib/*.jar"/>
+                <include name="*.jar"/>
+                <include name="davmail64.exe"/>
+                <include name="davmailservice64.exe"/>
+                <exclude name="lib/swt-*-gtk-*.jar"/>
+                <exclude name="lib/libgrowl-*.jar"/>
+                <exclude name="lib/junit-*.jar"/>
+                <exclude name="lib/hamcrest-core-*.jar"/>
+            </fileset>
+        </zip>
         <antcall target="dist-nsis"/>
         <antcall target="dist-deb"/>
         <antcall target="dist-osx"/>
@@ -542,6 +556,16 @@
         <property name="sonar.projectVersion" value="${version}"/>
         <taskdef resource="org/sonar/ant/antlib.xml" classpath="lib/sonarqube-ant-task-2.7.0.1612.jar"/>
         <sonar/>
+    </target>
+
+    <target name="download-jre">
+        <get src="https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=11&amp;ext=zip&amp;os=windows&amp;arch=x86&amp;hw_bitness=64&amp;bundle_type=jre&amp;features=fx"
+             dest="dist/jrefx.zip"
+        />
+        <unzip src="dist/jrefx.zip" dest="dist/jre">
+            <cutdirsmapper dirs="1"/>
+        </unzip>
+        <delete file="dist/jrefx.zip"/>
     </target>
 
 </project>
