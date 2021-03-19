@@ -52,7 +52,7 @@ import static org.apache.http.util.TextUtils.isEmpty;
  */
 public final class Settings {
 
-    public static final String O365_URL = "https://outlook.office365.com/EWS/Exchange.asmx";
+    public static final String O365_URL = "https://outlook.office.com/EWS/Exchange.asmx";
     public static final String O365 = "O365";
     public static final String O365_MODERN = "O365Modern";
     public static final String O365_INTERACTIVE = "O365Interactive";
