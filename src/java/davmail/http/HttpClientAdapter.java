@@ -302,12 +302,13 @@ public class HttpClientAdapter implements Closeable {
 
     private RequestConfig getRequestConfig() {
         HashSet<String> authSchemes = new HashSet<>();
-        authSchemes.add(AuthSchemes.NTLM);
-        authSchemes.add(AuthSchemes.BASIC);
-        authSchemes.add(AuthSchemes.DIGEST);
         if (Settings.getBooleanProperty("davmail.enableKerberos")) {
             authSchemes.add(AuthSchemes.SPNEGO);
             authSchemes.add(AuthSchemes.KERBEROS);
+        } else {
+            authSchemes.add(AuthSchemes.NTLM);
+            authSchemes.add(AuthSchemes.BASIC);
+            authSchemes.add(AuthSchemes.DIGEST);
         }
         return RequestConfig.custom()
                 // socket connect timeout
