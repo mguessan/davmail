@@ -218,7 +218,8 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
 
 
         webViewEngine.getLoadWorker().stateProperty().addListener((ov, oldState, newState) -> {
-            if (newState == Worker.State.SUCCEEDED) {
+            // with Java 15 url with code returns as CANCELLED
+            if (newState == Worker.State.SUCCEEDED || newState == Worker.State.CANCELLED) {
                 loadProgress.setVisible(false);
                 location = webViewEngine.getLocation();
                 updateTitleAndFocus(location);
@@ -252,6 +253,8 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                     handleError(e);
                 }
                 close();
+            } else {
+                LOGGER.debug(webViewEngine.getLoadWorker().getState()+" "+webViewEngine.getLoadWorker().getMessage()+" " + webViewEngine.getLocation()+" ");
             }
 
         });
