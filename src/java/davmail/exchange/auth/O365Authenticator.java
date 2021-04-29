@@ -328,7 +328,13 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     private URI processDeviceLogin(HttpClientAdapter httpClient, URI location) throws IOException, JSONException {
         URI result = location;
-        LOGGER.debug("Proceed to device authentication");
+        LOGGER.debug("Proceed to device authentication, must have access to a client certificate signed by MS-Organization-Access");
+        if (Settings.isWindows() &&
+                (System.getProperty("java.version").compareTo("13") < 0
+                        || !"MSCAPI".equals(Settings.getProperty("davmail.ssl.clientKeystoreType")))
+        ) {
+            LOGGER.warn("MSCAPI and Java version 13 or higher required to access TPM protected client certificate on Windows");
+        }
         GetRequest deviceLoginMethod = new GetRequest(location);
 
         String responseBodyAsString = httpClient.executeGetRequest(deviceLoginMethod);
