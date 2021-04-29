@@ -20,6 +20,7 @@
 package davmail.exchange.auth;
 
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import javafx.application.Platform;
@@ -209,6 +210,8 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
         hBox.getChildren().setAll(webView, loadProgress);
         Scene scene = new Scene(hBox);
         fxPanel.setScene(scene);
+
+        webViewEngine.setUserAgent(Settings.getUserAgent());
 
         webViewEngine.setOnAlert(stringWebEvent -> SwingUtilities.invokeLater(() -> {
             String message = stringWebEvent.getData();

@@ -61,6 +61,8 @@ public final class Settings {
     public static final String EWS = "EWS";
     public static final String AUTO = "Auto";
 
+    public static final String EDGE_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36 Edg/90.0.818.49";
+
     private Settings() {
     }
 
@@ -739,4 +741,7 @@ public final class Settings {
                 System.getProperty("os.name").toLowerCase().startsWith("freebsd");
     }
 
+    public static String getUserAgent() {
+        return getProperty("davmail.userAgent", Settings.EDGE_USER_AGENT);
+    }
 }
