@@ -11,14 +11,14 @@
 #                                                                                #
 # @author    Tobias Fischer                                                      #
 # @url       https://github.com/tofi86/universalJavaApplicationStub              #
-# @date      2018-08-24                                                          #
-# @version   3.0.4                                                               #
+# @date      2021-02-21                                                          #
+# @version   3.2.0                                                               #
 #                                                                                #
 ##################################################################################
 #                                                                                #
 # The MIT License (MIT)                                                          #
 #                                                                                #
-# Copyright (c) 2014-2018 Tobias Fischer                                         #
+# Copyright (c) 2014-2021 Tobias Fischer                                         #
 #                                                                                #
 # Permission is hereby granted, free of charge, to any person obtaining a copy   #
 # of this software and associated documentation files (the "Software"), to deal  #
@@ -166,6 +166,8 @@ if [ $exitcode -eq 0 ]; then
 	JavaFolder="${AppleJavaFolder}"
 	ResourcesFolder="${AppleResourcesFolder}"
 
+	# set expandable variables
+	APP_ROOT="${AppPackageFolder}"
 	APP_PACKAGE="${AppPackageFolder}"
 	JAVAROOT="${AppleJavaFolder}"
 	USER_HOME="$HOME"
@@ -180,7 +182,7 @@ if [ $exitcode -eq 0 ]; then
 		# AppPackageRoot is the standard WorkingDirectory when the script is started
 		WorkingDirectory="${AppPackageRoot}"
 	fi
-	# expand variables $APP_PACKAGE, $JAVAROOT, $USER_HOME
+	# expand variables $APP_PACKAGE, $APP_ROOT, $JAVAROOT, $USER_HOME
 	WorkingDirectory=$(eval echo "${WorkingDirectory}")
 
 
@@ -203,7 +205,7 @@ if [ $exitcode -eq 0 ]; then
 	else
 		JVMClassPath=${JVMClassPath_RAW}
 	fi
-	# expand variables $APP_PACKAGE, $JAVAROOT, $USER_HOME
+	# expand variables $APP_PACKAGE, $APP_ROOT, $JAVAROOT, $USER_HOME
 	JVMClassPath=$(eval echo "${JVMClassPath}")
 
 	# read the JVM Options in either Array or String style
@@ -213,6 +215,8 @@ if [ $exitcode -eq 0 ]; then
 	else
 		JVMDefaultOptions=${JVMDefaultOptions_RAW}
 	fi
+	# expand variables $APP_PACKAGE, $APP_ROOT, $JAVAROOT, $USER_HOME (#84)
+	JVMDefaultOptions=$(eval echo "${JVMDefaultOptions}")
 
 	# read StartOnMainThread and add as -XstartOnFirstThread
 	JVMStartOnMainThread=$(plist_get_java ':StartOnMainThread')
@@ -220,9 +224,14 @@ if [ $exitcode -eq 0 ]; then
 		JVMDefaultOptions+=" -XstartOnFirstThread"
 	fi
 
-	# read the JVM Arguments as an array and retain spaces
+	# read the JVM Arguments in either Array or String style (#76) and retain spaces
 	IFS=$'\t\n'
-	MainArgs=($(xargs -n1 <<<$(plist_get_java ':Arguments')))
+	MainArgs_RAW=$(plist_get_java ':Arguments' | xargs)
+	if [[ $MainArgs_RAW == *Array* ]] ; then
+		MainArgs=($(xargs -n1 <<<$(plist_get_java ':Arguments' | tr -d '\n' | sed -E 's/Array \{ *(.*) *\}/\1/g' | sed 's/  */ /g')))
+	else
+		MainArgs=($(xargs -n1 <<<$(plist_get_java ':Arguments')))
+	fi
 	unset IFS
 	# post processing of the array follows further below...
 
@@ -240,7 +249,11 @@ else
 	ResourcesFolder="${OracleResourcesFolder}"
 	WorkingDirectory="${OracleJavaFolder}"
 
+	# set expandable variables
 	APP_ROOT="${AppPackageFolder}"
+	APP_PACKAGE="${AppPackageFolder}"
+	JAVAROOT="${OracleJavaFolder}"
+	USER_HOME="$HOME"
 
 	# read the MainClass name
 	JVMMainClass="$(plist_get ':JVMMainClassName')"
@@ -258,12 +271,12 @@ else
 	JVMClassPath_RAW=$(plist_get ':JVMClassPath')
 	if [[ $JVMClassPath_RAW == *Array* ]] ; then
 		JVMClassPath=.$(plist_get ':JVMClassPath' | grep "    " | sed 's/^ */:/g' | tr -d '\n' | xargs)
-		# expand variables $APP_PACKAGE, $JAVAROOT, $USER_HOME
+		# expand variables $APP_PACKAGE, $APP_ROOT, $JAVAROOT, $USER_HOME
 		JVMClassPath=$(eval echo "${JVMClassPath}")
 
 	elif [[ ! -z ${JVMClassPath_RAW} ]] ; then
 		JVMClassPath=${JVMClassPath_RAW}
-		# expand variables $APP_PACKAGE, $JAVAROOT, $USER_HOME
+		# expand variables $APP_PACKAGE, $APP_ROOT, $JAVAROOT, $USER_HOME
 		JVMClassPath=$(eval echo "${JVMClassPath}")
 
 	else
@@ -272,8 +285,11 @@ else
 		# Do NOT expand the default 'AppName.app/Contents/Java/*' classpath (#42)
 	fi
 
-	# read the JVM Default Options
+	# read the JVM Default Options by parsing the :JVMDefaultOptions <dict>
+	# and pulling all <string> values starting with a dash (-)
 	JVMDefaultOptions=$(plist_get ':JVMDefaultOptions' | grep -o " \-.*" | tr -d '\n' | xargs)
+	# expand variables $APP_PACKAGE, $APP_ROOT, $JAVAROOT, $USER_HOME (#99)
+	JVMDefaultOptions=$(eval echo "${JVMDefaultOptions}")
 
 	# read the Main Arguments from JVMArguments key as an array and retain spaces (see #46 for naming details)
 	IFS=$'\t\n'
@@ -287,6 +303,18 @@ else
 fi
 
 
+# (#75) check for undefined icons or icon names without .icns extension and prepare
+# an osascript statement for those cases when the icon can be shown in the dialog
+DialogWithIcon=""
+if [ ! -z ${CFBundleIconFile} ]; then
+	if [[ ${CFBundleIconFile} == *.icns ]] && [[ -f "${ResourcesFolder}/${CFBundleIconFile}" ]] ; then
+		DialogWithIcon=" with icon path to resource \"${CFBundleIconFile}\" in bundle (path to me)"
+	elif [[ ${CFBundleIconFile} != *.icns ]] && [[ -f "${ResourcesFolder}/${CFBundleIconFile}.icns" ]] ; then
+		CFBundleIconFile+=".icns"
+		DialogWithIcon=" with icon path to resource \"${CFBundleIconFile}\" in bundle (path to me)"
+	fi
+fi
+
 
 # JVMVersion: post processing and optional splitting
 if [[ ${JVMVersion} == *";"* ]]; then
@@ -297,14 +325,14 @@ fi
 stub_logger "[JavaRequirement] JVM minimum version: ${JVMVersion}"
 stub_logger "[JavaRequirement] JVM maximum version: ${JVMMaxVersion}"
 
-# MainArgs: replace occurences of $APP_ROOT with its content
+# MainArgs: expand variables $APP_PACKAGE, $APP_ROOT, $JAVAROOT, $USER_HOME
 MainArgsArr=()
 for i in "${MainArgs[@]}"
 do
 	MainArgsArr+=("$(eval echo "$i")")
 done
 
-# JVMOptions: replace occurences of $APP_ROOT with its content
+# JVMOptions: expand variables $APP_PACKAGE, $APP_ROOT, $JAVAROOT, $USER_HOME
 JVMOptionsArr=()
 for i in "${JVMOptions[@]}"
 do
@@ -315,53 +343,98 @@ done
 # internationalized messages
 ############################################
 
-LANG=$(defaults read -g AppleLocale)
-stub_logger "[Language] $LANG"
+# supported languages / available translations
+stubLanguages="^(fr|de|zh|es|en)-"
 
-# French localization
-if [[ $LANG == fr* ]] ; then
+# read user preferred languages as defined in macOS System Preferences (#101)
+stub_logger '[LanguageSearch] Checking preferred languages in macOS System Preferences...'
+appleLanguages=($(defaults read -g AppleLanguages | grep '\s"' | tr -d ',' | xargs))
+stub_logger "[LanguageSearch] ... found [${appleLanguages[*]}]"
+
+language=""
+for i in "${appleLanguages[@]}"
+do
+	langValue="${i%-*}"
+    if [[ "$i" =~ $stubLanguages ]]; then
+		stub_logger "[LanguageSearch] ... selected '$i' ('$langValue') as the default language for the launcher stub"
+		language=${langValue}
+        break
+	fi
+done
+if [ -z "${language}" ]; then
+    language="en"
+    stub_logger "[LanguageSearch] ... selected fallback 'en' as the default language for the launcher stub"
+fi
+stub_logger "[Language] $language"
+
+
+case "${language}" in
+# French
+fr)
 	MSG_ERROR_LAUNCHING="ERREUR au lancement de '${CFBundleName}'."
-	MSG_MISSING_MAINCLASS="'MainClass' n'est pas spÃ©cifiÃ©.\nL'application Java ne peut pas Ãªtre lancÃ©e."
-	MSG_JVMVERSION_REQ_INVALID="La syntaxe de la version Java demandÃ©e est invalide: %s\nVeuillez contacter le dÃ©veloppeur de l'application."
-	MSG_NO_SUITABLE_JAVA="La version de Java installÃ©e sur votre systÃ¨me ne convient pas.\nCe programme nÃ©cessite Java %s"
-	MSG_JAVA_VERSION_OR_LATER="ou ultÃ©rieur"
-	MSG_JAVA_VERSION_LATEST="(derniÃ¨re mise Ã  jour)"
-	MSG_JAVA_VERSION_MAX="Ã  %s"
+	MSG_MISSING_MAINCLASS="'MainClass' n'est pas spécifié.\nL'application Java ne peut pas être lancée."
+	MSG_JVMVERSION_REQ_INVALID="La syntaxe de la version de Java demandée est invalide: %s\nVeuillez contacter le développeur de l'application."
+	MSG_NO_SUITABLE_JAVA="La version de Java installée sur votre système ne convient pas.\nCe programme nécessite Java %s"
+	MSG_JAVA_VERSION_OR_LATER="ou ultérieur"
+	MSG_JAVA_VERSION_LATEST="(dernière mise à jour)"
+	MSG_JAVA_VERSION_MAX="à %s"
 	MSG_NO_SUITABLE_JAVA_CHECK="Merci de bien vouloir installer la version de Java requise."
-	MSG_INSTALL_JAVA="Java doit Ãªtre installÃ© sur votre systÃ¨me.\nRendez-vous sur java.com et suivez les instructions d'installation..."
+	MSG_INSTALL_JAVA="Java doit être installé sur votre système.\nRendez-vous sur java.com et suivez les instructions d'installation..."
 	MSG_LATER="Plus tard"
-	MSG_VISIT_JAVA_DOT_COM="Visiter java.com"
+	MSG_VISIT_JAVA_DOT_COM="Java by Oracle"
+	MSG_VISIT_ADOPTOPENJDK="Java by AdoptOpenJDK"
+    ;;
 
-# German localization
-elif [[ $LANG == de* ]] ; then
+# German
+de)
 	MSG_ERROR_LAUNCHING="FEHLER beim Starten von '${CFBundleName}'."
 	MSG_MISSING_MAINCLASS="Die 'MainClass' ist nicht spezifiziert!\nDie Java-Anwendung kann nicht gestartet werden!"
-	MSG_JVMVERSION_REQ_INVALID="Die Syntax der angeforderten Java-Version ist ungÃ¼ltig: %s\nBitte kontaktieren Sie den Entwickler der App."
-	MSG_NO_SUITABLE_JAVA="Es wurde keine passende Java-Version auf Ihrem System gefunden!\nDieses Programm benÃ¶tigt Java %s"
+	MSG_JVMVERSION_REQ_INVALID="Die Syntax der angeforderten Java-Version ist ungültig: %s\nBitte kontaktieren Sie den Entwickler der App."
+	MSG_NO_SUITABLE_JAVA="Es wurde keine passende Java-Version auf Ihrem System gefunden!\nDieses Programm benötigt Java %s"
 	MSG_JAVA_VERSION_OR_LATER="oder neuer"
 	MSG_JAVA_VERSION_LATEST="(neuste Unterversion)"
 	MSG_JAVA_VERSION_MAX="bis %s"
 	MSG_NO_SUITABLE_JAVA_CHECK="Stellen Sie sicher, dass die angeforderte Java-Version installiert ist."
-	MSG_INSTALL_JAVA="Auf Ihrem System muss die 'Java'-Software installiert sein.\nBesuchen Sie java.com fÃ¼r weitere Installationshinweise."
-	MSG_LATER="SpÃ¤ter"
-	MSG_VISIT_JAVA_DOT_COM="java.com Ã¶ffnen"
+	MSG_INSTALL_JAVA="Auf Ihrem System muss die 'Java'-Software installiert sein.\nBesuchen Sie java.com für weitere Installationshinweise."
+	MSG_LATER="Später"
+	MSG_VISIT_JAVA_DOT_COM="Java von Oracle"
+	MSG_VISIT_ADOPTOPENJDK="Java von AdoptOpenJDK"
+    ;;
 
-# Simplifyed Chinese localization
-elif [[ $LANG == zh* ]] ; then
-	MSG_ERROR_LAUNCHING="æ— æ³•å¯åŠ¨ '${CFBundleName}'."
-	MSG_MISSING_MAINCLASS="æ²¡æœ‰æŒ‡å®š 'MainClass'ï¼\nJavaç¨‹åºæ— æ³•å¯åŠ¨!"
-	MSG_JVMVERSION_REQ_INVALID="Javaç‰ˆæœ¬å‚æ•°è¯­æ³•é”™è¯¯: %s\nè¯·è”ç³»è¯¥åº”ç”¨çš„å¼€å‘è€…ã€‚"
-	MSG_NO_SUITABLE_JAVA="æ²¡æœ‰åœ¨ç³»ç»Ÿä¸­æ‰¾åˆ°åˆé€‚çš„Javaç‰ˆæœ¬ï¼\nå¿…é¡»å®‰è£…Java %sæ‰èƒ½å¤Ÿä½¿ç”¨è¯¥ç¨‹åºï¼"
-	MSG_JAVA_VERSION_OR_LATER="åŠä»¥ä¸Šç‰ˆæœ¬"
-	MSG_JAVA_VERSION_LATEST="ï¼ˆæœ€æ–°ç‰ˆæœ¬ï¼‰"
-	MSG_JAVA_VERSION_MAX="æœ€é«˜ä¸º %s"
-	MSG_NO_SUITABLE_JAVA_CHECK="è¯·ç¡®ä¿ç³»ç»Ÿä¸­å®‰è£…äº†æ‰€éœ€çš„Javaç‰ˆæœ¬"
-	MSG_INSTALL_JAVA="ä½ éœ€è¦åœ¨Macä¸­å®‰è£…Javaè¿è¡ŒçŽ¯å¢ƒï¼\nè®¿é—® java.com äº†è§£å¦‚ä½•å®‰è£…ã€‚"
-	MSG_LATER="ç¨åŽ"
-	MSG_VISIT_JAVA_DOT_COM="è®¿é—® java.com"
+# Simplified Chinese
+zh)
+	MSG_ERROR_LAUNCHING="无法启动 '${CFBundleName}'."
+	MSG_MISSING_MAINCLASS="没有指定 'MainClass'！\nJava程序无法启动!"
+	MSG_JVMVERSION_REQ_INVALID="Java版本参数语法错误: %s\n请联系该应用的开发者。"
+	MSG_NO_SUITABLE_JAVA="没有在系统中找到合适的Java版本！\n必须安装Java %s才能够使用该程序！"
+	MSG_JAVA_VERSION_OR_LATER="及以上版本"
+	MSG_JAVA_VERSION_LATEST="（最新版本）"
+	MSG_JAVA_VERSION_MAX="最高为 %s"
+	MSG_NO_SUITABLE_JAVA_CHECK="请确保系统中安装了所需的Java版本"
+	MSG_INSTALL_JAVA="你需要在Mac中安装Java运行环境！\n访问 java.com 了解如何安装。"
+	MSG_LATER="稍后"
+	MSG_VISIT_JAVA_DOT_COM="Java by Oracle"
+	MSG_VISIT_ADOPTOPENJDK="Java by AdoptOpenJDK"
+    ;;
 
-# English default localization
-else
+# Spanish
+es)
+	MSG_ERROR_LAUNCHING="ERROR iniciando '${CFBundleName}'."
+	MSG_MISSING_MAINCLASS="¡'MainClass' no especificada!\n¡La aplicación Java no puede iniciarse!"
+	MSG_JVMVERSION_REQ_INVALID="La sintaxis de la versión Java requerida no es válida: %s\nPor favor, contacte con el desarrollador de la aplicación."
+	MSG_NO_SUITABLE_JAVA="¡No se encontró una versión de Java adecuada en su sistema!\nEste programa requiere Java %s"
+	MSG_JAVA_VERSION_OR_LATER="o posterior"
+	MSG_JAVA_VERSION_LATEST="(ultima actualización)"
+	MSG_JAVA_VERSION_MAX="superior a %s"
+	MSG_NO_SUITABLE_JAVA_CHECK="Asegúrese de instalar la versión Java requerida."
+	MSG_INSTALL_JAVA="¡Necesita tener JAVA instalado en su Mac!\nVisite java.com para consultar las instrucciones para su instalación..."
+	MSG_LATER="Más tarde"
+	MSG_VISIT_JAVA_DOT_COM="Java de Oracle"
+	MSG_VISIT_ADOPTOPENJDK="Java de AdoptOpenJDK"
+    ;;
+
+# English | default
+en|*)
 	MSG_ERROR_LAUNCHING="ERROR launching '${CFBundleName}'."
 	MSG_MISSING_MAINCLASS="'MainClass' isn't specified!\nJava application cannot be started!"
 	MSG_JVMVERSION_REQ_INVALID="The syntax of the required Java version is invalid: %s\nPlease contact the App developer."
@@ -372,8 +445,10 @@ else
 	MSG_NO_SUITABLE_JAVA_CHECK="Make sure you install the required Java version."
 	MSG_INSTALL_JAVA="You need to have JAVA installed on your Mac!\nVisit java.com for installation instructions..."
 	MSG_LATER="Later"
-	MSG_VISIT_JAVA_DOT_COM="Visit java.com"
-fi
+	MSG_VISIT_JAVA_DOT_COM="Java by Oracle"
+	MSG_VISIT_ADOPTOPENJDK="Java by AdoptOpenJDK"
+    ;;
+esac
 
 
 
@@ -456,7 +531,7 @@ function get_comparable_java_version() {
 ################################################################################
 function is_valid_requirement_pattern() {
 	local java_req=$1
-	java8pattern='1\.[4-8](\.0)?(\.0_[0-9]+)?[*+]?'
+	java8pattern='1\.[4-8](\.[0-9]+)?(\.0_[0-9]+)?[*+]?'
 	java9pattern='(9|1[0-9])(-ea|[*+]|(\.[0-9]+){1,2}[*+]?)?'
 	# test matches either old Java versioning scheme (up to 1.8) or new scheme (starting with 9)
 	if [[ ${java_req} =~ ^(${java8pattern}|${java9pattern})$ ]]; then
@@ -489,20 +564,28 @@ if [ -n "$JAVA_HOME" ] ; then
 	if [[ $JAVA_HOME == /* ]] ; then
 		# if "$JAVA_HOME" starts with a Slash it's an absolute path
 		JAVACMD="$JAVA_HOME/bin/java"
+		stub_logger "[JavaSearch] ... parsing JAVA_HOME as absolute path to the executable '$JAVACMD'"
 	else
 		# otherwise it's a relative path to "$AppPackageFolder"
 		JAVACMD="$AppPackageFolder/$JAVA_HOME/bin/java"
+		stub_logger "[JavaSearch] ... parsing JAVA_HOME as relative path inside the App bundle to the executable '$JAVACMD'"
 	fi
 	JAVACMD_version=$(get_comparable_java_version $(get_java_version_from_cmd "${JAVACMD}"))
 else
-	stub_logger "[JavaSearch] ... didn't found JAVA_HOME"
+	stub_logger "[JavaSearch] ... haven't found JAVA_HOME"
 fi
 
 
 # check for any other or a specific Java version
 # also if $JAVA_HOME exists but isn't executable
 if [ -z "${JAVACMD}" ] || [ ! -x "${JAVACMD}" ] ; then
-	stub_logger "[JavaSearch] Checking for JavaVirtualMachines on the system ..."
+
+	# add a warning in the syslog if JAVA_HOME is not executable or not found (#100)
+	if [ -n "$JAVA_HOME" ] ; then
+		stub_logger "[JavaSearch] ... but no 'java' executable was found at the JAVA_HOME location!"
+	fi
+
+	stub_logger "[JavaSearch] Searching for JavaVirtualMachines on the system ..."
 	# reset variables
 	JAVACMD=""
 	JAVACMD_version=""
@@ -513,7 +596,7 @@ if [ -z "${JAVACMD}" ] || [ ! -x "${JAVACMD}" ] ; then
 		# log exit cause
 		stub_logger "[EXIT 4] ${MSG_JVMVERSION_REQ_INVALID_EXPANDED}"
 		# display error message with AppleScript
-		osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_JVMVERSION_REQ_INVALID_EXPANDED}\" with title \"${CFBundleName}\" buttons {\" OK \"} default button 1 with icon path to resource \"${CFBundleIconFile}\" in bundle (path to me)"
+		osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_JVMVERSION_REQ_INVALID_EXPANDED}\" with title \"${CFBundleName}\" buttons {\" OK \"} default button 1${DialogWithIcon}"
 		# exit with error
 		exit 4
 	fi
@@ -523,7 +606,7 @@ if [ -z "${JAVACMD}" ] || [ ! -x "${JAVACMD}" ] ; then
 		# log exit cause
 		stub_logger "[EXIT 5] ${MSG_JVMVERSION_REQ_INVALID_EXPANDED}"
 		# display error message with AppleScript
-		osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_JVMVERSION_REQ_INVALID_EXPANDED}\" with title \"${CFBundleName}\" buttons {\" OK \"} default button 1 with icon path to resource \"${CFBundleIconFile}\" in bundle (path to me)"
+		osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_JVMVERSION_REQ_INVALID_EXPANDED}\" with title \"${CFBundleName}\" buttons {\" OK \"} default button 1${DialogWithIcon}"
 		# exit with error
 		exit 5
 	fi
@@ -531,15 +614,41 @@ if [ -z "${JAVACMD}" ] || [ ! -x "${JAVACMD}" ] ; then
 
 	# find installed JavaVirtualMachines (JDK + JRE)
 	allJVMs=()
-	# read JDK's from '/usr/libexec/java_home -V' command
-	while read -r line; do
-		version=$(echo $line | awk -F $',' '{print $1;}')
-		path=$(echo $line | awk -F $'" ' '{print $2;}')
-		path+="/bin/java"
-		allJVMs+=("$version:$path")
-	done < <(/usr/libexec/java_home -V 2>&1 | grep '^[[:space:]]')
-	# unset while loop variables
-	unset version path
+
+	# read JDK's from '/usr/libexec/java_home --xml' command with PlistBuddy and a custom Dict iterator
+	# idea: https://stackoverflow.com/a/14085460/1128689 and https://scriptingosx.com/2018/07/parsing-dscl-output-in-scripts/
+	javaXml=$(/usr/libexec/java_home --xml)
+	javaCounter=$(/usr/libexec/PlistBuddy -c "Print" /dev/stdin <<< $javaXml | grep "Dict" | wc -l | tr -d ' ')
+
+	# iterate over all Dict entries
+	# but only if there are any JVMs at all (#93)
+	if [ "$javaCounter" -gt "0" ] ; then
+		for idx in $(seq 0 $((javaCounter - 1)))
+		do
+			version=$(/usr/libexec/PlistBuddy -c "print :$idx:JVMVersion" /dev/stdin <<< $javaXml)
+			path=$(/usr/libexec/PlistBuddy -c "print :$idx:JVMHomePath" /dev/stdin <<< $javaXml)
+			path+="/bin/java"
+			allJVMs+=("$version:$path")
+		done
+		# unset for loop variables
+		unset version path
+	fi
+
+	# add SDKMAN! java versions (#95)
+	if [ -d ~/.sdkman/candidates/java/ ] ; then
+		for sdkjdk in ~/.sdkman/candidates/java/*/
+		do
+			if [[ ${sdkjdk} =~ /current/$ ]] ; then
+				continue
+			fi
+
+			sdkjdkcmd="${sdkjdk}bin/java"
+			version=$(get_java_version_from_cmd "${sdkjdkcmd}")
+			allJVMs+=("$version:$sdkjdkcmd")
+		done
+		# unset for loop variables
+		unset version
+	fi
 
 	# add Apple JRE if available
 	if [ -x "${apple_jre_plugin}" ] ; then
@@ -559,6 +668,9 @@ if [ -z "${JAVACMD}" ] || [ ! -x "${JAVACMD}" ] ; then
 
 
 	# determine JVMs matching the min/max version requirement
+
+	stub_logger "[JavaSearch] Filtering the result list for JVMs matching the min/max version requirement ..."
+
 	minC=$(get_comparable_java_version ${JVMVersion})
 	maxC=$(get_comparable_java_version ${JVMMaxVersion})
 	matchingJVMs=()
@@ -643,7 +755,7 @@ if [ -z "${JAVACMD}" ] || [ ! -x "${JAVACMD}" ] ; then
 	# debug output
 	for i in "${matchingJVMs[@]}"
 	do
-		stub_logger "[JavaSearch] ... ... matches all requirements: $i"
+		stub_logger "[JavaSearch] ... matches all requirements: $i"
 	done
 
 
@@ -700,9 +812,10 @@ if [ -z "${JAVACMD}" ] || [ ! -x "${JAVACMD}" ] ; then
 		stub_logger "[EXIT 3] ${MSG_NO_SUITABLE_JAVA_EXPANDED}"
 
 		# display error message with AppleScript
-		osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_NO_SUITABLE_JAVA_EXPANDED}\n${MSG_NO_SUITABLE_JAVA_CHECK}\" with title \"${CFBundleName}\"  buttons {\" OK \", \"${MSG_VISIT_JAVA_DOT_COM}\"} default button \"${MSG_VISIT_JAVA_DOT_COM}\" with icon path to resource \"${CFBundleIconFile}\" in bundle (path to me)" \
+		osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_NO_SUITABLE_JAVA_EXPANDED}\n${MSG_NO_SUITABLE_JAVA_CHECK}\" with title \"${CFBundleName}\"  buttons {\" OK \", \"${MSG_VISIT_JAVA_DOT_COM}\", \"${MSG_VISIT_ADOPTOPENJDK}\"} default button 1${DialogWithIcon}" \
 				-e "set response to button returned of the result" \
-				-e "if response is \"${MSG_VISIT_JAVA_DOT_COM}\" then open location \"http://java.com\""
+				-e "if response is \"${MSG_VISIT_JAVA_DOT_COM}\" then open location \"https://www.java.com/download/\"" \
+				-e "if response is \"${MSG_VISIT_ADOPTOPENJDK}\" then open location \"https://adoptopenjdk.net/releases.html\""
 		# exit with error
 		exit 3
 
@@ -710,9 +823,10 @@ if [ -z "${JAVACMD}" ] || [ ! -x "${JAVACMD}" ] ; then
 		# log exit cause
 		stub_logger "[EXIT 1] ${MSG_ERROR_LAUNCHING}"
 		# display error message with AppleScript
-		osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_INSTALL_JAVA}\" with title \"${CFBundleName}\" buttons {\"${MSG_LATER}\", \"${MSG_VISIT_JAVA_DOT_COM}\"} default button \"${MSG_VISIT_JAVA_DOT_COM}\" with icon path to resource \"${CFBundleIconFile}\" in bundle (path to me)" \
+		osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_INSTALL_JAVA}\" with title \"${CFBundleName}\" buttons {\"${MSG_LATER}\", \"${MSG_VISIT_JAVA_DOT_COM}\", \"${MSG_VISIT_ADOPTOPENJDK}\"} default button 1${DialogWithIcon}" \
 					-e "set response to button returned of the result" \
-					-e "if response is \"${MSG_VISIT_JAVA_DOT_COM}\" then open location \"http://java.com\""
+					-e "if response is \"${MSG_VISIT_JAVA_DOT_COM}\" then open location \"https://www.java.com/download/\"" \
+					-e "if response is \"${MSG_VISIT_ADOPTOPENJDK}\" then open location \"https://adoptopenjdk.net/releases.html\""
 		# exit with error
 		exit 1
 	fi
@@ -727,7 +841,7 @@ if [ -z "${JVMMainClass}" ]; then
 	# log exit cause
 	stub_logger "[EXIT 2] ${MSG_MISSING_MAINCLASS}"
 	# display error message with AppleScript
-	osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_MISSING_MAINCLASS}\" with title \"${CFBundleName}\" buttons {\" OK \"} default button 1 with icon path to resource \"${CFBundleIconFile}\" in bundle (path to me)"
+	osascript -e "tell application \"System Events\" to display dialog \"${MSG_ERROR_LAUNCHING}\n\n${MSG_MISSING_MAINCLASS}\" with title \"${CFBundleName}\" buttons {\" OK \"} default button 1${DialogWithIcon}"
 	# exit with error
 	exit 2
 fi
@@ -761,10 +875,10 @@ stub_logger "[WorkingDirectory] ${WorkingDirectory}"
 # - main class
 # - main class arguments
 # - passthrough arguments from Terminal or Drag'n'Drop to Finder icon
-stub_logger "[Exec] \"$JAVACMD\" -cp \"${JVMClassPath}\" -splash:\"${ResourcesFolder}/${JVMSplashFile}\" -Xdock:icon=\"${ResourcesFolder}/${CFBundleIconFile}\" -Xdock:name=\"${CFBundleName}\" ${JVMOptionsArr:+$(printf "'%s' " "${JVMOptionsArr[@]}") }${JVMDefaultOptions:+$JVMDefaultOptions }${JVMMainClass}${MainArgsArr:+ $(printf "'%s' " "${MainArgsArr[@]}")}${ArgsPassthru:+ $(printf "'%s' " "${ArgsPassthru[@]}")}"
+stub_logger "[Exec] \"$JAVACMD\" -cp \"${JVMClassPath}\" ${JVMSplashFile:+ -splash:\"${ResourcesFolder}/${JVMSplashFile}\"} -Xdock:icon=\"${ResourcesFolder}/${CFBundleIconFile}\" -Xdock:name=\"${CFBundleName}\" ${JVMOptionsArr:+$(printf "'%s' " "${JVMOptionsArr[@]}") }${JVMDefaultOptions:+$JVMDefaultOptions }${JVMMainClass}${MainArgsArr:+ $(printf "'%s' " "${MainArgsArr[@]}")}${ArgsPassthru:+ $(printf "'%s' " "${ArgsPassthru[@]}")}"
 exec "${JAVACMD}" \
 		-cp "${JVMClassPath}" \
-		-splash:"${ResourcesFolder}/${JVMSplashFile}" \
+		${JVMSplashFile:+ -splash:"${ResourcesFolder}/${JVMSplashFile}"} \
 		-Xdock:icon="${ResourcesFolder}/${CFBundleIconFile}" \
 		-Xdock:name="${CFBundleName}" \
 		${JVMOptionsArr:+"${JVMOptionsArr[@]}" }\
