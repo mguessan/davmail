@@ -27,7 +27,6 @@ import davmail.exchange.ews.GetFolderMethod;
 import davmail.exchange.ews.GetUserConfigurationMethod;
 import davmail.http.HttpClientAdapter;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -35,11 +34,17 @@ import java.io.IOException;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
+import java.security.Security;
 
 public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
     private static final int MAX_COUNT = 300;
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticator.class);
+
+    static {
+        // disable HTTP/2 loader on Java 14 and later to enable custom socket factory
+        System.setProperty("com.sun.webkit.useHTTP2Loader", "false");
+    }
 
     boolean isAuthenticated = false;
     String errorCode = null;
@@ -77,6 +82,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
     /**
      * Return a pool enabled HttpClientAdapter instance to access O365
+     *
      * @return HttpClientAdapter instance
      */
     @Override
@@ -177,11 +183,14 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     }
 
     public static void main(String[] argv) {
-        try {
-            Settings.setDefaultSettings();
-            //Settings.setConfigFilePath("davmail-interactive.properties");
-            //Settings.load();
 
+        try {
+            // set custom factory before loading OpenJFX
+            Security.setProperty("ssl.SocketFactory.provider", "davmail.http.DavGatewaySSLSocketFactory");
+
+            Settings.setDefaultSettings();
+            Settings.setConfigFilePath("davmail-interactive.properties");
+            Settings.load();
 
             O365InteractiveAuthenticator authenticator = new O365InteractiveAuthenticator();
             authenticator.setUsername("");
