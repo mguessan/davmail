@@ -559,7 +559,7 @@
     </target>
 
     <target name="download-jre">
-        <get src="https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=11&amp;ext=zip&amp;os=windows&amp;arch=x86&amp;hw_bitness=64&amp;bundle_type=jre&amp;features=fx"
+        <get src="https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=15&amp;ext=zip&amp;os=windows&amp;arch=x86&amp;hw_bitness=64&amp;bundle_type=jre&amp;features=fx"
              dest="dist/jrefx.zip"
         />
         <unzip src="dist/jrefx.zip" dest="dist/jre">
