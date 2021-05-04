@@ -553,7 +553,7 @@ public class SettingsFrame extends JFrame {
 
         rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
-        httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
+        httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient"));
         wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
 
         addSettingComponent(leftLoggingPanel, BundleMessage.format("UI_LOG_DEFAULT"), rootLoggingLevelField);
@@ -669,7 +669,7 @@ public class SettingsFrame extends JFrame {
 
         rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
-        httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
+        httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient"));
         wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
         logFilePathField.setText(Settings.getProperty("davmail.logFilePath"));
         logFileSizeField.setText(Settings.getProperty("davmail.logFileSize"));
@@ -840,7 +840,7 @@ public class SettingsFrame extends JFrame {
 
             Settings.setLoggingLevel("rootLogger", (Level) rootLoggingLevelField.getSelectedItem());
             Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());
-            Settings.setLoggingLevel("org.apache.commons.httpclient", (Level) httpclientLoggingLevelField.getSelectedItem());
+            Settings.setLoggingLevel("httpclient", (Level) httpclientLoggingLevelField.getSelectedItem());
             Settings.setLoggingLevel("httpclient.wire", (Level) wireLoggingLevelField.getSelectedItem());
             Settings.setProperty("davmail.logFilePath", logFilePathField.getText());
             Settings.setProperty("davmail.logFileSize", logFileSizeField.getText());

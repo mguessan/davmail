@@ -217,7 +217,7 @@ public final class Settings {
         SETTINGS.put("log4j.rootLogger", Level.WARN.toString());
         SETTINGS.put("log4j.logger.davmail", Level.DEBUG.toString());
         SETTINGS.put("log4j.logger.httpclient.wire", Level.WARN.toString());
-        SETTINGS.put("log4j.logger.org.apache.commons.httpclient", Level.WARN.toString());
+        SETTINGS.put("log4j.logger.httpclient", Level.WARN.toString());
         SETTINGS.put("davmail.logFilePath", "");
     }
 
@@ -330,12 +330,10 @@ public final class Settings {
         // update logging levels
         Settings.setLoggingLevel("rootLogger", Settings.getLoggingLevel("rootLogger"));
         Settings.setLoggingLevel("davmail", Settings.getLoggingLevel("davmail"));
-        Settings.setLoggingLevel("httpclient.wire", Settings.getLoggingLevel("httpclient.wire"));
-        Settings.setLoggingLevel("org.apache.commons.httpclient", Settings.getLoggingLevel("org.apache.commons.httpclient"));
         // set logging levels for HttpClient 4
         Settings.setLoggingLevel("org.apache.http.wire", Settings.getLoggingLevel("httpclient.wire"));
         Settings.setLoggingLevel("org.apache.http.conn.ssl", Settings.getLoggingLevel("httpclient.wire"));
-        Settings.setLoggingLevel("org.apache.http", Settings.getLoggingLevel("org.apache.commons.httpclient"));
+        Settings.setLoggingLevel("org.apache.http", Settings.getLoggingLevel("httpclient"));
     }
 
     /**

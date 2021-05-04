@@ -569,7 +569,7 @@ public class Field {
      * @param alias field alias
      * @param value field value
      * @return property value object
-     * @see ExchangePropPatchMethod
+     * @see davmail.http.request.ExchangePropPatchRequest
      */
     public static PropertyValue createPropertyValue(String alias, String value) {
         Field field = Field.get(alias);

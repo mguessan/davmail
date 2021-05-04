@@ -33,7 +33,7 @@ import davmail.http.request.GetRequest;
 import davmail.ui.NotificationDialog;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 
 import javax.mail.MessagingException;

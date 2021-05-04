@@ -20,7 +20,6 @@
 package davmail.http.request;
 
 import davmail.exchange.XMLStreamUtil;
-import davmail.exchange.dav.ExchangeDavMethod;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -45,7 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class ExchangeDavRequest extends HttpPost implements ResponseHandler<List<MultiStatusResponse>> {
-    protected static final Logger LOGGER = Logger.getLogger(ExchangeDavMethod.class);
+    protected static final Logger LOGGER = Logger.getLogger(ExchangeDavRequest.class);
     private static final String XML_CONTENT_TYPE = "text/xml; charset=UTF-8";
 
     private HttpResponse response;
