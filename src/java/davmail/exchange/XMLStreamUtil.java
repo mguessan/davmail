@@ -50,10 +50,10 @@ public final class XMLStreamUtil {
         inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
         inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
         inputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.FALSE);
-        // Woodstox 5.2.0
-        //if (inputFactory.isPropertySupported("com.ctc.wstx.allowXml11EscapedCharsInXml10")) {
-        //    inputFactory.setProperty("com.ctc.wstx.allowXml11EscapedCharsInXml10", Boolean.TRUE);
-        //}
+        // Woodstox 5.2.0 or later
+        if (inputFactory.isPropertySupported("com.ctc.wstx.allowXml11EscapedCharsInXml10")) {
+            inputFactory.setProperty("com.ctc.wstx.allowXml11EscapedCharsInXml10", Boolean.TRUE);
+        }
         return inputFactory;
     }
 
