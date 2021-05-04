@@ -267,6 +267,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 if (convertIdItem != null && !convertIdItem.isEmpty()) {
                     email = convertIdItem.get("Mailbox");
                     alias = email.substring(0, email.indexOf('@'));
+                } else {
+                    LOGGER.error("Unable to resolve email from root folder");
+                    throw new IOException();
                 }
 
             } catch (IOException e) {
@@ -278,57 +281,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 || "/ews/services.wsdl".equalsIgnoreCase(uri.getPath())
                 || "/ews/exchange.asmx".equalsIgnoreCase(uri.getPath());
 
-        // TODO: no longer needed
-        // options page is not available in direct EWS mode
-        //if (!directEws && (email == null || alias == null)) {
-        // retrieve email and alias from options page
-        //    getEmailAndAliasFromOptions();
-        //}
-
-        // failover, should not happen
-        if (email == null || alias == null) {
-            // OWA authentication failed, get email address from login
-            if (userName.indexOf('@') >= 0) {
-                // userName is email address
-                email = userName;
-                alias = userName.substring(0, userName.indexOf('@'));
-            } else {
-                // userName or domain\\username, rebuild email address
-                alias = getAliasFromLogin();
-
-                // try to get email address with ResolveNames
-                resolveEmailAddress(userName);
-                // failover, build from host name
-                if (email == null) {
-                    email = getAliasFromLogin() + getEmailSuffixFromHostname();
-                }
-            }
-        }
-
         currentMailboxPath = "/users/" + email.toLowerCase();
-
-        // enable preemptive authentication on non NTLM endpoints
-        // TODO: enable preemptive auth ?
-        /*if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
-            httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
-        }*/
-
-        // direct EWS: get primary smtp email address with ResolveNames
-        if (directEws && email == null) {
-            try {
-                ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod(alias);
-                executeMethod(resolveNamesMethod);
-                List<EWSMethod.Item> responses = resolveNamesMethod.getResponseItems();
-                for (EWSMethod.Item response : responses) {
-                    if (alias.equalsIgnoreCase(response.get("Name"))) {
-                        email = response.get("EmailAddress");
-                        currentMailboxPath = "/users/" + email.toLowerCase();
-                    }
-                }
-            } catch (IOException e) {
-                LOGGER.warn("Unable to get primary email address with ResolveNames", e);
-            }
-        }
 
         try {
             folderIdMap = new HashMap<>();
@@ -800,7 +753,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
 
                 if (actualConditionCount > 1) {
-                    buffer.append("</t:").append(operator.toString()).append('>');
+                    buffer.append("</t:").append(operator).append('>');
                 }
             }
         }
@@ -836,6 +789,8 @@ public class EwsExchangeSession extends ExchangeSession {
 
         protected FieldURI getFieldURI() {
             FieldURI fieldURI = Field.get(attributeName);
+            // check to detect broken field mapping
+            //noinspection ConstantConditions
             if (fieldURI == null) {
                 throw new IllegalArgumentException("Unknown field: " + attributeName);
             }
@@ -883,7 +838,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 buffer.append("</t:FieldURIOrConstant>");
             }
 
-            buffer.append("</t:").append(operator.toString()).append('>');
+            buffer.append("</t:").append(operator).append('>');
         }
 
         public boolean isMatch(ExchangeSession.Contact contact) {
@@ -2654,7 +2609,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public int sendEvent(String icsBody) throws IOException {
-        String itemName = UUID.randomUUID().toString() + ".EML";
+        String itemName = UUID.randomUUID() + ".EML";
         byte[] mimeContent = new Event(DRAFTS, itemName, "urn:content-classes:calendarmessage", icsBody, null, null).createMimeContent();
         if (mimeContent == null) {
             // no recipients, cancel
