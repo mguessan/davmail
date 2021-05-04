@@ -622,7 +622,7 @@ public class HttpClientAdapter implements Closeable {
     }
 
     public String getUserAgent() {
-        return Settings.getProperty("davmail.userAgent", DavGatewayHttpClientFacade.IE_USER_AGENT);
+        return Settings.getUserAgent();
     }
 
     public static HttpResponseException buildHttpResponseException(HttpRequestBase request, HttpResponse response) {
