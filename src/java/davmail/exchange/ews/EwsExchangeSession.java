@@ -3158,9 +3158,9 @@ public class EwsExchangeSession extends ExchangeSession {
      * @return true if itemName is an EWS item id
      */
     protected static boolean isItemId(String itemName) {
-        return itemName.length() >= 152
+        return itemName.length() >= 144
                 // item name is base64url
-                //&& itemName.matches("^([A-Za-z0-9-_]{4})*([A-Za-z0-9-_]{4}|[A-Za-z0-9-_]{3}=|[A-Za-z0-9-_]{2}==)$")
+                && itemName.matches("^([A-Za-z0-9-_]{4})*([A-Za-z0-9-_]{4}|[A-Za-z0-9-_]{3}=|[A-Za-z0-9-_]{2}==)\\.EML$")
                 && itemName.indexOf(' ') < 0;
     }
 
