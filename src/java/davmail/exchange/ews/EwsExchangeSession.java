@@ -2113,8 +2113,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
             // handle deleted occurrences
-            if (!vCalendar.isTodo() && currentItemId != null && !isMeetingResponse &&
-                    Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
+            if (!vCalendar.isTodo() && currentItemId != null && !isMeetingResponse) {
                 handleExcludedDates(currentItemId, vCalendar);
                 handleModifiedOccurrences(currentItemId, vCalendar);
             }
