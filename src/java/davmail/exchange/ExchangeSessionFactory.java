@@ -176,7 +176,8 @@ public final class ExchangeSessionFactory {
                 }
 
                 if (authenticatorClass != null) {
-                    ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName(authenticatorClass).newInstance();
+                    ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName(authenticatorClass)
+                            .getDeclaredConstructor().newInstance();
                     authenticator.setUsername(poolKey.userName);
                     authenticator.setPassword(poolKey.password);
                     authenticator.authenticate();
@@ -315,7 +316,7 @@ public final class ExchangeSessionFactory {
             int status = response.getStatusLine().getStatusCode();
             ExchangeSession.LOGGER.debug("Test configuration status: " + status);
             if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
-                    && !DavGatewayHttpClientFacade.isRedirect(status)) {
+                    && !HttpClientAdapter.isRedirect(status)) {
                 throw new DavMailException("EXCEPTION_CONNECTION_FAILED", url, status);
             }
             // session opened, future failure will mean network down
@@ -396,9 +397,14 @@ public final class ExchangeSessionFactory {
     /**
      * Reset config check status and clear session pool.
      */
-    public static void reset() {
+    public static void shutdown() {
         configChecked = false;
         errorSent = false;
-        POOL_MAP.clear();
+        synchronized (LOCK) {
+            for (ExchangeSession session:POOL_MAP.values()) {
+                session.close();
+            }
+            POOL_MAP.clear();
+        }
     }
 }

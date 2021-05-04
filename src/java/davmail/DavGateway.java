@@ -190,9 +190,7 @@ public final class DavGateway {
     public static void stop() {
         DavGateway.stopServers();
         // close pooled connections
-        DavGatewayHttpClientFacade.stop();
-        // clear session cache
-        ExchangeSessionFactory.reset();
+        ExchangeSessionFactory.shutdown();
         DavGatewayTray.info(new BundleMessage("LOG_GATEWAY_STOP"));
         DavGatewayTray.dispose();
     }
@@ -203,7 +201,7 @@ public final class DavGateway {
     public static void restart() {
         DavGateway.stopServers();
         // clear session cache
-        ExchangeSessionFactory.reset();
+        ExchangeSessionFactory.shutdown();
         DavGateway.start();
     }
 
