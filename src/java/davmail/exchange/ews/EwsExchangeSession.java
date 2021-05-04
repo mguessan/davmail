@@ -197,6 +197,14 @@ public class EwsExchangeSession extends ExchangeSession {
         buildSessionInfo(null);
     }
 
+    public EwsExchangeSession(URI uri, O365Token token, String userName) throws IOException {
+        this(new HttpClientAdapter(uri, true), token, userName);
+    }
+
+    public EwsExchangeSession(String url, String userName, String password) throws IOException {
+        this(new HttpClientAdapter(url, userName, password, true), userName);
+    }
+
     /**
      * EWS fetch page size.
      *
