@@ -708,8 +708,8 @@ public class EwsExchangeSession extends ExchangeSession {
         resultCount = results.size();
         if (resultCount > 0 && LOGGER.isDebugEnabled()) {
             LOGGER.debug("Folder " + folderPath + " - Search items count: " + resultCount + " maxCount: " + maxCount
-                    + " highest uid: " + results.get(0).get(Field.get("imapUid").getResponseName())
-                    + " lowest uid: " + results.get(resultCount - 1).get(Field.get("imapUid").getResponseName()));
+                    + " highest uid: " + results.get(0).getLong(Field.get("imapUid").getResponseName())
+                    + " lowest uid: " + results.get(resultCount - 1).getLong(Field.get("imapUid").getResponseName()));
         }
 
 
@@ -755,11 +755,11 @@ public class EwsExchangeSession extends ExchangeSession {
 
             long highestUid = 0;
             if (resultCount > 0) {
-                highestUid = Long.parseLong(results.get(resultCount - 1).get(Field.get("imapUid").getResponseName()));
+                highestUid = results.get(resultCount - 1).getLong(Field.get("imapUid").getResponseName());
             }
             // Only add new result if not already available (concurrent folder changes issue)
             for (EWSMethod.Item item : findItemMethod.getResponseItems()) {
-                long imapUid = Long.parseLong(item.get(Field.get("imapUid").getResponseName()));
+                long imapUid = item.getLong(Field.get("imapUid").getResponseName());
                 if (imapUid > highestUid) {
                     results.add(item);
                 }
@@ -767,8 +767,8 @@ public class EwsExchangeSession extends ExchangeSession {
             resultCount = results.size();
             if (resultCount > 0 && LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Folder " + folderPath + " - Search items current count: " + resultCount + " fetchCount: " + getPageSize()
-                        + " highest uid: " + results.get(resultCount - 1).get(Field.get("imapUid").getResponseName())
-                        + " lowest uid: " + results.get(0).get(Field.get("imapUid").getResponseName()));
+                        + " highest uid: " + results.get(resultCount - 1).getLong(Field.get("imapUid").getResponseName())
+                        + " lowest uid: " + results.get(0).getLong(Field.get("imapUid").getResponseName()));
             }
             if (Thread.interrupted()) {
                 LOGGER.debug("Folder " + folderPath + " - Search items failed: Interrupted by client");
