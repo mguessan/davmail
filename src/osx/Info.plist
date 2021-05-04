@@ -2,7 +2,7 @@
 <plist version="1.0">
   <dict>
     <!--key>LSEnvironment</key>
-    <dict><key>JAVA_HOME</key><string>jre</string></dict-->
+    <dict><key>JAVA_HOME</key><string>Contents/Frameworks/azul-jre-fx/Contents/Home</string></dict-->
     <key>LSUIElement</key><string>0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
