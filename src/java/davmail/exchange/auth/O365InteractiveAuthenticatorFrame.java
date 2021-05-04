@@ -56,6 +56,7 @@ import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
 
 public class O365InteractiveAuthenticatorFrame extends JFrame {
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticatorFrame.class);
