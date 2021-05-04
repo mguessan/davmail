@@ -23,7 +23,11 @@ import davmail.Settings;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.SocketAddress;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +62,7 @@ public class DavGatewayProxySelector extends ProxySelector {
             return proxyes;
         } else if (enableProxy
                 && proxyHost != null && proxyHost.length() > 0 && proxyPort > 0
-                && !DavGatewayHttpClientFacade.isNoProxyFor(uri)
+                && !isNoProxyFor(uri)
                 && ("http".equals(scheme) || "https".equals(scheme))) {
             // DavMail defined proxies
             ArrayList<Proxy> proxies = new ArrayList<>();
@@ -69,9 +73,23 @@ public class DavGatewayProxySelector extends ProxySelector {
         }
     }
 
+    private boolean isNoProxyFor(URI uri) {
+        final String noProxyFor = Settings.getProperty("davmail.noProxyFor");
+        if (noProxyFor != null) {
+            final String urihost = uri.getHost().toLowerCase();
+            final String[] domains = noProxyFor.toLowerCase().split(",\\s*");
+            for (String domain : domains) {
+                if (urihost.endsWith(domain)) {
+                    return true; //break;
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
-        LOGGER.debug("Connection to "+uri+" failed, socket address "+sa+" "+ioe);
+        LOGGER.debug("Connection to " + uri + " failed, socket address " + sa + " " + ioe);
         proxySelector.connectFailed(uri, sa, ioe);
     }
 }

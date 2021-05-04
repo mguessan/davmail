@@ -27,7 +27,6 @@ import davmail.exchange.auth.ExchangeAuthenticator;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
-import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.GetRequest;
 import org.apache.http.HttpStatus;

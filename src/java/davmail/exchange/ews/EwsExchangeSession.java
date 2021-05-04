@@ -28,13 +28,11 @@ import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.exchange.auth.O365Token;
-import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.GetRequest;
 import davmail.ui.NotificationDialog;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 
@@ -206,18 +204,6 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     private static int getPageSize() {
         return Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE);
-    }
-
-    /**
-     * Authentication mode test: EWS is never form based.
-     *
-     * @param url        exchange base URL
-     * @param httpClient httpClient instance
-     * @return true if basic authentication detected
-     */
-    protected boolean isBasicAuthentication(HttpClient httpClient, String url) {
-        return !url.toLowerCase().endsWith("/ews/exchange.asmx")
-                && DavGatewayHttpClientFacade.getHttpStatus(httpClient, url) == org.apache.http.HttpStatus.SC_UNAUTHORIZED;
     }
 
     /**

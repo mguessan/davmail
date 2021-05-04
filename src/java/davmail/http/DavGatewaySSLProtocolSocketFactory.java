@@ -59,26 +59,7 @@ import java.util.ArrayList;
  * Used by commons httpclient 3
  */
 public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketFactory {
-    /**
-     * Register custom Socket Factory to let user accept or reject certificate
-     */
-    public static void register() {
-        String urlString = Settings.getProperty("davmail.url");
-        try {
-            URL url = new URL(urlString);
-            String protocol = url.getProtocol();
-            if ("https".equals(protocol)) {
-                int port = url.getPort();
-                if (port < 0) {
-                    port = HttpsURL.DEFAULT_PORT;
-                }
-                Protocol.registerProtocol(url.getProtocol(),
-                        new Protocol(protocol, (ProtocolSocketFactory) new DavGatewaySSLProtocolSocketFactory(), port));
-            }
-        } catch (MalformedURLException e) {
-            DavGatewayTray.error(new BundleMessage("LOG_INVALID_URL", urlString));
-        }
-    }
+
 
     private KeyStore.ProtectionParameter getProtectionParameter(String password) {
         if (password != null && password.length() > 0) {

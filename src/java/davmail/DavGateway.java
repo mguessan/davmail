@@ -21,8 +21,6 @@ package davmail;
 import davmail.caldav.CaldavServer;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.http.DavGatewayHttpClientFacade;
-import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.GetRequest;
 import davmail.imap.ImapServer;
@@ -120,12 +118,6 @@ public final class DavGateway {
      * Start DavMail listeners.
      */
     public static void start() {
-        // register custom SSL Socket factory
-        DavGatewaySSLProtocolSocketFactory.register();
-
-        // prepare HTTP connection pool
-        DavGatewayHttpClientFacade.start();
-
         SERVER_LIST.clear();
 
         int smtpPort = Settings.getIntProperty("davmail.smtpPort");
