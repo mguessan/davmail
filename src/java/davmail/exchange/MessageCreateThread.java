@@ -47,27 +47,32 @@ public class MessageCreateThread extends Thread {
     /**
      * Create message in a separate thread.
      *
-     * @param session Exchange session
-     * @param folderPath folder path
-     * @param messageName message name
-     * @param properties message properties
-     * @param mimeMessage message content
+     * @param session      Exchange session
+     * @param folderPath   folder path
+     * @param messageName  message name
+     * @param properties   message properties
+     * @param mimeMessage  message content
      * @param outputStream output stream
      * @param capabilities IMAP capabilities
      * @throws InterruptedException on error
-     * @throws IOException on error
+     * @throws IOException          on error
      */
-    public static void createMessage(ExchangeSession session, String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage, OutputStream outputStream, String capabilities) throws InterruptedException, IOException {
+    public static void createMessage(ExchangeSession session, String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage, OutputStream outputStream, String capabilities) throws IOException {
         MessageCreateThread messageCreateThread = new MessageCreateThread(currentThread().getName(), session, folderPath, messageName, properties, mimeMessage);
         messageCreateThread.start();
         while (!messageCreateThread.isComplete) {
-            messageCreateThread.join(20000);
+            try {
+                messageCreateThread.join(20000);
+            } catch (InterruptedException e) {
+                LOGGER.warn("Thread interrupted", e);
+                Thread.currentThread().interrupt();
+            }
             if (!messageCreateThread.isComplete) {
                 if (Settings.getBooleanProperty("davmail.enableKeepAlive", false)) {
                     LOGGER.debug("Still loading message, send capabilities untagged response to avoid timeout");
                     try {
-                        LOGGER.debug("* "+capabilities);
-                        outputStream.write(("* "+capabilities).getBytes(StandardCharsets.US_ASCII));
+                        LOGGER.debug("* " + capabilities);
+                        outputStream.write(("* " + capabilities).getBytes(StandardCharsets.US_ASCII));
                         outputStream.write((char) 13);
                         outputStream.write((char) 10);
                         outputStream.flush();
