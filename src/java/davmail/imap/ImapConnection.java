@@ -817,7 +817,7 @@ public class ImapConnection extends AbstractConnection {
             this.message = message;
         }
 
-        public int getMimeMessageSize() throws IOException, MessagingException, InterruptedException {
+        public int getMimeMessageSize() throws IOException, MessagingException {
             loadMessage();
             return message.getMimeMessageSize();
         }
@@ -825,7 +825,7 @@ public class ImapConnection extends AbstractConnection {
         /**
          * Monitor full message download
          */
-        protected void loadMessage() throws IOException, MessagingException, InterruptedException {
+        protected void loadMessage() throws IOException, MessagingException {
             if (!message.isLoaded()) {
                 // flush current buffer
                 String flushString = buffer.toString();
@@ -836,17 +836,17 @@ public class ImapConnection extends AbstractConnection {
             }
         }
 
-        public MimeMessage getMimeMessage() throws IOException, MessagingException, InterruptedException {
+        public MimeMessage getMimeMessage() throws IOException, MessagingException {
             loadMessage();
             return message.getMimeMessage();
         }
 
-        public InputStream getRawInputStream() throws IOException, MessagingException, InterruptedException {
+        public InputStream getRawInputStream() throws IOException, MessagingException {
             loadMessage();
             return message.getRawInputStream();
         }
 
-        public Enumeration getMatchingHeaderLines(String[] requestedHeaders) throws IOException, MessagingException, InterruptedException {
+        public Enumeration getMatchingHeaderLines(String[] requestedHeaders) throws IOException, MessagingException {
             Enumeration result = message.getMatchingHeaderLinesFromHeaders(requestedHeaders);
             if (result == null) {
                 loadMessage();
@@ -857,7 +857,7 @@ public class ImapConnection extends AbstractConnection {
     }
 
 
-    private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException, MessagingException, InterruptedException {
+    private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException, MessagingException {
         StringBuilder buffer = new StringBuilder();
         MessageWrapper messageWrapper = new MessageWrapper(os, buffer, message);
         buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getImapUid());
@@ -1150,7 +1150,7 @@ public class ImapConnection extends AbstractConnection {
         return true;
     }
 
-    protected void appendEnvelope(StringBuilder buffer, MessageWrapper message) throws IOException, InterruptedException {
+    protected void appendEnvelope(StringBuilder buffer, MessageWrapper message) throws IOException {
 
         try {
             MimeMessage mimeMessage = message.getMimeMessage();
@@ -1241,7 +1241,7 @@ public class ImapConnection extends AbstractConnection {
 
     }
 
-    protected void appendBodyStructure(StringBuilder buffer, MessageWrapper message) throws IOException, InterruptedException {
+    protected void appendBodyStructure(StringBuilder buffer, MessageWrapper message) throws IOException {
 
         buffer.append(" BODYSTRUCTURE ");
         try {
