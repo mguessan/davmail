@@ -8,6 +8,21 @@ BASE=`dirname $0`
 # force GTK2 to avoid crash with OpenJDK 11
 JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60 -Djdk.gtk.version=2.2"
 JAVA=java
+
+# Experimental: download Azul JRE FX with command 'davmail azul'
+if [ "x$1" = 'xazul' ]; then
+  curl -L -o $BASE/jre.tgz "https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=15&ext=tar.gz&os=linux&arch=x86&hw_bitness=64&bundle_type=jre&features=fx"
+  rm -Rf $BASE/jre
+  mkdir $BASE/jre
+  tar xvzf jre.tgz -C $BASE/jre --strip 1
+  exit
+fi
+
+# check for embedded jre
+if [ -e jre/bin/java ]; then
+  JAVA=jre/bin/java
+fi
+
 # uncomment this to force JDK 8
 #JAVA=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 # add JFX to classpath with OpenJDK 11
