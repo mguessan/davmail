@@ -29,6 +29,7 @@ install:
 build_script:
   - ant dist
   - IF "%JAVA_HOME%" == "C:\Program Files\Java\jdk11" ant sonar -Dsonar.login=%SONAR_LOGIN%
+  - IF not "%JAVA_HOME%" == "C:\Program Files\Java\jdk1.8.0" echo remove artifacts && del /s /q dist
 test: false
 cache:
 - C:\ant
