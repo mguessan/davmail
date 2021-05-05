@@ -56,6 +56,9 @@ public class DavMailIdleConnectionEvictor {
                             }
                         }
                     }
+                } catch (InterruptedException e) {
+                    LOGGER.warn("Thread interrupted", e);
+                    Thread.currentThread().interrupt();
                 } catch (final Exception ex) {
                     LOGGER.error(ex);
                 }
