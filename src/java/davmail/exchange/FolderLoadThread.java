@@ -62,11 +62,16 @@ public class FolderLoadThread extends Thread {
      * @throws InterruptedException on error
      * @throws IOException          on error
      */
-    public static void loadFolder(ExchangeSession.Folder folder, OutputStream outputStream) throws InterruptedException, IOException {
+    public static void loadFolder(ExchangeSession.Folder folder, OutputStream outputStream) throws IOException {
         FolderLoadThread folderLoadThread = new FolderLoadThread(currentThread().getName(), folder);
         folderLoadThread.start();
         while (!folderLoadThread.isComplete) {
-            folderLoadThread.join(20000);
+            try {
+                folderLoadThread.join(20000);
+            } catch (InterruptedException e) {
+                LOGGER.warn("Thread interrupted", e);
+                Thread.currentThread().interrupt();
+            }
             LOGGER.debug("Still loading " + folder.folderPath + " (" + folder.count() + " messages)");
             if (Settings.getBooleanProperty("davmail.enableKeepAlive", false)) {
                 try {
