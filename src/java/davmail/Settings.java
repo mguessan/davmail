@@ -52,6 +52,8 @@ import static org.apache.http.util.TextUtils.isEmpty;
  */
 public final class Settings {
 
+    protected static final Logger LOGGER = Logger.getLogger(Settings.class);
+
     public static final String O365_URL = "https://outlook.office365.com/EWS/Exchange.asmx";
     public static final String O365 = "O365";
     public static final String O365_MODERN = "O365Modern";
@@ -618,11 +620,13 @@ public final class Settings {
         File file = new File(tokenFilePath);
         File parentFile = file.getParentFile();
         if (parentFile != null) {
-            //noinspection ResultOfMethodCallIgnored
-            parentFile.mkdirs();
+            if (parentFile.mkdirs()) {
+                LOGGER.info("Created token file directory "+parentFile.getAbsolutePath());
+            }
         }
-        //noinspection ResultOfMethodCallIgnored
-        file.createNewFile();
+        if (file.createNewFile()) {
+            LOGGER.info("Created token file "+tokenFilePath);
+        }
     }
 
     /**
