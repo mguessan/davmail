@@ -47,7 +47,7 @@ public class MessageLoadThread extends Thread {
      * @throws IOException        on error
      * @throws MessagingException on error
      */
-    public static void loadMimeMessage(ExchangeSession.Message message, OutputStream outputStream) throws IOException, MessagingException, InterruptedException {
+    public static void loadMimeMessage(ExchangeSession.Message message, OutputStream outputStream) throws IOException, MessagingException {
         if (message.size < 1024 * 1024) {
             message.loadMimeMessage();
         } else {
@@ -55,7 +55,12 @@ public class MessageLoadThread extends Thread {
                 MessageLoadThread messageLoadThread = new MessageLoadThread(currentThread().getName(), message);
                 messageLoadThread.start();
                 while (!messageLoadThread.isComplete) {
-                    messageLoadThread.join(10000);
+                    try {
+                        messageLoadThread.join(10000);
+                    } catch (InterruptedException e) {
+                        LOGGER.warn("Thread interrupted", e);
+                        Thread.currentThread().interrupt();
+                    }
                     LOGGER.debug("Still loading uid " + message.getUid() + " imapUid " + message.getImapUid());
                     if (Settings.getBooleanProperty("davmail.enableKeepAlive", false)) {
                         try {
