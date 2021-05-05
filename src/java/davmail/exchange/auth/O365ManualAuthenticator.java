@@ -186,6 +186,9 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
                 Thread.sleep(5000);
             }
 
+        } catch (InterruptedException e) {
+            LOGGER.warn("Thread interrupted", e);
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             LOGGER.error(e + " " + e.getMessage(), e);
         }
