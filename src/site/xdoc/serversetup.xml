@@ -119,7 +119,8 @@ davmail.forceActiveSyncUpdate=false
 
 # Delete messages immediately on IMAP STORE \Deleted flag
 davmail.imapAutoExpunge=true
-# Enable IDLE support, set polling delay in minutes
+# To enable IDLE support, set a maximum client polling delay in minutes
+# Clients using IDLE should poll more frequently than this delay
 davmail.imapIdleDelay=
 # Always reply to IMAP RFC822.SIZE requests with Exchange approximate message size for performance reasons
 davmail.imapAlwaysApproxMsgSize=
