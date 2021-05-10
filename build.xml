@@ -234,10 +234,6 @@
                 <exclude name="winrun4j-*.jar"/>
             </fileset>
         </copy>
-        <!-- move libgrowl to library path -->
-        <copy todir="dist/DavMail.app/Contents/MacOS">
-            <fileset file="lib/libgrowl.jnilib"/>
-        </copy>
         <copy file="src/osx/tray.icns" todir="dist/DavMail.app/Contents/Resources" overwrite="true"/>
         <!-- use generic app launcher -->
         <copy file="src/osx/davmail" todir="dist/DavMail.app/Contents/MacOS" overwrite="true"/>
@@ -294,7 +290,6 @@
                 <include name="*.jar"/>
                 <!-- exclude swt jars from debian package -->
                 <exclude name="lib/swt*.jar"/>
-                <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/winrun4j-*.jar"/>
             </tarfileset>
             <tarfileset dir="src/bin" prefix="usr/bin" filemode="755">
@@ -330,7 +325,6 @@
                     <exclude name="ant-deb*.jar"/>
                     <exclude name="junit-*.jar"/>
                     <exclude name="hamcrest-core-*.jar"/>
-                    <exclude name="libgrowl-*.jar"/>
                     <exclude name="nsisant-*.jar"/>
                     <exclude name="servlet-api-*.jar"/>
                     <exclude name="swt-*.jar"/>
@@ -383,7 +377,6 @@
                 <include name="*.jar"/>
                 <exclude name="nsisant*.jar"/>
                 <exclude name="swt*.jar"/>
-                <exclude name="libgrowl-*.jar"/>
                 <exclude name="winrun4j-*.jar"/>
             </fileset>
         </copy>
@@ -398,7 +391,6 @@
                 <include name="*.jar"/>
                 <!-- exclude swt jars from platform independent package -->
                 <exclude name="lib/swt*.jar"/>
-                <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/hamcrest-core-*.jar"/>
                 <exclude name="lib/winrun4j-*.jar"/>
@@ -416,7 +408,6 @@
                 <include name="*.jar"/>
                 <include name="davmail*.exe"/>
                 <exclude name="lib/swt-*-gtk-*.jar"/>
-                <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/hamcrest-core-*.jar"/>
             </fileset>
@@ -430,7 +421,6 @@
                 <include name="davmail64.exe"/>
                 <include name="davmailservice64.exe"/>
                 <exclude name="lib/swt-*-gtk-*.jar"/>
-                <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/hamcrest-core-*.jar"/>
             </fileset>
@@ -462,7 +452,6 @@
                 <exclude name="target/**"/>
                 <exclude name="archive/**"/>
                 <exclude name="lib/**"/>
-                <exclude name="libgrowl/**"/>
                 <exclude name="nsis/**"/>
                 <exclude name="svnant/**"/>
                 <exclude name="user.properties"/>

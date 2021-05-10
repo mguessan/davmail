@@ -271,13 +271,6 @@
             <systemPath>${project.basedir}/lib/winrun4j-0.4.5.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>info.growl</groupId>
-            <artifactId>growl</artifactId>
-            <version>0.2</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/libgrowl-0.2.jar</systemPath>
-        </dependency>
-        <dependency>
             <groupId>org.codehaus.jettison</groupId>
             <artifactId>jettison</artifactId>
             <version>1.4.0</version>
