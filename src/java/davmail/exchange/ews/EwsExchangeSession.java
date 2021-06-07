@@ -755,7 +755,9 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             // Only add new result if not already available (concurrent folder changes issue)
             for (EWSMethod.Item item : findItemMethod.getResponseItems()) {
-                long imapUid = Long.parseLong(item.get(Field.get("imapUid").getResponseName()));
+                long imapUid = Optional.ofNullable(item.get(Field.get("imapUid").getResponseName()))
+                    .map(Long::parseLong)
+                    .orElse(0L);
                 if (imapUid > highestUid) {
                     results.add(item);
                 }
