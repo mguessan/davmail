@@ -1,3 +1,101 @@
+## DavMail 6.0.0 2021-07-05
+First major release in a long time, main change is switch from HttpClient 3 to 4, please report any regression related to this major rewrite.
+DavMail now supports more O365 configurations, including access to client certificate to validate device trust.
+O365 refresh tokens can now be stored securely in a separate (writable) file.
+On Linux, in order to ensure the right java version is used, a command line option to download latest Azul JRE with OpenJFX support was added,
+on windows a standalone package contains Azul JRE FX 15, on OSX updated universalJavaApplicationStub to latest version.
+
+### OSX:
+- OSX: completely drop Growl support
+- OSX: prepare possible path for an embedded jre mode
+- OSX: update universalJavaApplicationStub to latest version from https://github.com/tofi86/universalJavaApplicationStub/blob/master/src/universalJavaApplicationStub
+
+### Documentation:
+- Doc: merge Clarify the usage of imapIdleDelay https://github.com/mguessan/davmail/pull/116
+- Doc: add comment on IDLE and timeout setting
+- Doc: link to standalone windows package
+- Doc: fix Zulu link
+- Doc: remove references to Java 6 in documentation
+
+### Build:
+- Appveyor: update ant
+- Appveyor: build with jdk15
+- Appveyor: purge artifacts for all builds except jdk 8
+- Build: run Sonar with JDK 11
+- Update junit to 4.13.1 in Maven
+- Update junit to 4.13.1
+
+### Linux:
+- Linux: Experimental: download Azul JRE FX with command 'davmail azul'
+- Linux: merge https://github.com/mguessan/davmail/pull/133 Linux Gnome Desktop: fix systray support
+- Linux: Update service file to allow 0-1023 ports binding (https://github.com/mguessan/davmail/pull/117)
+
+
+### Windows:
+- Windows: switch standalone jre to Azul FX 15
+- Windows: create a standalone package with Azul JRE FX in order to have a working O365InteractiveAuthenticator
+- Winrun4J: prefer embedded VM for standalone package and export sun.net.www.protocol.https
+- Winrun4J: update binaries
+- Winrun4J: prepare standalone configuration
+- Windows: update winrun4j config to require Java >= 8
+
+### IMAP:
+- IMAP: fix thread handling from audit
+- IMAP: Compute body part size with failover
+
+### O365:
+- O365: log token file creation
+- O365: cleanup from audit
+- O365: Add davmail.oauth.tokenFilePath to sample properties file
+- O365: disable HTTP/2 loader on Java 14 and later to enable custom socket factory
+- O365: allow user agent override in O365InteractiveAuthenticator, switch default user agent to latest Edge
+- O365: with Java 15 url with code returns as CANCELLED
+- O365: MSCAPI and Java version 13 or higher required to access TPM protected client certificate on Windows
+- O365: merge first commit from https://github.com/mguessan/davmail/pull/134/ OAuth via ADFS with MFA support
+- O365: fix store refreshToken call
+- O365: introduce davmail.oauth.tokenFilePath setting to store Oauth tokens in a separate file
+- O365: switch to try with resource style
+- Drop explicit dependency to netscape.javascript package in O365InteractiveJSLogger
+- O365: follow redirects on ADFS authentication
+
+### HC4:
+- Refactor ExchangeSessionFactory, create HttpClientAdapter in session
+- HC4: update winrun4j binaries
+- HC4: drop HttpClient 3 dependency in Maven, winrun4j binaries and nsi setup
+- HC4: drop remaining HttpClient 3 classes
+- HC4: drop DavMailCookieSpec and DavGatewaySSLProtocolSocketFactory (merge in SSLProtocolSocketFactory)
+- HC4: drop DavGatewayHttpClientFacade and RestMethod
+- HC4: default to Edge user agent
+- HC4: Do not enable NTLM in Kerberos mode
+- HC4: switch checkConfig to HttpClient 4
+- HC4: merge HC4DavExchangeSession to DavExchangeSession
+- HC4: cleanup HC4ExchangeFormAuthenticator references
+- HC4: merge HC4ExchangeFormAuthenticator to ExchangeFormAuthenticator, extend authenticator interface to return HttpClientAdapter, switch to DavExchangeSession
+- HC4: switch O365 authenticators test code to HttpClient 4
+- HC4: adjust CreateItemMethod chunked call
+- HC4: switch ExchangeSessionFactory to HttpClient 4
+- HC4: add a warning about HttpClient 4 migration
+- HC4: Enable ssl logging in addition to wire with HttpClient 4
+- HC4: switch EWS implementation to HttpClient 4
+
+### EWS:
+- EWS: improve isItemId detection to match base 64 encoded id
+- EWS: drop NTLM as a failover logic
+- EWS: cleanup unused code now that we have a reliable way to retrieve email address with ConvertId
+- EWS: drop property davmail.caldavRealUpdate, no longer used
+- EWS: Improved uid handling from audit
+- EWS: Enable Woodstox workaround for malformed xml with latest Woodstox version
+
+### Enhancements:
+- Clear session pool on DavMail restart
+- Upgrade to Woodstox 6.2.0 as it's now available on debian, drop Woodstox patched StreamScanner
+
+### Caldav:
+- Caldav: merge https://github.com/mguessan/davmail/pull/139 Fix missing XML encode
+- Caldav: use Exchange timezone to compute event time in test case
+- Caldav: create test cases for recurring events
+
+
 ## DavMail 5.5.1 2019-04-19
 Fix regression on domain\username authentication over IMAP and some cleanup
 

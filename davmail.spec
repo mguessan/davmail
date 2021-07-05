@@ -1,5 +1,5 @@
-%{?!davrel:   %define davrel   5.5.1}
-%{?!davsvn:   %define davsvn   3300}
+%{?!davrel:   %define davrel   6.0.0}
+%{?!davsvn:   %define davsvn   3376}
 %define davver %{davrel}-%{davsvn}
 
 Summary: DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
@@ -78,7 +78,7 @@ rm lib/swt*
 [ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar lib/swt.jar || ln -s /usr/lib/java/swt.jar lib/swt.jar
 %endif
 
-# we have java 1.6
+# we have java 8
 ant -Dant.java.version=1.8 prepare-dist
 
 %install
