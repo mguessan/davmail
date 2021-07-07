@@ -51,7 +51,7 @@ Requires: /etc/init.d, logrotate, jre >= 1.8.0
 Requires: eclipse-swt
 %endif
 
-Source0: https://sourceforge.net/projects/%{name}/files/%{name}/%{version}/%{name}-src-%{davver}.tgz
+Source0: %{name}-src-%{davver}.tgz
 
 %description
 DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
