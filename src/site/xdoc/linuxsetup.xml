@@ -11,6 +11,31 @@
     <body>
 
         <section name="DavMail Setup on linux">
+            <subsection name="Standalone setup">
+                <p>Prerequisite: Latest OpenJDK with OpenJFX support for best O365 support.
+                    Download of latest Azul FX now included in latest davmail script.
+                    If SWT is available it provides an improved tray icon (incompatible with O365Interactive mode).
+                    If you do not want any tray icon run DavMail with the <code>-notray</code> option.
+                </p>
+
+                <p>Download the the platform independent package from Sourceforge and uncompress it with
+                    your favorite tool. If you want improved SWT tray icon add the appropriate SWT library in lib
+                    folder from <a href="http://www.eclipse.org/swt/">http://www.eclipse.org/swt/</a>, e.g.
+                    swt-4.9-gtk-linux-x86_64.jar
+                </p>
+                <code>unzip davmail-<em>version</em>.zip</code>
+
+                <p>Run <code>./davmail azul</code> once to fetch latest Azul JRE FX.
+                </p>
+
+                <p>Just run <code>./davmail</code> to launch DavMail.
+                    You should now see the DavMail gateway icon in the tray :
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img align="middle" src="images/ubuntutray.png" alt=""/>
+                </div>
+            </subsection>
+
             <subsection name="Debian package">
                 <p>This page describes DavMail setup as a graphical application, if you don't want or need a user interface you can run
                     <a href="serversetup.html">DavMail in server mode</a>
@@ -45,33 +70,8 @@
                 <p>If it still does not work, launch DavMail with notray option:</p>
                 <code>davmail -notray</code>
             </subsection>
-            <subsection name="Manual setup">
-                <p>Prerequisite: OpenJDK 8 or later or Sun (Oracle) JRE 8 or later.
-                    If SWT is available it provides an improved tray icon.
-                    If you do not want any tray icon run DavMail with the <code>-notray</code> option.
-                </p>
-                <p>Note: some users reported issues with OpenJDK 6, please upgrade to OpenJDK 7 or later in this case.</p>
 
-                <p>You should first download and install Java, with the graphical package manager or through
-                    command line.
-                </p>
-                <p>Under Ubuntu, launch System/Administration/Synaptic Package Manager, quick search
-                    default-jre, mark for installation and click Apply
-                </p>
-                <p>Or use the following command:</p>
-                <code>sudo apt-get install default-jre</code>
-
-                <p>Download the the platform independent package from Sourceforge and uncompress it with
-                    your favorite tool. If you want improved SWT tray icon add the appropriate SWT library in lib
-                    folder from <a href="http://www.eclipse.org/swt/">http://www.eclipse.org/swt/</a>, e.g.
-                    swt-4.9-gtk-linux-x86_64.jar
-                </p>
-                <p>Just run <code>davmail</code> to launch DavMail.
-                    You should now see the DavMail gateway icon in the tray :
-                </p>
-                <div style="width: 100%;text-align: center">
-                    <img align="middle" src="images/ubuntutray.png" alt=""/>
-                </div>
+            <subsection name="Settings">
                 <p>Adjust DavMail settings :
                     <a href="gettingstarted.html">Getting started</a>
                 </p>
