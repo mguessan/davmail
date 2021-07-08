@@ -129,10 +129,10 @@ public class O365ManualAuthenticatorDialog extends JDialog {
         JPanel buttonPanel = new JPanel();
         JButton openButton = new JButton(BundleMessage.format("UI_BUTTON_OPEN"));
         JButton copyButton = new JButton(BundleMessage.format("UI_BUTTON_COPY"));
-        JButton okButton = new JButton(BundleMessage.format("UI_BUTTON_OK"));
+        JButton sendButton = new JButton(BundleMessage.format("UI_BUTTON_SEND"));
         JButton cancelButton = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
         openButton.addActionListener(evt -> DesktopBrowser.browse(initUrl));
-        okButton.addActionListener(evt -> {
+        sendButton.addActionListener(evt -> {
             code = codeField.getText();
             setVisible(false);
         });
@@ -147,7 +147,7 @@ public class O365ManualAuthenticatorDialog extends JDialog {
 
         buttonPanel.add(openButton);
         buttonPanel.add(copyButton);
-        buttonPanel.add(okButton);
+        buttonPanel.add(sendButton);
         buttonPanel.add(cancelButton);
         return buttonPanel;
     }
