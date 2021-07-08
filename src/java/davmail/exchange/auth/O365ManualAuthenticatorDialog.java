@@ -29,6 +29,8 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
 import java.awt.*;
 import java.net.URISyntaxException;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 
 public class O365ManualAuthenticatorDialog extends JDialog {
     final JTextField codeField = new JTextField(30);
@@ -126,6 +128,7 @@ public class O365ManualAuthenticatorDialog extends JDialog {
     protected JPanel getButtonPanel(final String initUrl) {
         JPanel buttonPanel = new JPanel();
         JButton openButton = new JButton(BundleMessage.format("UI_BUTTON_OPEN"));
+        JButton copyButton = new JButton(BundleMessage.format("UI_BUTTON_COPY"));
         JButton okButton = new JButton(BundleMessage.format("UI_BUTTON_OK"));
         JButton cancelButton = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
         openButton.addActionListener(evt -> DesktopBrowser.browse(initUrl));
@@ -137,8 +140,13 @@ public class O365ManualAuthenticatorDialog extends JDialog {
             code = null;
             setVisible(false);
         });
+        copyButton.addActionListener(evt -> {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            clipboard.setContents(new StringSelection(initUrl), null);
+        });
 
         buttonPanel.add(openButton);
+        buttonPanel.add(copyButton);
         buttonPanel.add(okButton);
         buttonPanel.add(cancelButton);
         return buttonPanel;
