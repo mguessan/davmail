@@ -11,7 +11,11 @@ JAVA=java
 
 # Experimental: download Azul JRE FX with command 'davmail azul'
 if [ "x$1" = 'xazul' ]; then
-  curl -L -o $BASE/jre.tgz "https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=15&ext=tar.gz&os=linux&arch=x86&hw_bitness=64&bundle_type=jre&features=fx"
+  if curl -L --fail -o $BASE/jre.tgz "https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=15&ext=tar.gz&os=linux&arch=x86&hw_bitness=64&bundle_type=jre&features=fx"; then
+    echo Downloaded Azul JRE
+  else
+    echo Unable to download Azul JRE
+  fi;
   rm -Rf $BASE/jre
   mkdir $BASE/jre
   tar xvzf jre.tgz -C $BASE/jre --strip 1
