@@ -498,8 +498,8 @@ public class VProperty {
             char c = value.charAt(i);
             if (c == '\n') {
                 buffer.append("\\n");
-            } else if (MULTIVALUED_PROPERTIES.contains(key) && c == ',') {
-                buffer.append('\\').append(',');
+            } else if (c == '\\' || c == ',' || c == ';') {
+                buffer.append('\\').append(c);
             // skip carriage return
             } else if (c != '\r') {
                 buffer.append(value.charAt(i));
