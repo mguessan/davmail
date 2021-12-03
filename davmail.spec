@@ -1,5 +1,5 @@
-%{?!davrel:   %define davrel   6.0.0}
-%{?!davsvn:   %define davsvn   3375}
+%{?!davrel:   %define davrel   6.0.1}
+%{?!davsvn:   %define davsvn   3390}
 %define davver %{davrel}-%{davsvn}
 
 %define systemd_support 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?el8} || 0%{?fedora}

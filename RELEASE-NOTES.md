@@ -1,3 +1,29 @@
+## DavMail 6.0.1 2021-12-03
+Bugfix release with a few Office 365 enhancements
+
+### O365
+- O365: default to MSCAPI on windows for native client certificate access
+- O365: name button Send instead of OK in manual authenticator dialog
+- OS65: merge https://github.com/mguessan/davmail/pull/158 Added Copy to Clipboard button Manual auth dialog
+
+### Linux
+- Linux: improve "davmail azul" error handling
+- Linux: Update changelog in RPM spec
+- Linux: Fix RPM spec, remote source does not work
+- Linux: Merge RPM spec contribution from michals on https://build.opensuse.org, check for systemd support and deploy the right service
+
+### HC4
+- HC4: make DavMail Kerberos configuration provider
+
+### EWS
+- EWS: merge https://github.com/mguessan/davmail/pull/106 Support servers only offering EWS/Services.wsdl instead of EWS/Exchange.asmx
+
+### Documentation
+- Doc: Remove HttpClient migration warning
+- Doc: instructions on standalone setup on Linux for best O365 support
+- Update readme for Github home page
+
+
 ## DavMail 6.0.0 2021-07-05
 First major release in a long time, main change is switch from HttpClient 3 to 4, please report any regression related to this major rewrite.
 DavMail now supports more O365 configurations, including access to client certificate to validate device trust.
