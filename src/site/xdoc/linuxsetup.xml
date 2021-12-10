@@ -71,6 +71,17 @@
                 <code>davmail -notray</code>
             </subsection>
 
+            <subsection name="Fedora">
+                <p>Latest released package is available on build.opensuse.org and Fedora COPR</p>
+
+                <p>On Fedora or Centos, enable COPR repository and install DavMail package:
+                    <code>
+                        dnf copr enable mguessan/davmail
+                        dnf install davmail
+                    </code>
+                </p>
+            </subsection>
+
             <subsection name="Settings">
                 <p>Adjust DavMail settings :
                     <a href="gettingstarted.html">Getting started</a>
