@@ -49,11 +49,7 @@
             <div style="width: 100%;text-align: center">
                 <img src="images/osxdesktop.jpg" alt="OSX Desktop"/>
             </div>
-            <p>In order to get balloon notifications, you will need to install Growl 1.2.2 from
-            <a href="http://growl.info/">http://growl.info/</a>:</p>
-            <div style="width: 100%;text-align: center">
-                <img src="images/osxgrowl.png" alt="OSX Growl"/>
-            </div>
+            <p>Growl is no longer supported.</p>
             <p>Adjust DavMail settings:
                 <a href="gettingstarted.html">Getting started</a>
             </p>
