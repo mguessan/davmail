@@ -2,7 +2,7 @@ Release guide :
 - update roadmap
 - update RELEASE-NOTES.md from svn log
 - update appdata.xml from release notes
-- change version in build.xml, pom.xml and davmail.spec, commit
+- change version in build.xml, pom.xml and davmail.spec, README.md, commit
 - update staging (clean checkout) directory
 - launch ant release, check generated packages
 - upload packages: ant upload-release
