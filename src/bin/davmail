@@ -20,18 +20,29 @@ if [ "x$1" = 'xazul' ]; then
   rm -Rf $BASE/jre
   mkdir $BASE/jre
   tar xvzf jre.tgz -C $BASE/jre --strip 1
+  echo "Downloaded latest Azul JRE, launch davmail normally"
   exit
 fi
 
 # check for embedded jre
-if [ -e jre/bin/java ]; then
-  JAVA=jre/bin/java
+if [ -e $BASE/jre/bin/java ]; then
+  JAVA=$BASE/jre/bin/java
+  echo "Using embedded JRE"
+  $JAVA -version
+elif  java -version 2>&1 >/dev/null | grep -q "version" ; then
+  echo "Using system provided JRE"
+  java -version
+  # add JFX to classpath with OpenJDK 11
+  JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
+elif [ -e $BASE/davmail.jar ]; then
+  # display message for platform independent package
+  echo "Java not found, try davmail azul to fetch latest Azul JRE"
+  exit 1
 fi
+
 
 # uncomment this to force JDK 8
 #JAVA=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-# add JFX to classpath with OpenJDK 11
-JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
 if [ -e $BASE/davmail.jar ]; then
     # this is the platform independent package
     exec ${JAVA} $JAVA_OPTS -cp $BASE/davmail.jar:$BASE/lib/*:${JFX_CLASSPATH} davmail.DavGateway "$@"
