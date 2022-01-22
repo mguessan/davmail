@@ -20,6 +20,7 @@ if [ "x$1" = 'xazul' ]; then
   rm -Rf $BASE/jre
   mkdir $BASE/jre
   tar xvzf jre.tgz -C $BASE/jre --strip 1
+  rm -rf jre.tgz
   echo "Downloaded latest Azul JRE, launch davmail normally"
   exit
 fi
