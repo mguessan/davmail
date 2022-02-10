@@ -30,10 +30,14 @@ public class VProperty {
     }
 
     protected static final HashSet<String> MULTIVALUED_PROPERTIES = new HashSet<>();
+    protected static final HashSet<String> ESCAPE_PROPERTIES = new HashSet<>();
 
     static {
         MULTIVALUED_PROPERTIES.add("RESOURCES");
         MULTIVALUED_PROPERTIES.add("LOCATION");
+
+        ESCAPE_PROPERTIES.add("DESCRIPTION");
+        ESCAPE_PROPERTIES.add("SUMMARY");
     }
 
     protected static class Param {
@@ -417,7 +421,11 @@ public class VProperty {
                     // convert multiple values to multiline values (e.g. street)
                     c = '\n';
                 }
-                decodedValue.append(c);
+                if (ESCAPE_PROPERTIES.contains(key) && (c == ',' || c == ';')) {
+                    decodedValue.append("\\").append(c);
+                } else {
+                    decodedValue.append(c);
+                }
             }
             return decodedValue.toString();
         }
