@@ -34,7 +34,7 @@
                             <li>O365Manual Office 365 with interactive dialog, not available in headless mode</li>
                             <li>O365 Office 365 EWS mode</li>
                             <li>EWS Exchange 2007 and later</li>
-                            <li>WebDav Exchange 2007 and earliear WebDav mode</li>
+                            <li>WebDav Exchange 2007 and earlier WebDav mode</li>
                             <li>Auto WebDav mode with EWS failover</li>
                         </ul>
                     </td>

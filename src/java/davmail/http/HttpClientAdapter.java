@@ -103,7 +103,7 @@ public class HttpClientAdapter implements Closeable {
         // DavMail is Kerberos configuration provider
         Security.setProperty("login.configuration.provider", "davmail.http.KerberosLoginConfiguration");
 
-        // reenable basic proxy authentication on Java >= 1.8.111
+        // re-enable basic proxy authentication on Java >= 1.8.111
         System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
 
         RegistryBuilder<ConnectionSocketFactory> schemeRegistry = RegistryBuilder.create();

@@ -858,9 +858,9 @@ public class VCalendar extends VObject {
     }
 
     /**
-     * Get recurring VCalendar occurence exceptions.
+     * Get recurring VCalendar occurrence exceptions.
      *
-     * @return event occurences
+     * @return event occurrences
      */
     public List<VObject> getModifiedOccurrences() {
         boolean first = true;

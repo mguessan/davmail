@@ -545,12 +545,12 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
      */
     public static class Occurrence {
         /**
-         * Original occurence start date
+         * Original occurrence start date
          */
         public String originalStart;
 
         /**
-         * Occurence itemid
+         * Occurrence itemid
          */
         public ItemId itemId;
     }
@@ -741,7 +741,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         /**
          * Add occurrence.
          *
-         * @param occurrence event occurence
+         * @param occurrence event occurrence
          */
         public void addOccurrence(Occurrence occurrence) {
             if (occurrences == null) {
@@ -751,9 +751,9 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         }
 
         /**
-         * Get occurences.
+         * Get occurrences.
          *
-         * @return event occurences
+         * @return event occurrences
          */
         public List<Occurrence> getOccurrences() {
             return occurrences;

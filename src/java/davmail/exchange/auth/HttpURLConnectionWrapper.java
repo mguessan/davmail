@@ -150,7 +150,7 @@ public class HttpURLConnectionWrapper extends HttpURLConnection {
 
     /**
      * Fix missing content type
-     * @return content type or text/html if mising
+     * @return content type or text/html if missing
      */
     @Override
     public String getContentType() {
