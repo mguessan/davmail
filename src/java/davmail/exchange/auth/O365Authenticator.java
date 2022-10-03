@@ -209,8 +209,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
                         // extract response
                         config = extractConfig(logonMethod.getResponseBodyAsString());
                         if (config.optJSONArray("arrScopes") != null || config.optJSONArray("urlPostRedirect") != null) {
-                            LOGGER.debug("Authentication successful but user consent or validation needed, please open the following url in a browser");
-                            LOGGER.debug(url);
+                            LOGGER.warn("Authentication successful but user consent or validation needed, please open the following url in a browser");
+                            LOGGER.warn(url);
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else if (config.optString("strServiceExceptionMessage") != null) {
                             LOGGER.debug("O365 returned error: " + config.optString("strServiceExceptionMessage"));
@@ -301,8 +301,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
         if (targetMethod.getStatusCode() == HttpStatus.SC_OK) {
             JSONObject config = extractConfig(responseBodyAsString);
             if (config.optJSONArray("arrScopes") != null || config.optJSONArray("urlPostRedirect") != null) {
-                LOGGER.debug("Authentication successful but user consent or validation needed, please open the following url in a browser");
-                LOGGER.debug(authorizeUrl);
+                LOGGER.warn("Authentication successful but user consent or validation needed, please open the following url in a browser");
+                LOGGER.warn(authorizeUrl);
                 throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
             }
         } else if (targetMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || location == null) {
