@@ -1154,25 +1154,29 @@ public class ImapConnection extends AbstractConnection {
 
         try {
             MimeMessage mimeMessage = message.getMimeMessage();
-            buffer.append(" ENVELOPE (");
-            // Envelope for date, subject, from, sender, reply-to, to, cc, bcc,in-reply-to, message-id
-            appendEnvelopeHeader(buffer, mimeMessage.getHeader("Date"));
-            appendEnvelopeHeader(buffer, mimeMessage.getHeader("Subject"));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("From"));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Sender"));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Reply-To"));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("To"));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("CC"));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("BCC"));
-            appendEnvelopeHeader(buffer, mimeMessage.getHeader("In-Reply-To"));
-            appendEnvelopeHeader(buffer, mimeMessage.getHeader("Message-Id"));
-            buffer.append(')');
-
+            buffer.append(" ENVELOPE ");
+            appendEnvelope(buffer, mimeMessage);
         } catch (MessagingException me) {
             DavGatewayTray.warn(me);
             // send fake envelope
             buffer.append(" ENVELOPE (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)");
         }
+    }
+
+    private void appendEnvelope(StringBuilder buffer, MimePart mimePart) throws UnsupportedEncodingException, MessagingException {
+        buffer.append('(');
+        // Envelope for date, subject, from, sender, reply-to, to, cc, bcc,in-reply-to, message-id
+        appendEnvelopeHeader(buffer, mimePart.getHeader("Date"));
+        appendEnvelopeHeader(buffer, mimePart.getHeader("Subject"));
+        appendMailEnvelopeHeader(buffer, mimePart.getHeader("From"));
+        appendMailEnvelopeHeader(buffer, mimePart.getHeader("Sender"));
+        appendMailEnvelopeHeader(buffer, mimePart.getHeader("Reply-To"));
+        appendMailEnvelopeHeader(buffer, mimePart.getHeader("To"));
+        appendMailEnvelopeHeader(buffer, mimePart.getHeader("CC"));
+        appendMailEnvelopeHeader(buffer, mimePart.getHeader("BCC"));
+        appendEnvelopeHeader(buffer, mimePart.getHeader("In-Reply-To"));
+        appendEnvelopeHeader(buffer, mimePart.getHeader("Message-Id"));
+        buffer.append(')');
     }
 
     protected void appendEnvelopeHeader(StringBuilder buffer, String[] value) throws UnsupportedEncodingException {
@@ -1256,7 +1260,7 @@ public class ImapConnection extends AbstractConnection {
         } catch (UnsupportedEncodingException | MessagingException e) {
             DavGatewayTray.warn(e);
             // failover: send default bodystructure
-            buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
+            buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL \"7BIT\" 0 0)");
         }
     }
 
@@ -1276,11 +1280,11 @@ public class ImapConnection extends AbstractConnection {
             } catch (UnsupportedEncodingException e) {
                 LOGGER.warn(e);
                 // failover: send default bodystructure
-                buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
+                buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL \"7BIT\" 0 0)");
             } catch (MessagingException me) {
                 DavGatewayTray.warn(me);
                 // failover: send default bodystructure
-                buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
+                buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL \"7BIT\" 0 0)");
             }
         }
         int slashIndex = multiPart.getContentType().indexOf('/');
@@ -1365,12 +1369,16 @@ public class ImapConnection extends AbstractConnection {
         appendBodyStructureValue(buffer, bodyPart.getDescription());
         appendBodyStructureValue(buffer, bodyPart.getEncoding());
         appendBodyStructureValue(buffer, bodySize);
-        if ("MESSAGE".equals(type) || "TEXT".equals(type)) {
-            // line count not implemented in JavaMail, return fake line count
-            appendBodyStructureValue(buffer, bodySize / 80);
-        } else {
-            // do not send line count for non text bodyparts
-            appendBodyStructureValue(buffer, -1);
+
+        // line count not implemented in JavaMail, return fake line count
+        int lineCount = bodySize / 80;
+        if ("TEXT".equals(type)) {
+            appendBodyStructureValue(buffer, lineCount);
+        } else if ("MESSAGE".equals(type)) {
+            MimeMessage innerMessage = (MimeMessage) bodyPart.getContent();
+            appendEnvelope(buffer, innerMessage);
+            appendBodyStructure(buffer, innerMessage);
+            appendBodyStructureValue(buffer, lineCount);
         }
         buffer.append(')');
     }
@@ -1406,7 +1414,8 @@ public class ImapConnection extends AbstractConnection {
 
     protected void appendBodyStructureValue(StringBuilder buffer, int value) {
         if (value < 0) {
-            buffer.append(" NIL");
+            // use 0 if we don't have a valid number
+            buffer.append(" 0");
         } else {
             buffer.append(' ').append(value);
         }
