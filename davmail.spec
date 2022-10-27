@@ -89,12 +89,18 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_bindir}
 mkdir -p $RPM_BUILD_ROOT%{_sbindir}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
+# Should this be created if systemd support is on?
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/pixmaps
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/davmail/lib
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log
+
+%if %systemd_support
+# Add the file here so rpm can keep track of it even if systemd creates it later
+touch %{_var}/log/davmail.log
+%endif
 
 # Init scripts, icons, configurations
 install -m 0775 src/bin/davmail $RPM_BUILD_ROOT%{_bindir}/davmail
@@ -106,6 +112,7 @@ install -m 0775 src/init/davmail-wrapper $RPM_BUILD_ROOT%{_localstatedir}/lib/da
 %if %systemd_support
 install -D -m 644 src/init/davmail.service %{buildroot}%{_unitdir}/davmail.service
 install -D -m 644 src/init/davmail-user@.service %{buildroot}%{_userunitdir}/davmail@.service
+install -D -m 644 src/init/davmail.conf %{buildroot}%{_tmpfilesdir}/davmail.conf
 %else
 install -m 0775 src/init/davmail-init $RPM_BUILD_ROOT%{_sysconfdir}/init.d/davmail
 ln -sf %{_sysconfdir}/init.d/davmail $RPM_BUILD_ROOT%{_sbindir}/rcdavmail
@@ -134,6 +141,7 @@ install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_
 %endif
 
 %post
+%if 0%{!?systemd_macros:1}
 file=/var/log/davmail.log
 if [ ! -f ${file} ]
     then
@@ -141,9 +149,12 @@ if [ ! -f ${file} ]
 fi
 /bin/chown davmail:davmail ${file}
 /bin/chmod 0640 ${file}
+%endif
 
 %if %systemd_macros
 %service_add_post davmail.service
+# Ensure that tmpfiles are created after the package is installed or updated
+%tmpfiles_create_package %{_tmpfilesdir}/davmail.conf
 %else
 # proper service handling http://en.opensuse.org/openSUSE:Cron_rename
 %{?fillup_and_insserv:
@@ -202,6 +213,7 @@ fi
 %if %systemd_support
 %{_unitdir}/davmail.service
 %{_userunitdir}/davmail@.service
+%{_tmpfilesdir}/davmail.conf
 %else
 %{_sysconfdir}/init.d/davmail
 %{_sbindir}/rcdavmail
@@ -209,6 +221,11 @@ fi
 
 %config(noreplace) %{_sysconfdir}/logrotate.d/davmail
 %config(noreplace) %{_sysconfdir}/davmail.properties
+# As sugggested by rpmlint:
+# tmpfile-not-in-filelist
+# declare ownership of the log file but prevent
+# it from being erased by rpm -e
+%ghost %attr (640,davmail,davmail)  %{_var}/log/davmail.log
 %{_datadir}/applications/*
 %{_datadir}/pixmaps/*
 %{_datadir}/davmail/
