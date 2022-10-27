@@ -12,6 +12,9 @@ PermissionsStartOnly=true
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 ExecStart=/usr/bin/davmail -server /etc/davmail.properties
 SuccessExitStatus=143
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
 
 [Install]
 WantedBy=multi-user.target
