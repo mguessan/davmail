@@ -114,6 +114,7 @@ install -D -m 644 src/init/davmail.service %{buildroot}%{_unitdir}/davmail.servi
 install -D -m 644 src/init/davmail@.service %{buildroot}%{_unitdir}/davmail@.service
 install -D -m 644 src/init/davmail-user@.service %{buildroot}%{_userunitdir}/davmail@.service
 install -D -m 644 src/init/davmail.conf %{buildroot}%{_tmpfilesdir}/davmail.conf
+install -D -m 644 src/init/davmail_sysusers.conf %{buildroot}%{_sysusersdir}/davmail.conf
 %else
 install -m 0775 src/init/davmail-init $RPM_BUILD_ROOT%{_sysconfdir}/init.d/davmail
 ln -sf %{_sysconfdir}/init.d/davmail $RPM_BUILD_ROOT%{_sbindir}/rcdavmail
@@ -134,10 +135,11 @@ install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_
 %endif
 
 %pre
+%if 0%{!?systemd_macros:1}
 /usr/sbin/groupadd -f -r davmail > /dev/null 2>&1 || :
 /usr/sbin/useradd -r -s /sbin/nologin -d /var/lib/davmail -M \
                   -g davmail davmail > /dev/null 2>&1 || :
-%if %systemd_macros
+%else
 %service_add_pre davmail.service
 %endif
 
@@ -216,6 +218,7 @@ fi
 %{_unitdir}/davmail@.service
 %{_userunitdir}/davmail@.service
 %{_tmpfilesdir}/davmail.conf
+%{_sysusersdir}/davmail.conf
 %else
 %{_sysconfdir}/init.d/davmail
 %{_sbindir}/rcdavmail

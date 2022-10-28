@@ -5,6 +5,7 @@ Thu May 11 19:24:27 UTC 2023 - Björn Bidar <bjorn.bidar@thaodan.de>
 - Create initial log file with systemd-tmpfiles
 - Harden systemd service
 - Add systemd system sevice template unit
+- Don't create user for systemd units use sysusers
 
 -------------------------------------------------------------------
 Wed Jul 07 2021 Michal Suchanek <msuchanek@suse.com>
