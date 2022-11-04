@@ -20,17 +20,8 @@
 package davmail.http;
 
 import davmail.Settings;
-import davmail.exception.HttpForbiddenException;
-import davmail.exception.HttpNotFoundException;
-import davmail.exception.HttpPreconditionFailedException;
-import davmail.exception.HttpServerErrorException;
-import davmail.exception.LoginTimeoutException;
-import davmail.http.request.ExchangeDavRequest;
-import davmail.http.request.ExchangeSearchRequest;
-import davmail.http.request.GetRequest;
-import davmail.http.request.PostRequest;
-import davmail.http.request.ResponseWrapper;
-import davmail.http.request.RestRequest;
+import davmail.exception.*;
+import davmail.http.request.*;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -55,8 +46,6 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.auth.BasicSchemeFactory;
 import org.apache.http.impl.auth.DigestSchemeFactory;
-import org.apache.http.impl.auth.KerberosSchemeFactory;
-import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -75,11 +64,7 @@ import org.codehaus.jettison.json.JSONObject;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.ProxySelector;
-import java.net.URI;
+import java.net.*;
 import java.security.Security;
 import java.util.HashSet;
 import java.util.List;
@@ -296,8 +281,7 @@ public class HttpClientAdapter implements Closeable {
                 .register(AuthSchemes.BASIC, new BasicSchemeFactory())
                 .register(AuthSchemes.DIGEST, new DigestSchemeFactory());
         if (Settings.getBooleanProperty("davmail.enableKerberos")) {
-            registryBuilder.register(AuthSchemes.SPNEGO, new SPNegoSchemeFactory())
-                    .register(AuthSchemes.KERBEROS, new KerberosSchemeFactory());
+            registryBuilder.register(AuthSchemes.SPNEGO, new DavMailSPNegoSchemeFactory());
         }
 
         return registryBuilder.build();
