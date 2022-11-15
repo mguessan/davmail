@@ -23,6 +23,8 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.log4j.Logger;
 
 import java.util.HashSet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,44 +37,38 @@ public class DavMailIdleConnectionEvictor {
     // connection manager set
     private static final HashSet<HttpClientConnectionManager> connectionManagers = new HashSet<>();
 
-    private static final long sleepTimeMs = 1000;
-    private static final long maxIdleTimeMs = 3000;
+    private static final long sleepTimeMs = 1000 * 60;
+    private static final long maxIdleTimeMs = 1000 * 60 * 5;
 
-    private static Thread thread;
+    private static ScheduledExecutorService scheduler = null;
 
     private static void initEvictorThread() {
-        if (thread == null) {
-            thread = new Thread(() -> {
-                try {
-                    while (!Thread.currentThread().isInterrupted()) {
-                        Thread.sleep(sleepTimeMs);
-                        synchronized (connectionManagers) {
-                            // iterate over connection managers
-                            for (HttpClientConnectionManager connectionManager : connectionManagers) {
-                                connectionManager.closeExpiredConnections();
-                                if (maxIdleTimeMs > 0) {
-                                    connectionManager.closeIdleConnections(maxIdleTimeMs, TimeUnit.MILLISECONDS);
-                                }
+        synchronized (connectionManagers) {
+            if (scheduler == null) {
+                scheduler = Executors.newScheduledThreadPool(1);
+                scheduler.scheduleAtFixedRate(() -> {
+                    synchronized (connectionManagers) {
+                        // iterate over connection managers
+                        for (HttpClientConnectionManager connectionManager : connectionManagers) {
+                            connectionManager.closeExpiredConnections();
+                            if (maxIdleTimeMs > 0) {
+                                connectionManager.closeIdleConnections(maxIdleTimeMs, TimeUnit.MILLISECONDS);
                             }
                         }
                     }
-                } catch (InterruptedException e) {
-                    LOGGER.warn("Thread interrupted", e);
-                    Thread.currentThread().interrupt();
-                } catch (final Exception ex) {
-                    LOGGER.error(ex);
-                }
-
-            }, "Connection evictor");
-            thread.setDaemon(true);
+                }, sleepTimeMs, sleepTimeMs, TimeUnit.MILLISECONDS);
+            }
         }
     }
 
     public static void shutdown() throws InterruptedException {
-        thread.interrupt();
-        // wait for thread to shutdown
-        thread.join(sleepTimeMs);
-        thread = null;
+        synchronized (connectionManagers) {
+            scheduler.shutdown();
+            if (!scheduler.awaitTermination(sleepTimeMs, TimeUnit.MILLISECONDS)) {
+                LOGGER.warn("Timed out waiting for tasks to complete");
+            }
+            scheduler = null;
+        }
     }
 
     /**
