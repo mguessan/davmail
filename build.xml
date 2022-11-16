@@ -364,6 +364,8 @@
                 <exclude name="**/JMSAppender.class"/>
                 <exclude name="**/SMTPAppender.class"/>
                 <exclude name="**/SMTPAppender$1.class"/>
+                <exclude name="**/JDBCAppender.class"/>
+                <exclude name="**/JMSSink.class"/>
             </zipfileset>
         </zip>
         <copy file="src/icon/davmail.png" todir="dist"/>
