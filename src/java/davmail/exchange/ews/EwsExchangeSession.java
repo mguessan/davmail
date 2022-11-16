@@ -2053,7 +2053,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
             // handle deleted occurrences
-            if (!vCalendar.isTodo() && currentItemId != null && !isMeetingResponse) {
+            if (!vCalendar.isTodo() && currentItemId != null && !isMeetingResponse && !isMozDismiss) {
                 handleExcludedDates(currentItemId, vCalendar);
                 handleModifiedOccurrences(currentItemId, vCalendar);
             }
