@@ -19,29 +19,16 @@
 package davmail;
 
 import davmail.ui.tray.DavGatewayTray;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.log4j.*;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.TreeSet;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.*;
 
 import static org.apache.http.util.TextUtils.isEmpty;
 
@@ -52,7 +39,7 @@ import static org.apache.http.util.TextUtils.isEmpty;
  */
 public final class Settings {
 
-    protected static final Logger LOGGER = Logger.getLogger(Settings.class);
+    private static final Logger LOGGER = Logger.getLogger(Settings.class);
 
     public static final String O365_URL = "https://outlook.office365.com/EWS/Exchange.asmx";
     public static final String O365 = "O365";
@@ -354,6 +341,17 @@ public final class Settings {
             properties.putAll(SETTINGS);
             // file lines
             ArrayList<String> lines = new ArrayList<>();
+
+            // try to make .davmail.properties file readable by user only on create
+            Path path = Paths.get(configFilePath);
+            if (!Files.exists(path) && isUnix()) {
+                FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-r--r--"));
+                try {
+                    Files.createFile(path, permissions);
+                } catch (IOException e) {
+                    LOGGER.error(e.getMessage());
+                }
+            }
 
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFilePath), StandardCharsets.ISO_8859_1))) {
                 readLines(lines, properties);
