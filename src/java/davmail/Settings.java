@@ -345,7 +345,7 @@ public final class Settings {
             // try to make .davmail.properties file readable by user only on create
             Path path = Paths.get(configFilePath);
             if (!Files.exists(path) && isUnix()) {
-                FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-r--r--"));
+                FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"));
                 try {
                     Files.createFile(path, permissions);
                 } catch (IOException e) {
