@@ -37,8 +37,8 @@ public class DavMailIdleConnectionEvictor {
     // connection manager set
     private static final HashSet<HttpClientConnectionManager> connectionManagers = new HashSet<>();
 
-    private static final long sleepTimeMs = 1000 * 60;
-    private static final long maxIdleTimeMs = 1000 * 60 * 5;
+    private static final long sleepTimeMs = 1000L * 60;
+    private static final long maxIdleTimeMs = 1000L * 60 * 5;
 
     private static ScheduledExecutorService scheduler = null;
 
