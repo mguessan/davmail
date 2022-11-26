@@ -39,7 +39,7 @@ import java.util.ArrayList;
  */
 public final class DavGateway {
     private static final Logger LOGGER = Logger.getLogger(DavGateway.class);
-    private static final String HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT = "http://davmail.sourceforge.net/version.txt";
+    private static final String HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT = "https://davmail.sourceforge.net/version.txt";
 
     private static boolean stopped;
 
