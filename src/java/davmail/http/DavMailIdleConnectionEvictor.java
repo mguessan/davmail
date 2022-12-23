@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 import java.util.HashSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,7 +46,16 @@ public class DavMailIdleConnectionEvictor {
     private static void initEvictorThread() {
         synchronized (connectionManagers) {
             if (scheduler == null) {
-                scheduler = Executors.newScheduledThreadPool(1);
+                scheduler = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+                    int count = 0;
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread thread = new Thread(r, "PoolEvictor-" + count++);
+                        thread.setDaemon(true);
+                        thread.setUncaughtExceptionHandler((t, e) -> LOGGER.error(e.getMessage(), e));
+                        return thread;
+                    }
+                });
                 scheduler.scheduleAtFixedRate(() -> {
                     synchronized (connectionManagers) {
                         // iterate over connection managers
