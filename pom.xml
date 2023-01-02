@@ -8,7 +8,7 @@
     <version>6.0.1</version>
     <name>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway</name>
     <organization>
-        <name>Mickaël Guessant</name>
+        <name>MickaÃ«l Guessant</name>
     </organization>
     <url>http://www.sourceforge.net/projects/davmail</url>
     <inceptionYear>2001</inceptionYear>
@@ -35,7 +35,7 @@
     </properties>
     <developers>
         <developer>
-            <name>Mickaël Guessant</name>
+            <name>MickaÃ«l Guessant</name>
             <id>mguessan</id>
             <email>mguessan@free.fr</email>
             <url>http://mguessan.free.fr</url>
@@ -273,7 +273,7 @@
         <dependency>
             <groupId>org.codehaus.jettison</groupId>
             <artifactId>jettison</artifactId>
-            <version>1.4.0</version>
+            <version>1.5.2</version>
         </dependency>
         <!-- JDK 11 only JavaFX dependencies -->
         <!--dependency>
