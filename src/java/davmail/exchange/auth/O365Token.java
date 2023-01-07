@@ -199,6 +199,12 @@ public class O365Token {
                     localToken.refreshToken();
                     LOGGER.debug("Authenticated user " + localToken.getUsername()+" from stored token");
                     token = localToken;
+
+                    if (Settings.getBooleanProperty("davmail.storeRefreshedToken", false)) {
+                        LOGGER.debug("Store refreshed token");
+                        Settings.storeRefreshToken(username, localToken.refreshToken);
+                    }
+
                 } catch (IOException e) {
                     LOGGER.warn("refresh token failed " + e.getMessage());
                 }
