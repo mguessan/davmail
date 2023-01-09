@@ -79,7 +79,7 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
             throw new IOException("No stored Oauth refresh token found for "+username);
         }
 
-        token = new O365Token(tenantId, clientId, redirectUri);
+        token = new O365Token(tenantId, clientId, redirectUri, password);
         if (accessToken != null) {
             // for tests only: load access token, will expire in at most one hour
             token.setAccessToken(accessToken);

@@ -37,6 +37,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 
+/**
+ * O365 token wrapper
+ */
 public class O365Token {
     protected final String RESOURCE_URL = "https://outlook.office365.com/";
 
@@ -44,22 +47,25 @@ public class O365Token {
 
     private String clientId;
     private String tokenUrl;
+    private String password;
     private String redirectUri;
     private String username;
     private String refreshToken;
     private String accessToken;
     private long expiresOn;
 
-    public O365Token(String tenantId, String clientId, String redirectUri) {
+    public O365Token(String tenantId, String clientId, String redirectUri, String password) {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
-        this.tokenUrl = "https://login.microsoftonline.com/"+tenantId+"/oauth2/token";
+        this.tokenUrl = "https://login.microsoftonline.com/" + tenantId + "/oauth2/token";
+        this.password = password;
     }
 
-    public O365Token(String tenantId, String clientId, String redirectUri, String code) throws IOException {
+    public O365Token(String tenantId, String clientId, String redirectUri, String code, String password) throws IOException {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
-        this.tokenUrl = "https://login.microsoftonline.com/"+tenantId+"/oauth2/token";
+        this.tokenUrl = "https://login.microsoftonline.com/" + tenantId + "/oauth2/token";
+        this.password = password;
 
         ArrayList<NameValuePair> parameters = new ArrayList<>();
         parameters.add(new BasicNameValuePair("grant_type", "authorization_code"));
@@ -94,13 +100,13 @@ public class O365Token {
             // get username from id_token
             String idToken = jsonToken.optString("id_token");
             if (idToken != null && idToken.contains(".")) {
-                String decodedJwt = IOUtil.decodeBase64AsString(idToken.substring(idToken.indexOf("."),idToken.lastIndexOf(".")));
+                String decodedJwt = IOUtil.decodeBase64AsString(idToken.substring(idToken.indexOf("."), idToken.lastIndexOf(".")));
                 try {
                     JSONObject tokenBody = new JSONObject(decodedJwt);
                     LOGGER.debug("Token: " + tokenBody);
                     username = tokenBody.getString("unique_name");
                 } catch (JSONException e) {
-                    LOGGER.warn("Invalid id_token "+e.getMessage(), e);
+                    LOGGER.warn("Invalid id_token " + e.getMessage(), e);
                 }
             }
             // failover: get username from bearer
@@ -126,12 +132,16 @@ public class O365Token {
 
     public String getAccessToken() throws IOException {
         // detect expiration and refresh token
-        if (System.currentTimeMillis() > expiresOn - 60000) {
+        if (isTokenExpired()) {
             LOGGER.debug("Access token expires soon, trying to refresh it");
             refreshToken();
         }
         //LOGGER.debug("Access token for " + username + " expires in " + (expiresOn - System.currentTimeMillis()) / 60000 + " minutes");
         return accessToken;
+    }
+
+    private boolean isTokenExpired() {
+        return System.currentTimeMillis() > (expiresOn - 60000);
     }
 
     public void setAccessToken(String accessToken) {
@@ -159,6 +169,9 @@ public class O365Token {
         RestRequest tokenRequest = new RestRequest(tokenUrl, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
 
         executeRequest(tokenRequest);
+
+        // persist new refresh token
+        persistToken();
     }
 
     private void executeRequest(RestRequest tokenMethod) throws IOException {
@@ -172,14 +185,8 @@ public class O365Token {
     }
 
     static O365Token build(String tenantId, String clientId, String redirectUri, String code, String password) throws IOException {
-        O365Token token = new O365Token(tenantId, clientId, redirectUri, code);
-        if (Settings.getBooleanProperty("davmail.oauth.persistToken", true)) {
-            try {
-                Settings.storeRefreshToken(token.getUsername(), encryptToken(token.getRefreshToken(), password));
-            } catch (IOException e) {
-                LOGGER.warn("Unable to store refreshToken: "+e.getMessage());
-            }
-        }
+        O365Token token = new O365Token(tenantId, clientId, redirectUri, code, password);
+        token.persistToken();
         return token;
     }
 
@@ -193,17 +200,12 @@ public class O365Token {
                 try {
                     refreshToken = decryptToken(encryptedRefreshToken, password);
                     LOGGER.debug("Loaded stored token for " + username);
-                    O365Token localToken = new O365Token(tenantId, clientId, redirectUri);
+                    O365Token localToken = new O365Token(tenantId, clientId, redirectUri, password);
 
                     localToken.setRefreshToken(refreshToken);
                     localToken.refreshToken();
-                    LOGGER.debug("Authenticated user " + localToken.getUsername()+" from stored token");
+                    LOGGER.debug("Authenticated user " + localToken.getUsername() + " from stored token");
                     token = localToken;
-
-                    if (Settings.getBooleanProperty("davmail.storeRefreshedToken", false)) {
-                        LOGGER.debug("Store refreshed token");
-                        Settings.storeRefreshToken(username, localToken.refreshToken);
-                    }
 
                 } catch (IOException e) {
                     LOGGER.warn("refresh token failed " + e.getMessage());
@@ -213,7 +215,13 @@ public class O365Token {
         return token;
     }
 
-    private static String decryptToken(String encryptedRefreshToken,String password) throws IOException {
+    private void persistToken() throws IOException {
+        if (Settings.getBooleanProperty("davmail.oauth.persistToken", true)) {
+            Settings.storeRefreshToken(username, O365Token.encryptToken(refreshToken, password));
+        }
+    }
+
+    private static String decryptToken(String encryptedRefreshToken, String password) throws IOException {
         return new StringEncryptor(password).decryptString(encryptedRefreshToken);
     }
 
