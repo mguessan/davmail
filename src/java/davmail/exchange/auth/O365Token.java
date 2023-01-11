@@ -208,7 +208,7 @@ public class O365Token {
                     token = localToken;
 
                 } catch (IOException e) {
-                    LOGGER.warn("refresh token failed " + e.getMessage());
+                    LOGGER.error("refresh token failed " + e.getMessage());
                 }
             }
         }
