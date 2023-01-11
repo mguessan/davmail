@@ -10,7 +10,7 @@
     <organization>
         <name>Mickaël Guessant</name>
     </organization>
-    <url>http://www.sourceforge.net/projects/davmail</url>
+    <url>https://www.sourceforge.net/projects/davmail</url>
     <inceptionYear>2001</inceptionYear>
     <description>
         Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 gateway
@@ -38,7 +38,7 @@
             <name>Mickaël Guessant</name>
             <id>mguessan</id>
             <email>mguessan@free.fr</email>
-            <url>http://mguessan.free.fr</url>
+            <url>https://github.com/mguessan</url>
             <roles>
                 <role>Project Founder</role>
                 <role>Java Developer</role>
@@ -49,7 +49,7 @@
         <contributor>
             <name>Dfoody</name>
             <email>dfoody@users.sourceforge.net</email>
-            <url>http://sourceforge.net/users/dfoody</url>
+            <url>https://sourceforge.net/users/dfoody</url>
             <roles>
                 <role>Main Java Contributor</role>
             </roles>
@@ -57,7 +57,7 @@
         <contributor>
             <name>Alexandre Rossi</name>
             <email>alexandre.rossi@gmail.com</email>
-            <url>http://anonscm.debian.org/gitweb/?p=pkg-java/davmail.git;a=summary</url>
+            <url>https://tracker.debian.org/pkg/davmail</url>
             <roles>
                 <role>Debian DavMail package maintainer</role>
             </roles>
@@ -73,7 +73,7 @@
         <contributor>
             <name>John Ahern</name>
             <email>jahern2502@users.sourceforge.net</email>
-            <url>http://sourceforge.net/users/jahern2502</url>
+            <url>https://sourceforge.net/users/jahern2502</url>
             <roles>
                 <role>Java Contributor</role>
             </roles>
@@ -81,7 +81,7 @@
         <contributor>
             <name>Eivind Tagseth</name>
             <email>eivindt@users.sourceforge.net</email>
-            <url>http://sourceforge.net/users/eivindt</url>
+            <url>https://sourceforge.net/users/eivindt</url>
             <roles>
                 <role>Java Contributor</role>
             </roles>
@@ -104,7 +104,7 @@
         </contributor>
         <contributor>
             <name>Jeremiah Albrant</name>
-            <url>http://sourceforge.net/users/?user_id=2903536</url>
+            <url>https://sourceforge.net/users/?user_id=2903536</url>
             <roles>
                 <role>Java Contributor</role>
             </roles>
@@ -112,7 +112,7 @@
         <contributor>
             <name>Henning Holtschneider</name>
             <email>hehol@users.sourceforge.net</email>
-            <url>http://sourceforge.net/users/hehol</url>
+            <url>https://sourceforge.net/users/hehol</url>
             <roles>
                 <role>Tester</role>
             </roles>
@@ -120,7 +120,7 @@
         <contributor>
             <name>Shocker</name>
             <email>gkwait@users.sourceforge.net</email>
-            <url>http://sourceforge.net/users/gkwait</url>
+            <url>https://sourceforge.net/users/gkwait</url>
             <roles>
                 <role>Tester</role>
             </roles>
@@ -128,7 +128,7 @@
         <contributor>
             <name>Guido</name>
             <email>guido2@users.sourceforge.net</email>
-            <url>http://sourceforge.net/users/guido2</url>
+            <url>https://sourceforge.net/users/guido2</url>
             <roles>
                 <role>Tester</role>
             </roles>
@@ -137,7 +137,7 @@
     <licenses>
         <license>
             <name>GNU General Public License</name>
-            <url>http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt</url>
+            <url>https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -145,9 +145,9 @@
         <mailingList>
             <name>DavMail User List</name>
             <post>davmail-users@lists.sourceforge.net.</post>
-            <subscribe>http://lists.sourceforge.net/lists/listinfo/davmail-users</subscribe>
-            <unsubscribe>http://lists.sourceforge.net/lists/listinfo/davmail-users</unsubscribe>
-            <archive>http://sourceforge.net/mailarchive/forum.php?forum_name=davmail-users</archive>
+            <subscribe>https://lists.sourceforge.net/lists/listinfo/davmail-users</subscribe>
+            <unsubscribe>https://lists.sourceforge.net/lists/listinfo/davmail-users</unsubscribe>
+            <archive>https://sourceforge.net/mailarchive/forum.php?forum_name=davmail-users</archive>
         </mailingList>
     </mailingLists>
     <scm>
@@ -158,7 +158,7 @@
     </scm>
     <issueManagement>
         <system>SourceForge</system>
-        <url>http://sourceforge.net/p/davmail/_list/tickets</url>
+        <url>https://sourceforge.net/p/davmail/_list/tickets</url>
     </issueManagement>
     <dependencies>
         <dependency>
