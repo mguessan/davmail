@@ -44,6 +44,7 @@ import org.htmlcleaner.BaseToken;
 import org.htmlcleaner.CommentNode;
 import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.TagNode;
 
 import javax.imageio.ImageIO;
@@ -280,6 +281,8 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                 if (cookie.getName().startsWith("cadata") || "sessionid".equals(cookie.getName())
                         // Exchange 2007 cookie
                         || "UserContext".equals(cookie.getName())
+                        // Federated Authentication
+                        || "TimeWindowSig".equals(cookie.getName())
                 ) {
                     authenticated = true;
                     break;
@@ -313,7 +316,11 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
         // create an instance of HtmlCleaner
         HtmlCleaner cleaner = new HtmlCleaner();
-
+        CleanerProperties props = cleaner.getProperties();
+        
+        // In the federated auth flow, a input field may contain a saml xml assertion with > characters
+        props.setAllowHtmlInsideAttributes(true);
+        
         // A OTP token authentication form in a previous page could have username fields with different names
         usernameInputs.clear();
 
@@ -331,6 +338,10 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     if ("logonForm".equals(((TagNode) form).getAttributeByName("name"))) {
                         logonForm = ((TagNode) form);
                     }
+                    else if ("loginForm".equals(((TagNode) form).getAttributeByName("id"))) {
+                        logonForm = ((TagNode) form);
+                    }
+
                 }
             }
             if (logonForm != null) {
@@ -351,7 +362,18 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     String name = ((TagNode) input).getAttributeByName("name");
                     String value = ((TagNode) input).getAttributeByName("value");
                     if ("hidden".equalsIgnoreCase(type) && name != null && value != null) {
-                        logonMethod.setParameter(name, value);
+                        // decode XML SAML assertion correctly from hidden field value
+                        if ("wresult".equals(name)) {
+                            String decoded = value.replaceAll("&quot;","\"").replaceAll("&lt;","<");
+                            logonMethod.setParameter(name, decoded);
+                            // The OWA accepting this assertion needs the Referer set, but it can be anything
+                            logonMethod.setRequestHeader("Referer","https://whatever/");
+                        } else if ("wctx".equals(name)) {
+                            String decoded = value.replaceAll("&amp;","&");
+                            logonMethod.setParameter(name, decoded);
+                        } else {
+                            logonMethod.setParameter(name, value);
+                        }
                     }
                     // custom login form
                     if (USER_NAME_FIELDS.contains(name)) {
@@ -715,4 +737,3 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         return username;
     }
 }
-
