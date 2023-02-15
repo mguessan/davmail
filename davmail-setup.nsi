@@ -111,7 +111,7 @@ Section "MainSection" SEC01
   File "dist\lib\jcharset-2.0.jar"
   File "dist\lib\jcifs-1.3.14.jar"
   File "dist\lib\jdom-1.0.jar"
-  File "dist\lib\jettison-1.4.0.jar"
+  File "dist\lib\jettison-1.5.3.jar"
   File "dist\lib\log4j-1.2.17.jar"
   File "dist\lib\javax.mail-1.5.6.jar"
   File "dist\lib\slf4j-api-1.7.25.jar"
@@ -119,7 +119,7 @@ Section "MainSection" SEC01
   File "dist\lib\stax-api-1.0.1.jar"
   File "dist\lib\stax2-api-3.1.1.jar"
   File "dist\lib\winrun4j-0.4.5.jar"
-  File "dist\lib\woodstox-core-6.2.0.jar"
+  File "dist\lib\woodstox-core-6.4.0.jar"
 SectionEnd
 
 Section -AdditionalIcons
@@ -183,7 +183,7 @@ no_quest:
   Delete "$INSTDIR\lib\jcharset-2.0.jar"
   Delete "$INSTDIR\lib\jcifs-1.3.14.jar"
   Delete "$INSTDIR\lib\jdom-1.0.jar"
-  Delete "$INSTDIR\lib\jettison-1.4.0.jar"
+  Delete "$INSTDIR\lib\jettison-1.5.3.jar"
   Delete "$INSTDIR\lib\log4j-1.2.17.jar"
   Delete "$INSTDIR\lib\javax.mail-1.5.6.jar"
   Delete "$INSTDIR\lib\slf4j-api-1.7.25.jar"
@@ -191,7 +191,7 @@ no_quest:
   Delete "$INSTDIR\lib\stax-api-1.0.1.jar"
   Delete "$INSTDIR\lib\stax2-api-3.1.1.jar"
   Delete "$INSTDIR\lib\winrun4j-0.4.5.jar"
-  Delete "$INSTDIR\lib\woodstox-core-6.2.0.jar"
+  Delete "$INSTDIR\lib\woodstox-core-6.4.0.jar"
 
   Delete "$INSTDIR\davmailservice64.exe"
   Delete "$INSTDIR\davmail64.exe"
