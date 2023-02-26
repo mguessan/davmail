@@ -428,6 +428,10 @@ public class O365Authenticator implements ExchangeAuthenticator {
             throw new IOException("Authentication failed: " + config);
         }
 
+        // look for number matching value
+        String entropy = config.optString("Entropy");
+        LOGGER.info("Number matching value for "+username+": "+entropy);
+
         context = config.getString("Ctx");
         flowToken = config.getString("FlowToken");
         String sessionId = config.getString("SessionId");
