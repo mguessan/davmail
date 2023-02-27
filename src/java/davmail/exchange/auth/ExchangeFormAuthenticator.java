@@ -376,7 +376,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                         }
                     }
                     // custom login form
-                    if (USER_NAME_FIELDS.contains(name)) {
+                    if (USER_NAME_FIELDS.contains(name) and !usernameInputs.contains(name)) {
                         usernameInputs.add(name);
                     } else if (PASSWORD_FIELDS.contains(name)) {
                         passwordInput = name;
