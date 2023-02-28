@@ -33,7 +33,7 @@
                 e.g. on Linux:&#x20;<code>unzip davmail-*.zip</code>.
             </p>
             <p>
-            Prepare a davmail.properties file according to your local needs :
+            Prepare a davmail.properties file according to your local needs (the most current version can be found <a href="https://github.com/mguessan/davmail/blob/master/src/etc/davmail.properties">here</a>) :
             </p>
             <source><![CDATA[
 # DavMail settings, see http://davmail.sourceforge.net/ for documentation
@@ -96,7 +96,7 @@ davmail.ssl.nosecuresmtp=false
 davmail.disableUpdateCheck=true
 
 # Send keepalive character during large folder and messages download
-davmail.enableKeepalive=false
+davmail.enableKeepAlive=false
 # Message count limit on folder retrieval
 davmail.folderSizeLimit=0
 # Default windows domain for NTLM and basic authentication
