@@ -26,12 +26,15 @@ import davmail.http.request.GetRequest;
 import davmail.http.request.PostRequest;
 import davmail.http.request.ResponseWrapper;
 import davmail.http.request.RestRequest;
+import davmail.ui.NumberMatchingFrame;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -429,8 +432,16 @@ public class O365Authenticator implements ExchangeAuthenticator {
         }
 
         // look for number matching value
-        String entropy = config.optString("Entropy");
-        LOGGER.info("Number matching value for "+username+": "+entropy);
+        String entropy = config.optString("Entropy", null);
+
+        // display number matching value to user
+        NumberMatchingFrame numberMatchingFrame = null;
+        if (entropy != null) {
+            LOGGER.info("Number matching value for " + username + ": " + entropy);
+            if (!Settings.getBooleanProperty("davmail.server") && !GraphicsEnvironment.isHeadless()) {
+                numberMatchingFrame = new NumberMatchingFrame(entropy);
+            }
+        }
 
         context = config.getString("Ctx");
         flowToken = config.getString("FlowToken");
@@ -438,42 +449,54 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
         int i = 0;
         boolean success = false;
-        while (!success && i++ < 12) {
+        try {
+            while (!success && i++ < 12) {
 
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                LOGGER.debug("Interrupted");
-                Thread.currentThread().interrupt();
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    LOGGER.debug("Interrupted");
+                    Thread.currentThread().interrupt();
+                }
+
+                RestRequest endAuthMethod = new RestRequest(urlEndAuth);
+                endAuthMethod.setRequestHeader("Accept", "application/json");
+                endAuthMethod.setRequestHeader("canary", apiCanary);
+                endAuthMethod.setRequestHeader("client-request-id", clientRequestId);
+                endAuthMethod.setRequestHeader("hpgact", hpgact);
+                endAuthMethod.setRequestHeader("hpgid", hpgid);
+                endAuthMethod.setRequestHeader("hpgrequestid", hpgrequestid);
+
+                JSONObject endAuthJson = new JSONObject();
+                endAuthJson.put("AuthMethodId", "PhoneAppNotification");
+                endAuthJson.put("Ctx", context);
+                endAuthJson.put("FlowToken", flowToken);
+                endAuthJson.put("Method", "EndAuth");
+                endAuthJson.put("PollCount", "1");
+                endAuthJson.put("SessionId", sessionId);
+
+                endAuthMethod.setJsonBody(endAuthJson);
+
+                config = httpClientAdapter.executeRestRequest(endAuthMethod);
+                LOGGER.debug(config);
+                String resultValue = config.getString("ResultValue");
+                if ("PhoneAppDenied".equals(resultValue) || "PhoneAppNoResponse".equals(resultValue)) {
+                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_REASON", resultValue);
+                }
+                if (config.getBoolean("Success")) {
+                    success = true;
+                }
+            }
+        } finally {
+            // close number matching frame if exists
+            if (numberMatchingFrame !=null && numberMatchingFrame.isVisible()) {
+                final JFrame finalNumberMatchingFrame = numberMatchingFrame;
+                SwingUtilities.invokeLater(() -> {
+                    finalNumberMatchingFrame.setVisible(false);
+                    finalNumberMatchingFrame.dispose();
+                });
             }
 
-            RestRequest endAuthMethod = new RestRequest(urlEndAuth);
-            endAuthMethod.setRequestHeader("Accept", "application/json");
-            endAuthMethod.setRequestHeader("canary", apiCanary);
-            endAuthMethod.setRequestHeader("client-request-id", clientRequestId);
-            endAuthMethod.setRequestHeader("hpgact", hpgact);
-            endAuthMethod.setRequestHeader("hpgid", hpgid);
-            endAuthMethod.setRequestHeader("hpgrequestid", hpgrequestid);
-
-            JSONObject endAuthJson = new JSONObject();
-            endAuthJson.put("AuthMethodId", "PhoneAppNotification");
-            endAuthJson.put("Ctx", context);
-            endAuthJson.put("FlowToken", flowToken);
-            endAuthJson.put("Method", "EndAuth");
-            endAuthJson.put("PollCount", "1");
-            endAuthJson.put("SessionId", sessionId);
-
-            endAuthMethod.setJsonBody(endAuthJson);
-
-            config = httpClientAdapter.executeRestRequest(endAuthMethod);
-            LOGGER.debug(config);
-            String resultValue = config.getString("ResultValue");
-            if ("PhoneAppDenied".equals(resultValue) || "PhoneAppNoResponse".equals(resultValue)) {
-                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_REASON", resultValue);
-            }
-            if (config.getBoolean("Success")) {
-                success = true;
-            }
         }
         if (!success) {
             throw new IOException("Authentication failed: " + config);
