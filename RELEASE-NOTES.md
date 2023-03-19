@@ -1,3 +1,56 @@
+## DavMail 6.1.0 2023-03-19
+First release in a long time to publish pending changes, including Kerberos support fix, 
+experimental number matching support for upcoming Microsoft authenticator default configuration change,
+store new refresh token received at authentication.
+In addition, some Log4J specific patches to remove vulnerable classes from library
+(even if DavMail is not impacted with standard configuration)
+
+### O365
+- O365: implement number matching logic in O365Authenticator
+- O365: retrieve number matching value during phone app MFA
+- O365: adjust logging level on O365 refresh token error
+- O365: change persist token logic to store new refresh token after succesful refresh
+- Experimental: store refreshed token when davmail.storeRefreshedToken=true
+
+### Windows
+- Windows: Add missing labelReplace active wait with wait/notifyAll in DavService
+- Update winrun4j wrappers after lib upgrades
+
+### Linux
+- Linux: block davmail azul when davmail script is located under /usr/bin (package installed)
+- Linux: fix PosixFilePermissions for writeable only by user
+- Linux: try to make .davmail.properties file readable by user only on create
+- Linux: improve launch script to take into account script location
+
+
+### Enhancements
+- Add missing label
+- Replace active wait with wait/notifyAll
+- Upgrade woodstox to 1.4.0 and jettison to 1.5.3
+- Merge https://github.com/mguessan/davmail/pull/225 remove (most) http:// links in Maven POM
+- Make ScheduledThreadPool thread daemon
+- Switch to https for version check
+- DavMailIdleConnectionEvictor fix from audit
+- Refactor DavMailIdleConnectionEvictor to be less agressive on idle connection checks/purge and use scheduler instead of active polling
+- Override SPNegoScheme to take into account DavMail kerberos settings
+
+### Documentation
+- Sample syslog configuration
+- Update current version in README.md
+- OSX: remove reference to Growl in documentation
+- Doc: security note on DavMail not vulnerable to CVE-2021-44228
+- Doc: add a section on Fedora installation from copr
+
+### Caldav
+- Caldav: Do not try to update modified occurrences on Mozilla thunderbird dismiss event
+
+### Security
+- Security: Strip packaged log4j jar from JMSSink and JDBCAppender to ensure DavMail is not vulnerable to CVE-2022-23305 & CVE-2022-23302, see https://github.com/mguessan/davmail/issues/250
+- Remove JMSAppender, SMTPAppender and SocketServer from Log4J binary as an additional security measure (CVE-2019-17571 CVE-2021-4104), even if DavMail is not vulnerable with standard configuration
+- Upgrade Log4J to latest version 1.2.17 in Winrun4J wrappers
+- Upgrade Log4J to latest version 1.2.17
+
+
 ## DavMail 6.0.1 2021-12-03
 Bugfix release with a few Office 365 enhancements
 
