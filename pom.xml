@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -8,7 +8,7 @@
     <version>6.1.0</version>
     <name>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway</name>
     <organization>
-        <name>Mickaël Guessant</name>
+        <name>MickaÃ«l Guessant</name>
     </organization>
     <url>https://www.sourceforge.net/projects/davmail</url>
     <inceptionYear>2001</inceptionYear>
@@ -35,7 +35,7 @@
     </properties>
     <developers>
         <developer>
-            <name>Mickaël Guessant</name>
+            <name>MickaÃ«l Guessant</name>
             <id>mguessan</id>
             <email>mguessan@free.fr</email>
             <url>https://github.com/mguessan</url>
