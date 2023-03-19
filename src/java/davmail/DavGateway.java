@@ -41,7 +41,7 @@ public final class DavGateway {
     private static final Logger LOGGER = Logger.getLogger(DavGateway.class);
     private static final String HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT = "https://davmail.sourceforge.net/version.txt";
 
-    private static boolean stopped;
+    private static final Object LOCK = new Object();
 
     private DavGateway() {
     }
@@ -96,19 +96,17 @@ public final class DavGateway {
                 public void run() {
                     DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
                     DavGateway.stop();
-                    stopped = true;
+                    LOCK.notifyAll();
                 }
             });
 
-            try {
-                while (!stopped) {
-                    Thread.sleep(1000);
+            synchronized (LOCK) {
+                try {
+                    LOCK.wait();
+                } catch (InterruptedException e) {
+                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
+                    Thread.currentThread().interrupt();
                 }
-            } catch (InterruptedException e) {
-                DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
-                stop();
-                DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_STOP"));
-                Thread.currentThread().interrupt();
             }
 
         }
