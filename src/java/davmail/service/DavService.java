@@ -29,7 +29,7 @@ import org.boris.winrun4j.AbstractService;
  */
 public class DavService extends AbstractService {
 
-    protected boolean stopped;
+    private final Object LOCK = new Object();
 
     /**
      * Perform a service request.
@@ -44,7 +44,9 @@ public class DavService extends AbstractService {
             case SERVICE_CONTROL_SHUTDOWN:
                 DavGatewayTray.debug(new BundleMessage("LOG_STOPPING_DAVMAIL"));
                 DavGateway.stop();
-                stopped = true;
+                synchronized (LOCK) {
+                    LOCK.notifyAll();
+                }
         }
         return 0;
     }
@@ -69,22 +71,15 @@ public class DavService extends AbstractService {
         DavGateway.start();
         DavGatewayTray.debug(new BundleMessage("LOG_DAVMAIL_STARTED"));
 
-        // launch a non daemon thread
-        Thread shutdownListenerThread = new Thread("ShutDownListener") {
-            public void run() {
-                try {
-                    while (!stopped) {
-                        Thread.sleep(1000);
-                    }
-                } catch (InterruptedException e) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
-                    DavGateway.stop();
-                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_STOP"));
-                    Thread.currentThread().interrupt();
-                }
+        synchronized (LOCK) {
+            try {
+                LOCK.wait();
+            } catch (InterruptedException e) {
+                DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
+                Thread.currentThread().interrupt();
             }
-        };
-        shutdownListenerThread.start();
+        }
+
         return 0;
     }
 }
