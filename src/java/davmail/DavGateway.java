@@ -96,7 +96,9 @@ public final class DavGateway {
                 public void run() {
                     DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
                     DavGateway.stop();
-                    LOCK.notifyAll();
+                    synchronized (LOCK) {
+                        LOCK.notifyAll();
+                    }
                 }
             });
 
