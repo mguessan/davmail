@@ -273,7 +273,7 @@
         <dependency>
             <groupId>org.codehaus.jettison</groupId>
             <artifactId>jettison</artifactId>
-            <version>1.5.3</version>
+            <version>1.5.4</version>
         </dependency>
         <!-- JDK 11 only JavaFX dependencies -->
         <!--dependency>
