@@ -5,8 +5,8 @@
 [![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://img.shields.io/sourceforge/dm/davmail.svg)](https://sourceforge.net/projects/davmail/files/latest/download)
 [![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://img.shields.io/sourceforge/dt/davmail.svg)](https://sourceforge.net/projects/davmail/files/latest/download)
 
-[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=alert_status)](https://sonarcloud.io/dashboard/index/mguessan_davmail)
-[![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=bugs)](https://sonarcloud.io/dashboard/index/mguessan_davmail)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=alert_status)](https://sonarcloud.io/project/overview?id=mguessan_davmail)
+[![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=bugs)](https://sonarcloud.io/project/overview?id=mguessan_davmail)
 [![SonarCloud Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=vulnerabilities)](https://sonarcloud.io/project/overview?id=mguessan_davmail)
 
 **_Security note:_** DavMail does not depend on Log4J2 and is thus not vulnerable to [CVE-2021-44228](https://github.com/advisories/GHSA-jfh8-c2jp-5v3q)
