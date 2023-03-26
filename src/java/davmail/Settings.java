@@ -353,9 +353,9 @@ public final class Settings {
                 }
             }
 
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFilePath), StandardCharsets.ISO_8859_1))) {
-                readLines(lines, properties);
+            readLines(lines, properties);
 
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(Paths.get(configFilePath)), StandardCharsets.ISO_8859_1))) {
                 for (String value : lines) {
                     writer.write(value);
                     writer.newLine();
