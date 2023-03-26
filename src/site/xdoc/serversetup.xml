@@ -43,7 +43,14 @@
 
 # Server or workstation mode
 davmail.server=true
-# connection mode auto, EWS or WebDav
+# Exchange/Office 365 connection mode:
+# - O365Modern Office 365 modern authentication (Oauth2)
+# - O365Interactive Office 365 with interactive browser window, not available in headless mode (OpenJFX required)
+# - O365Manual Office 365 with interactive dialog, not available in headless mode
+# - O365 Office 365 EWS mode
+# - EWS Exchange 2007 and later
+# - WebDav Exchange 2007 and earliear WebDav mode
+# - Auto WebDav mode with EWS failover
 davmail.mode=EWS
 # base Exchange OWA or EWS url
 davmail.url=https://outlook.office365.com/EWS/Exchange.asmx
@@ -54,6 +61,11 @@ davmail.imapPort=1143
 davmail.ldapPort=1389
 davmail.popPort=1110
 davmail.smtpPort=1025
+
+# Optional: separate file to store Oauth tokens
+#davmail.oauth.tokenFilePath=
+# update stored refresh token after each authentication
+#davmail.oauth.persistToken=
 
 #############################################################
 # Network settings
@@ -96,7 +108,7 @@ davmail.ssl.nosecuresmtp=false
 davmail.disableUpdateCheck=true
 
 # Send keepalive character during large folder and messages download
-davmail.enableKeepalive=false
+davmail.enableKeepAlive=true
 # Message count limit on folder retrieval
 davmail.folderSizeLimit=0
 # Default windows domain for NTLM and basic authentication
@@ -151,7 +163,7 @@ davmail.logFileSize=1MB
 # log levels
 log4j.logger.davmail=WARN
 log4j.logger.httpclient.wire=WARN
-log4j.logger.org.apache.commons.httpclient=WARN
+log4j.logger.httpclient=WARN
 log4j.rootLogger=WARN
 
 #############################################################
