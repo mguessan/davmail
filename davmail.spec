@@ -2,8 +2,8 @@
 %{?!davsvn:   %define davsvn   3390}
 %define davver %{davrel}-%{davsvn}
 
-%define systemd_support 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?el8} || 0%{?fedora}
-%define systemd_macros 0%{?suse_version} >= 1210
+%define systemd_support 0%{?suse_version} || 0%{?el7} || 0%{?el8} || 0%{?fedora}
+%define systemd_macros 0%{?suse_version}
 
 Summary: A POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
 Name: davmail
