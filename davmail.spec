@@ -5,7 +5,7 @@
 %define systemd_support 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?el8} || 0%{?fedora}
 %define systemd_macros 0%{?suse_version} >= 1210
 
-Summary: DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
+Summary: A POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
 Name: davmail
 URL: http://davmail.sourceforge.net
 Version: %{davrel}
@@ -54,7 +54,7 @@ Requires: eclipse-swt
 Source0: %{name}-src-%{davver}.tgz
 
 %description
-DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
+A POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
 users to use any mail/calendar client with an Exchange server, even from
 the internet or behind a firewall through Outlook Web Access. DavMail
 now includes an LDAP gateway to Exchange global address book and user
