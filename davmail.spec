@@ -124,9 +124,6 @@ mkdir -p $RPM_BUILD_ROOT%{_datadir}/metainfo
 install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_datadir}/metainfo
 %endif
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 %pre
 /usr/sbin/groupadd -f -r davmail > /dev/null 2>&1 || :
 /usr/sbin/useradd -r -s /sbin/nologin -d /var/lib/davmail -M \
