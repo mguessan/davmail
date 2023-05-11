@@ -110,7 +110,6 @@ install -m 0644 src/init/davmail-logrotate $RPM_BUILD_ROOT%{_sysconfdir}/logrota
 install -m 0644 src/etc/davmail.properties $RPM_BUILD_ROOT%{_sysconfdir}
 # https://fedoraproject.org/wiki/TomCallaway/DesktopFileVendor
 desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ src/desktop/davmail.desktop --vendor=""
-install -m 0775 src/init/davmail-wrapper $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail/davmail
 %if %systemd_support
 install -D -m 644 src/init/davmail.service %{buildroot}%{_unitdir}/davmail.service
 install -D -m 644 src/init/davmail@.service %{buildroot}%{_unitdir}/davmail@.service
