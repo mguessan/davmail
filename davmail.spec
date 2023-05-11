@@ -39,10 +39,14 @@ BuildRequires: javafx
 %endif
 Requires: coreutils
 Requires: filesystem
+%if %systemd_support
+%systemd_requires
+%else
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
 Requires(post): coreutils, filesystem, /sbin/chkconfig
 Requires(preun): /sbin/service, coreutils, /sbin/chkconfig, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
+%endif
 
 %if 0%{?el7} || 0%{?el8} || 0%{?fedora}
 Requires: /etc/init.d, logrotate, java-1.8.0-openjdk
