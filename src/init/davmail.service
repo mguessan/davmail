@@ -11,6 +11,7 @@ User=davmail
 PermissionsStartOnly=true
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 ExecStart=/usr/bin/davmail -server /etc/davmail.properties
+StateDirectory=davmail
 SuccessExitStatus=143
 PrivateTmp=yes
 ProtectSystem=full

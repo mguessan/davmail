@@ -85,21 +85,23 @@ rm lib/swt*
 ant -Dant.java.version=1.8 prepare-dist
 
 %install
-rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_bindir}
 mkdir -p $RPM_BUILD_ROOT%{_sbindir}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
-# Should this be created if systemd support is on?
+%if 0%{?!systemd_support:1}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
+%endif
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/pixmaps
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/davmail/lib
+%if 0%{?!systemd_support:1}
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail
+%endif
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log
 
 %if %systemd_support
 # Add the file here so rpm can keep track of it even if systemd creates it later
-touch %{_var}/log/davmail.log
+touch %{buildroot}%{_var}/log/davmail.log
 %endif
 
 # Init scripts, icons, configurations
@@ -237,6 +239,8 @@ fi
 %if 0%{?sle_version} != 120300 && 0%{?suse_version} != 1310 && 0%{?suse_version} != 1320
 %{_datadir}/metainfo/org.davmail.DavMail.appdata.xml
 %endif
+%if 0%{?!systemd_support:1}
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
+%endif
 
 %changelog
