@@ -1513,7 +1513,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         protected boolean isLightning() {
-            return isUserAgent("Lightning/");
+            return isUserAgent("Lightning/") || isUserAgent("Thunderbird/");
         }
 
         protected boolean isIcal5() {
