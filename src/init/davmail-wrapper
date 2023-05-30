@@ -1,9 +1,0 @@
-#!/bin/sh
-# davmail owns davmail.log
-LOGFILE=/var/log/davmail.log
-# davmail owned pidfile
-PIDFILE=/var/lib/davmail/pid
-
-echo $$ > ${PIDFILE}
-exec java -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/* \
-        davmail.DavGateway "$@" >> ${LOGFILE} 2>&1

@@ -1,0 +1,16 @@
+[Unit]
+Description=Davmail Exchange gateway for %i
+Documentation=https://davmail.sourceforge.net/linuxsetup.html
+Documentation=http://davmail.sourceforge.net/advanced.html
+Documentation=http://davmail.sourceforge.net/sslsetup.html
+After=network.target
+
+[Service]
+Type=simple
+PermissionsStartOnly=true
+ExecStart=/usr/bin/davmail %h/.config/davmail/%i.properties
+SuccessExitStatus=143
+
+[Install]
+WantedBy=default.target
+DefaultInstance=davmail
