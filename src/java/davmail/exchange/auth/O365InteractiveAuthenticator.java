@@ -31,6 +31,7 @@ import org.apache.log4j.Logger;
 
 import javax.swing.*;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
@@ -54,6 +55,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     URI ewsUrl = URI.create(resource + "/EWS/Exchange.asmx");
 
     private O365InteractiveAuthenticatorFrame o365InteractiveAuthenticatorFrame;
+    private O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog;
 
     private String username;
     private String password;
@@ -134,21 +136,41 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             }
         });
 
-        SwingUtilities.invokeLater(() -> {
-            try {
-                o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
-                o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
-                o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
-            } catch (NoClassDefFoundError e) {
-                LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
-                O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl);
+        boolean isJFXAvailable = true;
+        try {
+            Class.forName("javafx.application.Platform");
+        } catch (ClassNotFoundException e) {
+            LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
+            isJFXAvailable = false;
+        }
+
+        if (isJFXAvailable) {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
+                    o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
+                    o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
+                } catch (NoClassDefFoundError e) {
+                    LOGGER.warn("Unable to load JavaFX (OpenJFX)");
+                }
+
+            });
+        } else {
+            if (o365InteractiveAuthenticatorFrame == null) {
+                try {
+                    SwingUtilities.invokeAndWait(() -> o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (InvocationTargetException e) {
+                    throw new IOException(e);
+                }
                 code = o365ManualAuthenticatorDialog.getCode();
                 isAuthenticated = code != null;
                 if (!isAuthenticated) {
                     errorCode = "User did not provide authentication code";
                 }
             }
-        });
+        }
 
         int count = 0;
 
