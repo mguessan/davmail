@@ -392,8 +392,7 @@ public class VCalendar extends VObject {
                         // failover, map to a close timezone
                         for (VObject tzDefinition : vObject.vObjects) {
                             if ("STANDARD".equals(tzDefinition.type)) {
-                                String tzOffset = tzDefinition.getPropertyValue("TZOFFSETTO");
-                                exchangeTzid = ResourceBundle.getBundle("tzoffsettimezones").getString(tzOffset);
+                                exchangeTzid = getTzidFromOffset(tzDefinition.getPropertyValue("TZOFFSETTO"));
                             }
                         }
                     }
@@ -888,14 +887,22 @@ public class VCalendar extends VObject {
             VObject vTimezone = getVTimezone();
             for (VObject tzDefinition : vTimezone.vObjects) {
                 if ("STANDARD".equals(tzDefinition.type)) {
-                    String tzOffset = tzDefinition.getPropertyValue("TZOFFSETTO");
-                    convertedTzid = ResourceBundle.getBundle("tzoffsettimezones").getString(tzOffset);
+                    convertedTzid = getTzidFromOffset(tzDefinition.getPropertyValue("TZOFFSETTO"));
                 }
             }
             convertedTzid = ResourceBundle.getBundle("timezones").getString(convertedTzid);
         }
         return TimeZone.getTimeZone(convertedTzid);
 
+    }
+
+    private String getTzidFromOffset(String tzOffset) {
+        if (tzOffset == null) {
+            return null;
+        } else if (tzOffset.length() == 7) {
+            tzOffset = tzOffset.substring(0, 5);
+        }
+        return ResourceBundle.getBundle("tzoffsettimezones").getString(tzOffset);
     }
 
     public String convertCalendarDateToExchangeZulu(String vcalendarDateValue, String tzid) throws IOException {
