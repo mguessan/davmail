@@ -99,7 +99,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
     protected String errorDetail;
     protected String errorDescription;
     protected String errorValue;
-    protected int backOffMilliseconds;
+    protected long backOffMilliseconds;
     protected Item item;
 
     protected SearchExpression searchExpression;
@@ -886,9 +886,9 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
                     // catch BackOffMilliseconds value
                     if ("BackOffMilliseconds".equals(attributeValue)) {
                         try {
-                            backOffMilliseconds = Integer.parseInt(reader.getElementText());
+                            backOffMilliseconds = Long.parseLong(reader.getElementText());
                         } catch (NumberFormatException e) {
-                            LOGGER.error(e.getMessage(), e);
+                            LOGGER.error("Unable to parse BackOffMilliseconds");
                         }
                     }
                 }

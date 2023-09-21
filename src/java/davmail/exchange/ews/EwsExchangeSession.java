@@ -2906,13 +2906,9 @@ public class EwsExchangeSession extends ExchangeSession {
         } catch (EWSThrottlingException e) {
             // default throttling delay is one minute
             throttlingDelay = 60000;
-            if (ewsMethod.errorValue != null) {
+            if (ewsMethod.backOffMilliseconds > 0) {
                 // server provided a throttling delay, add 10 seconds
-                try {
-                    throttlingDelay = Long.parseLong(ewsMethod.errorValue) + 10000;
-                } catch (NumberFormatException e2) {
-                    LOGGER.error("Unable to parse BackOffMilliseconds " + e2.getMessage());
-                }
+                throttlingDelay = ewsMethod.backOffMilliseconds + 10000;
             }
             throttlingTimestamp = System.currentTimeMillis() + throttlingDelay;
 
