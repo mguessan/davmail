@@ -85,9 +85,9 @@ public class ImapConnection extends AbstractConnection {
         final String capabilities;
         int imapIdleDelay = Settings.getIntProperty("davmail.imapIdleDelay") * 60;
         if (imapIdleDelay > 0) {
-            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN IDLE MOVE SPECIAL-USE";
+            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN IDLE MOVE SPECIAL-USE UIDPLUS";
         } else {
-            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN MOVE SPECIAL-USE";
+            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN MOVE SPECIAL-USE UIDPLUS";
         }
 
         String line;
@@ -545,8 +545,13 @@ public class ImapConnection extends AbstractConnection {
 
                                     String messageName = UUID.randomUUID().toString() + ".EML";
                                     try {
-                                        MessageCreateThread.createMessage(session, folderName, messageName, properties, mimeMessage, os, capabilities);
-                                        sendClient(commandId + " OK APPEND completed");
+                                        ExchangeSession.Message createdMessage = MessageCreateThread.createMessage(session, folderName, messageName, properties, mimeMessage, os, capabilities);
+                                        if (createdMessage != null) {
+                                            long uid = createdMessage.getImapUid();
+                                            sendClient(commandId + " OK [APPENDUID "+uid+" 1] APPEND completed");
+                                        } else {
+                                            sendClient(commandId + " OK APPEND completed");
+                                        }
                                     } catch (InsufficientStorageException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
