@@ -216,7 +216,7 @@ public abstract class ExchangeSession {
      * @param mimeMessage MIME message
      * @throws IOException when unable to create message
      */
-    public abstract void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException;
+    public abstract Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException;
 
     /**
      * Update given properties on message.

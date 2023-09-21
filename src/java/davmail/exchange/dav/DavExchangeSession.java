@@ -2613,7 +2613,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @throws IOException when unable to create message
      */
     @Override
-    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
+    public Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName);
 
         List<PropEntry> davProperties = buildProperties(properties);
@@ -2744,7 +2744,8 @@ public class DavExchangeSession extends ExchangeSession {
         } catch (MessagingException e) {
             throw new IOException(e.getMessage());
         }
-
+        // fetch after create not implemented
+        return null;
     }
 
     /**

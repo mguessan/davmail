@@ -396,7 +396,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
+    public Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -421,6 +421,16 @@ public class EwsExchangeSession extends ExchangeSession {
         item.setFieldUpdates(fieldUpdates);
         CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
         executeMethod(createItemMethod);
+
+        ItemId newItemId = new ItemId(createItemMethod.getResponseItem());
+        GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
+        for (String attribute:IMAP_MESSAGE_ATTRIBUTES) {
+            getItemMethod.addAdditionalProperty(Field.get(attribute));
+        }
+        executeMethod(getItemMethod);
+
+        return buildMessage(getItemMethod.getResponseItem());
+
     }
 
     @Override
