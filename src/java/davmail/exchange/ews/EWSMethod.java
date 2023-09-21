@@ -99,6 +99,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
     protected String errorDetail;
     protected String errorDescription;
     protected String errorValue;
+    protected int backOffMilliseconds;
     protected Item item;
 
     protected SearchExpression searchExpression;
@@ -874,11 +875,21 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
                 if (event == XMLStreamConstants.CHARACTERS) {
                     result.append(reader.getText());
                 } else if ("MessageXml".equals(localName) && event == XMLStreamConstants.START_ELEMENT) {
+                    String attributeValue = null;
                     for (int i = 0; i < reader.getAttributeCount(); i++) {
                         if (result.length() > 0) {
                             result.append(", ");
                         }
+                        attributeValue = reader.getAttributeValue(i);
                         result.append(reader.getAttributeLocalName(i)).append(": ").append(reader.getAttributeValue(i));
+                    }
+                    // catch BackOffMilliseconds value
+                    if ("BackOffMilliseconds".equals(attributeValue)) {
+                        try {
+                            backOffMilliseconds = Integer.parseInt(reader.getElementText());
+                        } catch (NumberFormatException e) {
+                            LOGGER.error(e.getMessage(), e);
+                        }
                     }
                 }
             }
