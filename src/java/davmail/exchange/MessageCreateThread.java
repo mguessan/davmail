@@ -22,6 +22,7 @@ public class MessageCreateThread extends Thread {
     String messageName;
     HashMap<String, String> properties;
     MimeMessage mimeMessage;
+    ExchangeSession.Message message;
     IOException exception;
 
     MessageCreateThread(String threadName, ExchangeSession session, String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) {
@@ -36,7 +37,7 @@ public class MessageCreateThread extends Thread {
 
     public void run() {
         try {
-            session.createMessage(folderPath, messageName, properties, mimeMessage);
+            this.message = session.createMessage(folderPath, messageName, properties, mimeMessage);
         } catch (IOException e) {
             exception = e;
         } finally {
@@ -57,7 +58,7 @@ public class MessageCreateThread extends Thread {
      * @throws InterruptedException on error
      * @throws IOException          on error
      */
-    public static void createMessage(ExchangeSession session, String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage, OutputStream outputStream, String capabilities) throws IOException {
+    public static ExchangeSession.Message createMessage(ExchangeSession session, String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage, OutputStream outputStream, String capabilities) throws IOException {
         MessageCreateThread messageCreateThread = new MessageCreateThread(currentThread().getName(), session, folderPath, messageName, properties, mimeMessage);
         messageCreateThread.start();
         while (!messageCreateThread.isComplete) {
@@ -86,6 +87,6 @@ public class MessageCreateThread extends Thread {
         if (messageCreateThread.exception != null) {
             throw messageCreateThread.exception;
         }
-
+        return messageCreateThread.message;
     }
 }
