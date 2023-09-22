@@ -31,7 +31,6 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
-import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.codehaus.stax2.typed.TypedXMLStreamReader;
@@ -394,8 +393,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
             OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
             writer.write("<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
                     "xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" " +
-                    "xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">" +
-                    "");
+                    "xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">");
             writer.write("<soap:Header>");
             if (serverVersion != null) {
                 writer.write("<t:RequestServerVersion Version=\"");
@@ -662,7 +660,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         public int getInt(String key) {
             int result = 0;
             String value = get(key);
-            if (value != null && value.length() > 0) {
+            if (value != null && !value.isEmpty()) {
                 result = Integer.parseInt(value);
             }
             return result;
@@ -677,7 +675,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         public long getLong(String key) {
             long result = 0;
             String value = get(key);
-            if (value != null && value.length() > 0) {
+            if (value != null && !value.isEmpty()) {
                 result = Long.parseLong(value);
             }
             return result;
@@ -693,7 +691,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         public boolean getBoolean(String key) {
             boolean result = false;
             String value = get(key);
-            if (value != null && value.length() > 0) {
+            if (value != null && !value.isEmpty()) {
                 result = Boolean.parseBoolean(value);
             }
             return result;
@@ -841,7 +839,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
      */
     public Item getResponseItem() throws EWSException {
         checkSuccess();
-        if (responseItems != null && responseItems.size() > 0) {
+        if (responseItems != null && !responseItems.isEmpty()) {
             return responseItems.get(0);
         } else {
             return null;
@@ -1205,7 +1203,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         org.apache.http.Header contentTypeHeader = response.getFirstHeader("Content-Type");
         if (contentTypeHeader != null && "text/xml; charset=utf-8".equals(contentTypeHeader.getValue())) {
             try (
-                    InputStream inputStream = response.getEntity().getContent();
+                    InputStream inputStream = response.getEntity().getContent()
             ) {
                 if (HttpClientAdapter.isGzipEncoded(response)) {
                     processResponseStream(new GZIPInputStream(inputStream));
