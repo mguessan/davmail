@@ -1384,9 +1384,6 @@ public class ImapConnection extends AbstractConnection {
             appendEnvelope(buffer, innerMessage);
             appendBodyStructure(buffer, innerMessage);
             appendBodyStructureValue(buffer, lineCount);
-        } else {
-            // do not send line count for non text bodyparts
-            appendBodyStructureValue(buffer, -1);
         }
         buffer.append(')');
     }
