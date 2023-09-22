@@ -1276,7 +1276,11 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
             LOGGER.error("Error while parsing soap response: " + e, e);
             if (reader != null) {
                 try {
-                    LOGGER.error("Current text: " + reader.getText());
+                    String content = reader.getText();
+                    if (content != null && content.length() > 4096) {
+                        content = content.substring(0, 4096)+" ...";
+                    }
+                    LOGGER.debug("Current text: " + content);
                 } catch (IllegalStateException ise) {
                     LOGGER.error(e + " " + e.getMessage());
                 }
