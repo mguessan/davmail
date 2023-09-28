@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu May 11 2023 Björn Bidar <bjorn.bidar@thaodan.de>
+  - Convert spec file back to Unix-like LF endings
+  - Add back changelog file and convert to OpenSUSE format
+  - Remove superfluous-%clean-section
+  - Don't repeat package name in spec file
+  - Remove check for obsolete openSUSE version
+
+-------------------------------------------------------------------
 Wed Jul 07 2021 Michal Suchanek <msuchanek@suse.com>
   - Tumbleweed no longer supports init.d services and fails build when installed
   - Only install one of init.d service and systemd service.
