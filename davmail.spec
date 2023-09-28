@@ -40,8 +40,8 @@ BuildRequires: javafx
 Requires: coreutils
 Requires: filesystem
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
-Requires(post): coreutils, filesystem, /sbin/chkconfig
-Requires(preun): /sbin/service, coreutils, /sbin/chkconfig, /usr/sbin/userdel, /usr/sbin/groupdel
+Requires(post): coreutils, filesystem
+Requires(preun): /sbin/service, coreutils, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
 
 %if 0%{?el7} || 0%{?el8} || 0%{?fedora}
@@ -214,3 +214,5 @@ fi
 %{_datadir}/metainfo/org.davmail.DavMail.appdata.xml
 %endif
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
+
+%changelog
