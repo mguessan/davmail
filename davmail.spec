@@ -1,14 +1,10 @@
-%{?!davrel:   %define davrel   6.1.0}
-%{?!davsvn:   %define davsvn   3390}
-%define davver %{davrel}-%{davsvn}
-
 %define systemd_support 0%{?suse_version} || 0%{?el7} || 0%{?el8} || 0%{?fedora}
 %define systemd_macros 0%{?suse_version}
 
 Summary: A POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
 Name: davmail
 URL: http://davmail.sourceforge.net
-Version: %{davrel}
+Version: 6.1.0
 Release: 1%{?dist}
 License: GPL-2.0+
 Group: Applications/Internet
@@ -51,7 +47,7 @@ Requires: /etc/init.d, logrotate, jre >= 1.8.0
 Requires: eclipse-swt
 %endif
 
-Source0: %{name}-src-%{davver}.tgz
+Source0: %{name}-src-%{version}.tgz
 
 %description
 A POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
@@ -62,7 +58,7 @@ personal contacts to allow recipient address completion in mail compose
 window and full calendar support with attendees free/busy display.
 
 %prep
-%setup -q -n %{name}-src-%{davver}
+%setup -q -n %{name}-src-%{version}
 
 %build
 # JAVA_HOME points to the JDK root directory: ${JAVA_HOME}/{bin,lib}
