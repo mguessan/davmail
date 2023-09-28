@@ -2,10 +2,10 @@
 %{?!davsvn:   %define davsvn   3390}
 %define davver %{davrel}-%{davsvn}
 
-%define systemd_support 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?el8} || 0%{?fedora}
-%define systemd_macros 0%{?suse_version} >= 1210
+%define systemd_support 0%{?suse_version} || 0%{?el7} || 0%{?el8} || 0%{?fedora}
+%define systemd_macros 0%{?suse_version}
 
-Summary: DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
+Summary: A POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
 Name: davmail
 URL: http://davmail.sourceforge.net
 Version: %{davrel}
@@ -54,7 +54,7 @@ Requires: eclipse-swt
 Source0: %{name}-src-%{davver}.tgz
 
 %description
-DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
+A POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
 users to use any mail/calendar client with an Exchange server, even from
 the internet or behind a firewall through Outlook Web Access. DavMail
 now includes an LDAP gateway to Exchange global address book and user
@@ -123,9 +123,6 @@ install -m 0664 dist/*.jar $RPM_BUILD_ROOT%{_datadir}/davmail/
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/metainfo
 install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_datadir}/metainfo
 %endif
-
-%clean
-rm -rf $RPM_BUILD_ROOT
 
 %pre
 /usr/sbin/groupadd -f -r davmail > /dev/null 2>&1 || :
