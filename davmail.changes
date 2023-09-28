@@ -1,0 +1,133 @@
+-------------------------------------------------------------------
+Wed Jul 07 2021 Michal Suchanek <msuchanek@suse.com>
+  - Tumbleweed no longer supports init.d services and fails build when installed
+  - Only install one of init.d service and systemd service.
+  - Use systemd service macros on SUSE
+
+-------------------------------------------------------------------
+Mon Jul 05 2021 Mickael Guessant <mguessan@free.fr>
+
+- update to 6.0.0
+
+-------------------------------------------------------------------
+Wed Apr 15 2020 Mickael Guessant <mguessan@free.fr>
+
+- update to 5.5.0
+
+-------------------------------------------------------------------
+Mon Nov 11 2019 Mickael Guessant <mguessan@free.fr>
+
+- update to 5.4.0
+
+-------------------------------------------------------------------
+Mon Aug 12 2019 Mickael Guessant <mguessan@free.fr>
+
+- update to 5.3.1
+
+-------------------------------------------------------------------
+Tue Aug 06 2019 Mickael Guessant <mguessan@free.fr>
+
+- update to 5.3.0
+
+-------------------------------------------------------------------
+Mon Feb 11 2019 Mickael Guessant <mguessan@free.fr>
+
+- update to 5.2.0
+
+-------------------------------------------------------------------
+Thu Dec 20 2018 Mickael Guessant <mguessan@free.fr>
+
+- update to 5.1.0
+
+-------------------------------------------------------------------
+Wed Nov 21 2018 Mickael Guessant <mguessan@free.fr>
+
+- update to 5.0.0
+- merge files in trunk
+- various distribution specific fixes
+
+-------------------------------------------------------------------
+Wed Sep 05 2018 Mickael Guessant <mguessan@free.fr>
+
+- update to 4.9.0
+
+-------------------------------------------------------------------
+Wed Apr 04 2018 Mickael Guessant <mguessan@free.fr>
+
+- update to 4.8.4 and build on EL7 with included SWT
+
+-------------------------------------------------------------------
+Wed Dec 13 2017 Mickael Guessant <mguessan@free.fr>
+
+- update to 4.8.1 and fix RHEL 6 ant buildrequires
+
+-------------------------------------------------------------------
+Sun Oct 04 2015 Mickael Guessant <mguessan@free.fr>
+
+- a few path fixes and switch to noarch mode
+
+-------------------------------------------------------------------
+Sun Feb 22 2015 Mickael Guessant <mguessan@free.fr>
+
+- Add rcdavmail link, mark logrotate config file
+
+-------------------------------------------------------------------
+Sun Feb 22 2015 Mickael Guessant <mguessan@free.fr>
+
+- Fix License and URL
+
+-------------------------------------------------------------------
+Tue Feb 17 2015 Mickael Guessant <mguessan@free.fr>
+
+- Adapted spec for davmail 4.6.1
+
+-------------------------------------------------------------------
+Sun Feb 15 2015 Mickael Guessant <mguessan@free.fr>
+
+- Fix JAVA HOME detection for openSUSE_13.2
+
+-------------------------------------------------------------------
+Sun Feb 01 2015 Achim Herwig <achim.herwig@wodca.de>
+
+- Adapted spec for davmail-src-4.6.0-2331.tgz
+
+-------------------------------------------------------------------
+Tue Oct 28 2014 Dmitri Bachtin <d.bachtin@gmail.com>
+
+- Adapted spec for davmail-src-4.5.1-2303.tgz
+
+-------------------------------------------------------------------
+Fri Dec 09 2011 Marcin Dulak <Marcin.Dulak@gmail.com>
+
+- use /var/run/davmail.lock instead of /var/lock/subsys/davmail
+  http://en.opensuse.org/openSUSE:Packaging_checks#subsys-unsupported
+
+-------------------------------------------------------------------
+Fri Dec 09 2011 Marcin Dulak <Marcin.Dulak@gmail.com>
+
+- fixed https://bugzilla.novell.com/show_bug.cgi?id=734592
+
+-------------------------------------------------------------------
+Wed Apr 20 2011 Marcin Dulak <Marcin.Dulak@gmail.com>
+
+- proper service handling on openSUSE http://en.opensuse.org/openSUSE:Cron_rename
+
+-------------------------------------------------------------------
+Thu Mar 24 2011 Marcin Dulak <Marcin.Dulak@gmail.com>
+
+- do not hard-code gid/uid: https://sourceforge.net/mailarchive/message.php?msg_id=27249602
+
+-------------------------------------------------------------------
+Fri Mar 18 2011 Marcin Dulak <Marcin.Dulak@gmail.com>
+
+- fixed incorrect JAVA_HOME
+- added i386 i586 arch
+- uses davmail_gid and davmail_uid of default 213
+- uses /etc/init.d for compatibility with other dists
+- BuildRequires and Requires compatible with openSUSE 11.4
+- removed runlevels 2 4 from davmail-init: https://bugzilla.novell.com/show_bug.cgi?id=675870
+
+-------------------------------------------------------------------
+Mon Oct 18 2010 Marko Myllynen <myllynen@redhat.com>
+
+- Initial version
