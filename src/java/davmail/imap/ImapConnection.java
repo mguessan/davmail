@@ -1009,7 +1009,9 @@ public class ImapConnection extends AbstractConnection {
                     }
                     baos.close();
 
-                    if ("RFC822.HEADER".equals(param)) {
+                    if ("RFC822".equals(param)) {
+                        buffer.append(" RFC822");
+                    } else if ("RFC822.HEADER".equals(param)) {
                         buffer.append(" RFC822.HEADER");
                     } else {
                         buffer.append(" BODY[");
