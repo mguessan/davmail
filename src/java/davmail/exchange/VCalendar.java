@@ -761,7 +761,7 @@ public class VCalendar extends VObject {
      * @return true with VTODO items
      */
     public boolean isTodo() {
-        return "VTODO".equals(firstVevent.type);
+        return firstVevent != null && "VTODO".equals(firstVevent.type);
     }
 
     /**
