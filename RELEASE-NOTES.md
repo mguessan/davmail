@@ -1,3 +1,64 @@
+## DavMail 6.2.0 2023-05-11
+Another bugfix release to merge user contributions from Github, refactor Linux build, upgrade dependencies and a few IMAP and Caldav fixes.
+
+### Security
+- Update htmlcleaner to 2.29 cf CVE-2023-34624
+
+### Enhancements
+- Drop Travis-ci, no longer working for opensource projects
+- fix quotes from audit
+- Remove space at end of line +0630=Myanmar Standard Time, see https://github.com/mguessan/davmail/issues/309
+- Fix https://github.com/mguessan/davmail/issues/271, keep line order and comments on settings save
+- Fix from audit
+- Maven: convert pom.xml to UTF-8
+
+### IMAP
+- IMAP: merge fix suggested on https://github.com/mguessan/davmail/issues/298
+- IMAP: merge according to last comment on https://github.com/mguessan/davmail/pull/239
+- IMAP: improve bodystructure handling, merge https://github.com/mguessan/davmail/pull/239
+- IMAP: implement APPENDUID and advertise UIDPLUS
+- IMAP: implement APPENDUID and advertise UIDPLUS
+- IMAP: Prepare uidplus, fetch message after create
+
+### Caldav
+- Caldav: Fix nullpointer as in https://github.com/mguessan/davmail/issues/303
+- Caldav: Fix https://github.com/mguessan/davmail/issues/309 Thunderbird daily sends TZOFFSETTO with optional second value
+- Caldav: adjust isLightning test to include Thunderbird user agent, see https://github.com/mguessan/davmail/issues/287
+
+### Linux
+- Linux: based on https://github.com/mguessan/davmail/pull/290 by Björn Bidar <bjorn.bidar@thaodan.de>, remove svn commit reference in davmail.spec
+- Remove svn tag from folder name inside source packages
+- Linux: remove chkconfig from Requires preun and post in davmail.spec as suggested on build.opensuse.org
+- Linux: dos2unix davmail.changes
+- Linux: update changelog with Björn Bidar <bjorn.bidar@thaodan.de> contribution from https://github.com/mguessan/davmail/pull/289
+- Linux: Add back changelog file and convert to OpenSUSE format from https://github.com/mguessan/davmail/pull/289
+- Linux: Merge changes from https://github.com/mguessan/davmail/pull/290 except %version that may impact release cycle
+- Linux: convert davmail.spec changelog to OpenSUSE format, see https://github.com/mguessan/davmail/pull/290
+- Linux: restore spec file with lf and changelog, see https://github.com/mguessan/davmail/pull/289
+- Linux: remove downloaded azul jdk package
+
+### ADFS
+- ADFS: merge https://github.com/mguessan/davmail/pull/270 by Felix Engelmann, enable ADFS authentication with SAML assertions
+
+### EWS
+- EWS: Cleanup from audit
+- EWS: fix https://github.com/mguessan/davmail/issues/299 avoid logging large response message content
+- EWS: BackOffMilliseconds unit test
+- EWS: parse BackOffMilliseconds value on throttling
+
+### O365
+- O365: in O365 interactive, use invokeAndWait on failover to manual to avoid multiple instances of popup window
+- Upgrade jettison to 1.5.4 in pom.xml
+- Upgrade jettison to 1.5.4
+
+### Windows
+- Windows: drop explicit reference to sun.security.mscapi.SunMSCAPI, Windows-MY should be available on all windows JDK
+
+### Documentation
+- Doc: Update server properties documentation with davmail.oauth.persistToken
+- Doc: fix link to SonarCloud
+
+
 ## DavMail 6.1.0 2023-03-19
 First release in a long time to publish pending changes, including Kerberos support fix, 
 experimental number matching support for upcoming Microsoft authenticator default configuration change,
