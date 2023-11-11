@@ -548,7 +548,7 @@ public class ImapConnection extends AbstractConnection {
                                         ExchangeSession.Message createdMessage = MessageCreateThread.createMessage(session, folderName, messageName, properties, mimeMessage, os, capabilities);
                                         if (createdMessage != null) {
                                             long uid = createdMessage.getImapUid();
-                                            sendClient(commandId + " OK [APPENDUID "+uid+" 1] APPEND completed");
+                                            sendClient(commandId + " OK [APPENDUID 1 "+uid+"] APPEND completed");
                                         } else {
                                             sendClient(commandId + " OK APPEND completed");
                                         }
