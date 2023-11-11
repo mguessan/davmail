@@ -867,6 +867,7 @@ public class ImapConnection extends AbstractConnection {
         MessageWrapper messageWrapper = new MessageWrapper(os, buffer, message);
         buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getImapUid());
         if (parameters != null) {
+            parameters = handleFetchMacro(parameters);
             ImapTokenizer paramTokens = new ImapTokenizer(parameters);
             while (paramTokens.hasMoreTokens()) {
                 @SuppressWarnings({"NonConstantStringShouldBeStringBuffer"})
@@ -1040,6 +1041,23 @@ public class ImapConnection extends AbstractConnection {
         sendClient(buffer.toString());
         // do not keep message content in memory
         message.dropMimeMessage();
+    }
+
+    /**
+     * Handle flags macro in fetch requests
+     * @param parameters input fetch flags
+     * @return transformed fetch flags
+     */
+    private String handleFetchMacro(String parameters) {
+        if ("ALL".equals(parameters)) {
+            return "FLAGS INTERNALDATE RFC822.SIZE ENVELOPE";
+        } else if ("FAST".equals(parameters)) {
+            return "FLAGS INTERNALDATE RFC822.SIZE";
+        } else if ("FULL".equals(parameters)) {
+            return "FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODY";
+        } else {
+            return parameters;
+        }
     }
 
     protected String[] getRequestedHeaders(String partIndexString) {
