@@ -145,9 +145,9 @@
         <mailingList>
             <name>DavMail User List</name>
             <post>davmail-users@lists.sourceforge.net.</post>
-            <subscribe>https://lists.sourceforge.net/lists/listinfo/davmail-users</subscribe>
-            <unsubscribe>https://lists.sourceforge.net/lists/listinfo/davmail-users</unsubscribe>
-            <archive>https://sourceforge.net/mailarchive/forum.php?forum_name=davmail-users</archive>
+            <subscribe>https://sourceforge.net/projects/davmail/lists/davmail-users</subscribe>
+            <unsubscribe>https://sourceforge.net/projects/davmail/lists/davmail-users</unsubscribe>
+            <archive>https://sourceforge.net/p/davmail/mailman/davmail-users/</archive>
         </mailingList>
     </mailingLists>
     <scm>
@@ -295,7 +295,7 @@
     <pluginRepositories>
         <pluginRepository>
             <id>apache.snapshots</id>
-            <url>http://repository.apache.org/snapshots</url>
+            <url>https://repository.apache.org/snapshots</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
