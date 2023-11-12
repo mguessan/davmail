@@ -68,7 +68,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
                 baos.write(b);
             }
             if (baos != null) {
-                return new String(baos.toByteArray(), encoding);
+                return baos.toString(encoding);
             } else {
                 return null;
             }

@@ -223,7 +223,7 @@ public final class Settings {
     public static String getLogFilePath() {
         String logFilePath = Settings.getProperty("davmail.logFilePath");
         // set default log file path
-        if ((logFilePath == null || logFilePath.length() == 0)) {
+        if ((logFilePath == null || logFilePath.isEmpty())) {
             if (Settings.getBooleanProperty("davmail.server")) {
                 logFilePath = "davmail.log";
             } else if (System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
@@ -249,7 +249,7 @@ public final class Settings {
      */
     public static String getLogFileDirectory() {
         String logFilePath = getLogFilePath();
-        if (logFilePath == null || logFilePath.length() == 0) {
+        if (logFilePath == null || logFilePath.isEmpty()) {
             return ".";
         }
         int lastSlashIndex = logFilePath.lastIndexOf('/');
@@ -270,7 +270,7 @@ public final class Settings {
         String logFilePath = getLogFilePath();
 
         try {
-            if (logFilePath != null && logFilePath.length() > 0) {
+            if (logFilePath != null && !logFilePath.isEmpty()) {
                 File logFile = new File(logFilePath);
                 // create parent directory if needed
                 File logFileDir = logFile.getParentFile();
@@ -288,7 +288,7 @@ public final class Settings {
                 FileAppender fileAppender = (FileAppender) Logger.getRootLogger().getAppender("FileAppender");
                 if (fileAppender == null) {
                     String logFileSize = Settings.getProperty("davmail.logFileSize");
-                    if (logFileSize == null || logFileSize.length() == 0) {
+                    if (logFileSize == null || logFileSize.isEmpty()) {
                         logFileSize = "1MB";
                     }
                     // set log file size to 0 to use an external rotation mechanism, e.g. logrotate
@@ -379,7 +379,7 @@ public final class Settings {
         try {
             File configFile = new File(configFilePath);
             if (configFile.exists()) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFile), StandardCharsets.ISO_8859_1))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(configFile.toPath()), StandardCharsets.ISO_8859_1))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         lines.add(convertLine(line, properties));
@@ -447,7 +447,7 @@ public final class Settings {
     public static synchronized String getProperty(String property) {
         String value = SETTINGS.getProperty(property);
         // return null on empty value
-        if (value != null && value.length() == 0) {
+        if (value != null && value.isEmpty()) {
             value = null;
         }
         return value;
@@ -519,7 +519,7 @@ public final class Settings {
         int value = defaultValue;
         try {
             String propertyValue = SETTINGS.getProperty(property);
-            if (propertyValue != null && propertyValue.length() > 0) {
+            if (propertyValue != null && !propertyValue.isEmpty()) {
                 value = Integer.parseInt(propertyValue);
             }
         } catch (NumberFormatException e) {
@@ -549,7 +549,7 @@ public final class Settings {
     public static synchronized boolean getBooleanProperty(String property, boolean defaultValue) {
         boolean value = defaultValue;
         String propertyValue = SETTINGS.getProperty(property);
-        if (propertyValue != null && propertyValue.length() > 0) {
+        if (propertyValue != null && !propertyValue.isEmpty()) {
             value = Boolean.parseBoolean(propertyValue);
         }
         return value;
@@ -658,7 +658,7 @@ public final class Settings {
         String prefix = getLoggingPrefix(category);
         String currentValue = SETTINGS.getProperty(prefix + category);
 
-        if (currentValue != null && currentValue.length() > 0) {
+        if (currentValue != null && !currentValue.isEmpty()) {
             return Level.toLevel(currentValue);
         } else if ("rootLogger".equals(category)) {
             return Logger.getRootLogger().getLevel();
@@ -675,7 +675,7 @@ public final class Settings {
      */
     public static synchronized Properties getSubProperties(String scope) {
         final String keyStart;
-        if (scope == null || scope.length() == 0) {
+        if (scope == null || scope.isEmpty()) {
             keyStart = "";
         } else if (scope.endsWith(".")) {
             keyStart = scope;

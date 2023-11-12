@@ -94,7 +94,7 @@ public abstract class AbstractServer extends Thread {
         String keystoreFile = Settings.getProperty("davmail.ssl.keystoreFile");
 
         ServerSocketFactory serverSocketFactory;
-        if (keystoreFile == null || keystoreFile.length() == 0 || nosslFlag) {
+        if (keystoreFile == null || keystoreFile.isEmpty() || nosslFlag) {
             serverSocketFactory = ServerSocketFactory.getDefault();
         } else {
             try {
@@ -114,7 +114,7 @@ public abstract class AbstractServer extends Thread {
         }
         try {
             // create the server socket
-            if (bindAddress == null || bindAddress.length() == 0) {
+            if (bindAddress == null || bindAddress.isEmpty()) {
                 serverSocket = serverSocketFactory.createServerSocket(port);
             } else {
                 serverSocket = serverSocketFactory.createServerSocket(port, 0, Inet4Address.getByName(bindAddress));
@@ -147,7 +147,7 @@ public abstract class AbstractServer extends Thread {
      */
     protected TrustManager[] getTrustManagers() throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException {
         String truststoreFile = Settings.getProperty("davmail.ssl.truststoreFile");
-        if (truststoreFile == null || truststoreFile.length() == 0) {
+        if (truststoreFile == null || truststoreFile.isEmpty()) {
             return null;
         }
         try (FileInputStream trustStoreInputStream = new FileInputStream(truststoreFile)) {
@@ -171,7 +171,7 @@ public abstract class AbstractServer extends Thread {
      */
     protected KeyManager[] getKeyManagers() throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, UnrecoverableKeyException {
         String keystoreFile = Settings.getProperty("davmail.ssl.keystoreFile");
-        if (keystoreFile == null || keystoreFile.length() == 0) {
+        if (keystoreFile == null || keystoreFile.isEmpty()) {
             return null;
         }
         try (FileInputStream keyStoreInputStream = new FileInputStream(keystoreFile)) {

@@ -205,7 +205,7 @@ public class BundleMessage implements Serializable {
         } else if (e.getMessage() != null) {
             buffer.append(e.getMessage());
         } else {
-            buffer.append(e.toString());
+            buffer.append(e);
         }
         return buffer.toString();
     }
