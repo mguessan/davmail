@@ -201,7 +201,8 @@ public class ImapConnection extends AbstractConnection {
                                                 }
                                                 boolean wildcard = folderQuery.endsWith("%") && !folderQuery.contains("/") && !folderQuery.equals("%");
                                                 boolean recursive = folderQuery.endsWith("*");
-                                                sendSubFolders(command, folderQuery.substring(0, folderQuery.length() - 1), recursive, wildcard, specialOnly);
+                                                sendSubFolders(command, folderQuery.substring(0, folderQuery.length() - 1), recursive, wildcard,
+                                                        specialOnly && !folderQuery.equals("%"));
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else {
                                                 ExchangeSession.Folder folder = null;
