@@ -173,7 +173,7 @@ public class HttpClientAdapter implements Closeable {
 
         if (enablePool) {
             connectionManager = new PoolingHttpClientConnectionManager(SCHEME_REGISTRY);
-            ((PoolingHttpClientConnectionManager)connectionManager).setDefaultMaxPerRoute(5);
+            ((PoolingHttpClientConnectionManager) connectionManager).setDefaultMaxPerRoute(5);
             startEvictorThread();
         } else {
             connectionManager = new BasicHttpClientConnectionManager(SCHEME_REGISTRY);
@@ -420,7 +420,7 @@ public class HttpClientAdapter implements Closeable {
 
     public ResponseWrapper executeFollowRedirect(PostRequest request) throws IOException {
         ResponseWrapper responseWrapper = request;
-        LOGGER.debug(request.getMethod()+" "+request.getURI().toString());
+        LOGGER.debug(request.getMethod() + " " + request.getURI().toString());
         LOGGER.debug(request.getParameters());
 
         int count = 0;
@@ -433,8 +433,8 @@ public class HttpClientAdapter implements Closeable {
             LOGGER.debug("Redirect " + request.getURI() + " to " + redirectLocation);
             // replace uri with target location
             responseWrapper = new GetRequest(redirectLocation);
-            executeGetRequest((GetRequest)responseWrapper);
-            redirectLocation = ((GetRequest)responseWrapper).getRedirectLocation();
+            executeGetRequest((GetRequest) responseWrapper);
+            redirectLocation = ((GetRequest) responseWrapper).getRedirectLocation();
         }
 
         return responseWrapper;
@@ -442,7 +442,7 @@ public class HttpClientAdapter implements Closeable {
 
     public GetRequest executeFollowRedirect(GetRequest request) throws IOException {
         GetRequest result = request;
-        LOGGER.debug(request.getMethod()+" "+request.getURI().toString());
+        LOGGER.debug(request.getMethod() + " " + request.getURI().toString());
 
         int count = 0;
         int maxRedirect = Settings.getIntProperty("davmail.httpMaxRedirects", MAX_REDIRECTS);
@@ -595,6 +595,7 @@ public class HttpClientAdapter implements Closeable {
     public void setCredentials(String username, String password) {
         parseUserName(username);
         if (userid != null && password != null) {
+            LOGGER.debug("Creating NTCredentials for user " + userid + " workstation " + WORKSTATION_NAME + " domain " + domain);
             NTCredentials credentials = new NTCredentials(userid, password, WORKSTATION_NAME, domain);
             provider.setCredentials(AuthScope.ANY, credentials);
         }

@@ -26,6 +26,7 @@ import jcifs.ntlmssp.Type3Message;
 import jcifs.util.Base64;
 import org.apache.http.impl.auth.NTLMEngine;
 import org.apache.http.impl.auth.NTLMEngineException;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 
@@ -33,6 +34,7 @@ import java.io.IOException;
  * JCIFS based NTLM authentication.
  */
 public final class JCIFSEngine implements NTLMEngine {
+    static final Logger LOGGER = Logger.getLogger("davmail.http.JCIFSEngine");
 
     private static final int TYPE_1_FLAGS =
             NtlmFlags.NTLMSSP_NEGOTIATE_NTLM2 | NtlmFlags.NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
@@ -42,6 +44,7 @@ public final class JCIFSEngine implements NTLMEngine {
                     NtlmFlags.NTLMSSP_NEGOTIATE_56 | NtlmFlags.NTLMSSP_NEGOTIATE_128;
 
     public String generateType1Msg(final String domain, final String workstation) {
+        LOGGER.debug("generateType1Msg " + TYPE_1_FLAGS+" domain='"+domain+"' workstation='"+workstation+"'");
         final Type1Message type1Message = new Type1Message(TYPE_1_FLAGS, domain, workstation);
         return Base64.encode(type1Message.toByteArray());
     }
@@ -60,6 +63,7 @@ public final class JCIFSEngine implements NTLMEngine {
         //        & (0xffffffff ^ (NtlmFlags.NTLMSSP_TARGET_TYPE_DOMAIN | NtlmFlags.NTLMSSP_TARGET_TYPE_SERVER));
         int type3Flags = NtlmFlags.NTLMSSP_NEGOTIATE_NTLM2 | NtlmFlags.NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
                 NtlmFlags.NTLMSSP_NEGOTIATE_NTLM | NtlmFlags.NTLMSSP_NEGOTIATE_UNICODE;
+        LOGGER.debug("generateType3Msg " + type3Flags+" domain='"+domain+"' workstation='"+workstation+"' username='"+username+"'");
         Type3Message type3Message = new Type3Message(type2Message, password,
                 domain, username, workstation, type3Flags);
         return Base64.encode(type3Message.toByteArray());
