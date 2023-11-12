@@ -44,7 +44,6 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
 import java.util.ArrayList;
 
 /**
@@ -69,16 +68,16 @@ public class DavGatewaySSLSocketFactory extends SSLSocketFactory {
 
         String clientKeystoreType = Settings.getProperty("davmail.ssl.clientKeystoreType");
         // set default keystore type
-        if (clientKeystoreType == null || clientKeystoreType.length() == 0) {
+        if (clientKeystoreType == null || clientKeystoreType.isEmpty()) {
             clientKeystoreType = "PKCS11";
         }
 
-        if (pkcs11Library != null && pkcs11Library.length() > 0 && "PKCS11".equals(clientKeystoreType)) {
+        if (pkcs11Library != null && !pkcs11Library.isEmpty() && "PKCS11".equals(clientKeystoreType)) {
             StringBuilder pkcs11Buffer = new StringBuilder();
             pkcs11Buffer.append("name=DavMail\n");
             pkcs11Buffer.append("library=").append(pkcs11Library).append('\n');
             String pkcs11Config = Settings.getProperty("davmail.ssl.pkcs11Config");
-            if (pkcs11Config != null && pkcs11Config.length() > 0) {
+            if (pkcs11Config != null && !pkcs11Config.isEmpty()) {
                 pkcs11Buffer.append(pkcs11Config).append('\n');
             }
             SunPKCS11ProviderHandler.registerProvider(pkcs11Buffer.toString());
@@ -98,7 +97,7 @@ public class DavGatewaySSLSocketFactory extends SSLSocketFactory {
 
         String clientKeystoreFile = Settings.getProperty("davmail.ssl.clientKeystoreFile");
         String clientKeystorePass = Settings.getProperty("davmail.ssl.clientKeystorePass");
-        if (clientKeystoreFile != null && clientKeystoreFile.length() > 0
+        if (clientKeystoreFile != null && !clientKeystoreFile.isEmpty()
                 && ("PKCS12".equals(clientKeystoreType) || "JKS".equals(clientKeystoreType))) {
             // PKCS12 file based keystore
             KeyStore.Builder fsBuilder = KeyStore.Builder.newInstance(clientKeystoreType, null,
@@ -139,7 +138,7 @@ public class DavGatewaySSLSocketFactory extends SSLSocketFactory {
     }
 
     private KeyStore.ProtectionParameter getProtectionParameter(String password) {
-        if (password != null && password.length() > 0) {
+        if (password != null && !password.isEmpty()) {
             // password provided: create a PasswordProtection
             return new KeyStore.PasswordProtection(password.toCharArray());
         } else {

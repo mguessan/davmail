@@ -50,7 +50,7 @@ public class KerberosLoginConfiguration extends Configuration {
         clientLoginModuleOptions.put("renewTGT", "true");
         //clientLoginModuleOptions.put("doNotPrompt", "true");
         String krb5ccName = System.getenv().get("KRB5CCNAME");
-        if (krb5ccName != null && krb5ccName.length() > 0) {
+        if (krb5ccName != null && !krb5ccName.isEmpty()) {
             clientLoginModuleOptions.put("ticketCache", krb5ccName);
         }
         //clientLoginModuleOptions.put("ticketCache", FileCredentialsCache.getDefaultCacheName());

@@ -178,7 +178,7 @@ public class KerberosHelper {
                         try {
                             kerberosTicket.refresh();
                         } catch (RefreshFailedException e) {
-                            LOGGER.debug("KerberosHelper.clientLogin failed to renew ticket " + kerberosTicket.toString());
+                            LOGGER.debug("KerberosHelper.clientLogin failed to renew ticket " + kerberosTicket);
                         }
                     } else {
                         LOGGER.debug("KerberosHelper.clientLogin ticket is not renewable");

@@ -99,7 +99,7 @@ public class DavMailSPNegoScheme extends SPNegoScheme {
                         try {
                             kerberosTicket.refresh();
                         } catch (RefreshFailedException e) {
-                            LOGGER.debug("KerberosHelper.clientLogin failed to renew ticket " + kerberosTicket.toString());
+                            LOGGER.debug("KerberosHelper.clientLogin failed to renew ticket " + kerberosTicket);
                         }
                     } else {
                         LOGGER.debug("KerberosHelper.clientLogin ticket is not renewable");
@@ -119,7 +119,7 @@ public class DavMailSPNegoScheme extends SPNegoScheme {
         }
     }
 
-    protected Object internalGenerateGSSToken(final byte[] input, final Oid oid, final String authServer, final Credentials credentials) throws GSSException {
+    protected Object internalGenerateGSSToken(final byte[] input, final Oid oid, final String authServer, final Credentials credentials) {
         return Subject.doAs(clientLoginContext.getSubject(), (PrivilegedAction<Object>) () -> {
             Object result;
             try {

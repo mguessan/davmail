@@ -223,8 +223,8 @@ public class HttpClientAdapter implements Closeable {
             proxyPassword = Settings.getProperty("davmail.proxyPassword");
         }
 
-        if (proxyHost != null && proxyHost.length() > 0) {
-            if (proxyUser != null && proxyUser.length() > 0) {
+        if (proxyHost != null && !proxyHost.isEmpty()) {
+            if (proxyUser != null && !proxyUser.isEmpty()) {
 
                 AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
                 if (provider == null) {

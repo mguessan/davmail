@@ -83,7 +83,7 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         String acceptedCertificateHash = Settings.getProperty("davmail.server.certificate.hash");
         String certificateHash = getFormattedHash(x509Certificates[0]);
         // if user already accepted a certificate,
-        if (acceptedCertificateHash != null && acceptedCertificateHash.length() > 0
+        if (acceptedCertificateHash != null && !acceptedCertificateHash.isEmpty()
                 && acceptedCertificateHash.equalsIgnoreCase(certificateHash)) {
             DavGatewayTray.debug(new BundleMessage("LOG_FOUND_ACCEPTED_CERTIFICATE", acceptedCertificateHash));
         } else {
@@ -126,7 +126,7 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         buffer.append(BundleMessage.format("UI_UNTRUSTED_CERTIFICATE")).append('\n');
         try {
             while (!yes.equals(answer) && !no.equals(answer)) {
-                System.out.println(buffer.toString());
+                System.out.println(buffer);
                 answer = inReader.readLine();
                 if (answer == null) {
                     answer = no;
