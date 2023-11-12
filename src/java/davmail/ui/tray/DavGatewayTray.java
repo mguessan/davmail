@@ -247,11 +247,11 @@ public final class DavGatewayTray {
             if (!notray) {
                 if ("Unity".equals(currentDesktop)) {
                     LOGGER.info("Detected Unity desktop, please follow instructions at " +
-                            "http://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
+                            "https://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
                             "or run DavMail in server mode");
                 } else if (currentDesktop != null && currentDesktop.contains("GNOME")) {
                     LOGGER.info("Detected Gnome desktop, please follow instructions at " +
-                            "http://davmail.sourceforge.net/linuxsetup.html or " +
+                            "https://davmail.sourceforge.net/linuxsetup.html or " +
                             "https://extensions.gnome.org/extension/1503/tray-icons/ " +
                             "to restore normal systray or run DavMail in server mode");
                 }
@@ -362,7 +362,7 @@ public final class DavGatewayTray {
         boolean isCinnamon = "X-Cinnamon".equals(xdgCurrentDesktop);
         boolean isGnome = xdgCurrentDesktop != null && xdgCurrentDesktop.contains("GNOME");
 
-        if (backgroundColorString == null || backgroundColorString.length() == 0) {
+        if (backgroundColorString == null || backgroundColorString.isEmpty()) {
             // define color for default theme
             if (isKDE) {
                 backgroundColorString = "#DDF6E8";

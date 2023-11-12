@@ -24,8 +24,6 @@ import davmail.ui.tray.DavGatewayTray;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 /**
  * Display number matching value during O365 MFA process.
@@ -48,7 +46,6 @@ public class NumberMatchingFrame extends JFrame {
         }
 
 
-
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel imageLabel = new JLabel();
         imageLabel.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
@@ -66,7 +63,7 @@ public class NumberMatchingFrame extends JFrame {
         setAlwaysOnTop(true);
 
         // auto close after 1 minute
-        Timer timer=new Timer(60000, evt -> {
+        Timer timer = new Timer(60000, evt -> {
             NumberMatchingFrame.this.setVisible(false);
             NumberMatchingFrame.this.dispose();
         });

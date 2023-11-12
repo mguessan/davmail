@@ -182,7 +182,7 @@ public class SettingsFrame extends JFrame {
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         popPortCheckBox = new JCheckBox();
         popNoSSLCheckBox = new JCheckBox(BundleMessage.format("UI_NO_SSL"), Settings.getBooleanProperty("davmail.ssl.nosecurepop"));
-        popPortCheckBox.setSelected(Settings.getProperty("davmail.popPort") != null && Settings.getProperty("davmail.popPort").length() > 0);
+        popPortCheckBox.setSelected(Settings.getProperty("davmail.popPort") != null && !Settings.getProperty("davmail.popPort").isEmpty());
         popPortField.setEnabled(popPortCheckBox.isSelected());
         popNoSSLCheckBox.setEnabled(popPortCheckBox.isSelected() && isSslEnabled());
         popPortCheckBox.addActionListener(evt -> {
@@ -193,7 +193,7 @@ public class SettingsFrame extends JFrame {
         imapPortField = new JTextField(Settings.getProperty("davmail.imapPort"), 4);
         imapPortCheckBox = new JCheckBox();
         imapNoSSLCheckBox = new JCheckBox(BundleMessage.format("UI_NO_SSL"), Settings.getBooleanProperty("davmail.ssl.nosecureimap"));
-        imapPortCheckBox.setSelected(Settings.getProperty("davmail.imapPort") != null && Settings.getProperty("davmail.imapPort").length() > 0);
+        imapPortCheckBox.setSelected(Settings.getProperty("davmail.imapPort") != null && !Settings.getProperty("davmail.imapPort").isEmpty());
         imapPortField.setEnabled(imapPortCheckBox.isSelected());
         imapNoSSLCheckBox.setEnabled(imapPortCheckBox.isSelected() && isSslEnabled());
         imapPortCheckBox.addActionListener(evt -> {
@@ -204,7 +204,7 @@ public class SettingsFrame extends JFrame {
         smtpPortField = new JTextField(Settings.getProperty("davmail.smtpPort"), 4);
         smtpPortCheckBox = new JCheckBox();
         smtpNoSSLCheckBox = new JCheckBox(BundleMessage.format("UI_NO_SSL"), Settings.getBooleanProperty("davmail.ssl.nosecuresmtp"));
-        smtpPortCheckBox.setSelected(Settings.getProperty("davmail.smtpPort") != null && Settings.getProperty("davmail.smtpPort").length() > 0);
+        smtpPortCheckBox.setSelected(Settings.getProperty("davmail.smtpPort") != null && !Settings.getProperty("davmail.smtpPort").isEmpty());
         smtpPortField.setEnabled(smtpPortCheckBox.isSelected());
         smtpNoSSLCheckBox.setEnabled(smtpPortCheckBox.isSelected() && isSslEnabled());
         smtpPortCheckBox.addActionListener(evt -> {
@@ -215,7 +215,7 @@ public class SettingsFrame extends JFrame {
         caldavPortField = new JTextField(Settings.getProperty("davmail.caldavPort"), 4);
         caldavPortCheckBox = new JCheckBox();
         caldavNoSSLCheckBox = new JCheckBox(BundleMessage.format("UI_NO_SSL"), Settings.getBooleanProperty("davmail.ssl.nosecurecaldav"));
-        caldavPortCheckBox.setSelected(Settings.getProperty("davmail.caldavPort") != null && Settings.getProperty("davmail.caldavPort").length() > 0);
+        caldavPortCheckBox.setSelected(Settings.getProperty("davmail.caldavPort") != null && !Settings.getProperty("davmail.caldavPort").isEmpty());
         caldavPortField.setEnabled(caldavPortCheckBox.isSelected());
         caldavNoSSLCheckBox.setEnabled(caldavPortCheckBox.isSelected() && isSslEnabled());
         caldavPortCheckBox.addActionListener(evt -> {
@@ -226,7 +226,7 @@ public class SettingsFrame extends JFrame {
         ldapPortField = new JTextField(Settings.getProperty("davmail.ldapPort"), 4);
         ldapPortCheckBox = new JCheckBox();
         ldapNoSSLCheckBox = new JCheckBox(BundleMessage.format("UI_NO_SSL"), Settings.getBooleanProperty("davmail.ssl.nosecureldap"));
-        ldapPortCheckBox.setSelected(Settings.getProperty("davmail.ldapPort") != null && Settings.getProperty("davmail.ldapPort").length() > 0);
+        ldapPortCheckBox.setSelected(Settings.getProperty("davmail.ldapPort") != null && !Settings.getProperty("davmail.ldapPort").isEmpty());
         ldapPortField.setEnabled(ldapPortCheckBox.isSelected());
         ldapNoSSLCheckBox.setEnabled(ldapPortCheckBox.isSelected() && isSslEnabled());
         ldapPortCheckBox.addActionListener(evt -> {
@@ -598,19 +598,19 @@ public class SettingsFrame extends JFrame {
         // reload settings in form
         urlField.setText(Settings.getProperty("davmail.url"));
         popPortField.setText(Settings.getProperty("davmail.popPort"));
-        popPortCheckBox.setSelected(Settings.getProperty("davmail.popPort") != null && Settings.getProperty("davmail.popPort").length() > 0);
+        popPortCheckBox.setSelected(Settings.getProperty("davmail.popPort") != null && !Settings.getProperty("davmail.popPort").isEmpty());
         popNoSSLCheckBox.setSelected(Settings.getBooleanProperty("davmail.ssl.nosecurepop"));
         imapPortField.setText(Settings.getProperty("davmail.imapPort"));
-        imapPortCheckBox.setSelected(Settings.getProperty("davmail.imapPort") != null && Settings.getProperty("davmail.imapPort").length() > 0);
+        imapPortCheckBox.setSelected(Settings.getProperty("davmail.imapPort") != null && !Settings.getProperty("davmail.imapPort").isEmpty());
         imapNoSSLCheckBox.setSelected(Settings.getBooleanProperty("davmail.ssl.nosecureimap"));
         smtpPortField.setText(Settings.getProperty("davmail.smtpPort"));
-        smtpPortCheckBox.setSelected(Settings.getProperty("davmail.smtpPort") != null && Settings.getProperty("davmail.smtpPort").length() > 0);
+        smtpPortCheckBox.setSelected(Settings.getProperty("davmail.smtpPort") != null && !Settings.getProperty("davmail.smtpPort").isEmpty());
         smtpNoSSLCheckBox.setSelected(Settings.getBooleanProperty("davmail.ssl.nosecuresmtp"));
         caldavPortField.setText(Settings.getProperty("davmail.caldavPort"));
-        caldavPortCheckBox.setSelected(Settings.getProperty("davmail.caldavPort") != null && Settings.getProperty("davmail.caldavPort").length() > 0);
+        caldavPortCheckBox.setSelected(Settings.getProperty("davmail.caldavPort") != null && !Settings.getProperty("davmail.caldavPort").isEmpty());
         caldavNoSSLCheckBox.setSelected(Settings.getBooleanProperty("davmail.ssl.nosecurecaldav"));
         ldapPortField.setText(Settings.getProperty("davmail.ldapPort"));
-        ldapPortCheckBox.setSelected(Settings.getProperty("davmail.ldapPort") != null && Settings.getProperty("davmail.ldapPort").length() > 0);
+        ldapPortCheckBox.setSelected(Settings.getProperty("davmail.ldapPort") != null && !Settings.getProperty("davmail.ldapPort").isEmpty());
         ldapNoSSLCheckBox.setSelected(Settings.getBooleanProperty("davmail.ssl.nosecureldap"));
         keepDelayField.setText(Settings.getProperty("davmail.keepDelay"));
         sentKeepDelayField.setText(Settings.getProperty("davmail.sentKeepDelay"));
@@ -681,10 +681,10 @@ public class SettingsFrame extends JFrame {
 
     protected boolean isSslEnabled() {
         if (keystoreFileField != null) {
-            return keystoreFileField.getText().length() > 0;
+            return !keystoreFileField.getText().isEmpty();
         } else {
             return Settings.getProperty("davmail.ssl.keystoreFile") != null &&
-                    (Settings.getProperty("davmail.ssl.keystoreFile").length() > 0);
+                    (!Settings.getProperty("davmail.ssl.keystoreFile").isEmpty());
         }
     }
 
@@ -706,7 +706,7 @@ public class SettingsFrame extends JFrame {
                 "help");
         tabbedPane.getActionMap().put("help", new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                DesktopBrowser.browse("http://davmail.sourceforge.net");
+                DesktopBrowser.browse("https://davmail.sourceforge.net");
             }
         });
         tabbedPane.addChangeListener(e -> {
@@ -862,7 +862,7 @@ public class SettingsFrame extends JFrame {
             setVisible(false);
         });
 
-        help.addActionListener(e -> DesktopBrowser.browse("http://davmail.sourceforge.net"));
+        help.addActionListener(e -> DesktopBrowser.browse("https://davmail.sourceforge.net"));
 
         buttonPanel.add(ok);
         buttonPanel.add(cancel);

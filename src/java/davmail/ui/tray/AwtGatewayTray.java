@@ -27,7 +27,6 @@ import org.apache.log4j.Level;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -75,23 +74,10 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
      */
     public void switchIcon() {
         isActive = true;
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                if (trayIcon.getImage().equals(image)) {
-                    trayIcon.setImage(activeImage);
-                } else {
-                    trayIcon.setImage(image);
-                }
-            }
-        });
-    }
-
-    /**
-     * Set tray icon to inactive (network down)
-     */
-    public void resetIcon() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
+        SwingUtilities.invokeLater(() -> {
+            if (trayIcon.getImage().equals(image)) {
+                trayIcon.setImage(activeImage);
+            } else {
                 trayIcon.setImage(image);
             }
         });
@@ -100,13 +86,16 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     /**
      * Set tray icon to inactive (network down)
      */
+    public void resetIcon() {
+        SwingUtilities.invokeLater(() -> trayIcon.setImage(image));
+    }
+
+    /**
+     * Set tray icon to inactive (network down)
+     */
     public void inactiveIcon() {
         isActive = false;
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                trayIcon.setImage(inactiveImage);
-            }
-        });
+        SwingUtilities.invokeLater(() -> trayIcon.setImage(inactiveImage));
     }
 
     /**
@@ -125,22 +114,20 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
      * @param level   log level
      */
     public void displayMessage(final String message, final Level level) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                if (trayIcon != null) {
-                    TrayIcon.MessageType messageType = null;
-                    if (level.equals(Level.INFO)) {
-                        messageType = TrayIcon.MessageType.INFO;
-                    } else if (level.equals(Level.WARN)) {
-                        messageType = TrayIcon.MessageType.WARNING;
-                    } else if (level.equals(Level.ERROR)) {
-                        messageType = TrayIcon.MessageType.ERROR;
-                    }
-                    if (messageType != null) {
-                        trayIcon.displayMessage(BundleMessage.format("UI_DAVMAIL_GATEWAY"), message, messageType);
-                    }
-                    trayIcon.setToolTip(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
+        SwingUtilities.invokeLater(() -> {
+            if (trayIcon != null) {
+                TrayIcon.MessageType messageType = null;
+                if (level.equals(Level.INFO)) {
+                    messageType = TrayIcon.MessageType.INFO;
+                } else if (level.equals(Level.WARN)) {
+                    messageType = TrayIcon.MessageType.WARNING;
+                } else if (level.equals(Level.ERROR)) {
+                    messageType = TrayIcon.MessageType.ERROR;
                 }
+                if (messageType != null) {
+                    trayIcon.displayMessage(BundleMessage.format("UI_DAVMAIL_GATEWAY"), message, messageType);
+                }
+                trayIcon.setToolTip(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
             }
         });
     }
@@ -149,13 +136,11 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
      * Open about window
      */
     public void about() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                aboutFrame.update();
-                aboutFrame.setVisible(true);
-                aboutFrame.toFront();
-                aboutFrame.requestFocus();
-            }
+        SwingUtilities.invokeLater(() -> {
+            aboutFrame.update();
+            aboutFrame.setVisible(true);
+            aboutFrame.toFront();
+            aboutFrame.requestFocus();
         });
     }
 
@@ -163,14 +148,12 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
      * Open settings window
      */
     public void preferences() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                settingsFrame.reload();
-                settingsFrame.setVisible(true);
-                settingsFrame.toFront();
-                settingsFrame.repaint();
-                settingsFrame.requestFocus();
-            }
+        SwingUtilities.invokeLater(() -> {
+            settingsFrame.reload();
+            settingsFrame.setVisible(true);
+            settingsFrame.toFront();
+            settingsFrame.repaint();
+            settingsFrame.requestFocus();
         });
     }
 
@@ -178,11 +161,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
      * Create tray icon and register frame listeners.
      */
     public void init() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                createAndShowGUI();
-            }
-        });
+        SwingUtilities.invokeLater(this::createAndShowGUI);
     }
 
     public void dispose() {
@@ -198,7 +177,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         activeImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG));
         inactiveImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG));
 
-        frameIcons = new ArrayList<Image>();
+        frameIcons = new ArrayList<>();
         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
     }
@@ -215,11 +194,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
         aboutFrame = new AboutFrame();
         // create an action settingsListener to listen for settings action executed on the tray icon
-        ActionListener aboutListener = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                about();
-            }
-        };
+        ActionListener aboutListener = e -> about();
         // create menu item for the default action
         MenuItem aboutItem = new MenuItem(BundleMessage.format("UI_ABOUT"));
         aboutItem.addActionListener(aboutListener);
@@ -227,35 +202,25 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
         settingsFrame = new SettingsFrame();
         // create an action settingsListener to listen for settings action executed on the tray icon
-        settingsListener = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                preferences();
-            }
-        };
+        settingsListener = e -> preferences();
         // create menu item for the default action
         MenuItem defaultItem = new MenuItem(BundleMessage.format("UI_SETTINGS"));
         defaultItem.addActionListener(settingsListener);
         popup.add(defaultItem);
 
         MenuItem logItem = new MenuItem(BundleMessage.format("UI_SHOW_LOGS"));
-        logItem.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                DavGatewayTray.showLogs();
-            }
-        });
+        logItem.addActionListener(e -> DavGatewayTray.showLogs());
         popup.add(logItem);
 
         // create an action exitListener to listen for exit action executed on the tray icon
-        ActionListener exitListener = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    DavGateway.stop();
-                } catch (Exception exc) {
-                    DavGatewayTray.error(exc);
-                }
-                // make sure we do exit
-                System.exit(0);
+        ActionListener exitListener = e -> {
+            try {
+                DavGateway.stop();
+            } catch (Exception exc) {
+                DavGatewayTray.error(exc);
             }
+            // make sure we do exit
+            System.exit(0);
         };
         // create menu item for the exit action
         MenuItem exitItem = new MenuItem(BundleMessage.format("UI_EXIT"));

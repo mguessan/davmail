@@ -92,7 +92,7 @@ public class NotificationDialog extends JDialog {
                 "help");
         mainPanel.getActionMap().put("help", new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                DesktopBrowser.browse("http://davmail.sourceforge.net");
+                DesktopBrowser.browse("https://davmail.sourceforge.net");
             }
         });
 
