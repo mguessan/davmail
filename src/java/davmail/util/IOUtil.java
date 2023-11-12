@@ -53,7 +53,7 @@ public final class IOUtil {
      * Decode base64 input string, return byte array.
      *
      * @param encoded Base64 encoded string
-     * @return decoded content as byte arrey
+     * @return decoded content as byte array
      */
     public static byte[] decodeBase64(String encoded) {
         return Base64.decodeBase64(encoded.getBytes(StandardCharsets.US_ASCII));
@@ -63,7 +63,7 @@ public final class IOUtil {
      * Decode base64 input string, return content as UTF-8 String.
      *
      * @param encoded Base64 encoded string
-     * @return decoded content as byte arrey
+     * @return decoded content as byte array
      */
     public static String decodeBase64AsString(String encoded) {
         return new String(decodeBase64(encoded), StandardCharsets.UTF_8);
