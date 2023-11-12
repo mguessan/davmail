@@ -555,6 +555,11 @@ public final class Settings {
         return value;
     }
 
+    public static synchronized String[] getListProperty(String property) {
+        String propertyValue = SETTINGS.getProperty(property);
+        return propertyValue.split(",");
+    }
+
     public static synchronized String loadRefreshToken(String username) {
         String tokenFilePath = Settings.getProperty("davmail.oauth.tokenFilePath");
         if (isEmpty(tokenFilePath)) {
