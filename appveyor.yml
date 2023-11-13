@@ -14,7 +14,7 @@ install:
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       if (!(Test-Path -Path "C:\ant\apache-ant-1.10.10" )) {
         (new-object System.Net.WebClient).DownloadFile(
-        'https://www-eu.apache.org/dist//ant/binaries/apache-ant-1.10.10-bin.zip',
+        'https://www-eu.apache.org/dist//ant/binaries/apache-ant-1.10.14-bin.zip',
           'C:\ant-bin.zip'
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\ant-bin.zip", "C:\ant")
