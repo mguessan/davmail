@@ -19,7 +19,7 @@ install:
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\ant-bin.zip", "C:\ant")
       }
-  - cmd: SET PATH=C:\ant\apache-ant-1.10.10\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET PATH=C:\ant\apache-ant-1.10.14\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
   - cmd: java -version
   - cmd: ant -version
