@@ -12,7 +12,11 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: ant >= 1.7.1, desktop-file-utils
 %{?fedora:BuildRequires: lua}
+# required to define _unitdir macro
 %{?fedora:BuildRequires: systemd}
+%{?el7:BuildRequires: systemd}
+%{?el8:BuildRequires: systemd}
+# same on suse
 %if %systemd_macros
 BuildRequires: systemd-rpm-macros
 %endif
@@ -21,18 +25,29 @@ BuildRequires: systemd-rpm-macros
 # missing ant dep on original Fedora 18
 BuildRequires:	xml-commons-apis
 %endif
-# force Java 7 on RHEL6
-%{?el6:BuildRequires: java-1.8.0-openjdk-devel}
-%if 0%{?el7} || 0%{?el8} || 0%{?fedora}
+
+%{?fedora:BuildRequires: java-latest-openjdk-devel}
+
+%if 0%{?el7} || 0%{?el8}
 BuildRequires: java-1.8.0-openjdk-devel
-%else
+%endif
+
+%if 0%{?el6}
+BuildRequires: java-1.8.0-openjdk-devel
 BuildRequires: java-devel >= 1.8.0
 BuildRequires: eclipse-swt
 %endif
-# compile with JavaFX on Fedora
-%if 0%{?fedora} > 25
-BuildRequires: javafx
+
+%if 0%{?is_opensuse} || 0%{?suse_version}
+BuildRequires: java-devel >= 1.8.0
+BuildRequires: eclipse-swt
 %endif
+
+# compile with JavaFX on Fedora
+%if 0%{?fedora} > 38
+BuildRequires: openjfx
+%endif
+
 Requires: coreutils
 Requires: filesystem
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
@@ -40,10 +55,16 @@ Requires(post): coreutils, filesystem
 Requires(preun): /sbin/service, coreutils, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
 
-%if 0%{?el7} || 0%{?el8} || 0%{?fedora}
-Requires: /etc/init.d, logrotate, java-1.8.0-openjdk
-%else
+%{?fedora:Requires: java-latest-openjdk}
+%if 0%{?el7} || 0%{?el8}
+Requires: java-1.8.0-openjdk
+%endif
+%if 0%{?el6}
 Requires: /etc/init.d, logrotate, jre >= 1.8.0
+Requires: eclipse-swt
+%endif
+%if 0%{?is_opensuse} || 0%{?suse_version}
+Requires: jre >= 1.8.0
 Requires: eclipse-swt
 %endif
 
