@@ -55,7 +55,7 @@ Requires(post): coreutils, filesystem
 Requires(preun): /sbin/service, coreutils, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
 
-%{?fedora:Requires: java-latest-openjdk}
+%{?fedora:Requires: java}
 %if 0%{?el7} || 0%{?el8}
 Requires: java-1.8.0-openjdk
 %endif
@@ -198,7 +198,8 @@ fi
 %postun
 %if %systemd_macros
 %service_del_postun davmail.service
-%else
+%endif
+%if !%systemd_support
 if [ $1 -ge 1 ]; then
     %{?restart_on_update:
     %{restart_on_update davmail}
