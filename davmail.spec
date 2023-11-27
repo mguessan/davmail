@@ -98,6 +98,9 @@ rm lib/swt*
 [ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar lib/swt.jar || ln -s /usr/lib/java/swt.jar lib/swt.jar
 %endif
 
+# compile with OpenJFX
+[ -d /usr/lib/jvm/openjfx ] && cp /usr/lib/jvm/openjfx/*.jar lib
+
 # we have java 8
 ant -Dant.java.version=1.8 prepare-dist
 
@@ -133,6 +136,7 @@ rm -f dist/lib/*win32*.jar
 [ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar $RPM_BUILD_ROOT%{_datadir}/davmail/lib/swt.jar || ln -s /usr/lib/java/swt.jar $RPM_BUILD_ROOT%{_datadir}/davmail/lib/swt.jar
 rm -f dist/lib/*x86*.jar
 rm -f dist/lib/*growl*.jar
+rm -f dist/lib/javafx*.jar
 install -m 0664 dist/lib/* $RPM_BUILD_ROOT%{_datadir}/davmail/lib/
 install -m 0664 dist/*.jar $RPM_BUILD_ROOT%{_datadir}/davmail/
 
@@ -160,6 +164,9 @@ fi
 
 %if %systemd_macros
 %service_add_post davmail.service
+%endif
+
+%if %systemd_support
 %else
 # proper service handling http://en.opensuse.org/openSUSE:Cron_rename
 %{?fillup_and_insserv:
@@ -175,9 +182,11 @@ fi
 %preun
 %if %systemd_macros
 %service_del_preun davmail.service
+%endif
+
 if [ "$1" = "0" ]; then
+%if %systemd_support
 %else
-if [ "$1" = "0" ]; then
     /sbin/service davmail stop > /dev/null 2>&1 || :
     /bin/rm -f /var/lib/davmail/pid > /dev/null 2>&1 || :
     %{?stop_on_removal:
@@ -199,7 +208,9 @@ fi
 %if %systemd_macros
 %service_del_postun davmail.service
 %endif
-%if !%systemd_support
+
+%if %systemd_support
+%else
 if [ $1 -ge 1 ]; then
     %{?restart_on_update:
     %{restart_on_update davmail}
