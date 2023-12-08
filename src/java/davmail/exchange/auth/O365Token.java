@@ -217,7 +217,12 @@ public class O365Token {
 
     private void persistToken() throws IOException {
         if (Settings.getBooleanProperty("davmail.oauth.persistToken", true)) {
-            Settings.storeRefreshToken(username, O365Token.encryptToken(refreshToken, password));
+            if (password == null || password.isEmpty()) {
+                // no password provided, store token unencrypted
+                Settings.storeRefreshToken(username, refreshToken);
+            } else {
+                Settings.storeRefreshToken(username, O365Token.encryptToken(refreshToken, password));
+            }
         }
     }
 
