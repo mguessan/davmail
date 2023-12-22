@@ -56,8 +56,11 @@ import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 import java.nio.charset.StandardCharsets;
-import java.util.logging.Level;
 
+/**
+ * Interactive authenticator UI based on OpenJFX.
+ * Need access to internal urlhandler on recent JDK versions with: --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED
+ */
 public class O365InteractiveAuthenticatorFrame extends JFrame {
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticatorFrame.class);
 
@@ -100,7 +103,9 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                 }
                                 final HttpURLConnection httpsURLConnection = (HttpURLConnection) super.openConnection(url, proxy);
 
-                                if (("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/authorize"))
+                                // no longer apply the disable integrity check workaround by default, fixed in openjfx
+                                if (Settings.getBooleanProperty("davmail.ssl.disableIntegrityCheck", false) &&
+                                        (("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/authorize"))
                                         || ("login.live.com".equals(url.getHost()) && "/oauth20_authorize.srf".equals(url.getPath()))
                                         || ("login.live.com".equals(url.getHost()) && "/ppsecure/post.srf".equals(url.getPath()))
                                         || ("login.microsoftonline.com".equals(url.getHost()) && "/login.srf".equals(url.getPath()))
@@ -111,7 +116,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/v2.0/authorize"))
                                         // Okta authentication form /oauth2/v2.0/authorize
                                         || (url.getHost().endsWith(".okta.com") &&
-                                        !url.getPath().startsWith("/api/v1/authn"))
+                                        !url.getPath().startsWith("/api/v1/authn")))
                                 ) {
                                     LOGGER.debug("Disable integrity check on external resources at " + url);
 
