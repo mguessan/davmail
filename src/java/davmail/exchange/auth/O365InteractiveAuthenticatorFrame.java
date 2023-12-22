@@ -44,17 +44,8 @@ import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.Proxy;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLStreamHandler;
-import java.net.URLStreamHandlerFactory;
+import java.io.*;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -69,101 +60,100 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
     static {
         // register a stream handler for msauth protocol
         try {
-            URL.setURLStreamHandlerFactory(new URLStreamHandlerFactory() {
-                @Override
-                public URLStreamHandler createURLStreamHandler(String protocol) {
-                    if ("msauth".equals(protocol) || "urn".equals(protocol)) {
-                        return new URLStreamHandler() {
-                            @Override
-                            protected URLConnection openConnection(URL u) {
-                                return new URLConnection(u) {
-                                    @Override
-                                    public void connect() {
-                                        // ignore
-                                    }
-                                };
-                            }
-                        };
-                    } else if ("https".equals(protocol)) {
-                        return new sun.net.www.protocol.https.Handler() {
-                            @Override
-                            protected URLConnection openConnection(URL url) throws IOException {
-                                return openConnection(url, null);
-                            }
-
-                            @Override
-                            protected URLConnection openConnection(URL url, Proxy proxy) throws IOException {
-                                LOGGER.debug("openConnection " + url);
-
-                                if (url.toExternalForm().endsWith("/handlers/watson")) {
-                                    LOGGER.warn("Failed: form calls watson");
-                                }
-                                if (url.getPath().equals("/common/fido/get")) {
-                                    LOGGER.warn("FIDO authentication not supported");
-                                }
-                                final HttpURLConnection httpsURLConnection = (HttpURLConnection) super.openConnection(url, proxy);
-
-                                // no longer apply the disable integrity check workaround by default, fixed in openjfx
-                                if (Settings.getBooleanProperty("davmail.ssl.disableIntegrityCheck", false) &&
-                                        (("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/authorize"))
-                                        || ("login.live.com".equals(url.getHost()) && "/oauth20_authorize.srf".equals(url.getPath()))
-                                        || ("login.live.com".equals(url.getHost()) && "/ppsecure/post.srf".equals(url.getPath()))
-                                        || ("login.microsoftonline.com".equals(url.getHost()) && "/login.srf".equals(url.getPath()))
-                                        || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/login"))
-                                        || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/SAS/ProcessAuth"))
-                                        || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/federation/oauth2"))
-                                        // v2 OIDC endpoint
-                                        || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/v2.0/authorize"))
-                                        // Okta authentication form /oauth2/v2.0/authorize
-                                        || (url.getHost().endsWith(".okta.com") &&
-                                        !url.getPath().startsWith("/api/v1/authn")))
-                                ) {
-                                    LOGGER.debug("Disable integrity check on external resources at " + url);
-
-                                    return new HttpURLConnectionWrapper(httpsURLConnection, url) {
+            URL.setURLStreamHandlerFactory((String protocol) -> {
+                        if ("msauth".equals(protocol) || "urn".equals(protocol)) {
+                            return new URLStreamHandler() {
+                                @Override
+                                protected URLConnection openConnection(URL u) {
+                                    return new URLConnection(u) {
                                         @Override
-                                        public InputStream getInputStream() throws IOException {
-                                            byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
-                                            String contentAsString = new String(content, StandardCharsets.UTF_8)
-                                                    .replaceAll("integrity ?=", "integrity.disabled=")
-                                                    .replaceAll("setAttribute\\(\"integrity\"", "setAttribute(\"integrity.disabled\"");
-                                            LOGGER.debug(contentAsString);
-                                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                            baos.write(contentAsString.getBytes(StandardCharsets.UTF_8));
-                                            return new ByteArrayInputStream(baos.toByteArray());
-                                        }
-
-                                        @Override
-                                        public void setRequestProperty(String key, String value) {
-                                            if ("Accept-Encoding".equals(key)) {
-                                                LOGGER.debug("Ignore Accept-Encoding");
-                                            } else {
-                                                httpURLConnection.setRequestProperty(key, value);
-                                            }
-                                        }
-
-                                        @Override
-                                        public void addRequestProperty(String key, String value) {
-                                            if ("Accept-Encoding".equals(key)) {
-                                                LOGGER.debug("Ignore Accept-Encoding");
-                                            } else {
-                                                httpURLConnection.setRequestProperty(key, value);
-                                            }
+                                        public void connect() {
+                                            // ignore
                                         }
                                     };
-
-                                } else {
-                                    return new HttpURLConnectionWrapper(httpsURLConnection, url);
                                 }
-                            }
+                            };
+                        } else if ("https".equals(protocol)) {
 
-                        };
+                            return new sun.net.www.protocol.https.Handler() {
+                                @Override
+                                protected URLConnection openConnection(URL url) throws IOException {
+                                    return openConnection(url, null);
+                                }
+
+                                @Override
+                                protected URLConnection openConnection(URL url, Proxy proxy) throws IOException {
+                                    LOGGER.debug("openConnection " + url);
+
+                                    if (url.toExternalForm().endsWith("/handlers/watson")) {
+                                        LOGGER.warn("Failed: form calls watson");
+                                    }
+                                    if (url.getPath().equals("/common/fido/get")) {
+                                        LOGGER.warn("FIDO authentication not supported");
+                                    }
+                                    final HttpURLConnection httpsURLConnection = (HttpURLConnection) super.openConnection(url, proxy);
+
+                                    // no longer apply the disable integrity check workaround by default, fixed in openjfx
+                                    if (Settings.getBooleanProperty("davmail.ssl.disableIntegrityCheck", false) &&
+                                            (("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/authorize"))
+                                                    || ("login.live.com".equals(url.getHost()) && "/oauth20_authorize.srf".equals(url.getPath()))
+                                                    || ("login.live.com".equals(url.getHost()) && "/ppsecure/post.srf".equals(url.getPath()))
+                                                    || ("login.microsoftonline.com".equals(url.getHost()) && "/login.srf".equals(url.getPath()))
+                                                    || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/login"))
+                                                    || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/SAS/ProcessAuth"))
+                                                    || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/federation/oauth2"))
+                                                    // v2 OIDC endpoint
+                                                    || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/v2.0/authorize"))
+                                                    // Okta authentication form /oauth2/v2.0/authorize
+                                                    || (url.getHost().endsWith(".okta.com") &&
+                                                    !url.getPath().startsWith("/api/v1/authn")))
+                                    ) {
+                                        LOGGER.debug("Disable integrity check on external resources at " + url);
+
+                                        return new HttpURLConnectionWrapper(httpsURLConnection, url) {
+                                            @Override
+                                            public InputStream getInputStream() throws IOException {
+                                                byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
+                                                String contentAsString = new String(content, StandardCharsets.UTF_8)
+                                                        .replaceAll("integrity ?=", "integrity.disabled=")
+                                                        .replaceAll("setAttribute\\(\"integrity\"", "setAttribute(\"integrity.disabled\"");
+                                                LOGGER.debug(contentAsString);
+                                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                                baos.write(contentAsString.getBytes(StandardCharsets.UTF_8));
+                                                return new ByteArrayInputStream(baos.toByteArray());
+                                            }
+
+                                            @Override
+                                            public void setRequestProperty(String key, String value) {
+                                                if ("Accept-Encoding".equals(key)) {
+                                                    LOGGER.debug("Ignore Accept-Encoding");
+                                                } else {
+                                                    httpURLConnection.setRequestProperty(key, value);
+                                                }
+                                            }
+
+                                            @Override
+                                            public void addRequestProperty(String key, String value) {
+                                                if ("Accept-Encoding".equals(key)) {
+                                                    LOGGER.debug("Ignore Accept-Encoding");
+                                                } else {
+                                                    httpURLConnection.setRequestProperty(key, value);
+                                                }
+                                            }
+                                        };
+
+                                    } else {
+                                        return new HttpURLConnectionWrapper(httpsURLConnection, url);
+                                    }
+                                }
+
+                            };
+                        }
+                        return null;
                     }
-                    return null;
-                }
-            });
-        } catch (Throwable t) {
-            LOGGER.warn("Unable to register protocol handler");
+            );
+        } catch (IllegalAccessError t) {
+            LOGGER.warn("Unable to register protocol handler, use --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED");
         }
     }
 
@@ -171,7 +161,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
     final JFXPanel fxPanel = new JFXPanel();
 
     public O365InteractiveAuthenticatorFrame() {
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -266,7 +256,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                 }
                 close();
             } else {
-                LOGGER.debug(webViewEngine.getLoadWorker().getState()+" "+webViewEngine.getLoadWorker().getMessage()+" " + webViewEngine.getLocation()+" ");
+                LOGGER.debug(webViewEngine.getLoadWorker().getState() + " " + webViewEngine.getLoadWorker().getMessage() + " " + webViewEngine.getLocation() + " ");
             }
 
         });
@@ -275,7 +265,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
 
     private void updateTitleAndFocus(final String location) {
         SwingUtilities.invokeLater(() -> {
-            setState(JFrame.NORMAL);
+            setState(Frame.NORMAL);
             setAlwaysOnTop(true);
             setAlwaysOnTop(false);
             setTitle("DavMail: " + location);
