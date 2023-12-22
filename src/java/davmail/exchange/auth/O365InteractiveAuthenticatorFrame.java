@@ -95,6 +95,9 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                 if (url.toExternalForm().endsWith("/handlers/watson")) {
                                     LOGGER.warn("Failed: form calls watson");
                                 }
+                                if (url.getPath().equals("/common/fido/get")) {
+                                    LOGGER.warn("FIDO authentication not supported");
+                                }
                                 final HttpURLConnection httpsURLConnection = (HttpURLConnection) super.openConnection(url, proxy);
 
                                 if (("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/authorize"))
