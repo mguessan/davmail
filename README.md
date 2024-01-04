@@ -23,6 +23,14 @@ Download latest DavMail release on Sourceforge
 
 [![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/davmail/files/davmail/6.2.1/)
 
+RPM packages are available from OpenSuse build service:
+
+[![build result](https://build.opensuse.org/projects/home:mguessan:davmail/packages/davmail/badge.svg?type=default)](https://build.opensuse.org/package/show/home:mguessan:davmail/davmail)
+
+An alternative is COPR on Fedora:
+
+https://copr.fedorainfracloud.org/coprs/mguessan/davmail/
+
 ## Trunk builds
 Latest working builds are now available on Appveyor:
 
