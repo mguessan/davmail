@@ -39,6 +39,52 @@
   <developer_name>Mickaël Guessant</developer_name>
   <content_rating type="oars-1.1" />
   <releases>
+      <release version="6.2.1" date="2024-04-01">
+          <description>
+              <p>
+                  Most changes are related to build process and rpm packaging for Fedora/RHEL, also includes a few bug fixes on IMAP
+
+                  ### Security
+                  - Security: Upgrade commons codec to 1.15
+
+                  ### O365
+                  - O365: cleanup from audit
+                  - O365: no longer apply the disable integrity check workaround by default, fixed in openjfx
+                  - O365: add a warning message on FIDO authentication triggered
+                  - O365: allow refresh token persistence without provided password
+                  - O365: Merge https://github.com/mguessan/davmail/pull/236 Changed authentication link log level
+
+                  ### Linux
+                  - Linux: refactor spec file for fedora, do not call old init service scripts and compile with openjfx
+                  - Linux: Fix systemd condition for fedora in spec file
+                  - Linux: Adjust JDK dependencies for RPM build
+
+                  ### Build
+                  - AppVeyor: Cleanup
+                  - AppVeyor: copy plugin to x86-unicode
+                  - AppVeyor: switch to server 2019
+                  - Appveyor: investigate java versions
+                  - AppVeyor: set ANT_HOME value
+                  - AppVeyor: update ant path
+                  - AppVeyor: update ant download path
+                  - Run Sonar scan under JDK19
+                  - Switch Appveyor build to JDK 19
+                  - Maven: fix urls from https://github.com/mguessan/davmail/pull/225 by Stefan Weil
+
+                  ### IMAP
+                  - IMAP: merge patch from https://github.com/mguessan/davmail/pull/140, return folders including special use folders when query is %
+                  - IMAP: implement fetch macro flags, see https://github.com/mguessan/davmail/issues/314
+                  - IMAP: fix APPENDUID value order
+
+                  ### Enhancements
+                  - Cleanup from audit
+                  - Fix typo
+                  - NTLM: improve logging of NTLM negotiation
+                  - Update Winrun4J wrappers with commons codec 1.15
+
+              </p>
+          </description>
+      </release>
       <release version="6.2.0" date="2023-11-05">
           <description>
               <p>
