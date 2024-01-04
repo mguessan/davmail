@@ -21,7 +21,9 @@ mvn install:install-file -DgroupId=org.codehaus.woodstox -DartifactId=woodstox-c
 - create news message at https://sourceforge.net/p/davmail/news/
 - send user mailing list message
 - change default download files on frs
+- update readme.md at https://sourceforge.net/projects/davmail/files/davmail
 - upload version.txt with ant upload-version
+- update git tag with git svn fetch / git tag
 - create new version in sourceforge bug tracker
 - connect to https://build.opensuse.org/
 - upload src package
