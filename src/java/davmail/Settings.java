@@ -43,6 +43,8 @@ public final class Settings {
 
     public static final String OUTLOOK_URL = "https://outlook.office365.com";
     public static final String O365_URL = OUTLOOK_URL+"/EWS/Exchange.asmx";
+    public static final String O365_LOGIN_URL = "https://login.microsoftonline.com/";
+
     public static final String O365 = "O365";
     public static final String O365_MODERN = "O365Modern";
     public static final String O365_INTERACTIVE = "O365Interactive";
@@ -757,6 +759,15 @@ public final class Settings {
             return O365_URL;
         } else {
             return  "https://outlook.office365."+tld+"/EWS/Exchange.asmx";
+        }
+    }
+
+    public static String getO365LoginUrl() {
+        String tld = getProperty("davmail.tld");
+        if (tld == null) {
+            return O365_LOGIN_URL;
+        } else {
+            return  "https://login.microsoftonline."+tld+"/";
         }
     }
 }
