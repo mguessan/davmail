@@ -29,7 +29,7 @@ RPM packages are available from OpenSuse build service:
 
 An alternative is COPR on Fedora:
 
-https://copr.fedorainfracloud.org/coprs/mguessan/davmail/
+[![Copr build status](https://copr.fedorainfracloud.org/coprs/mguessan/davmail/package/davmail/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/mguessan/davmail/package/davmail/)
 
 ## Trunk builds
 Latest working builds are now available on Appveyor:
