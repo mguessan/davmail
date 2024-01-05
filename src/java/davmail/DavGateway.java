@@ -42,6 +42,7 @@ public final class DavGateway {
     private static final String HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT = "https://davmail.sourceforge.net/version.txt";
 
     private static final Object LOCK = new Object();
+    private static boolean shutdown = false;
 
     private DavGateway() {
     }
@@ -94,6 +95,7 @@ public final class DavGateway {
             Runtime.getRuntime().addShutdownHook(new Thread("Shutdown") {
                 @Override
                 public void run() {
+                    shutdown = true;
                     DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
                     DavGateway.stop();
                     synchronized (LOCK) {
@@ -104,7 +106,9 @@ public final class DavGateway {
 
             synchronized (LOCK) {
                 try {
-                    LOCK.wait();
+                    while (!shutdown) {
+                        LOCK.wait();
+                    }
                 } catch (InterruptedException e) {
                     DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
                     Thread.currentThread().interrupt();
