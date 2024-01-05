@@ -51,8 +51,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     String errorCode = null;
     String code = null;
 
-    String resource = "https://outlook.office365.com";
-    URI ewsUrl = URI.create(resource + "/EWS/Exchange.asmx");
+    URI ewsUrl = URI.create(Settings.getO365Url());
 
     private O365InteractiveAuthenticatorFrame o365InteractiveAuthenticatorFrame;
     private O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog;

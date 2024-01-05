@@ -33,8 +33,7 @@ import java.net.URI;
 public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
     private static final Logger LOGGER = Logger.getLogger(O365StoredTokenAuthenticator.class);
 
-    String resource = "https://outlook.office365.com";
-    URI ewsUrl = URI.create(resource + "/EWS/Exchange.asmx");
+    URI ewsUrl = URI.create(Settings.getO365Url());
 
     private String username;
     private String password;

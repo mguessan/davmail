@@ -41,7 +41,6 @@ import java.util.Date;
  * O365 token wrapper
  */
 public class O365Token {
-    protected final String RESOURCE_URL = "https://outlook.office365.com/";
 
     protected static final Logger LOGGER = Logger.getLogger(O365Token.class);
 
@@ -164,7 +163,7 @@ public class O365Token {
         parameters.add(new BasicNameValuePair("refresh_token", refreshToken));
         parameters.add(new BasicNameValuePair("redirect_uri", redirectUri));
         parameters.add(new BasicNameValuePair("client_id", clientId));
-        parameters.add(new BasicNameValuePair("resource", "https://outlook.office365.com/"));
+        parameters.add(new BasicNameValuePair("resource", Settings.OUTLOOK_URL));
 
         RestRequest tokenRequest = new RestRequest(tokenUrl, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
 
@@ -177,7 +176,7 @@ public class O365Token {
     private void executeRequest(RestRequest tokenMethod) throws IOException {
         // do not keep login connections open (no pooling)
         try (
-                HttpClientAdapter httpClientAdapter = new HttpClientAdapter(RESOURCE_URL);
+                HttpClientAdapter httpClientAdapter = new HttpClientAdapter(tokenUrl);
                 CloseableHttpResponse response = httpClientAdapter.execute(tokenMethod)
         ) {
             setJsonToken(tokenMethod.handleResponse(response));

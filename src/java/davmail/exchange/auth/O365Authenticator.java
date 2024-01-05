@@ -44,8 +44,6 @@ import java.util.regex.Pattern;
 public class O365Authenticator implements ExchangeAuthenticator {
     protected static final Logger LOGGER = Logger.getLogger(O365Authenticator.class);
 
-    private static final String RESOURCE = "https://outlook.office365.com";
-
     private String tenantId;
     // Office 365 username
     private String username;
@@ -71,10 +69,10 @@ public class O365Authenticator implements ExchangeAuthenticator {
             // switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
             if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
-                        .addParameter("scope", "openid https://outlook.office365.com/EWS.AccessAsUser.All");
+                        .addParameter("scope", "openid " + Settings.OUTLOOK_URL + "/EWS.AccessAsUser.All");
             } else {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
-                        .addParameter("resource", RESOURCE);
+                        .addParameter("resource", Settings.OUTLOOK_URL);
             }
 
             uri = uriBuilder.build();
@@ -103,11 +101,12 @@ public class O365Authenticator implements ExchangeAuthenticator {
     }
 
     public URI getExchangeUri() {
-        return URI.create(RESOURCE + "/EWS/Exchange.asmx");
+        return URI.create(Settings.O365_URL);
     }
 
     /**
      * Return a pool enabled HttpClientAdapter instance to access O365
+     *
      * @return HttpClientAdapter instance
      */
     @Override
@@ -116,24 +115,24 @@ public class O365Authenticator implements ExchangeAuthenticator {
     }
 
     public void authenticate() throws IOException {
-            // common DavMail client id
-            String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
-            // standard native app redirectUri
-            String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
-            // company tenantId or common
-            tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
+        // common DavMail client id
+        String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
+        // standard native app redirectUri
+        String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
+        // company tenantId or common
+        tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
-            // first try to load stored token
-            token = O365Token.load(tenantId, clientId, redirectUri, username, password);
-            if (token != null) {
-                return;
-            }
+        // first try to load stored token
+        token = O365Token.load(tenantId, clientId, redirectUri, username, password);
+        if (token != null) {
+            return;
+        }
 
-            String url = O365Authenticator.buildAuthorizeUrl(tenantId, clientId, redirectUri, username);
+        String url = O365Authenticator.buildAuthorizeUrl(tenantId, clientId, redirectUri, username);
 
         try (
                 HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url, userid, password)
-        ){
+        ) {
 
             GetRequest getRequest = new GetRequest(url);
             String responseBodyAsString = executeFollowRedirect(httpClientAdapter, getRequest);
@@ -204,7 +203,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     responseBodyAsString = httpClientAdapter.executePostRequest(logonMethod);
                     URI location = logonMethod.getRedirectLocation();
 
-                    if (responseBodyAsString != null && responseBodyAsString.indexOf("arrUserProofs") > 0) {
+                    if (responseBodyAsString != null && responseBodyAsString.contains("arrUserProofs")) {
                         location = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
                     }
 
@@ -356,7 +355,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             result = processMethod.getRedirectLocation();
 
             // MFA triggered after device authentication
-            if (result == null && responseBodyAsString != null && responseBodyAsString.indexOf("arrUserProofs") > 0) {
+            if (result == null && responseBodyAsString != null && responseBodyAsString.contains("arrUserProofs")) {
                 result = handleMfa(httpClient, processMethod, username, null);
             }
 
@@ -489,7 +488,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             }
         } finally {
             // close number matching frame if exists
-            if (numberMatchingFrame !=null && numberMatchingFrame.isVisible()) {
+            if (numberMatchingFrame != null && numberMatchingFrame.isVisible()) {
                 final JFrame finalNumberMatchingFrame = numberMatchingFrame;
                 SwingUtilities.invokeLater(() -> {
                     finalNumberMatchingFrame.setVisible(false);
