@@ -116,7 +116,6 @@ public final class Settings {
      * Load properties from current file path (command line or default).
      */
     public static synchronized void load() {
-        FileInputStream fileInputStream = null;
         try {
             if (configFilePath == null) {
                 //noinspection AccessOfSystemProperties
@@ -124,8 +123,9 @@ public final class Settings {
             }
             File configFile = new File(configFilePath);
             if (configFile.exists()) {
-                fileInputStream = new FileInputStream(configFile);
-                load(fileInputStream);
+                try (FileInputStream fileInputStream = new FileInputStream(configFile)) {
+                    load(fileInputStream);
+                }
             } else {
                 isFirstStart = true;
 
@@ -135,14 +135,6 @@ public final class Settings {
             }
         } catch (IOException e) {
             DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_LOAD_SETTINGS"), e);
-        } finally {
-            if (fileInputStream != null) {
-                try {
-                    fileInputStream.close();
-                } catch (IOException e) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
-                }
-            }
         }
         updateLoggingConfig();
     }
@@ -277,11 +269,10 @@ public final class Settings {
                 File logFile = new File(logFilePath);
                 // create parent directory if needed
                 File logFileDir = logFile.getParentFile();
-                if (logFileDir != null && !logFileDir.exists()) {
-                    if (!logFileDir.mkdirs()) {
+                if (logFileDir != null && !logFileDir.exists() && (!logFileDir.mkdirs())) {
                         DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
                         throw new IOException();
-                    }
+
                 }
             } else {
                 logFilePath = "davmail.log";
@@ -625,10 +616,9 @@ public final class Settings {
     private static void checkCreateTokenFilePath(String tokenFilePath) throws IOException {
         File file = new File(tokenFilePath);
         File parentFile = file.getParentFile();
-        if (parentFile != null) {
-            if (parentFile.mkdirs()) {
+        if (parentFile != null && (parentFile.mkdirs())) {
                 LOGGER.info("Created token file directory "+parentFile.getAbsolutePath());
-            }
+
         }
         if (file.createNewFile()) {
             LOGGER.info("Created token file "+tokenFilePath);
