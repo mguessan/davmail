@@ -6,7 +6,7 @@
 #
 BASE=$(dirname "$0")
 # force GTK2 to avoid crash with OpenJDK 11
-JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60 -Djdk.gtk.version=2.2"
+JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60"
 JAVA=java
 
 # Experimental: download Azul JRE FX with command 'davmail azul'
@@ -61,10 +61,12 @@ if [ -e "$BASE/davmail.jar" ]; then
     exec "${JAVA}" $JAVA_OPTS -cp "$BASE/davmail.jar:$BASE/lib/*:${JFX_CLASSPATH}" davmail.DavGateway "$@"
 elif [ -e /usr/share/java/swt.jar ]; then
     # SWT 3 is available
+    JAVA_OPTS="$JAVA_OPTS -Djdk.gtk.version=2.2"
     export LD_LIBRARY_PATH=/usr/lib/jni
     exec "${JAVA}" $JAVA_OPTS -cp "/usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:${JFX_CLASSPATH}:/usr/share/davmail/lib/*" davmail.DavGateway "$@"
 elif [ -e /usr/share/java/swt4.jar ]; then
     # SWT 4 is available, force GTK 2 in SWT
+    JAVA_OPTS="$JAVA_OPTS -Djdk.gtk.version=2.2"
     export LD_LIBRARY_PATH=/usr/lib/jni
     export SWT_GTK3=0
     exec "${JAVA}" $JAVA_OPTS -cp "/usr/share/davmail/davmail.jar:/usr/share/java/swt4.jar:${JFX_CLASSPATH}:/usr/share/davmail/lib/*" davmail.DavGateway "$@"
