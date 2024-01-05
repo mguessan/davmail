@@ -15,7 +15,7 @@ if [ "x$1" = 'xazul' ]; then
     echo Use platform independent package to run DavMail with Azul JDK
     exit 1
   fi
-  if curl -L --fail -o "$BASE/jre.tgz" "https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=15&ext=tar.gz&os=linux&arch=x86&hw_bitness=64&bundle_type=jre&features=fx"; then
+  if curl -L --fail -o "$BASE/jre.tgz" "https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=17&ext=tar.gz&os=linux&arch=x86&hw_bitness=64&bundle_type=jre&features=fx"; then
     echo Downloaded Azul JRE
   else
     echo Unable to download Azul JRE
@@ -32,6 +32,7 @@ fi
 # check for embedded jre
 if [ -e "$BASE/jre/bin/java" ]; then
   JAVA=$BASE/jre/bin/java
+  JAVA_OPTS="$JAVA_OPTS --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED"
   echo "Using embedded JRE"
   $JAVA -version
 elif  java -version 2>&1 >/dev/null | grep -q "version" ; then
@@ -43,8 +44,8 @@ elif  java -version 2>&1 >/dev/null | grep -q "version" ; then
     JAVA_OPTS="$JAVA_OPTS --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED"
     JAVA_OPTS="$JAVA_OPTS -Djava.library.path=/usr/lib/jvm/openjfx --module-path /usr/lib/jvm/openjfx --add-modules javafx.base,javafx.controls,javafx.web,javafx.fxml,javafx.swing"
   else
-  # add JFX to classpath with OpenJDK 11
-  JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
+    # add JFX to classpath with OpenJDK 11
+    JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
   fi
 elif [ -e "$BASE/davmail.jar" ]; then
   # display message for platform independent package
