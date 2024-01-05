@@ -33,7 +33,7 @@ public class BundleMessage implements Serializable {
     /**
      * Root locale to get english messages for logging.
      */
-    public static final Locale ROOT_LOCALE = new Locale("", "");
+    public static final Locale ROOT_LOCALE = Locale.ROOT;
     protected static final String MESSAGE_BUNDLE_NAME = "davmailmessages";
     protected final String key;
     private final Object[] arguments;
