@@ -78,8 +78,8 @@ public class AcceptCertificateDialog extends JDialog {
         JPanel subjectPanel = new JPanel();
         subjectPanel.setLayout(new BoxLayout(subjectPanel, BoxLayout.Y_AXIS));
         subjectPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_SERVER_CERTIFICATE")));
-        addFieldValue(subjectPanel, BundleMessage.format("UI_ISSUED_TO"), DavGatewayX509TrustManager.getRDN(certificate.getSubjectDN()));
-        addFieldValue(subjectPanel, BundleMessage.format("UI_ISSUED_BY"), DavGatewayX509TrustManager.getRDN(certificate.getIssuerDN()));
+        addFieldValue(subjectPanel, BundleMessage.format("UI_ISSUED_TO"), DavGatewayX509TrustManager.getRDN(certificate.getSubjectX500Principal()));
+        addFieldValue(subjectPanel, BundleMessage.format("UI_ISSUED_BY"), DavGatewayX509TrustManager.getRDN(certificate.getIssuerX500Principal()));
         Date now = new Date();
         String notBefore = formatter.format(certificate.getNotBefore());
         if (now.before(certificate.getNotBefore())) {

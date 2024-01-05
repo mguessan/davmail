@@ -106,7 +106,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
             int i = 0;
             for (String alias : aliasesArray) {
                 X509Certificate certificate = getCertificateChain(alias)[0];
-                String subject = certificate.getSubjectDN().getName();
+                String subject = certificate.getSubjectX500Principal().getName();
                 if (subject.contains("=")) {
                     subject = subject.substring(subject.indexOf("=")+1);
                 }
@@ -122,7 +122,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
                 } catch (Exception e) {
                     // ignore
                 }
-                String issuer = certificate.getIssuerDN().getName();
+                String issuer = certificate.getIssuerX500Principal().getName();
                 if (issuer.contains("=")) {
                     issuer = issuer.substring(issuer.indexOf("=")+1);
                 }
@@ -218,7 +218,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
     public X509Certificate[] getCertificateChain(String string) {
         X509Certificate[] certificates = keyManager.getCertificateChain(string);
         for (X509Certificate certificate: certificates) {
-            LOGGER.debug("Certificate chain: " + certificate.getSubjectDN());
+            LOGGER.debug("Certificate chain: " + certificate.getSubjectX500Principal());
         }
         return certificates;
     }

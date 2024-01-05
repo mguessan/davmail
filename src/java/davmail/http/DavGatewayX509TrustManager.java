@@ -111,9 +111,9 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         StringBuilder buffer = new StringBuilder();
         buffer.append(BundleMessage.format("UI_SERVER_CERTIFICATE")).append(":\n");
         buffer.append(BundleMessage.format("UI_ISSUED_TO")).append(": ")
-                .append(DavGatewayX509TrustManager.getRDN(certificate.getSubjectDN())).append('\n');
+                .append(DavGatewayX509TrustManager.getRDN(certificate.getSubjectX500Principal())).append('\n');
         buffer.append(BundleMessage.format("UI_ISSUED_BY")).append(": ")
-                .append(getRDN(certificate.getIssuerDN())).append('\n');
+                .append(getRDN(certificate.getIssuerX500Principal())).append('\n');
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
         String notBefore = formatter.format(certificate.getNotBefore());
         buffer.append(BundleMessage.format("UI_VALID_FROM")).append(": ").append(notBefore).append('\n');
