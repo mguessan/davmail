@@ -22,23 +22,13 @@ import davmail.exception.DavMailException;
 import davmail.ui.tray.DavGatewayTray;
 
 import javax.net.ServerSocketFactory;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.HashSet;
 
@@ -74,7 +64,7 @@ public abstract class AbstractServer extends Thread {
      * @param port        tcp socket chosen port
      * @param defaultPort tcp socket default port
      */
-    public AbstractServer(String name, int port, int defaultPort) {
+    protected AbstractServer(String name, int port, int defaultPort) {
         super(name);
         setDaemon(true);
         if (port == 0) {
@@ -117,7 +107,7 @@ public abstract class AbstractServer extends Thread {
             if (bindAddress == null || bindAddress.isEmpty()) {
                 serverSocket = serverSocketFactory.createServerSocket(port);
             } else {
-                serverSocket = serverSocketFactory.createServerSocket(port, 0, Inet4Address.getByName(bindAddress));
+                serverSocket = serverSocketFactory.createServerSocket(port, 0, InetAddress.getByName(bindAddress));
             }
             if (serverSocket instanceof SSLServerSocket) {
                 // CVE-2014-3566 disable SSLv3
