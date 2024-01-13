@@ -58,7 +58,7 @@ public final class Settings {
     private Settings() {
     }
 
-    private static final Properties SETTINGS = new Properties() {
+    private static final Properties SETTINGS_PROPERTIES = new Properties() {
         @Override
         public synchronized Enumeration<Object> keys() {
             Enumeration<Object> keysEnumeration = super.keys();
@@ -108,7 +108,7 @@ public final class Settings {
      * @throws IOException on error
      */
     public static synchronized void load(InputStream inputStream) throws IOException {
-        SETTINGS.load(inputStream);
+        SETTINGS_PROPERTIES.load(inputStream);
         updateLoggingConfig();
     }
 
@@ -144,70 +144,70 @@ public final class Settings {
      * Ports above 1024 for unix/linux
      */
     public static void setDefaultSettings() {
-        SETTINGS.put("davmail.mode", "EWS");
-        SETTINGS.put("davmail.url", O365_URL);
-        SETTINGS.put("davmail.popPort", "1110");
-        SETTINGS.put("davmail.imapPort", "1143");
-        SETTINGS.put("davmail.smtpPort", "1025");
-        SETTINGS.put("davmail.caldavPort", "1080");
-        SETTINGS.put("davmail.ldapPort", "1389");
-        SETTINGS.put("davmail.clientSoTimeout", "");
-        SETTINGS.put("davmail.keepDelay", "30");
-        SETTINGS.put("davmail.sentKeepDelay", "0");
-        SETTINGS.put("davmail.caldavPastDelay", "0");
-        SETTINGS.put("davmail.caldavAutoSchedule", Boolean.TRUE.toString());
-        SETTINGS.put("davmail.imapIdleDelay", "");
-        SETTINGS.put("davmail.folderSizeLimit", "");
-        SETTINGS.put("davmail.enableKeepAlive", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.allowRemote", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.bindAddress", "");
-        SETTINGS.put("davmail.useSystemProxies", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.enableKerberos", "false");
-        SETTINGS.put("davmail.disableUpdateCheck", "false");
-        SETTINGS.put("davmail.proxyHost", "");
-        SETTINGS.put("davmail.proxyPort", "");
-        SETTINGS.put("davmail.proxyUser", "");
-        SETTINGS.put("davmail.proxyPassword", "");
-        SETTINGS.put("davmail.noProxyFor", "");
-        SETTINGS.put("davmail.server", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.server.certificate.hash", "");
-        SETTINGS.put("davmail.caldavAlarmSound", "");
-        SETTINGS.put("davmail.carddavReadPhoto", Boolean.TRUE.toString());
-        SETTINGS.put("davmail.forceActiveSyncUpdate", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.showStartupBanner", Boolean.TRUE.toString());
-        SETTINGS.put("davmail.disableGuiNotifications", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.disableTrayActivitySwitch", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.imapAutoExpunge", Boolean.TRUE.toString());
-        SETTINGS.put("davmail.imapAlwaysApproxMsgSize", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.popMarkReadOnRetr", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.smtpSaveInSent", Boolean.TRUE.toString());
-        SETTINGS.put("davmail.ssl.keystoreType", "");
-        SETTINGS.put("davmail.ssl.keystoreFile", "");
-        SETTINGS.put("davmail.ssl.keystorePass", "");
-        SETTINGS.put("davmail.ssl.keyPass", "");
+        SETTINGS_PROPERTIES.put("davmail.mode", "EWS");
+        SETTINGS_PROPERTIES.put("davmail.url", O365_URL);
+        SETTINGS_PROPERTIES.put("davmail.popPort", "1110");
+        SETTINGS_PROPERTIES.put("davmail.imapPort", "1143");
+        SETTINGS_PROPERTIES.put("davmail.smtpPort", "1025");
+        SETTINGS_PROPERTIES.put("davmail.caldavPort", "1080");
+        SETTINGS_PROPERTIES.put("davmail.ldapPort", "1389");
+        SETTINGS_PROPERTIES.put("davmail.clientSoTimeout", "");
+        SETTINGS_PROPERTIES.put("davmail.keepDelay", "30");
+        SETTINGS_PROPERTIES.put("davmail.sentKeepDelay", "0");
+        SETTINGS_PROPERTIES.put("davmail.caldavPastDelay", "0");
+        SETTINGS_PROPERTIES.put("davmail.caldavAutoSchedule", Boolean.TRUE.toString());
+        SETTINGS_PROPERTIES.put("davmail.imapIdleDelay", "");
+        SETTINGS_PROPERTIES.put("davmail.folderSizeLimit", "");
+        SETTINGS_PROPERTIES.put("davmail.enableKeepAlive", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.allowRemote", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.bindAddress", "");
+        SETTINGS_PROPERTIES.put("davmail.useSystemProxies", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.enableProxy", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.enableKerberos", "false");
+        SETTINGS_PROPERTIES.put("davmail.disableUpdateCheck", "false");
+        SETTINGS_PROPERTIES.put("davmail.proxyHost", "");
+        SETTINGS_PROPERTIES.put("davmail.proxyPort", "");
+        SETTINGS_PROPERTIES.put("davmail.proxyUser", "");
+        SETTINGS_PROPERTIES.put("davmail.proxyPassword", "");
+        SETTINGS_PROPERTIES.put("davmail.noProxyFor", "");
+        SETTINGS_PROPERTIES.put("davmail.server", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.server.certificate.hash", "");
+        SETTINGS_PROPERTIES.put("davmail.caldavAlarmSound", "");
+        SETTINGS_PROPERTIES.put("davmail.carddavReadPhoto", Boolean.TRUE.toString());
+        SETTINGS_PROPERTIES.put("davmail.forceActiveSyncUpdate", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.showStartupBanner", Boolean.TRUE.toString());
+        SETTINGS_PROPERTIES.put("davmail.disableGuiNotifications", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.disableTrayActivitySwitch", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.imapAutoExpunge", Boolean.TRUE.toString());
+        SETTINGS_PROPERTIES.put("davmail.imapAlwaysApproxMsgSize", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.popMarkReadOnRetr", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.smtpSaveInSent", Boolean.TRUE.toString());
+        SETTINGS_PROPERTIES.put("davmail.ssl.keystoreType", "");
+        SETTINGS_PROPERTIES.put("davmail.ssl.keystoreFile", "");
+        SETTINGS_PROPERTIES.put("davmail.ssl.keystorePass", "");
+        SETTINGS_PROPERTIES.put("davmail.ssl.keyPass", "");
         if (isWindows()) {
             // default to MSCAPI on windows for native client certificate access
-            SETTINGS.put("davmail.ssl.clientKeystoreType", "MSCAPI");
+            SETTINGS_PROPERTIES.put("davmail.ssl.clientKeystoreType", "MSCAPI");
         } else {
-            SETTINGS.put("davmail.ssl.clientKeystoreType", "");
+            SETTINGS_PROPERTIES.put("davmail.ssl.clientKeystoreType", "");
         }
-        SETTINGS.put("davmail.ssl.clientKeystoreFile", "");
-        SETTINGS.put("davmail.ssl.clientKeystorePass", "");
-        SETTINGS.put("davmail.ssl.pkcs11Library", "");
-        SETTINGS.put("davmail.ssl.pkcs11Config", "");
-        SETTINGS.put("davmail.ssl.nosecurepop", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.ssl.nosecureimap", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.ssl.nosecuresmtp", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.ssl.nosecurecaldav", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.ssl.nosecureldap", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.ssl.clientKeystoreFile", "");
+        SETTINGS_PROPERTIES.put("davmail.ssl.clientKeystorePass", "");
+        SETTINGS_PROPERTIES.put("davmail.ssl.pkcs11Library", "");
+        SETTINGS_PROPERTIES.put("davmail.ssl.pkcs11Config", "");
+        SETTINGS_PROPERTIES.put("davmail.ssl.nosecurepop", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.ssl.nosecureimap", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.ssl.nosecuresmtp", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.ssl.nosecurecaldav", Boolean.FALSE.toString());
+        SETTINGS_PROPERTIES.put("davmail.ssl.nosecureldap", Boolean.FALSE.toString());
 
         // logging
-        SETTINGS.put("log4j.rootLogger", Level.WARN.toString());
-        SETTINGS.put("log4j.logger.davmail", Level.DEBUG.toString());
-        SETTINGS.put("log4j.logger.httpclient.wire", Level.WARN.toString());
-        SETTINGS.put("log4j.logger.httpclient", Level.WARN.toString());
-        SETTINGS.put("davmail.logFilePath", "");
+        SETTINGS_PROPERTIES.put("log4j.rootLogger", Level.WARN.toString());
+        SETTINGS_PROPERTIES.put("log4j.logger.davmail", Level.DEBUG.toString());
+        SETTINGS_PROPERTIES.put("log4j.logger.httpclient.wire", Level.WARN.toString());
+        SETTINGS_PROPERTIES.put("log4j.logger.httpclient", Level.WARN.toString());
+        SETTINGS_PROPERTIES.put("davmail.logFilePath", "");
     }
 
     /**
@@ -332,7 +332,7 @@ public final class Settings {
         if (configFilePath != null) {
             // clone settings
             Properties properties = new Properties();
-            properties.putAll(SETTINGS);
+            properties.putAll(SETTINGS_PROPERTIES);
             // file lines
             ArrayList<String> lines = new ArrayList<>();
 
@@ -436,7 +436,7 @@ public final class Settings {
      * @return property value
      */
     public static synchronized String getProperty(String property) {
-        String value = SETTINGS.getProperty(property);
+        String value = SETTINGS_PROPERTIES.getProperty(property);
         // return null on empty value
         if (value != null && value.isEmpty()) {
             value = null;
@@ -483,9 +483,9 @@ public final class Settings {
      */
     public static synchronized void setProperty(String property, String value) {
         if (value != null) {
-            SETTINGS.setProperty(property, value);
+            SETTINGS_PROPERTIES.setProperty(property, value);
         } else {
-            SETTINGS.setProperty(property, "");
+            SETTINGS_PROPERTIES.setProperty(property, "");
         }
     }
 
@@ -509,7 +509,7 @@ public final class Settings {
     public static synchronized int getIntProperty(String property, int defaultValue) {
         int value = defaultValue;
         try {
-            String propertyValue = SETTINGS.getProperty(property);
+            String propertyValue = SETTINGS_PROPERTIES.getProperty(property);
             if (propertyValue != null && !propertyValue.isEmpty()) {
                 value = Integer.parseInt(propertyValue);
             }
@@ -526,7 +526,7 @@ public final class Settings {
      * @return property value
      */
     public static synchronized boolean getBooleanProperty(String property) {
-        String propertyValue = SETTINGS.getProperty(property);
+        String propertyValue = SETTINGS_PROPERTIES.getProperty(property);
         return Boolean.parseBoolean(propertyValue);
     }
 
@@ -539,7 +539,7 @@ public final class Settings {
      */
     public static synchronized boolean getBooleanProperty(String property, boolean defaultValue) {
         boolean value = defaultValue;
-        String propertyValue = SETTINGS.getProperty(property);
+        String propertyValue = SETTINGS_PROPERTIES.getProperty(property);
         if (propertyValue != null && !propertyValue.isEmpty()) {
             value = Boolean.parseBoolean(propertyValue);
         }
@@ -646,7 +646,7 @@ public final class Settings {
      */
     public static synchronized Level getLoggingLevel(String category) {
         String prefix = getLoggingPrefix(category);
-        String currentValue = SETTINGS.getProperty(prefix + category);
+        String currentValue = SETTINGS_PROPERTIES.getProperty(prefix + category);
 
         if (currentValue != null && !currentValue.isEmpty()) {
             return Level.toLevel(currentValue);
@@ -673,7 +673,7 @@ public final class Settings {
             keyStart = scope + '.';
         }
         Properties result = new Properties();
-        for (Map.Entry<Object, Object> entry : SETTINGS.entrySet()) {
+        for (Map.Entry<Object, Object> entry : SETTINGS_PROPERTIES.entrySet()) {
             String key = (String) entry.getKey();
             if (key.startsWith(keyStart)) {
                 String value = (String) entry.getValue();
@@ -692,7 +692,7 @@ public final class Settings {
     public static synchronized void setLoggingLevel(String category, Level level) {
         if (level != null) {
             String prefix = getLoggingPrefix(category);
-            SETTINGS.setProperty(prefix + category, level.toString());
+            SETTINGS_PROPERTIES.setProperty(prefix + category, level.toString());
             if ("rootLogger".equals(category)) {
                 Logger.getRootLogger().setLevel(level);
             } else {
