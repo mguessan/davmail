@@ -394,15 +394,12 @@ public final class Settings {
      * @return new line
      */
     private static String convertLine(String line, Properties properties) {
-        String comment = "";
         int hashIndex = line.indexOf('#');
-        if (hashIndex >= 0) {
-            comment = line.substring(hashIndex);
-            line = line.substring(0, hashIndex);
-        }
-        int index = line.indexOf('=');
-        if (index >= 0) {
-            String key = line.substring(0, index);
+        int equalsIndex = line.indexOf('=');
+        // allow # in values, no a comment
+        // comments are pass through
+        if (equalsIndex >= 0 && (hashIndex < 0 || hashIndex >= equalsIndex)) {
+            String key = line.substring(0, equalsIndex);
             String value = properties.getProperty(key);
             if (value != null) {
                 // build property with new value
@@ -411,7 +408,7 @@ public final class Settings {
                 properties.remove(key);
             }
         }
-        return line + comment;
+        return line;
     }
 
     /**
