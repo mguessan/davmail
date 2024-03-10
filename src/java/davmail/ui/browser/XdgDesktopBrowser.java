@@ -36,6 +36,6 @@ public final class XdgDesktopBrowser {
      * @throws IOException on error
      */
     public static void browse(URI location) throws IOException {
-        Runtime.getRuntime().exec("xdg-open " + location.toString());
+        Runtime.getRuntime().exec(new String[]{"xdg-open", location.toString()});
     }
 }
