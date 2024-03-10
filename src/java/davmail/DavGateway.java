@@ -21,6 +21,7 @@ package davmail;
 import davmail.caldav.CaldavServer;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.auth.O365InteractiveAuthenticator;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.GetRequest;
 import davmail.imap.ImapServer;
@@ -57,12 +58,15 @@ public final class DavGateway {
     public static void main(String[] args) {
         boolean notray = false;
         boolean server = false;
+        boolean token = false;
         for (String arg : args) {
             if (arg.startsWith("-")) {
                 if ("-notray".equals(arg)) {
                     notray = true;
                 } else if ("-server".equals(arg)) {
                     server = true;
+                } else if ("-token".equals(arg)) {
+                    token = true;
                 }
             } else {
                 Settings.setConfigFilePath(arg);
@@ -70,51 +74,64 @@ public final class DavGateway {
         }
 
         Settings.load();
-        if (GraphicsEnvironment.isHeadless()) {
-            // force server mode
-            LOGGER.debug("Headless mode, do not create GUI");
-            server = true;
-        }
-        if (server) {
-            Settings.setProperty("davmail.server", "true");
-            Settings.updateLoggingConfig();
-        }
-
-
-        if (Settings.getBooleanProperty("davmail.server")) {
-            LOGGER.debug("Start DavMail in server mode");
-        } else {
-            LOGGER.debug("Start DavMail in GUI mode");
-            DavGatewayTray.init(notray);
-        }
-
-        start();
-
-        // server mode: all threads are daemon threads, do not let main stop
-        if (Settings.getBooleanProperty("davmail.server")) {
-            Runtime.getRuntime().addShutdownHook(new Thread("Shutdown") {
-                @Override
-                public void run() {
-                    shutdown = true;
-                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
-                    DavGateway.stop();
-                    synchronized (LOCK) {
-                        LOCK.notifyAll();
-                    }
-                }
-            });
-
-            synchronized (LOCK) {
-                try {
-                    while (!shutdown) {
-                        LOCK.wait();
-                    }
-                } catch (InterruptedException e) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
-                    Thread.currentThread().interrupt();
-                }
+        if (token) {
+            O365InteractiveAuthenticator authenticator = new O365InteractiveAuthenticator();
+            authenticator.setUsername("");
+            try {
+                authenticator.authenticate();
+                System.out.println(authenticator.getToken().getRefreshToken());
+            } catch (IOException e) {
+                System.err.println(e+" "+e.getMessage());
             }
 
+        } else {
+
+            if (GraphicsEnvironment.isHeadless()) {
+                // force server mode
+                LOGGER.debug("Headless mode, do not create GUI");
+                server = true;
+            }
+            if (server) {
+                Settings.setProperty("davmail.server", "true");
+                Settings.updateLoggingConfig();
+            }
+
+
+            if (Settings.getBooleanProperty("davmail.server")) {
+                LOGGER.debug("Start DavMail in server mode");
+            } else {
+                LOGGER.debug("Start DavMail in GUI mode");
+                DavGatewayTray.init(notray);
+            }
+
+            start();
+
+            // server mode: all threads are daemon threads, do not let main stop
+            if (Settings.getBooleanProperty("davmail.server")) {
+                Runtime.getRuntime().addShutdownHook(new Thread("Shutdown") {
+                    @Override
+                    public void run() {
+                        shutdown = true;
+                        DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
+                        DavGateway.stop();
+                        synchronized (LOCK) {
+                            LOCK.notifyAll();
+                        }
+                    }
+                });
+
+                synchronized (LOCK) {
+                    try {
+                        while (!shutdown) {
+                            LOCK.wait();
+                        }
+                    } catch (InterruptedException e) {
+                        DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+            }
         }
     }
 
