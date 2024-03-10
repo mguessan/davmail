@@ -1401,10 +1401,16 @@ public class ImapConnection extends AbstractConnection {
         if ("TEXT".equals(type)) {
             appendBodyStructureValue(buffer, lineCount);
         } else if ("MESSAGE".equals(type)) {
-            MimeMessage innerMessage = (MimeMessage) bodyPart.getContent();
-            appendEnvelope(buffer, innerMessage);
-            appendBodyStructure(buffer, innerMessage);
-            appendBodyStructureValue(buffer, lineCount);
+            Object bodyPartContent = bodyPart.getContent();
+            if (bodyPartContent instanceof MimeMessage) {
+                MimeMessage innerMessage = (MimeMessage) bodyPartContent;
+                appendEnvelope(buffer, innerMessage);
+                appendBodyStructure(buffer, innerMessage);
+                appendBodyStructureValue(buffer, lineCount);
+            } else {
+                // failover malformed message
+                appendBodyStructureValue(buffer, lineCount);
+            }
         }
         buffer.append(')');
     }
