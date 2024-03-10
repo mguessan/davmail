@@ -21,7 +21,7 @@ package davmail;
 import davmail.caldav.CaldavServer;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.exchange.auth.O365InteractiveAuthenticator;
+import davmail.exchange.auth.ExchangeAuthenticator;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.GetRequest;
 import davmail.imap.ImapServer;
@@ -33,6 +33,7 @@ import org.apache.log4j.Logger;
 
 import java.awt.*;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
 /**
@@ -75,12 +76,14 @@ public final class DavGateway {
 
         Settings.load();
         if (token) {
-            O365InteractiveAuthenticator authenticator = new O365InteractiveAuthenticator();
-            authenticator.setUsername("");
             try {
+                ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName("davmail.exchange.auth.O365InteractiveAuthenticator")
+                        .getDeclaredConstructor().newInstance();
+                authenticator.setUsername("");
                 authenticator.authenticate();
                 System.out.println(authenticator.getToken().getRefreshToken());
-            } catch (IOException e) {
+            } catch (IOException | ClassNotFoundException | NoSuchMethodException | InstantiationException |
+                     IllegalAccessException | InvocationTargetException e) {
                 System.err.println(e+" "+e.getMessage());
             }
 
