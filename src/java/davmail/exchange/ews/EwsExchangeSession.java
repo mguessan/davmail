@@ -1497,7 +1497,12 @@ public class EwsExchangeSession extends ExchangeSession {
                 for (VProperty property : excludedDates) {
                     List<String> values = property.getValues();
                     for (String value : values) {
-                        String convertedValue = convertCalendarDateToExchange(value) + "Z";
+                        String convertedValue;
+                        try {
+                            convertedValue = vCalendar.convertCalendarDateToExchangeZulu(value, property.getParamValue("TZID"));
+                        } catch (IOException e) {
+                            throw new DavMailException("EXCEPTION_INVALID_DATE", value);
+                        }
                         LOGGER.debug("Looking for occurrence " + convertedValue);
 
                         int instanceIndex = 0;
@@ -1513,6 +1518,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 executeMethod(getItemMethod);
                                 if (getItemMethod.getResponseItem() != null) {
                                     String itemOriginalStart = getItemMethod.getResponseItem().get(Field.get("originalstart").getResponseName());
+                                    LOGGER.debug("Occurrence " + instanceIndex + " itemOriginalStart "+itemOriginalStart+" looking for "+convertedValue);
                                     if (convertedValue.equals(itemOriginalStart)) {
                                         // found item, delete it
                                         DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(getItemMethod.getResponseItem()),
