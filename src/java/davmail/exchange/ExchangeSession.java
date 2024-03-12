@@ -2020,6 +2020,8 @@ public abstract class ExchangeSession {
                 writer.writeLine("PHOTO;TYPE=" + contactPhoto.contentType + ";ENCODING=BASE64:");
                 writer.writeLine(contactPhoto.content, true);
             }
+            
+            writer.appendProperty("KEY;X509;ENCODING=BASE64", get("msexchangecertificate"));
 
             writer.endCard();
             return writer.toString();
@@ -3012,6 +3014,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("private");
         CONTACT_ATTRIBUTES.add("sensitivity");
         CONTACT_ATTRIBUTES.add("fburl");
+        CONTACT_ATTRIBUTES.add("msexchangecertificate");
     }
 
     protected static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<>();
