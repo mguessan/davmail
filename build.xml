@@ -377,22 +377,6 @@
         <copy file="src/winrun4j/davmailservice.exe" todir="dist"/>
         <copy file="src/winrun4j/davmail64.exe" todir="dist"/>
         <copy file="src/winrun4j/davmailservice64.exe" todir="dist"/>
-
-        <copy todir="dist/web">
-            <fileset dir="src/web"/>
-        </copy>
-        <copy todir="dist/web/WEB-INF/lib">
-            <fileset dir="dist">
-                <include name="*.jar"/>
-            </fileset>
-            <fileset dir="dist/lib">
-                <include name="*.jar"/>
-                <exclude name="nsisant*.jar"/>
-                <exclude name="swt*.jar"/>
-                <exclude name="winrun4j-*.jar"/>
-            </fileset>
-        </copy>
-        <copy todir="dist/web/WEB-INF/classes" file="src/etc/davmail.properties"/>
     </target>
 
     <target name="dist" depends="prepare-dist">
@@ -411,9 +395,6 @@
                 <include name="davmail"/>
             </zipfileset>
         </zip>
-        <jar destfile="dist/davmail-${release-name}.war">
-            <fileset dir="dist/web"/>
-        </jar>
         <zip file="dist/davmail-${release-name}-windows-noinstall.zip">
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
