@@ -20,7 +20,7 @@
                     then create a new network calendar:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar1.png" alt=""/>
+                    <img src="images/thunderbird/thunderbirdCalendar1.png" alt=""/>
                 </div>
 
                 <p>Choose CalDav format and specify location (adjust port to your settings):</p>
@@ -29,14 +29,14 @@
                 <p>Replace mail@company.com with actual user email address.
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar2.png" alt=""/>
+                    <img src="images/thunderbird/thunderbirdCalendar2.png" alt=""/>
                 </div>
 
                 <p>Choose a name, color and set the associated email address (as set in mail setup).
                 </p>
                 <p>Note that Caldav notifications will not work if this email address field is empty.</p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar3.png" alt=""/>
+                    <img src="images/thunderbird/thunderbirdCalendar3.png" alt=""/>
                 </div>
 
 
@@ -44,14 +44,14 @@
                     or email address with Exchange 2007
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar4.png" alt=""/>
+                    <img src="images/thunderbird/thunderbirdCalendar4.png" alt=""/>
                 </div>
 
 
                 <p>Finish:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar5.png" alt=""/>
+                    <img src="images/thunderbird/thunderbirdCalendar5.png" alt=""/>
                 </div>
 
                 <p>Lightning mail notifications are broken, activate Caldav notifications to outbox instead.

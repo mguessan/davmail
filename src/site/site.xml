@@ -58,8 +58,7 @@
         </menu>
 
         <menu name="Thunderbird Setup">
-            <item name="POP Mail setup" href="/thunderbirdmailsetup.html"/>
-            <item name="IMAP Mail setup" href="/thunderbirdimapmailsetup.html"/>
+            <item name="Mail setup" href="/thunderbirdmailsetup.html"/>
             <item name="Calendar setup" href="/thunderbirdcalendarsetup.html"/>
             <item name="Directory setup" href="/thunderbirddirectorysetup.html"/>
             <item name="Carddav setup" href="/thunderbirdcarddavsetup.html"/>

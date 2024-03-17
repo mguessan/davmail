@@ -10,63 +10,101 @@
 
     <body>
 
-        <section name="POP Thunderbird mail setup">
-            <p>There are two ways to access Exchange emails through DavMail Gateway: the good old
-                and efficient POP protocol, limited to Inbox access and the IMAP protocol that enables
-                full message folder tree access.
+        <section name="Thunderbird mail setup">
+            <p>DavMail supports both IMAP and POP protocols. Most users choose IMAP to have full mailbox access,
+                as POP is limited to inbox folder only.
             </p>
 
-            <p>Note that POP is designed to retrieve messages from server and let the client manage storage/folder
+            <p>POP protocol is designed to retrieve messages from server and let the client manage storage/folder
                 organization locally. All POP delete orders will move messages to server trash folder.
                 In order to avoid quota issues on server, DavMail can automatically purge oldest messages from trash
                 and sent folders.
             </p>
 
-            <p>This page describes POP3 setup, if you need multiple folders access, proceed to
-                <a href="thunderbirdimapmailsetup.html">
-                    IMAP Thunderbird mail setup
-                </a>
-                instead.
-            </p>
-
-            <p>DavMail can be used with any POP3/SMTP client by adjusting the following description designed for
-                Thunderbird
+            <p>DavMail can be used with any IMAP/SMTP client by adjusting the following description designed for
+                Thunderbird. DavMail IMAP support is tested with Thunderbird, Outlook and Apple Mail.
             </p>
 
             <subsection name="Create a new account">
-                <p>Choose <code>Add Mail Account...</code> under Account settings and enter name, email address
-                    and password:</p>
+                <p>For a new Thunderbird instance, new account wizard opens on first launch. If you already have
+                    existing accounts open <code>Tools/Account settings</code> then
+                    <code>Account Actions/Add Mail Account...</code></p>
+                <p>Enter name, email address and password and click configure manually:</p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount1.png" alt=""/>
+                    <img src="images/thunderbird/thunderbirdAccount1.png" alt=""/>
                 </div>
 
-                <p>Click <code>Continue</code> and <code>Manual config</code> without waiting for automatic config:</p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount2.png" alt=""/>
-                </div>
-
-                <p>Incoming server type is POP, server hostname is localhost, default port is 1110, no SSL and normal
+                <p>Incoming server type is IMAP, server hostname is localhost, default port is 1143, no SSL and normal
                     password authentication. Outgoing server is localhost, default port is 1025, no SSL and normal
                     password authentication. Set your username (windows account name or email address) and click
-                    <code>Re-test</code> to validate account settings, then <code>Create Account</code>:
+                    <code>Re-test</code> to validate account settings, then <code>Done</code>:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccountPop3.png" alt=""/>
+                    <img src="images/thunderbird/thunderbirdAccount2.png" alt=""/>
                 </div>
 
-
-                <p>Without SSL you will get the following warning, check box and confirm account creation:
+                <p>By default local communication between Thunderbird and DavMail is not encrypted, and you get the
+                    following warning, check I understand the risks and confirm account creation:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount4.png" alt=""/>
+                    <img src="images/thunderbird/thunderbirdAccount3.png" alt=""/>
                 </div>
-                <p>Note: as communication between Thunderbird and DavMail is local, cleartext mode is not an issue,
-                    except on shared machines (e.g. Terminal server).</p>
+                <p>Proceed with authentication is you have interactive mode enabled.
+                    Initial mail configuration is then complete.</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbird/thunderbirdAccount4.png" alt=""/>
+                </div>
 
                 <p>Proceed to
                     <a href="thunderbirdcalendarsetup.html">Thunderbird calendar setup</a>
                 </p>
             </subsection>
         </section>
+
+        <section name="Optional additional step">
+            <subsection name="Thunderbird mail message tags">
+                <p>In Thunderbird email messages can be organized with message tags. Outlook provides
+                    similar functionality with categories. DavMail's IMAP gateway can transparently
+                    translate tags to categories (and vice versa). For custom defined tags it may be
+                    necessary to tell DavMail how to convert tags to categories.
+                </p>
+
+                <p>Thunderbird stores tags on the server using IMAP keywords. But internally
+                    Thunderbird uses a mapping between the user visible tag names and the
+                    actually used keywords. For instance, the <strong>To Do</strong> tag is represented by
+                    the <strong>$label4</strong> keyword. Assuming you want the Outlook categories to have the
+                    same names as the Thunderbird tags, DavMail must know which keywords
+                    Thunderbird uses for each tag.
+                </p>
+
+                <p>The keywords used by Thunderbird can be found through Preferences -&gt;
+                    Advanced -%gt; Config Editor, and searching for <code>mailnews.tags.*.tag</code>,
+                    which will show them as <code>mailnews.tags.<i>keyword</i>.tag</code> settings
+                    with their corresponding <i>tag</i> user visible value.
+                </p>
+
+                <p>Some default tags are defined in Thunderbird, for which DavMail uses a
+                    default mapping to categories:
+                </p>
+                <source><![CDATA[
+$label1=Important
+$label2=Work
+$label3=Personal
+$label4=To Do
+$label5=Later]]>
+                </source>
+
+                <p>These mappings can be overridden and extended by manually adding properties to the
+                    DavMail settings file (<code>.davmail.properties</code>) as
+                    <code>davmail.imapFlags.<i>keyword</i>=<i>category</i></code>, like this:
+                </p>
+                <source><![CDATA[
+davmail.imapFlags.$label2=Hobby
+davmail.imapFlags.some_test_tag=Some test Category]]>
+                </source>
+
+            </subsection>
+        </section>
+
     </body>
 </document>
