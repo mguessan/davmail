@@ -44,8 +44,8 @@ public final class JCIFSEngine implements NTLMEngine {
                     NtlmFlags.NTLMSSP_NEGOTIATE_56 | NtlmFlags.NTLMSSP_NEGOTIATE_128;
 
     public String generateType1Msg(final String domain, final String workstation) {
-        LOGGER.debug("generateType1Msg " + TYPE_1_FLAGS+" domain='"+domain+"' workstation='"+workstation+"'");
         final Type1Message type1Message = new Type1Message(TYPE_1_FLAGS, domain, workstation);
+        LOGGER.debug("Generate Type1Msg "+type1Message);
         return Base64.encode(type1Message.toByteArray());
     }
 
@@ -58,14 +58,16 @@ public final class JCIFSEngine implements NTLMEngine {
         } catch (final IOException exception) {
             throw new NTLMEngineException("Invalid NTLM type 2 message", exception);
         }
+        LOGGER.debug("Received Type2Msg " + type2Message);
+
         // from HttpClient 4 doc
         // final int type3Flags = type2Message.getFlags()
         //        & (0xffffffff ^ (NtlmFlags.NTLMSSP_TARGET_TYPE_DOMAIN | NtlmFlags.NTLMSSP_TARGET_TYPE_SERVER));
         int type3Flags = NtlmFlags.NTLMSSP_NEGOTIATE_NTLM2 | NtlmFlags.NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
                 NtlmFlags.NTLMSSP_NEGOTIATE_NTLM | NtlmFlags.NTLMSSP_NEGOTIATE_UNICODE;
-        LOGGER.debug("generateType3Msg " + type3Flags+" domain='"+domain+"' workstation='"+workstation+"' username='"+username+"'");
         Type3Message type3Message = new Type3Message(type2Message, password,
                 domain, username, workstation, type3Flags);
+        LOGGER.debug("Generate Type3Msg "+type3Message);
         return Base64.encode(type3Message.toByteArray());
     }
 
