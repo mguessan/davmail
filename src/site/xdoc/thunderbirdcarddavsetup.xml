@@ -11,39 +11,41 @@
     <body>
 
         <section name="Thunderbird Carddav setup">
-            <p>Thunderbird does not support Carddav natively, you will need to download and install the SOGo Connector
-                plugin from
-                <a href="http://www.sogo.nu/fr/downloads/frontends.html">SOGo Connector Thunderbird extension</a>.
+            <p>Thunderbird now supports Carddav natively, no need to install older SOGO extension.
             </p>
 
-            <subsection name="Create a new remote address book">
-                <p>After plugin installation, restart Thunderbird, open address book and choose
-                    File / New / Remote Address Book:
+            <subsection name="Create a new CardDAV address book">
+                <p>Switch to adress book tab, click <code>New Address Book / Add CardDAV Address Book</code>:
                 </p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCarddav1.png" alt=""/>
-                </div>
+                <p style="padding-left: 2em">
+                    <img src="images/thunderbird/thunderbirdCarddav1.png" alt=""/>
+                </p>
 
-                <p>Choose a name and enter contact folder location (adjust port to your settings):</p>
+                <p>Enter username and location (adjust port to your settings):
+                <code>http://localhost:1080
+                </code>
+                or point to a specific contact folder:
                 <code>http://localhost:1080/users/mail@company.com/contacts
                 </code>
-                <p>Replace mail@company.com with actual user email address.
                 </p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCarddav2.png" alt=""/>
-                </div>
+                <p style="padding-left: 2em">
+                    <img src="images/thunderbird/thunderbirdCarddav2.png" alt=""/>
+                </p>
+                <p>Enter password, for older Exchange servers you may have to adjust username to your windows account name,
+                    i.e. domain\account:
+                </p>
+                <p style="padding-left: 2em">
+                    <img src="images/thunderbird/thunderbirdCarddav3.png" alt=""/>
+                </p>
 
-                <p>Press OK and launch synchronisation with the toolbar
-                    <code>Synchronize</code>
-                    button.
+                <p>Select the contact folder(s) you want to synchronize and click <code>Continue</code>
                 </p>
 
-                <p>Provide your credentials, login is Active Directory account name, i.e. domain\account
-                    or email address with Exchange 2007
+                <p style="padding-left: 2em">
+                    <img src="images/thunderbird/thunderbirdCarddav4.png" alt=""/>
                 </p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCarddav3.png" alt=""/>
-                </div>
+                <p>Synchronization should start automatically.</p>
+
             </subsection>
         </section>
     </body>

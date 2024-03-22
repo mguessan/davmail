@@ -15,25 +15,30 @@
             </p>
 
             <subsection name="Create a new LDAP directory">
-                <p>Open Thunderbird address book and choose File/New/LDAP Directory:</p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdDirectory1.png" alt=""/>
-                </div>
-
-                <p>Choose a name, host is DavMail host (usually localhost), LDAP base context&#x20;<code>ou=people</code>,
-                    adjust port to your settings and set user to your Exchange account name,
-                    either your email address or Active Directory account name,
-                    i.e. domain\account. Leave other options to default values.
+                <p>Switch to adress book tab, click New Address Book / Add LDAP Address Book:</p>
+                <p style="padding-left: 2em">
+                    <img src="images/thunderbird/thunderbirdDirectory1.png" alt=""/>
                 </p>
-                <p>You may have to use uid= prefix as username to make it look like a valid dn:</p>
+
+                <p>Choose a name, host is DavMail host (usually localhost), Base DN is &#x20;<code>ou=people</code>,
+                    adjust port to your settings and set user to email address or Active Directory account name for
+                    older Exchange servers. Leave other options to default values.
+                </p>
+                <p>You may have to use uid= prefix as username to make it look like a valid dn:
                 <code>
                     uid=<i>account</i>
                 </code>
-                <p>You may also want to use this directory for mail completion in compose window :
                 </p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdDirectory2.png" alt=""/>
-                </div>
+                <p>Note that password will be requested on first search:</p>
+                <p  style="padding-left: 2em">
+                    <img src="images/thunderbird/thunderbirdDirectory3.png" alt=""/>
+                </p>
+                <p>You may also want to use this directory for mail completion in compose window. Check
+                    <code>Directory Server</code> and choose directory:
+                </p>
+                <p style="padding-left: 2em">
+                    <img src="images/thunderbird/thunderbirdDirectory4.png" alt=""/>
+                </p>
 
                 <p>Proceed to
                     <a href="thunderbirdcarddavsetup.html">Thunderbird Carddav setup</a>

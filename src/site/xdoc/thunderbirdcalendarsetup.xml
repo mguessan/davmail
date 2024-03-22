@@ -14,53 +14,44 @@
             <p>DavMail Calendar support is now available, tested with Thunderbird/Lightning and Apple iCal.
                 This should also work with other Caldav clients.
             </p>
-
             <subsection name="Create a new network calendar">
-                <p>Obviously, you need to install the Thunderbird Lightning extension. You can
-                    then create a new network calendar:
+                <p>Thunderbird Lightning extension is now integrated in default configuration.
+                    Click new calendar (bottom left button on calendar window) and choose network calendar:
                 </p>
-                <div style="width: 100%;text-align: center">
+                <p style="padding-left: 2em">
                     <img src="images/thunderbird/thunderbirdCalendar1.png" alt=""/>
-                </div>
-
-                <p>Choose CalDav format and specify location (adjust port to your settings):</p>
+                </p>
+                <p>Specify username and location (adjust port to your settings):
+                using auto-detection:
+                <code>http://localhost:1080
+                </code>
+                or full path:
                 <code>http://localhost:1080/users/mail@company.com/calendar
                 </code>
+                </p>
                 <p>Replace mail@company.com with actual user email address.
                 </p>
-                <div style="width: 100%;text-align: center">
+                <p style="padding-left: 2em">
                     <img src="images/thunderbird/thunderbirdCalendar2.png" alt=""/>
-                </div>
-
-                <p>Choose a name, color and set the associated email address (as set in mail setup).
                 </p>
-                <p>Note that Caldav notifications will not work if this email address field is empty.</p>
-                <div style="width: 100%;text-align: center">
+
+                <p>Provide your password, same password used for email configuration:
+                </p>
+                <p style="padding-left: 2em">
                     <img src="images/thunderbird/thunderbirdCalendar3.png" alt=""/>
-                </div>
-
-
-                <p>Provide your credentials, login is Active Directory account name, i.e. domain\account
-                    or email address with Exchange 2007
                 </p>
-                <div style="width: 100%;text-align: center">
+
+                <p>Pick calendar to synchronize and optionally adjust properties:
+                </p>
+                <p style="padding-left: 2em">
                     <img src="images/thunderbird/thunderbirdCalendar4.png" alt=""/>
-                </div>
-
-
-                <p>Finish:
-                </p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbird/thunderbirdCalendar5.png" alt=""/>
-                </div>
-
-                <p>Lightning mail notifications are broken, activate Caldav notifications to outbox instead.
-                    Make sure calendar.caldav.sched.enabled is true in Thunderbird advanced settings.
                 </p>
 
-                <p>You may want to enable the (experimental) Lightning calendar cache feature to avoid
-                    the possibly long calendar load task delay on Thunderbird startup: double click
-                    on the calendar in Lightning left pane and activate cache. Restart Thunderbird.
+                <p>With modern Exchange and O365 events are managed automatically on the server.
+                    Default Thunderbird settings should work fine.
+                </p>
+                <p>
+                    Previously we had to make sure <code>calendar.caldav.sched.enabled</code> is true in Thunderbird advanced settings.
                 </p>
 
                 <p>Proceed to
