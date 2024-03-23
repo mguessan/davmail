@@ -41,6 +41,7 @@ public class FolderLoadThread extends Thread {
         this.folder = folder;
     }
 
+    @Override
     public void run() {
         try {
             folder.loadMessages();
@@ -59,7 +60,6 @@ public class FolderLoadThread extends Thread {
      *
      * @param folder       current folder
      * @param outputStream client connection
-     * @throws InterruptedException on error
      * @throws IOException          on error
      */
     public static void loadFolder(ExchangeSession.Folder folder, OutputStream outputStream) throws IOException {
