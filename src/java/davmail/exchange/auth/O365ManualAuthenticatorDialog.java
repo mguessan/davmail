@@ -71,27 +71,7 @@ public class O365ManualAuthenticatorDialog extends JDialog {
         imageLabel.setIcon(UIManager.getIcon("OptionPane.questionIcon"));
         messagePanel.add(imageLabel);
 
-        JEditorPane jEditorPane = new JEditorPane();
-        HTMLEditorKit htmlEditorKit = new HTMLEditorKit();
-        StyleSheet stylesheet = htmlEditorKit.getStyleSheet();
-        Font font = jEditorPane.getFont();
-        stylesheet.addRule("body { font-size:small;font-family: " + ((font==null)?"Arial":font.getFamily()) + '}');
-        jEditorPane.setEditorKit(htmlEditorKit);
-        jEditorPane.setContentType("text/html");
-        jEditorPane.setText(BundleMessage.format("UI_0365_AUTHENTICATION_PROMPT", initUrl));
-
-        jEditorPane.setEditable(false);
-        jEditorPane.setOpaque(false);
-        jEditorPane.addHyperlinkListener(hle -> {
-            if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
-                try {
-                    DesktopBrowser.browse(hle.getURL().toURI());
-                } catch (URISyntaxException e) {
-                    DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
-                }
-            }
-        });
-        messagePanel.add(jEditorPane);
+        messagePanel.add(getEditorPane(BundleMessage.format("UI_0365_AUTHENTICATION_PROMPT", initUrl)));
 
 
         JPanel credentialPanel = new JPanel();
@@ -110,9 +90,17 @@ public class O365ManualAuthenticatorDialog extends JDialog {
         });
         credentialPanel.add(codeField);
 
-        add(messagePanel, BorderLayout.NORTH);
-        add(credentialPanel, BorderLayout.CENTER);
-        add(getButtonPanel(initUrl), BorderLayout.SOUTH);
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.add(messagePanel);
+        centerPanel.add(getOpenButtonPanel(initUrl));
+        centerPanel.add(getEditorPane(BundleMessage.format("UI_0365_AUTHENTICATION_CODE_PROMPT")));
+        centerPanel.add(credentialPanel);
+        centerPanel.add(Box.createVerticalGlue());
+
+        //add(messagePanel, BorderLayout.NORTH);
+        add(centerPanel, BorderLayout.CENTER);
+        add(getSendButtonPanel(), BorderLayout.SOUTH);
         setModal(true);
 
         pack();
@@ -125,13 +113,49 @@ public class O365ManualAuthenticatorDialog extends JDialog {
         setVisible(true);
     }
 
-    protected JPanel getButtonPanel(final String initUrl) {
+    private JEditorPane getEditorPane(String text) {
+        JEditorPane jEditorPane = new JEditorPane();
+        HTMLEditorKit htmlEditorKit = new HTMLEditorKit();
+        StyleSheet stylesheet = htmlEditorKit.getStyleSheet();
+        Font font = jEditorPane.getFont();
+        stylesheet.addRule("body { font-size:small;font-family: " + ((font==null)?"Arial":font.getFamily()) + '}');
+        jEditorPane.setEditorKit(htmlEditorKit);
+        jEditorPane.setContentType("text/html");
+        jEditorPane.setText(text);
+
+        jEditorPane.setEditable(false);
+        jEditorPane.setOpaque(false);
+        jEditorPane.addHyperlinkListener(hle -> {
+            if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
+                try {
+                    DesktopBrowser.browse(hle.getURL().toURI());
+                } catch (URISyntaxException e) {
+                    DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
+                }
+            }
+        });
+        return jEditorPane;
+    }
+
+    protected JPanel getOpenButtonPanel(final String initUrl) {
         JPanel buttonPanel = new JPanel();
         JButton openButton = new JButton(BundleMessage.format("UI_BUTTON_OPEN"));
         JButton copyButton = new JButton(BundleMessage.format("UI_BUTTON_COPY"));
+        openButton.addActionListener(evt -> DesktopBrowser.browse(initUrl));
+        copyButton.addActionListener(evt -> {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            clipboard.setContents(new StringSelection(initUrl), null);
+        });
+
+        buttonPanel.add(openButton);
+        buttonPanel.add(copyButton);
+        return buttonPanel;
+    }
+
+    protected JPanel getSendButtonPanel() {
+        JPanel buttonPanel = new JPanel();
         JButton sendButton = new JButton(BundleMessage.format("UI_BUTTON_SEND"));
         JButton cancelButton = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
-        openButton.addActionListener(evt -> DesktopBrowser.browse(initUrl));
         sendButton.addActionListener(evt -> {
             code = codeField.getText();
             setVisible(false);
@@ -140,16 +164,9 @@ public class O365ManualAuthenticatorDialog extends JDialog {
             code = null;
             setVisible(false);
         });
-        copyButton.addActionListener(evt -> {
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-            clipboard.setContents(new StringSelection(initUrl), null);
-        });
 
-        buttonPanel.add(openButton);
-        buttonPanel.add(copyButton);
         buttonPanel.add(sendButton);
         buttonPanel.add(cancelButton);
         return buttonPanel;
     }
-
 }
