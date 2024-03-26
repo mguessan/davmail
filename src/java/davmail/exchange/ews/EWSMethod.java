@@ -1271,6 +1271,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
                 }
             }
         } catch (XMLStreamException e) {
+            errorDetail = e.getMessage();
             LOGGER.error("Error while parsing soap response: " + e, e);
             if (reader != null) {
                 try {
