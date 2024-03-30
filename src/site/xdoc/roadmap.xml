@@ -15,21 +15,21 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="5.5.1">
+            <subsection name="6.2.3">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
                     <li>Bugfix release, fix as many reported bugs as possible</li>
-                    <li>Investigate Caldav recurring events issues</li>
                 </ul>
             </subsection>
-            <subsection name="5.6">
+            <subsection name="7.0.0">
                 <p>
                     <strong>Next major release</strong>
                 </p>
                 <ul>
-                    <li>Migrate to HttpClient 4</li>
+                    <li>Implement a new Graph API backend. EWS is deprecated and will eventually be removed by
+                    Microsoft making this new backend mandatory</li>
                 </ul>
             </subsection>
             <subsection name="Future">
