@@ -151,6 +151,8 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
                     o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
                 } catch (NoClassDefFoundError e) {
                     LOGGER.warn("Unable to load JavaFX (OpenJFX)");
+                } catch (IllegalAccessError e) {
+                    LOGGER.warn("Unable to load JavaFX (OpenJFX), append --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED to java options");
                 }
 
             });
@@ -217,33 +219,36 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             authenticator.setUsername("");
             authenticator.authenticate();
 
-            HttpClientAdapter httpClientAdapter = new HttpClientAdapter(authenticator.getExchangeUri(), true);
-
-            // switch to EWS url
-            GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
-            checkMethod.setHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
             try (
-                    CloseableHttpResponse response = httpClientAdapter.execute(checkMethod)
+                    HttpClientAdapter httpClientAdapter = new HttpClientAdapter(authenticator.getExchangeUri(), true)
             ) {
-                checkMethod.handleResponse(response);
-                checkMethod.checkSuccess();
-            }
-            System.out.println("Retrieved folder id " + checkMethod.getResponseItem().get("FolderId"));
 
-            // loop to check expiration
-            int i = 0;
-            while (i++ < 12 * 60 * 2) {
-                GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
-                getUserConfigurationMethod.setHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
+                // switch to EWS url
+                GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
+                checkMethod.setHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
                 try (
-                        CloseableHttpResponse response = httpClientAdapter.execute(getUserConfigurationMethod)
+                        CloseableHttpResponse response = httpClientAdapter.execute(checkMethod)
                 ) {
-                    getUserConfigurationMethod.handleResponse(response);
-                    getUserConfigurationMethod.checkSuccess();
+                    checkMethod.handleResponse(response);
+                    checkMethod.checkSuccess();
                 }
-                System.out.println(getUserConfigurationMethod.getResponseItem());
+                LOGGER.info("Retrieved folder id " + checkMethod.getResponseItem().get("FolderId"));
 
-                Thread.sleep(5000);
+                // loop to check expiration
+                int i = 0;
+                while (i++ < 12 * 60 * 2) {
+                    GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
+                    getUserConfigurationMethod.setHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
+                    try (
+                            CloseableHttpResponse response = httpClientAdapter.execute(getUserConfigurationMethod)
+                    ) {
+                        getUserConfigurationMethod.handleResponse(response);
+                        getUserConfigurationMethod.checkSuccess();
+                    }
+                    LOGGER.info(getUserConfigurationMethod.getResponseItem());
+
+                    Thread.sleep(5000);
+                }
             }
         } catch (InterruptedException e) {
             LOGGER.warn("Thread interrupted", e);
