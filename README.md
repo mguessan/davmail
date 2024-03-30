@@ -18,6 +18,13 @@ Main project site is still on Sourceforge at http://davmail.sourceforge.net/.
 
 This git repository is synchronized with subversion repository in order to make contributions easier for Github users.
 
+## Donate
+
+Donations are welcome to help support DavMail development, in dollars 
+[![Donate dollars](https://img.shields.io/badge/paypal-donate-green.svg)](https://www.paypal.com/cgi-bin/webscr?item_name=Donation+to+DavMail+POP%2FIMAP%2FSMTP%2FCaldav+to+Exchange&amp;cmd=_donations&amp;business=mguessan%40free.fr&amp;lc=US)
+or Euros
+[![Donate euros](https://img.shields.io/badge/paypal-donate-green.svg)](https://www.paypal.com/cgi-bin/webscr?item_name=Donation+to+DavMail+POP%2FIMAP%2FSMTP%2FCaldav+to+Exchange&amp;cmd=_donations&amp;business=mguessan%40free.fr&amp;lc=US&amp;currency_code=EUR)
+
 ## Download
 Download latest DavMail release on Sourceforge
 
