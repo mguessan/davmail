@@ -1,4 +1,75 @@
-## DavMail 6.2.1 2024-04-01
+## DavMail 6.2.2 2024-03-30
+Includes some build process fixes, use jlink to build a customized jre for standalone package,
+Thunderbird configuration documentation updated with new screenshots.
+Also implemented a new -token command line option to launch O365InteractiveAuthenticator and get an authentication token.
+
+Most changes are related to build process and rpm packaging for Fedora/RHEL, also includes a few bug fixes on IMAP
+
+### OSX
+- OSX: document how to embed Zulu jre inside DavMail app
+
+### Enhancements
+- Fix comment in DavMail shell
+- Detect missing network connectivity during token refresh to avoid invalidating token
+- Upgrade JCIFS to 1.3.19 for NTLM support
+- Cleanup from audit
+- Drop war package from release files, there are more modern ways to run DavMail in server mode without a webapp container
+- From audit: place LOCK.wait in a loop
+- Fix from audit, use try with resource
+- Cleanup from audit, remove deprecated getSubjectDN, getIssuerDN
+
+### O365
+- O365: Improve error message on missing add-exports, see https://github.com/mguessan/davmail/issues/344
+- O365: Refactor manual authentication dialog to clearly separate steps
+- Remove explicit dependency on O365InteractiveAuthenticator for -token option
+- Implement a -token option to launch interactive authenticator and print obtained refresh token, see https://github.com/mguessan/davmail/issues/338
+- O365: Try to adjust ItemId to 140 length, see https://github.com/mguessan/davmail/issues/328
+- O365: prepare GCC-High/DoD endpoints support, fix regression
+- O365: prepare GCC-High/DoD endpoints support, move outlook login url references to Settings
+- O365: prepare GCC-High/DoD endpoints support, move outlook url references to Settings
+
+### EWS
+- EWS: Properly set errorDetail on xml stream error to raise exception
+- EWS: disable IS_SUPPORTING_EXTERNAL_ENTITIES to fix xml parsing security warning
+
+### Caldav
+- Fix https://github.com/mguessan/davmail/issues/342 map America/Winnipeg to Central Standard Time
+- Caldav: Fix https://github.com/mguessan/davmail/issues/337 take timezone into account when looking for excluded occurrence
+- Fix settings implementation, # are allowed in values, see https://github.com/mguessan/davmail/issues/326
+
+### IMAP
+- IMAP: fix https://github.com/mguessan/davmail/issues/339 classcast exception on malformed content
+
+### Build
+- Maven: update compiler to 3.10.1
+- Maven: optimize dependencies
+- Maven: exclure httpclient 3 transitive dependency
+- Appveyor: build only master branch
+- Build: use jlink to create a custom jre to reduce embedded jre size
+
+### Security
+- Security: fix security alert on Runtime.getRuntime().exec
+- Security: fix security alert on Runtime.getRuntime().exec
+
+### Linux
+- Linux: force GTK2 only with SWT
+- Linux: switch to Azul JRE 17 with "davmail azul" command
+- Linux: Enable OpenJFX on Fedora to make O365Interactive work with Java 17 and later
+
+### Documentation
+- Doc: update roadmap
+- Doc: Add donation buttons to Github main readme page
+- Doc: update Thunderbird documentation messages
+- Update release guide, mvn install file no longer required
+- Doc: update Thunderbird documentation, as requested in https://github.com/mguessan/davmail/issues/294
+- Doc: update documentation for Thunderbird configuration
+- Doc: use COPR badge
+- Doc: update release guide
+- Doc: reference OpenSuse build service and Fedora COPR for RPM based linux distributions
+- Update changes file for https://build.opensuse.org/package/show/home:mguessan:davmail/davmail
+
+
+## DavMail 6.2.1 2024-01-04
 Most changes are related to build process and rpm packaging for Fedora/RHEL, also includes a few bug fixes on IMAP
 
 ### Security
