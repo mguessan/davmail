@@ -34,6 +34,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -190,7 +191,7 @@ public class O365Token {
     }
 
 
-    static O365Token load(String tenantId, String clientId, String redirectUri, String username, String password) {
+    static O365Token load(String tenantId, String clientId, String redirectUri, String username, String password) throws UnknownHostException {
         O365Token token = null;
         if (Settings.getBooleanProperty("davmail.oauth.persistToken", true)) {
             String encryptedRefreshToken = Settings.loadRefreshToken(username);
@@ -206,8 +207,12 @@ public class O365Token {
                     LOGGER.debug("Authenticated user " + localToken.getUsername() + " from stored token");
                     token = localToken;
 
+                } catch (UnknownHostException e) {
+                    // network down, rethrow to avoid invalidating token
+                    throw e;
                 } catch (IOException e) {
                     LOGGER.error("refresh token failed " + e.getMessage());
+                    // TODO detect network down and rethrow exception
                 }
             }
         }
