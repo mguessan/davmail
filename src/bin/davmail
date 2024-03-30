@@ -5,7 +5,7 @@
 # In case of SWT crash under JDK 9/11, uninstall SWT or remove SWT cases below
 #
 BASE=$(dirname "$0")
-# force GTK2 to avoid crash with OpenJDK 11
+# set memory and enable DNS expiration
 JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60"
 JAVA=java
 
