@@ -80,6 +80,12 @@
                         dnf install davmail
                     </code>
                 </p>
+
+                <p>Tray icon support is not available by default on Fedora with Gnome desktop.
+                    You can run DavMail in window mode or install
+                    <a href="https://extensions.gnome.org/extension/615/appindicator-support/">
+                        AppIndicator and KStatusNotifierItem Support</a>
+                </p>
             </subsection>
 
             <subsection name="Settings">
