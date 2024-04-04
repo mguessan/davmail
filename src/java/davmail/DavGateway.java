@@ -86,7 +86,8 @@ public final class DavGateway {
                      IllegalAccessException | InvocationTargetException e) {
                 System.err.println(e+" "+e.getMessage());
             }
-
+            // force shutdown on Linux
+            System.exit(0);
         } else {
 
             if (GraphicsEnvironment.isHeadless()) {
