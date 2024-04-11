@@ -406,7 +406,7 @@ public final class DavGatewayTray {
                 height = 24;
                 x = 4;
                 y = 4;
-            } else if (isCinnamon | isGnome) {
+            } else if (isCinnamon || isGnome) {
                 width = 24;
                 height = 24;
                 x = 4;
