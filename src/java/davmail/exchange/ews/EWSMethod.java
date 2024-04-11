@@ -789,17 +789,16 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         if ("The server cannot service this request right now. Try again later.".equals(errorDetail)) {
             throw new EWSThrottlingException(errorDetail);
         }
-        if (errorDetail != null) {
-            if (!"ErrorAccessDenied".equals(errorDetail)
+        if (errorDetail != null && (!"ErrorAccessDenied".equals(errorDetail)
                     && !"ErrorMailRecipientNotFound".equals(errorDetail)
                     && !"ErrorItemNotFound".equals(errorDetail)
                     && !"ErrorCalendarOccurrenceIsDeletedFromRecurrence".equals(errorDetail)
-            ) {
+            )) {
                 throw new EWSException(errorDetail
                         + ' ' + ((errorDescription != null) ? errorDescription : "")
                         + ' ' + ((errorValue != null) ? errorValue : "")
                         + "\n request: " + new String(generateSoapEnvelope(), StandardCharsets.UTF_8));
-            }
+
         }
         if (getStatusCode() == HttpStatus.SC_BAD_REQUEST || getStatusCode() == HttpStatus.SC_INSUFFICIENT_STORAGE) {
             throw new EWSException(response.getStatusLine().getReasonPhrase());
@@ -901,7 +900,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
 
     protected void handleErrors(XMLStreamReader reader) throws XMLStreamException {
         String result = handleTag(reader, "ResponseCode");
-        // store error description;
+        // store error description
         String messageText = handleTag(reader, "MessageText");
         if (messageText != null) {
             errorDescription = messageText;
