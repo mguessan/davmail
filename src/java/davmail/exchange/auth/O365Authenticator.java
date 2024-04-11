@@ -70,6 +70,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
             if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                         .addParameter("scope", "openid " + Settings.OUTLOOK_URL + "/EWS.AccessAsUser.All");
+            } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
+                uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
+                        .addParameter("resource", "https://graph.microsoft.com/");
             } else {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
                         .addParameter("resource", Settings.OUTLOOK_URL);
@@ -224,7 +227,11 @@ public class O365Authenticator implements ExchangeAuthenticator {
                         }
                     }
                     String query = location.toString();
-                    code = query.substring(query.indexOf("code=") + 5, query.indexOf("&session_state="));
+                    if (query.contains("code=")) {
+                        code = query.substring(query.indexOf("code=") + 5, query.indexOf("&session_state="));
+                    } else {
+                        throw new DavMailAuthenticationException("LOG_MESSAGE", "Authentication failed, unknown error: " + query);
+                    }
                 }
             }
             LOGGER.debug("Authentication Code: " + code);
