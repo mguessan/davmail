@@ -3,8 +3,6 @@ Includes some build process fixes, use jlink to build a customized jre for stand
 Thunderbird configuration documentation updated with new screenshots.
 Also implemented a new -token command line option to launch O365InteractiveAuthenticator and get an authentication token.
 
-Most changes are related to build process and rpm packaging for Fedora/RHEL, also includes a few bug fixes on IMAP
-
 ### OSX
 - OSX: document how to embed Zulu jre inside DavMail app
 
