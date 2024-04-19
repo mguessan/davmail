@@ -75,6 +75,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                             };
                         } else if ("https".equals(protocol)) {
 
+                            // internal class override required to implement some workarounds on OpenJFX issues
                             return new sun.net.www.protocol.https.Handler() {
                                 @Override
                                 protected URLConnection openConnection(URL url) throws IOException {
@@ -116,7 +117,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                                 byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
                                                 String contentAsString = new String(content, StandardCharsets.UTF_8)
                                                         .replaceAll("integrity ?=", "integrity.disabled=")
-                                                        .replaceAll("setAttribute\\(\"integrity\"", "setAttribute(\"integrity.disabled\"");
+                                                        .replace("setAttribute(\"integrity\"", "setAttribute(\"integrity.disabled\"");
                                                 LOGGER.debug(contentAsString);
                                                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                                                 baos.write(contentAsString.getBytes(StandardCharsets.UTF_8));
@@ -303,8 +304,8 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                 Platform.setImplicitExit(false);
 
                 initFX(fxPanel, initUrl, redirectUri);
-            } catch (Throwable t) {
-                handleError(t);
+            } catch (Exception e) {
+                handleError(e);
                 close();
             }
         });
