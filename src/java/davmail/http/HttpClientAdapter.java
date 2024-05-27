@@ -277,7 +277,7 @@ public class HttpClientAdapter implements Closeable {
 
     private Registry<AuthSchemeProvider> getAuthSchemeRegistry() {
         final RegistryBuilder<AuthSchemeProvider> registryBuilder = RegistryBuilder.create();
-        registryBuilder.register(AuthSchemes.NTLM, new JCIFSNTLMSchemeFactory())
+        registryBuilder.register(AuthSchemes.NTLM, new DavMailNTLMSchemeFactory())
                 .register(AuthSchemes.BASIC, new BasicSchemeFactory())
                 .register(AuthSchemes.DIGEST, new DigestSchemeFactory());
         if (Settings.getBooleanProperty("davmail.enableKerberos")) {
