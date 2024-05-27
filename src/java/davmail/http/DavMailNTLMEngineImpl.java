@@ -129,7 +129,17 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
 
     private static final String TYPE_1_MESSAGE = new DavMailNTLMEngineImpl.Type1Message().getResponse();
 
+    Certificate peerServerCertificate = null;
+
     DavMailNTLMEngineImpl() {
+    }
+
+    /**
+     * Store connection certificate for channel binding implementation.
+     * @param peerServerCertificate certificate
+     */
+    public void setPeerServerCertificate(Certificate peerServerCertificate) {
+        this.peerServerCertificate = peerServerCertificate;
     }
 
     /**
@@ -1287,12 +1297,12 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
                             // Recommended privacy settings
                             FLAG_REQUEST_ALWAYS_SIGN |
                             //FLAG_REQUEST_SEAL |
-                            //FLAG_REQUEST_SIGN |
+                            FLAG_REQUEST_SIGN | // for channel binding
 
                             // These must be set according to documentation, based on use of SEAL above
                             FLAG_REQUEST_128BIT_KEY_EXCH |
                             FLAG_REQUEST_56BIT_ENCRYPTION |
-                            //FLAG_REQUEST_EXPLICIT_KEY_EXCH |
+                            FLAG_REQUEST_EXPLICIT_KEY_EXCH | // for channel binding
 
                             FLAG_REQUEST_UNICODE_ENCODING;
 
@@ -2088,6 +2098,10 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             final String domain,
             final String workstation,
             final String challenge) throws NTLMEngineException {
+        // need to retrieve raw type 1 and 2 message and connection certificate for channel binding implementation
+        byte[] type1MessageBytes = new Type1Message().getBytes();
+        byte[] type2MessageBytes = Base64.decodeBase64(challenge.getBytes(DEFAULT_CHARSET));
+
         final DavMailNTLMEngineImpl.Type2Message t2m = new DavMailNTLMEngineImpl.Type2Message(challenge);
         return getType3Message(
                 username,
@@ -2097,7 +2111,10 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
                 t2m.getChallenge(),
                 t2m.getFlags(),
                 t2m.getTarget(),
-                t2m.getTargetInfo());
+                t2m.getTargetInfo(),
+                peerServerCertificate,
+                type1MessageBytes,
+                type2MessageBytes);
     }
 
 }
