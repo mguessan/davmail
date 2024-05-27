@@ -22,11 +22,17 @@ package davmail.http;
 import org.apache.http.Header;
 import org.apache.http.HttpRequest;
 import org.apache.http.auth.*;
+import org.apache.http.conn.ManagedHttpClientConnection;
 import org.apache.http.impl.auth.AuthSchemeBase;
+import org.apache.http.impl.auth.NTLMEngineException;
 import org.apache.http.message.BufferedHeader;
+import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.Args;
 import org.apache.http.util.CharArrayBuffer;
+
+import javax.net.ssl.SSLPeerUnverifiedException;
+import java.security.cert.Certificate;
 
 /**
  * Duplicate of NTLMScheme from HttpClient to implement channel binding.
@@ -129,6 +135,14 @@ public class DavMailNTLMScheme extends AuthSchemeBase {
                     ntcredentials.getWorkstation());
             this.state = State.MSG_TYPE1_GENERATED;
         } else if (this.state == State.MSG_TYPE2_RECEVIED) {
+            // retrieve certificate from connection and pass it to NTLM engine
+            ManagedHttpClientConnection routedConnection = (ManagedHttpClientConnection) httpContext.getAttribute(ExecutionContext.HTTP_CONNECTION);
+            try {
+                Certificate[] certificates = routedConnection.getSSLSession().getPeerCertificates();
+                this.engine.setPeerServerCertificate(certificates[0]);
+            } catch (SSLPeerUnverifiedException e) {
+                throw new NTLMEngineException(e.getMessage(), e);
+            }
             response = this.engine.generateType3Msg(
                     ntcredentials.getUserName(),
                     ntcredentials.getPassword(),
