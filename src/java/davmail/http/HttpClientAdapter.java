@@ -101,7 +101,7 @@ public class HttpClientAdapter implements Closeable {
 
         try {
             WORKSTATION_NAME = InetAddress.getLocalHost().getHostName();
-        } catch (Throwable t) {
+        } catch (Exception e) {
             // ignore
         }
 
@@ -223,24 +223,23 @@ public class HttpClientAdapter implements Closeable {
             proxyPassword = Settings.getProperty("davmail.proxyPassword");
         }
 
-        if (proxyHost != null && !proxyHost.isEmpty()) {
-            if (proxyUser != null && !proxyUser.isEmpty()) {
+        if (proxyHost != null && !proxyHost.isEmpty() && (proxyUser != null && !proxyUser.isEmpty())) {
 
                 AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
                 if (provider == null) {
                     provider = new BasicCredentialsProvider();
                 }
 
-                // detect ntlm authentication (windows domain name in user name)
-                int backslashindex = proxyUser.indexOf('\\');
-                if (backslashindex > 0) {
-                    provider.setCredentials(authScope, new NTCredentials(proxyUser.substring(backslashindex + 1),
+                // detect ntlm authentication (windows domain name in username)
+                int backslashIndex = proxyUser.indexOf('\\');
+                if (backslashIndex > 0) {
+                    provider.setCredentials(authScope, new NTCredentials(proxyUser.substring(backslashIndex + 1),
                             proxyPassword, WORKSTATION_NAME,
-                            proxyUser.substring(0, backslashindex)));
+                            proxyUser.substring(0, backslashIndex)));
                 } else {
                     provider.setCredentials(authScope, new NTCredentials(proxyUser, proxyPassword, WORKSTATION_NAME, ""));
                 }
-            }
+
         }
 
         clientBuilder.setDefaultCredentialsProvider(provider);
@@ -346,11 +345,11 @@ public class HttpClientAdapter implements Closeable {
     protected static boolean isNoProxyFor(java.net.URI uri) {
         final String noProxyFor = Settings.getProperty("davmail.noProxyFor");
         if (noProxyFor != null) {
-            final String urihost = uri.getHost().toLowerCase();
+            final String uriHost = uri.getHost().toLowerCase();
             final String[] domains = noProxyFor.toLowerCase().split(",\\s*");
             for (String domain : domains) {
-                if (urihost.endsWith(domain)) {
-                    return true; //break;
+                if (uriHost.endsWith(domain)) {
+                    return true;
                 }
             }
         }
