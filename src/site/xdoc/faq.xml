@@ -54,7 +54,13 @@
                 <p>Additional notes:</p>
                 <ul>
                     <li>You will have to give your consent to DavMail access on first call,
-                        check davmail log for exact url or use O365Interactive once</li>
+                        easiest way to authenticate in interactive mode with O365Interactive or O365Manual,
+                        alternative is to get actual url from davmail log file with O365Modern<br/>
+                        Example url, adjust client_id and redirect_uri to your configuration:
+                        <source>
+https://login.microsoftonline.com/common/oauth2/authorize?client_id=facd6cff-a294-4415-b59f-c5b01937d7bd&amp;response_type=code&amp;redirect_uri=https://login.microsoftonline.com/common/oauth2/nativeclient&amp;response_mode=query&amp;resource=https%3A%2F%2Foutlook.office365.com&amp;prompt=consent
+                        </source>
+                    </li>
                     <li>You can use your own application client id instead of DavMail provided value,
                         just create your application at <a href="https://apps.dev.microsoft.com/">https://apps.dev.microsoft.com/</a>
                         [Update: portal no longer available]
