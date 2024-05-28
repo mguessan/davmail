@@ -93,19 +93,14 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
     static final int MSV_AV_FLAGS_MIC = 0x00000002; // Indicates that the client is providing message integrity in the MIC field in the AUTHENTICATE_MESSAGE.
     static final int MSV_AV_FLAGS_UNTRUSTED_TARGET_SPN = 0x00000004; // Indicates that the client is providing a target SPN generated from an untrusted source.
 
-    private static final ThreadLocal<SecureRandom> random = new ThreadLocal<>();
+    private static final SecureRandom RNG;
 
-    private static SecureRandom getRandom() {
-        java.security.SecureRandom rnd = random.get();
-        if (rnd == null) {
-            try {
-                rnd = java.security.SecureRandom.getInstance("SHA1PRNG");
-            } catch (final NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            }
-            random.set(rnd);
+    static {
+        try {
+            RNG = java.security.SecureRandom.getInstance("SHA1PRNG");
+        } catch (final NoSuchAlgorithmException e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
-        return rnd;
     }
 
     /** The signature string as bytes in the default encoding */
@@ -183,7 +178,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
      *            the 8 byte array the server sent.
      * @return The type 3 message.
      * @throws NTLMEngineException
-     *             If {@link #Type3Message(String, String, String, String, byte[], int, String, byte[])} fails.
+     *             If {link #Type3Message(String, String, String, String, byte[], int, String, byte[])} fails.
      */
     static String getType3Message(final String user, final String password, final String host, final String domain,
                                   final byte[] nonce, final int type2Flags, final String target, final byte[] targetInformation)
@@ -210,13 +205,13 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
      *            the 8 byte array the server sent.
      * @return The type 3 message.
      * @throws NTLMEngineException
-     *             If {@link #Type3Message(String, String, String, String, byte[], int, String, byte[], Certificate, byte[], byte[])} fails.
+     *             If {link #Type3Message(String, String, String, String, byte[], int, String, byte[], Certificate, byte[], byte[])} fails.
      */
     static String getType3Message(final String user, final String password, final String host, final String domain,
                                   final byte[] nonce, final int type2Flags, final String target, final byte[] targetInformation,
                                   final Certificate peerServerCertificate, final byte[] type1Message, final byte[] type2Message)
             throws NTLMEngineException {
-        return new DavMailNTLMEngineImpl.Type3Message(domain, host, user, password, nonce, type2Flags, target,
+        return new Type3Message(domain, host, user, password, nonce, type2Flags, target,
                 targetInformation, peerServerCertificate, type1Message, type2Message).getResponse();
     }
 
@@ -249,14 +244,14 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
     /** Calculate a challenge block */
     private static byte[] makeRandomChallenge() {
         final byte[] rval = new byte[8];
-        getRandom().nextBytes(rval);
+        RNG.nextBytes(rval);
         return rval;
     }
 
     /** Calculate a 16-byte secondary key */
     private static byte[] makeSecondaryKey() {
         final byte[] rval = new byte[16];
-        getRandom().nextBytes(rval);
+        RNG.nextBytes(rval);
         return rval;
     }
 
@@ -295,20 +290,6 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         protected byte[] ntlm2SessionResponseUserSessionKey = null;
         protected byte[] lanManagerSessionKey = null;
 
-        /**
-         * @deprecated Use {@link DavMailNTLMEngineImpl.CipherGen#CipherGen(long, String, String, String, byte[], String, byte[], byte[], byte[], byte[], byte[])}
-         */
-        @Deprecated
-        public CipherGen(final String domain, final String user, final String password,
-                         final byte[] challenge, final String target, final byte[] targetInformation,
-                         final byte[] clientChallenge, final byte[] clientChallenge2,
-                         final byte[] secondaryKey, final byte[] timestamp) {
-            this(System.currentTimeMillis(),
-                    domain, user, password, challenge, target, targetInformation,
-                    clientChallenge, clientChallenge2,
-                    secondaryKey, timestamp);
-        }
-
         public CipherGen(final long currentTime,
                          final String domain, final String user, final String password,
                          final byte[] challenge, final String target, final byte[] targetInformation,
@@ -328,19 +309,6 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             this.timestamp = timestamp;
         }
 
-        /**
-         * @deprecated Use {@link DavMailNTLMEngineImpl.CipherGen#CipherGen(long, String, String, String, byte[], String, byte[], byte[], byte[], byte[], byte[])}
-         */
-        @Deprecated
-        public CipherGen(final String domain,
-                         final String user,
-                         final String password,
-                         final byte[] challenge,
-                         final String target,
-                         final byte[] targetInformation) {
-            this(System.currentTimeMillis(), domain, user, password, challenge, target, targetInformation);
-        }
-
         public CipherGen(final long currentTime,
                          final String domain,
                          final String user,
@@ -352,8 +320,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         }
 
         /** Calculate and return client challenge */
-        public byte[] getClientChallenge()
-                throws NTLMEngineException {
+        public byte[] getClientChallenge() {
             if (clientChallenge == null) {
                 clientChallenge = makeRandomChallenge();
             }
@@ -361,8 +328,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         }
 
         /** Calculate and return second client challenge */
-        public byte[] getClientChallenge2()
-                throws NTLMEngineException {
+        public byte[] getClientChallenge2() {
             if (clientChallenge2 == null) {
                 clientChallenge2 = makeRandomChallenge();
             }
@@ -370,8 +336,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         }
 
         /** Calculate and return random secondary key */
-        public byte[] getSecondaryKey()
-                throws NTLMEngineException {
+        public byte[] getSecondaryKey() {
             if (secondaryKey == null) {
                 secondaryKey = makeSecondaryKey();
             }
@@ -573,8 +538,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
     }
 
     /** Calculates HMAC-MD5 */
-    static byte[] hmacMD5(final byte[] value, final byte[] key)
-            throws NTLMEngineException {
+    static byte[] hmacMD5(final byte[] value, final byte[] key) {
         final DavMailNTLMEngineImpl.HMACMD5 hmacMD5 = new DavMailNTLMEngineImpl.HMACMD5(key);
         hmacMD5.update(value);
         return hmacMD5.getOutput();
@@ -611,10 +575,9 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             final byte[] sessionHash = new byte[8];
             System.arraycopy(digest, 0, sessionHash, 0, 8);
             return lmResponse(ntlmHash, sessionHash);
+        } catch (final NTLMEngineException e) {
+            throw e;
         } catch (final Exception e) {
-            if (e instanceof NTLMEngineException) {
-                throw (NTLMEngineException) e;
-            }
             throw new NTLMEngineException(e.getMessage(), e);
         }
     }
@@ -661,9 +624,6 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
      *         the NTLM Response and the NTLMv2 and LMv2 Hashes.
      */
     private static byte[] ntlmHash(final String password) throws NTLMEngineException {
-        if (UNICODE_LITTLE_UNMARKED == null) {
-            throw new NTLMEngineException("Unicode not supported");
-        }
         final byte[] unicodePassword = password.getBytes(UNICODE_LITTLE_UNMARKED);
         final DavMailNTLMEngineImpl.MD4 md4 = new DavMailNTLMEngineImpl.MD4();
         md4.update(unicodePassword);
@@ -678,9 +638,6 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
      */
     private static byte[] lmv2Hash(final String domain, final String user, final byte[] ntlmHash)
             throws NTLMEngineException {
-        if (UNICODE_LITTLE_UNMARKED == null) {
-            throw new NTLMEngineException("Unicode not supported");
-        }
         final DavMailNTLMEngineImpl.HMACMD5 hmacMD5 = new DavMailNTLMEngineImpl.HMACMD5(ntlmHash);
         // Upper case username, upper case domain!
         hmacMD5.update(user.toUpperCase(Locale.ROOT).getBytes(UNICODE_LITTLE_UNMARKED));
@@ -696,11 +653,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
      * @return The NTLMv2 Hash, used in the calculation of the NTLMv2 and LMv2
      *         Responses.
      */
-    private static byte[] ntlmv2Hash(final String domain, final String user, final byte[] ntlmHash)
-            throws NTLMEngineException {
-        if (UNICODE_LITTLE_UNMARKED == null) {
-            throw new NTLMEngineException("Unicode not supported");
-        }
+    private static byte[] ntlmv2Hash(final String domain, final String user, final byte[] ntlmHash) {
         final DavMailNTLMEngineImpl.HMACMD5 hmacMD5 = new DavMailNTLMEngineImpl.HMACMD5(ntlmHash);
         // Upper case username, mixed case target!!
         hmacMD5.update(user.toUpperCase(Locale.ROOT).getBytes(UNICODE_LITTLE_UNMARKED));
@@ -769,149 +722,6 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         return lmv2Response;
     }
 
-    enum Mode {
-        CLIENT, SERVER;
-    }
-
-    static class Handle {
-        final private byte[] exportedSessionKey;
-        private byte[] signingKey;
-        private byte[] sealingKey;
-        private final Cipher rc4;
-        final DavMailNTLMEngineImpl.Mode mode;
-        final private boolean isConnection;
-        int sequenceNumber = 0;
-
-
-        Handle(final byte[] exportedSessionKey, final DavMailNTLMEngineImpl.Mode mode, final boolean isConnection)
-                throws NTLMEngineException {
-            this.exportedSessionKey = exportedSessionKey;
-            this.isConnection = isConnection;
-            this.mode = mode;
-            try {
-                final MessageDigest signMd5 = getMD5();
-                final MessageDigest sealMd5 = getMD5();
-                signMd5.update(exportedSessionKey);
-                sealMd5.update(exportedSessionKey);
-                if (mode == DavMailNTLMEngineImpl.Mode.CLIENT) {
-                    signMd5.update(SIGN_MAGIC_CLIENT);
-                    sealMd5.update(SEAL_MAGIC_CLIENT);
-                } else {
-                    signMd5.update(SIGN_MAGIC_SERVER);
-                    sealMd5.update(SEAL_MAGIC_SERVER);
-                }
-                signingKey = signMd5.digest();
-                sealingKey = sealMd5.digest();
-            } catch (final Exception e) {
-                throw new NTLMEngineException(e.getMessage(), e);
-            }
-            rc4 = initCipher();
-        }
-
-        public byte[] getSigningKey() {
-            return signingKey;
-        }
-
-
-        public byte[] getSealingKey() {
-            return sealingKey;
-        }
-
-        private Cipher initCipher() throws NTLMEngineException {
-            final Cipher cipher;
-            try {
-                cipher = Cipher.getInstance("RC4");
-                if (mode == DavMailNTLMEngineImpl.Mode.CLIENT) {
-                    cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sealingKey, "RC4"));
-                } else {
-                    cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(sealingKey, "RC4"));
-                }
-            } catch (final Exception e) {
-                throw new NTLMEngineException(e.getMessage(), e);
-            }
-            return cipher;
-        }
-
-
-        private void advanceMessageSequence() throws NTLMEngineException {
-            if (!isConnection) {
-                final MessageDigest sealMd5 = getMD5();
-                sealMd5.update(sealingKey);
-                final byte[] seqNumBytes = new byte[4];
-                writeULong(seqNumBytes, sequenceNumber, 0);
-                sealMd5.update(seqNumBytes);
-                sealingKey = sealMd5.digest();
-                initCipher();
-            }
-            sequenceNumber++;
-        }
-
-        private byte[] encrypt(final byte[] data) {
-            return rc4.update(data);
-        }
-
-        private byte[] decrypt(final byte[] data) {
-            return rc4.update(data);
-        }
-
-        private byte[] computeSignature(final byte[] message) {
-            final byte[] sig = new byte[16];
-
-            // version
-            sig[0] = 0x01;
-            sig[1] = 0x00;
-            sig[2] = 0x00;
-            sig[3] = 0x00;
-
-            // HMAC (first 8 bytes)
-            final DavMailNTLMEngineImpl.HMACMD5 hmacMD5 = new DavMailNTLMEngineImpl.HMACMD5(signingKey);
-            hmacMD5.update(encodeLong(sequenceNumber));
-            hmacMD5.update(message);
-            final byte[] hmac = hmacMD5.getOutput();
-            final byte[] trimmedHmac = new byte[8];
-            System.arraycopy(hmac, 0, trimmedHmac, 0, 8);
-            final byte[] encryptedHmac = encrypt(trimmedHmac);
-            System.arraycopy(encryptedHmac, 0, sig, 4, 8);
-
-            // sequence number
-            encodeLong(sig, 12, sequenceNumber);
-
-            return sig;
-        }
-
-        private boolean validateSignature(final byte[] signature, final byte message[]) {
-            final byte[] computedSignature = computeSignature(message);
-            //            log.info( "SSSSS validateSignature("+seqNumber+")\n"
-            //                + "  received: " + DebugUtil.dump( signature ) + "\n"
-            //                + "  computed: " + DebugUtil.dump( computedSignature ) );
-            return Arrays.equals(signature, computedSignature);
-        }
-
-        public byte[] signAndEncryptMessage(final byte[] cleartextMessage) throws NTLMEngineException {
-            final byte[] encryptedMessage = encrypt(cleartextMessage);
-            final byte[] signature = computeSignature(cleartextMessage);
-            final byte[] outMessage = new byte[signature.length + encryptedMessage.length];
-            System.arraycopy(signature, 0, outMessage, 0, signature.length);
-            System.arraycopy(encryptedMessage, 0, outMessage, signature.length, encryptedMessage.length);
-            advanceMessageSequence();
-            return outMessage;
-        }
-
-        public byte[] decryptAndVerifySignedMessage(final byte[] inMessage) throws NTLMEngineException {
-            final byte[] signature = new byte[16];
-            System.arraycopy(inMessage, 0, signature, 0, signature.length);
-            final byte[] encryptedMessage = new byte[inMessage.length - 16];
-            System.arraycopy(inMessage, 16, encryptedMessage, 0, encryptedMessage.length);
-            final byte[] cleartextMessage = decrypt(encryptedMessage);
-            if (!validateSignature(signature, cleartextMessage)) {
-                throw new NTLMEngineException("Wrong signature");
-            }
-            advanceMessageSequence();
-            return cleartextMessage;
-        }
-
-    }
-
     private static byte[] encodeLong(final int value) {
         final byte[] enc = new byte[4];
         encodeLong(enc, 0, value);
@@ -919,7 +729,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
     }
 
     private static void encodeLong(final byte[] buf, final int offset, final int value) {
-        buf[offset + 0] = (byte) (value & 0xff);
+        buf[offset    ] = (byte) (value & 0xff);
         buf[offset + 1] = (byte) (value >> 8 & 0xff);
         buf[offset + 2] = (byte) (value >> 16 & 0xff);
         buf[offset + 3] = (byte) (value >> 24 & 0xff);
@@ -1013,12 +823,9 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
      * @param flags is the flags.
      * @return the character set.
      */
-    private static Charset getCharset(final int flags) throws NTLMEngineException {
+    private static Charset getCharset(final int flags) {
         if ((flags & FLAG_REQUEST_UNICODE_ENCODING) == 0) {
             return DEFAULT_CHARSET;
-        }
-        if (UNICODE_LITTLE_UNMARKED == null) {
-            throw new NTLMEngineException("Unicode not supported");
         }
         return UNICODE_LITTLE_UNMARKED;
     }
@@ -1081,8 +888,8 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             // Check to be sure there's a type 2 message indicator next
             final int type = readULong(SIGNATURE.length);
             if (type != expectedType) {
-                throw new NTLMEngineException("NTLM type " + Integer.toString(expectedType)
-                        + " message expected - instead got type " + Integer.toString(type));
+                throw new NTLMEngineException("NTLM type " + expectedType
+                        + " message expected - instead got type " + type);
             }
 
             currentOutputPosition = messageContents.length;
@@ -1118,17 +925,17 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         }
 
         /** Read a ushort from a position within the message buffer */
-        protected int readUShort(final int position) throws NTLMEngineException {
+        protected int readUShort(final int position) {
             return DavMailNTLMEngineImpl.readUShort(messageContents, position);
         }
 
         /** Read a ulong from a position within the message buffer */
-        protected int readULong(final int position) throws NTLMEngineException {
+        protected int readULong(final int position) {
             return DavMailNTLMEngineImpl.readULong(messageContents, position);
         }
 
         /** Read a security buffer from a position within the message buffer */
-        protected byte[] readSecurityBuffer(final int position) throws NTLMEngineException {
+        protected byte[] readSecurityBuffer(final int position) {
             return DavMailNTLMEngineImpl.readSecurityBuffer(messageContents, position);
         }
 
@@ -1202,7 +1009,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             if (messageContents == null) {
                 buildMessage();
             }
-            final byte[] resp;
+
             if (messageContents.length > currentOutputPosition) {
                 final byte[] tmp = new byte[currentOutputPosition];
                 System.arraycopy(messageContents, 0, tmp, 0, currentOutputPosition);
@@ -1223,11 +1030,11 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         private final byte[] domainBytes;
         private final int flags;
 
-        Type1Message(final String domain, final String host) throws NTLMEngineException {
+        Type1Message(final String domain, final String host) {
             this(domain, host, null);
         }
 
-        Type1Message(final String domain, final String host, final Integer flags) throws NTLMEngineException {
+        Type1Message(final String domain, final String host, final Integer flags) {
             super();
             this.flags = ((flags == null) ? getDefaultFlags() : flags);
 
@@ -1336,7 +1143,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
     }
 
     /** Type 2 message class */
-    static class Type2Message extends DavMailNTLMEngineImpl.NTLMMessage {
+    static class Type2Message extends NTLMMessage {
         protected final byte[] challenge;
         protected String target;
         protected byte[] targetInfo;
@@ -1367,7 +1174,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             challenge = new byte[8];
             readBytes(challenge, 24);
 
-            flags = readULong(20);
+            flags = super.readULong(20);
 
             // Do the target!
             target = null;
@@ -1375,7 +1182,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             // in Type2 messages, so use the length of the packet to decide
             // how to proceed instead
             if (getMessageLength() >= 12 + 8) {
-                final byte[] bytes = readSecurityBuffer(12);
+                final byte[] bytes = super.readSecurityBuffer(12);
                 if (bytes.length != 0) {
                     target = new String(bytes, getCharset(flags));
                 }
@@ -1385,7 +1192,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             targetInfo = null;
             // TARGET_DESIRED flag cannot be relied on, so use packet length
             if (getMessageLength() >= 40 + 8) {
-                final byte[] bytes = readSecurityBuffer(40);
+                final byte[] bytes = super.readSecurityBuffer(40);
                 if (bytes.length != 0) {
                     targetInfo = bytes;
                 }
@@ -1728,7 +1535,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
 
             if (computeMic) {
                 // Computation of message integrity code (MIC) as specified in [MS-NLMP] section 3.2.5.1.2.
-                final DavMailNTLMEngineImpl.HMACMD5 hmacMD5 = new DavMailNTLMEngineImpl.HMACMD5(exportedSessionKey);
+                final DavMailNTLMEngineImpl.HMACMD5 hmacMD5 = new HMACMD5(exportedSessionKey);
                 hmacMD5.update(type1Message);
                 hmacMD5.update(type2Message);
                 hmacMD5.update(messageContents);
@@ -1768,7 +1575,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
                 channelBindingsHash = md5.digest(channelBindingStruct);
             } catch (final CertificateEncodingException e) {
                 throw new NTLMEngineException(e.getMessage(), e);
-            } catch (final NoSuchAlgorithmException e) {
+            } catch (NoSuchAlgorithmException e) {
                 throw new NTLMEngineException(e.getMessage(), e);
             }
 
@@ -1856,7 +1663,6 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
                 final int transferAmt = input.length - inputIndex;
                 System.arraycopy(input, inputIndex, dataBuffer, curBufferPos, transferAmt);
                 count += transferAmt;
-                curBufferPos += transferAmt;
             }
         }
 

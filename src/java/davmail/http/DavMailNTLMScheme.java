@@ -53,9 +53,8 @@ public class DavMailNTLMScheme extends AuthSchemeBase {
 
     private String challenge;
 
-    public DavMailNTLMScheme(final DavMailNTLMEngineImpl engine) {
-        Args.notNull(engine, "NTLM engine");
-        this.engine = engine;
+    public DavMailNTLMScheme() {
+        this.engine = new DavMailNTLMEngineImpl();
         this.state = State.UNINITIATED;
         this.challenge = null;
     }

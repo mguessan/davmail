@@ -25,6 +25,6 @@ import org.apache.http.protocol.HttpContext;
 public class DavMailNTLMSchemeFactory implements org.apache.http.auth.AuthSchemeProvider {
     @Override
     public AuthScheme create(HttpContext context) {
-        return new DavMailNTLMScheme(new DavMailNTLMEngineImpl());
+        return new DavMailNTLMScheme();
     }
 }
