@@ -57,6 +57,7 @@
                         check davmail log for exact url or use O365Interactive once</li>
                     <li>You can use your own application client id instead of DavMail provided value,
                         just create your application at <a href="https://apps.dev.microsoft.com/">https://apps.dev.microsoft.com/</a>
+                        [Update: portal no longer available]
                         or directly on Azure AD if you have the rights, and add in davmail.properties:<br/>
                         <source>
 davmail.oauth.clientId=<i>yourappid</i>
@@ -69,6 +70,9 @@ davmail.oauth.redirectUri=https://login.microsoftonline.com/common/oauth2/native
                         </source>
                     </li>
                 </ul>
+                <p>In Azure you have to open Entra ID section then app registration, use <code>https://login.microsoftonline.com/common/oauth2/nativeclient</code>
+                as redirect uri value. It is no longer possible to add EWS scope under API permissions but a simple workaround is to do it through manifest
+                editor:</p>
                 <p>The required scopes are:</p>
                 <source>
 "requiredResourceAccess": [
