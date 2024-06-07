@@ -902,7 +902,8 @@ public class ImapConnection extends AbstractConnection {
                     } catch (ParseException e) {
                         throw new DavMailException("EXCEPTION_INVALID_DATE", message.date);
                     }
-                } else if ("RFC822".equals(param) || param.startsWith("BODY[") || param.startsWith("BODY.PEEK[") || "RFC822.HEADER".equals(param)) {
+                } else if ("RFC822".equals(param) || param.startsWith("BODY[") || param.startsWith("BODY.PEEK[")
+                        || "RFC822.HEADER".equals(param) || "RFC822.TEXT".equals(param)) {
 
                     if (param.startsWith("BODY[") && !message.read) {
                         // According to IMAP RFC: The \Seen flag is implicitly set
@@ -1015,6 +1016,8 @@ public class ImapConnection extends AbstractConnection {
                         buffer.append(" RFC822");
                     } else if ("RFC822.HEADER".equals(param)) {
                         buffer.append(" RFC822.HEADER");
+                    } else if ("RFC822.TEXT".equals(param)) {
+                        buffer.append(" RFC822.TEXT");
                     } else {
                         buffer.append(" BODY[");
                         if (partIndexString != null) {
