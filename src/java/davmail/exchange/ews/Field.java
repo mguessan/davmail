@@ -272,6 +272,9 @@ public final class Field {
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
 
+        // user certificate
+        FIELD_MAP.put("msexchangecertificate", new UnindexedFieldURI("contacts:MSExchangeCertificate"));
+        FIELD_MAP.put("usersmimecertificate", new UnindexedFieldURI("contacts:UserSMIMECertificate"));
     }
 
     /**
