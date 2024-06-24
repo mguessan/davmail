@@ -46,4 +46,9 @@ public interface FieldURI {
      */
     String getResponseName();
 
+    /**
+     * Get field id for graph requests
+     * @return field id
+     */
+    String getGraphId();
 }

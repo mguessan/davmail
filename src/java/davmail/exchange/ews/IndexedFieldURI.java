@@ -71,4 +71,9 @@ public class IndexedFieldURI implements FieldURI {
     public String getResponseName() {
         return fieldIndex;
     }
+
+    @Override
+    public String getGraphId() {
+        throw new UnsupportedOperationException();
+    }
 }

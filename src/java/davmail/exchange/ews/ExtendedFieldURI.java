@@ -164,5 +164,10 @@ public class ExtendedFieldURI implements FieldURI {
         }
     }
 
+    @Override
+    public String getGraphId() {
+        return propertyType.name()+" "+propertyTag;
+    }
+
 }
 

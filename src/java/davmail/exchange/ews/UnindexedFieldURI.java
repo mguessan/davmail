@@ -154,4 +154,9 @@ public class UnindexedFieldURI implements FieldURI {
         return fieldName;
     }
 
+    @Override
+    public String getGraphId() {
+        throw new UnsupportedOperationException();
+    }
+
 }
