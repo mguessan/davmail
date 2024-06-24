@@ -424,7 +424,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         ItemId newItemId = new ItemId(createItemMethod.getResponseItem());
         GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
-        for (String attribute:IMAP_MESSAGE_ATTRIBUTES) {
+        for (String attribute : IMAP_MESSAGE_ATTRIBUTES) {
             getItemMethod.addAdditionalProperty(Field.get(attribute));
         }
         executeMethod(getItemMethod);
@@ -1518,7 +1518,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 executeMethod(getItemMethod);
                                 if (getItemMethod.getResponseItem() != null) {
                                     String itemOriginalStart = getItemMethod.getResponseItem().get(Field.get("originalstart").getResponseName());
-                                    LOGGER.debug("Occurrence " + instanceIndex + " itemOriginalStart "+itemOriginalStart+" looking for "+convertedValue);
+                                    LOGGER.debug("Occurrence " + instanceIndex + " itemOriginalStart " + itemOriginalStart + " looking for " + convertedValue);
                                     if (convertedValue.equals(itemOriginalStart)) {
                                         // found item, delete it
                                         DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(getItemMethod.getResponseItem()),
@@ -2661,7 +2661,8 @@ public class EwsExchangeSession extends ExchangeSession {
 
         try {
             String timezoneId = null;
-            if (!"Exchange2007_SP1".equals(serverVersion)) {
+            timezoneId = Settings.getProperty("davmail.timezoneId");
+            if (timezoneId == null && !"Exchange2007_SP1".equals(serverVersion)) {
                 // On Exchange 2010, get user timezone from server
                 GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
                 executeMethod(getUserConfigurationMethod);
@@ -2673,9 +2674,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 timezoneId = getTimezoneidFromOptions();
             }
             // failover: use timezone id from settings file
-            if (timezoneId == null) {
-                timezoneId = Settings.getProperty("davmail.timezoneId");
-            }
             // last failover: use GMT
             if (timezoneId == null) {
                 LOGGER.warn("Unable to get user timezone, using GMT Standard Time. Set davmail.timezoneId setting to override this.");
@@ -2874,7 +2872,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return folderId;
     }
 
-    private String decodeFolderName(String folderName) {
+    public static String decodeFolderName(String folderName) {
         if (folderName.contains("_xF8FF_")) {
             return folderName.replaceAll("_xF8FF_", "/");
         }
@@ -2884,7 +2882,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return folderName;
     }
 
-    private String encodeFolderName(String folderName) {
+    public static String encodeFolderName(String folderName) {
         if (folderName.contains("/")) {
             folderName = folderName.replaceAll("/", "_xF8FF_");
         }
