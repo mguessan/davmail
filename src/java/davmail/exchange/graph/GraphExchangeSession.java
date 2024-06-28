@@ -20,6 +20,16 @@
 package davmail.exchange.graph;
 
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.auth.O365Token;
+import davmail.exchange.ews.EwsExchangeSession;
+import davmail.exchange.ews.Field;
+import davmail.exchange.ews.FieldURI;
+import davmail.http.HttpClientAdapter;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -27,6 +37,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,9 +46,36 @@ import java.util.Set;
  * Implement ExchangeSession based on Microsoft Graph
  */
 public class GraphExchangeSession extends ExchangeSession {
+
+    protected class Folder extends ExchangeSession.Folder {
+        protected String id;
+    }
+
+    HttpClientAdapter httpClient;
+    O365Token token;
+
+    /**
+     * Default folder properties list
+     */
+    protected static final HashSet<FieldURI> FOLDER_PROPERTIES = new HashSet<>();
+
+    static {
+        FOLDER_PROPERTIES.add(Field.get("folderDisplayName"));
+        FOLDER_PROPERTIES.add(Field.get("lastmodified"));
+        FOLDER_PROPERTIES.add(Field.get("folderclass"));
+        FOLDER_PROPERTIES.add(Field.get("ctag"));
+        FOLDER_PROPERTIES.add(Field.get("uidNext"));
+    }
+
+    public GraphExchangeSession(HttpClientAdapter httpClient, O365Token token, String userName) {
+        this.httpClient = httpClient;
+        this.token = token;
+        this.userName = userName;
+    }
+
     @Override
     public void close() {
-
+        httpClient.close();
     }
 
     @Override
@@ -156,7 +194,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public List<Folder> getSubFolders(String folderName, Condition condition, boolean recursive) throws IOException {
+    public List<ExchangeSession.Folder> getSubFolders(String folderName, Condition condition, boolean recursive) throws IOException {
         return null;
     }
 
@@ -166,8 +204,74 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected Folder internalGetFolder(String folderName) throws IOException {
-        return null;
+    protected Folder internalGetFolder(String folderPath) throws IOException {
+        // TODO access personal safe vs shared safe
+        String folderId = getFolderId(folderPath);
+
+        // base folder get https://graph.microsoft.com/v1.0/me/mailFolders/inbox
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod("GET")
+                .setObjectType("mailFolders")
+                .setObjectId(folderId)
+                .setExpandFields(FOLDER_PROPERTIES);
+
+        JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
+
+        // todo check missing folder
+        //throw new HttpNotFoundException("Folder " + folderPath + " not found");
+
+        Folder folder = buildFolder(jsonResponse);
+        folder.folderPath = folderPath;
+
+        return folder;
+    }
+
+    private Folder buildFolder(JSONObject jsonResponse) throws IOException {
+        try {
+            Folder folder = new Folder();
+            // TODO: reevaluate folder name encoding over graph
+            folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.optString("displayName"));
+            folder.count = jsonResponse.getInt("totalItemCount");
+            folder.unreadCount = jsonResponse.getInt("unreadItemCount");
+            // fake recent value
+            folder.recent = folder.unreadCount;
+            // hassubs computed from childFolderCount
+            folder.hasChildren = jsonResponse.getInt("childFolderCount") > 0;
+
+            // retrieve property values
+            JSONArray singleValueExtendedProperties = jsonResponse.optJSONArray("singleValueExtendedProperties");
+            if (singleValueExtendedProperties != null) {
+                for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
+                    JSONObject singleValueProperty = singleValueExtendedProperties.getJSONObject(i);
+                    String singleValueId = singleValueProperty.getString("id");
+                    String singleValue = singleValueProperty.getString("value");
+                    if (Field.get("lastmodified").getGraphId().equals(singleValueId)) {
+                        folder.etag = singleValue;
+                    } else if (Field.get("folderclass").getGraphId().equals(singleValueId)) {
+                        folder.folderClass = singleValue;
+                    } else if (Field.get("uidNext").getGraphId().equals(singleValueId)) {
+                        folder.uidNext = Long.parseLong(singleValue);
+                    } else if (Field.get("ctag").getGraphId().equals(singleValueId)) {
+                        folder.ctag = singleValue;
+                    }
+
+                }
+            }
+
+            return folder;
+        } catch (JSONException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Compute folderId from folderName
+     * @param folderName folder name (path)
+     * @return folder id
+     */
+    private String getFolderId(String folderName) {
+        // TODO, basic folder names will work
+        return folderName;
     }
 
     @Override
@@ -294,4 +398,17 @@ public class GraphExchangeSession extends ExchangeSession {
     protected void loadVtimezone() {
 
     }
+
+    private JSONObject executeJsonRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
+        httpRequestBuilder.setAccessToken(token.getAccessToken());
+        HttpRequestBase request = httpRequestBuilder.build();
+        JSONObject jsonResponse;
+        try (
+                CloseableHttpResponse response = httpClient.execute(request);
+        ) {
+            jsonResponse = new JsonResponseHandler().handleResponse(response);
+        }
+        return jsonResponse;
+    }
+
 }

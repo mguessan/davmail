@@ -31,6 +31,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -91,6 +92,11 @@ public class GraphRequestBuilder {
 
     public GraphRequestBuilder setMethod(String method) {
         this.method = method;
+        return this;
+    }
+
+    public GraphRequestBuilder setUsername(String username) {
+        this.username = username;
         return this;
     }
 
@@ -164,28 +170,32 @@ public class GraphRequestBuilder {
     /**
      * Build http request.
      * @return Http request
-     * @throws URISyntaxException on error
+     * @throws IOException on error
      */
-    public HttpRequestBase build() throws URISyntaxException {
-        URIBuilder uriBuilder = new URIBuilder(baseUrl).setPath(buildPath());
-        if (expandFields != null) {
-            uriBuilder.addParameter("$expand", buildExpand());
-        }
-
-        HttpRequestBase httpRequest;
-        if ("POST".equals(method)) {
-            httpRequest = new HttpPost(uriBuilder.build());
-            if (jsonBody != null) {
-                ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(jsonBody.toString().getBytes(StandardCharsets.UTF_8)));
+    public HttpRequestBase build() throws IOException {
+        try {
+            URIBuilder uriBuilder = new URIBuilder(baseUrl).setPath(buildPath());
+            if (expandFields != null) {
+                uriBuilder.addParameter("$expand", buildExpand());
             }
-        } else {
-            // default to GET request
-            httpRequest = new HttpGet(uriBuilder.build());
-        }
-        httpRequest.setHeader("Content-Type", "application/json");
-        httpRequest.setHeader("Authorization", "Bearer " + accessToken);
 
-        return httpRequest;
+            HttpRequestBase httpRequest;
+            if ("POST".equals(method)) {
+                httpRequest = new HttpPost(uriBuilder.build());
+                if (jsonBody != null) {
+                    ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(jsonBody.toString().getBytes(StandardCharsets.UTF_8)));
+                }
+            } else {
+                // default to GET request
+                httpRequest = new HttpGet(uriBuilder.build());
+            }
+            httpRequest.setHeader("Content-Type", "application/json");
+            httpRequest.setHeader("Authorization", "Bearer " + accessToken);
+
+            return httpRequest;
+        } catch (URISyntaxException e) {
+            throw new IOException(e.getMessage(), e);
+        }
     }
 
 }
