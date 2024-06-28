@@ -19,12 +19,14 @@
 
 package davmail.exchange.graph;
 
+import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.auth.O365Token;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
 import davmail.http.HttpClientAdapter;
+import davmail.util.StringUtil;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.codehaus.jettison.json.JSONArray;
@@ -49,6 +51,29 @@ public class GraphExchangeSession extends ExchangeSession {
 
     protected class Folder extends ExchangeSession.Folder {
         protected String id;
+    }
+
+    // special folders https://learn.microsoft.com/en-us/graph/api/resources/mailfolder
+    @SuppressWarnings("SpellCheckingInspection")
+    public enum WellKnownFolderName {
+        calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot,
+        publicfoldersroot, root, junkemail, searchfolders, voicemail,
+        archivemsgfolderroot
+    }
+
+    protected static class FolderId {
+        protected String mailbox;
+        protected String id;
+
+        public FolderId(String mailbox, String id) {
+            this.mailbox = mailbox;
+            this.id = id;
+        }
+
+        public FolderId(String mailbox, WellKnownFolderName wellKnownFolderName) {
+            this.mailbox = mailbox;
+            this.id = wellKnownFolderName.name();
+        }
     }
 
     HttpClientAdapter httpClient;
@@ -205,14 +230,14 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     protected Folder internalGetFolder(String folderPath) throws IOException {
-        // TODO access personal safe vs shared safe
-        String folderId = getFolderId(folderPath);
+        FolderId folderId = getFolderId(folderPath);
 
         // base folder get https://graph.microsoft.com/v1.0/me/mailFolders/inbox
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
                 .setObjectType("mailFolders")
-                .setObjectId(folderId)
+                .setMailbox(folderId.mailbox)
+                .setObjectId(folderId.id)
                 .setExpandFields(FOLDER_PROPERTIES);
 
         JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
@@ -266,12 +291,143 @@ public class GraphExchangeSession extends ExchangeSession {
 
     /**
      * Compute folderId from folderName
-     * @param folderName folder name (path)
+     * @param folderPath folder name (path)
      * @return folder id
      */
-    private String getFolderId(String folderName) {
-        // TODO, basic folder names will work
-        return folderName;
+    private FolderId getFolderId(String folderPath) throws IOException {
+        FolderId folderId = getFolderIdIfExists(folderPath);
+        if (folderId == null) {
+            throw new HttpNotFoundException("Folder '" + folderPath + "' not found");
+        }
+        return folderId;
+    }
+
+    protected static final String USERS_ROOT = "/users/";
+    protected static final String ARCHIVE_ROOT = "/archive/";
+
+
+    private FolderId getFolderIdIfExists(String folderPath) throws IOException {
+        String lowerCaseFolderPath = folderPath.toLowerCase();
+        if (lowerCaseFolderPath.equals(currentMailboxPath)) {
+            return getSubFolderIdIfExists(null, "");
+        } else if (lowerCaseFolderPath.startsWith(currentMailboxPath + '/')) {
+            return getSubFolderIdIfExists(null, folderPath.substring(currentMailboxPath.length() + 1));
+        } else if (folderPath.startsWith(USERS_ROOT)) {
+            int slashIndex = folderPath.indexOf('/', USERS_ROOT.length());
+            String mailbox;
+            String subFolderPath;
+            if (slashIndex >= 0) {
+                mailbox = folderPath.substring(USERS_ROOT.length(), slashIndex);
+                subFolderPath = folderPath.substring(slashIndex + 1);
+            } else {
+                mailbox = folderPath.substring(USERS_ROOT.length());
+                subFolderPath = "";
+            }
+            return getSubFolderIdIfExists(mailbox, subFolderPath);
+        } else {
+            return getSubFolderIdIfExists(null, folderPath);
+        }
+    }
+
+    private FolderId getSubFolderIdIfExists(String mailbox, String folderPath) throws IOException {
+        String[] folderNames;
+        FolderId currentFolderId;
+
+        // TODO test various use cases
+        if ("/public".equals(folderPath)) {
+            return new FolderId(mailbox, WellKnownFolderName.publicfoldersroot);
+        } else if ("/archive".equals(folderPath)) {
+            return new FolderId(mailbox, WellKnownFolderName.archivemsgfolderroot);
+        } else if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.publicfoldersroot);
+            folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
+        } else if (isSubFolderOf(folderPath, ARCHIVE_ROOT)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.archivemsgfolderroot);
+            folderNames = folderPath.substring(ARCHIVE_ROOT.length()).split("/");
+        } else if (isSubFolderOf(folderPath, INBOX) ||
+                isSubFolderOf(folderPath, LOWER_CASE_INBOX) ||
+                isSubFolderOf(folderPath, MIXED_CASE_INBOX)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.inbox);
+            folderNames = folderPath.substring(INBOX.length()).split("/");
+        } else if (isSubFolderOf(folderPath, CALENDAR)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.calendar);
+            folderNames = folderPath.substring(CALENDAR.length()).split("/");
+        } else if (isSubFolderOf(folderPath, TASKS)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.tasks);
+            folderNames = folderPath.substring(TASKS.length()).split("/");
+        } else if (isSubFolderOf(folderPath, CONTACTS)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.contacts);
+            folderNames = folderPath.substring(CONTACTS.length()).split("/");
+        } else if (isSubFolderOf(folderPath, SENT)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.sentitems);
+            folderNames = folderPath.substring(SENT.length()).split("/");
+        } else if (isSubFolderOf(folderPath, DRAFTS)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.drafts);
+            folderNames = folderPath.substring(DRAFTS.length()).split("/");
+        } else if (isSubFolderOf(folderPath, TRASH)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.deleteditems);
+            folderNames = folderPath.substring(TRASH.length()).split("/");
+        } else if (isSubFolderOf(folderPath, JUNK)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.junkemail);
+            folderNames = folderPath.substring(JUNK.length()).split("/");
+        } else if (isSubFolderOf(folderPath, UNSENT)) {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.outbox);
+            folderNames = folderPath.substring(UNSENT.length()).split("/");
+        } else {
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.msgfolderroot);
+            folderNames = folderPath.split("/");
+        }
+        for (String folderName : folderNames) {
+            if (!folderName.isEmpty()) {
+                currentFolderId = getSubFolderByName(currentFolderId, folderName);
+                if (currentFolderId == null) {
+                    break;
+                }
+            }
+        }
+        return currentFolderId;
+    }
+
+    /**
+     * Search subfolder by name, return null when no folders found
+     * @param currentFolderId parent folder id
+     * @param folderName child folder name
+     * @return child folder id if exists
+     * @throws IOException on error
+     */
+    protected FolderId getSubFolderByName(FolderId currentFolderId, String folderName) throws IOException {
+        // TODO rename davSearchEncode
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod("GET")
+                .setObjectType("mailFolders")
+                .setMailbox(currentFolderId.mailbox)
+                .setObjectId(currentFolderId.id)
+                .setChildType("childFolders")
+                .setExpandFields(FOLDER_PROPERTIES)
+                .setFilter("displayName eq '" + StringUtil.davSearchEncode(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+
+        JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
+
+        FolderId folderId = null;
+        try {
+            JSONArray values = jsonResponse.getJSONArray("value");
+            if (values.length() > 0) {
+                folderId = new FolderId(currentFolderId.mailbox, values.getJSONObject(0).getString("id"));
+            }
+        } catch (JSONException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+
+        return folderId;
+    }
+
+    private boolean isSubFolderOf(String folderPath, String baseFolder) {
+        if (PUBLIC_ROOT.equals(baseFolder) || ARCHIVE_ROOT.equals(baseFolder)) {
+            return folderPath.startsWith(baseFolder);
+        } else {
+            return folderPath.startsWith(baseFolder)
+                    && (folderPath.length() == baseFolder.length() || folderPath.charAt(baseFolder.length()) == '/');
+        }
     }
 
     @Override
@@ -400,11 +556,13 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private JSONObject executeJsonRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
-        httpRequestBuilder.setAccessToken(token.getAccessToken());
-        HttpRequestBase request = httpRequestBuilder.build();
+        // TODO handle throttling
+        HttpRequestBase request = httpRequestBuilder
+                .setAccessToken(token.getAccessToken())
+                .build();
         JSONObject jsonResponse;
         try (
-                CloseableHttpResponse response = httpClient.execute(request);
+                CloseableHttpResponse response = httpClient.execute(request)
         ) {
             jsonResponse = new JsonResponseHandler().handleResponse(response);
         }

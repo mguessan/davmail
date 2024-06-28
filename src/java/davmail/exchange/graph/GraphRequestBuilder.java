@@ -46,8 +46,12 @@ public class GraphRequestBuilder {
     String method = "POST";
     String baseUrl = Settings.GRAPH_URL;
     String version = "beta";
-    String username = "me";
+    String mailbox;
     String objectType;
+
+    String childType;
+
+    String filter;
 
     Set<FieldURI> expandFields;
 
@@ -85,6 +89,16 @@ public class GraphRequestBuilder {
         return this;
     }
 
+    public GraphRequestBuilder setChildType(String childType) {
+        this.childType = childType;
+        return this;
+    }
+
+    public GraphRequestBuilder setFilter(String filter) {
+        this.filter = filter;
+        return this;
+    }
+
     public GraphRequestBuilder setAccessToken(String accessToken) {
         this.accessToken = accessToken;
         return this;
@@ -95,8 +109,8 @@ public class GraphRequestBuilder {
         return this;
     }
 
-    public GraphRequestBuilder setUsername(String username) {
-        this.username = username;
+    public GraphRequestBuilder setMailbox(String mailbox) {
+        this.mailbox = mailbox;
         return this;
     }
 
@@ -111,13 +125,20 @@ public class GraphRequestBuilder {
      */
     protected String buildPath() {
         StringBuilder buffer = new StringBuilder();
-        buffer.append("/").append(version)
-                .append("/").append(username);
+        buffer.append("/").append(version);
+        if (mailbox != null) {
+            buffer.append("/users/").append(mailbox);
+        } else {
+            buffer.append("/me");
+        }
         if (objectType != null) {
             buffer.append("/").append(objectType);
         }
         if (objectId != null) {
             buffer.append("/").append(objectId);
+        }
+        if (childType != null) {
+            buffer.append("/").append(childType);
         }
 
         return buffer.toString();
@@ -177,6 +198,10 @@ public class GraphRequestBuilder {
             URIBuilder uriBuilder = new URIBuilder(baseUrl).setPath(buildPath());
             if (expandFields != null) {
                 uriBuilder.addParameter("$expand", buildExpand());
+            }
+
+            if (filter != null) {
+                uriBuilder.addParameter("$filter", filter);
             }
 
             HttpRequestBase httpRequest;
