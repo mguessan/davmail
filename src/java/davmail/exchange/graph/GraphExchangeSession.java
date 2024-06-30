@@ -56,14 +56,18 @@ public class GraphExchangeSession extends ExchangeSession {
     // special folders https://learn.microsoft.com/en-us/graph/api/resources/mailfolder
     @SuppressWarnings("SpellCheckingInspection")
     public enum WellKnownFolderName {
-        calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot,
-        publicfoldersroot, root, junkemail, searchfolders, voicemail,
-        archivemsgfolderroot
+        archive,
+        deleteditems,
+        calendar, contacts, tasks,
+        drafts, inbox, outbox, sentitems, junkemail,
+        msgfolderroot,
+        searchfolders
     }
 
     protected static class FolderId {
         protected String mailbox;
         protected String id;
+        protected String folderClass;
 
         public FolderId(String mailbox, String id) {
             this.mailbox = mailbox;
@@ -73,6 +77,12 @@ public class GraphExchangeSession extends ExchangeSession {
         public FolderId(String mailbox, WellKnownFolderName wellKnownFolderName) {
             this.mailbox = mailbox;
             this.id = wellKnownFolderName.name();
+        }
+
+        public FolderId(String mailbox, WellKnownFolderName wellKnownFolderName, String folderClass) {
+            this.mailbox = mailbox;
+            this.id = wellKnownFolderName.name();
+            this.folderClass = folderClass;
         }
     }
 
@@ -335,14 +345,13 @@ public class GraphExchangeSession extends ExchangeSession {
 
         // TODO test various use cases
         if ("/public".equals(folderPath)) {
-            return new FolderId(mailbox, WellKnownFolderName.publicfoldersroot);
+            throw new UnsupportedOperationException("public folders not supported on Graph");
         } else if ("/archive".equals(folderPath)) {
-            return new FolderId(mailbox, WellKnownFolderName.archivemsgfolderroot);
+            return new FolderId(mailbox, WellKnownFolderName.archive);
         } else if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.publicfoldersroot);
-            folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
+            throw new UnsupportedOperationException("public folders not supported on Graph");
         } else if (isSubFolderOf(folderPath, ARCHIVE_ROOT)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.archivemsgfolderroot);
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.archive);
             folderNames = folderPath.substring(ARCHIVE_ROOT.length()).split("/");
         } else if (isSubFolderOf(folderPath, INBOX) ||
                 isSubFolderOf(folderPath, LOWER_CASE_INBOX) ||
@@ -350,13 +359,15 @@ public class GraphExchangeSession extends ExchangeSession {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.inbox);
             folderNames = folderPath.substring(INBOX.length()).split("/");
         } else if (isSubFolderOf(folderPath, CALENDAR)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.calendar);
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.calendar, "IPF.Appointment");
+            // TODO subfolders not supported with graph
             folderNames = folderPath.substring(CALENDAR.length()).split("/");
         } else if (isSubFolderOf(folderPath, TASKS)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.tasks);
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.tasks, "IPF.Task");
             folderNames = folderPath.substring(TASKS.length()).split("/");
         } else if (isSubFolderOf(folderPath, CONTACTS)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.contacts);
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.contacts, "IPF.Contact");
+            // TODO subfolders not supported with graph
             folderNames = folderPath.substring(CONTACTS.length()).split("/");
         } else if (isSubFolderOf(folderPath, SENT)) {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.sentitems);
@@ -377,11 +388,15 @@ public class GraphExchangeSession extends ExchangeSession {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.msgfolderroot);
             folderNames = folderPath.split("/");
         }
-        for (String folderName : folderNames) {
-            if (!folderName.isEmpty()) {
-                currentFolderId = getSubFolderByName(currentFolderId, folderName);
-                if (currentFolderId == null) {
-                    break;
+        if (currentFolderId != null) {
+            String folderClass = currentFolderId.folderClass;
+            for (String folderName : folderNames) {
+                if (!folderName.isEmpty()) {
+                    currentFolderId = getSubFolderByName(currentFolderId, folderName);
+                    if (currentFolderId == null) {
+                        break;
+                    }
+                    currentFolderId.folderClass = folderClass;
                 }
             }
         }
