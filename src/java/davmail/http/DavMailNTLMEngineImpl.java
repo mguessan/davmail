@@ -106,17 +106,6 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
     /** The signature string as bytes in the default encoding */
     private static final byte[] SIGNATURE = getNullTerminatedAsciiString("NTLMSSP");
 
-    // Key derivation magic strings for the SIGNKEY algorithm defined in
-    // [MS-NLMP] section 3.4.5.2
-    private static final byte[] SIGN_MAGIC_SERVER = getNullTerminatedAsciiString(
-            "session key to server-to-client signing key magic constant");
-    private static final byte[] SIGN_MAGIC_CLIENT = getNullTerminatedAsciiString(
-            "session key to client-to-server signing key magic constant");
-    private static final byte[] SEAL_MAGIC_SERVER = getNullTerminatedAsciiString(
-            "session key to server-to-client sealing key magic constant");
-    private static final byte[] SEAL_MAGIC_CLIENT = getNullTerminatedAsciiString(
-            "session key to client-to-server sealing key magic constant");
-
     // prefix for GSS API channel binding
     private static final byte[] MAGIC_TLS_SERVER_ENDPOINT = "tls-server-end-point:".getBytes(Consts.ASCII);
 
@@ -362,8 +351,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         }
 
         /** Calculate and return the NTLMHash */
-        public byte[] getNTLMHash()
-                throws NTLMEngineException {
+        public byte[] getNTLMHash() {
             if (ntlmHash == null) {
                 ntlmHash = ntlmHash(password);
             }
@@ -414,8 +402,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         }
 
         /** Calculate the NTLMv2Blob */
-        public byte[] getNTLMv2Blob()
-                throws NTLMEngineException {
+        public byte[] getNTLMv2Blob() {
             if (ntlmv2Blob == null) {
                 ntlmv2Blob = createBlob(getClientChallenge2(), targetInformation, getTimestamp());
             }
@@ -450,8 +437,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         }
 
         /** Calculate and return LM2 session response */
-        public byte[] getLM2SessionResponse()
-                throws NTLMEngineException {
+        public byte[] getLM2SessionResponse() {
             if (lm2SessionResponse == null) {
                 final byte[] clntChallenge = getClientChallenge();
                 lm2SessionResponse = new byte[24];
@@ -623,7 +609,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
      * @return The NTLM Hash of the given password, used in the calculation of
      *         the NTLM Response and the NTLMv2 and LMv2 Hashes.
      */
-    private static byte[] ntlmHash(final String password) throws NTLMEngineException {
+    private static byte[] ntlmHash(final String password) {
         final byte[] unicodePassword = password.getBytes(UNICODE_LITTLE_UNMARKED);
         final DavMailNTLMEngineImpl.MD4 md4 = new DavMailNTLMEngineImpl.MD4();
         md4.update(unicodePassword);
@@ -1573,9 +1559,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
                         certHashBytes.length);
                 final MessageDigest md5 = getMD5();
                 channelBindingsHash = md5.digest(channelBindingStruct);
-            } catch (final CertificateEncodingException e) {
-                throw new NTLMEngineException(e.getMessage(), e);
-            } catch (NoSuchAlgorithmException e) {
+            } catch (CertificateEncodingException | NoSuchAlgorithmException e) {
                 throw new NTLMEngineException(e.getMessage(), e);
             }
 
@@ -1851,7 +1835,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
     @Override
     public String generateType1Msg(
             final String domain,
-            final String workstation) throws NTLMEngineException {
+            final String workstation) {
         LOGGER.debug("generateType1Msg domain='" + domain + "' workstation='" + workstation + "'");
         return getType1Message(workstation, domain);
     }

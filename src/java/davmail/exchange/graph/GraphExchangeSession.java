@@ -28,6 +28,7 @@ import davmail.exchange.ews.FieldURI;
 import davmail.http.HttpClientAdapter;
 import davmail.util.StringUtil;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -37,11 +38,14 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -50,7 +54,7 @@ import java.util.Set;
 public class GraphExchangeSession extends ExchangeSession {
 
     protected class Folder extends ExchangeSession.Folder {
-        protected String id;
+        public FolderId folderId;
     }
 
     // special folders https://learn.microsoft.com/en-us/graph/api/resources/mailfolder
@@ -68,6 +72,9 @@ public class GraphExchangeSession extends ExchangeSession {
         protected String mailbox;
         protected String id;
         protected String folderClass;
+
+        public FolderId() {
+        }
 
         public FolderId(String mailbox, String id) {
             this.mailbox = mailbox;
@@ -229,9 +236,58 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public List<ExchangeSession.Folder> getSubFolders(String folderName, Condition condition, boolean recursive) throws IOException {
-        return null;
+    public List<ExchangeSession.Folder> getSubFolders(String folderPath, Condition condition, boolean recursive) throws IOException {
+        String baseFolderPath = folderPath;
+        if (baseFolderPath.startsWith("/users/")) {
+            int index = baseFolderPath.indexOf('/', "/users/".length());
+            if (index >= 0) {
+                baseFolderPath = baseFolderPath.substring(index + 1);
+            }
+        }
+        List<ExchangeSession.Folder> folders = new ArrayList<>();
+        appendSubFolders(folders, baseFolderPath, getFolderId(folderPath), condition, recursive);
+        return folders;
     }
+
+    protected void appendSubFolders(List<ExchangeSession.Folder> folders,
+                                    String parentFolderPath, FolderId parentFolderId,
+                                    Condition condition, boolean recursive) throws IOException {
+        int resultCount = 0;
+        // TODO convert condition to filter
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod("GET")
+                .setObjectType("mailFolders")
+                .setMailbox(parentFolderId.mailbox)
+                .setObjectId(parentFolderId.id)
+                .setChildType("childFolders")
+                .setExpandFields(FOLDER_PROPERTIES)
+                .setFilter("");
+
+        // TODO handle paging
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+
+        while (graphIterator.hasNext()) {
+            resultCount++;
+            Folder folder = buildFolder(graphIterator.next());
+            folder.folderId.mailbox = parentFolderId.mailbox;
+            if (!parentFolderPath.isEmpty()) {
+                if (parentFolderPath.endsWith("/")) {
+                    folder.folderPath = parentFolderPath + folder.displayName;
+                } else {
+                    folder.folderPath = parentFolderPath + '/' + folder.displayName;
+                }
+                // TODO folderIdMap?
+            } else {
+                folder.folderPath = folder.displayName;
+            }
+            folders.add(folder);
+            if (recursive && folder.hasChildren) {
+                appendSubFolders(folders, folder.folderPath, folder.folderId, condition, true);
+            }
+        }
+
+    }
+
 
     @Override
     public void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
@@ -264,6 +320,8 @@ public class GraphExchangeSession extends ExchangeSession {
     private Folder buildFolder(JSONObject jsonResponse) throws IOException {
         try {
             Folder folder = new Folder();
+            folder.folderId = new FolderId();
+            folder.folderId.id = jsonResponse.getString("id");
             // TODO: reevaluate folder name encoding over graph
             folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.optString("displayName"));
             folder.count = jsonResponse.getInt("totalItemCount");
@@ -568,6 +626,60 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     protected void loadVtimezone() {
 
+    }
+
+    class GraphIterator {
+
+        private JSONObject jsonObject;
+        private JSONArray values;
+        private String nextLink;
+        private int index;
+
+        public GraphIterator(JSONObject jsonObject) throws JSONException {
+            this.jsonObject = jsonObject;
+            nextLink = jsonObject.optString("@odata.nextLink", null);
+            values = jsonObject.getJSONArray("value");
+        }
+
+        public boolean hasNext() {
+            return nextLink != null || index < values.length();
+        }
+
+        public JSONObject next() throws IOException {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            try {
+                if (index >= values.length() && nextLink != null) {
+                    fetchNextPage();
+                }
+                return values.getJSONObject(index++);
+            } catch (JSONException e) {
+                throw new IOException(e.getMessage(), e);
+            }
+        }
+
+        private void fetchNextPage() throws IOException, JSONException {
+            HttpGet request = new HttpGet(nextLink);
+            request.setHeader("Authorization", "Bearer " + token.getAccessToken());
+            try (
+                    CloseableHttpResponse response = httpClient.execute(request)
+            ) {
+                jsonObject = new JsonResponseHandler().handleResponse(response);
+                nextLink = jsonObject.optString("@odata.nextLink", null);
+                values = jsonObject.getJSONArray("value");
+                index = 0;
+            }
+        }
+    }
+
+    private GraphIterator executeSearchRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
+        try {
+            JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
+            return new GraphIterator(jsonResponse);
+        } catch (JSONException e) {
+            throw new IOException(e.getMessage(), e);
+        }
     }
 
     private JSONObject executeJsonRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
