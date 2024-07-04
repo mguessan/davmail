@@ -23,6 +23,7 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.auth.O365Token;
 import davmail.exchange.ews.EwsExchangeSession;
+import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
 import davmail.http.HttpClientAdapter;
@@ -155,6 +156,50 @@ public class GraphExchangeSession extends ExchangeSession {
         return null;
     }
 
+    static class AttributeCondition extends ExchangeSession.AttributeCondition {
+
+        protected AttributeCondition(String attributeName, Operator operator, String value) {
+            super(attributeName, operator, value);
+        }
+
+        protected FieldURI getFieldURI() {
+            FieldURI fieldURI = Field.get(attributeName);
+            // check to detect broken field mapping
+            //noinspection ConstantConditions
+            if (fieldURI == null) {
+                throw new IllegalArgumentException("Unknown field: " + attributeName);
+            }
+            return fieldURI;
+        }
+
+        private String convertOperator(Operator operator) {
+            if (Operator.IsEqualTo.equals(operator)) {
+                return "eq";
+            }
+            // TODO other operators
+            return operator.toString();
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            FieldURI fieldURI = getFieldURI();
+            if (Operator.StartsWith.equals(operator)) {
+                buffer.append("startswith(").append(getFieldURI().getGraphId()).append(",'").append(StringUtil.davSearchEncode(value)).append("')");
+            } else if (fieldURI instanceof ExtendedFieldURI) {
+                buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(getFieldURI().getGraphId())
+                        .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.davSearchEncode(value)).append("')");
+            } else {
+                buffer.append(getFieldURI().getGraphId()).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.davSearchEncode(value)).append("'");
+            }
+        }
+
+
+        @Override
+        public boolean isMatch(Contact contact) {
+            return false;
+        }
+    }
+
     @Override
     public MultiCondition and(Condition... condition) {
         return null;
@@ -172,7 +217,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public Condition isEqualTo(String attributeName, String value) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
     }
 
     @Override
@@ -212,12 +257,12 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public Condition startsWith(String attributeName, String value) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.StartsWith, value);
     }
 
     @Override
     public Condition isNull(String attributeName) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, "null");
     }
 
     @Override
@@ -253,15 +298,21 @@ public class GraphExchangeSession extends ExchangeSession {
                                     String parentFolderPath, FolderId parentFolderId,
                                     Condition condition, boolean recursive) throws IOException {
         int resultCount = 0;
-        // TODO convert condition to filter
+
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
                 .setObjectType("mailFolders")
                 .setMailbox(parentFolderId.mailbox)
                 .setObjectId(parentFolderId.id)
                 .setChildType("childFolders")
-                .setExpandFields(FOLDER_PROPERTIES)
-                .setFilter("");
+                .setExpandFields(FOLDER_PROPERTIES);
+        LOGGER.debug("appendSubFolders "+parentFolderId.mailbox+parentFolderPath);
+        if (condition != null && !condition.isEmpty()) {
+            StringBuilder filter = new StringBuilder();
+            condition.appendTo(filter);
+            LOGGER.debug("search filter "+filter);
+            httpRequestBuilder.setFilter(filter.toString());
+        }
 
         // TODO handle paging
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
