@@ -50,10 +50,16 @@ BuildRequires: openjfx
 
 Requires: coreutils
 Requires: filesystem
-Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
 Requires(post): coreutils, filesystem
-Requires(preun): /sbin/service, coreutils, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
+%if %systemd_macros
+Requires(preun): /sbin/service, coreutils
+BuildRequires:  sysuser-tools
+%sysusers_requires
+%else
+Requires(preun): /sbin/service, coreutils, /usr/sbin/userdel, /usr/sbin/groupdel
+Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
+%endif
 
 %{?fedora:Requires: java}
 %if 0%{?el7} || 0%{?el8}
@@ -69,6 +75,7 @@ Requires: eclipse-swt
 %endif
 
 Source0: %{name}-src-%{version}.tgz
+Source1: %{name}-user.conf
 
 %description
 A POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
@@ -103,6 +110,10 @@ rm lib/swt*
 
 # we have java 8
 ant -Dant.java.version=1.8 prepare-dist
+
+%if %systemd_macros
+%sysusers_generate_pre %{SOURCE1} davmail %{name}-user.conf
+%endif
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -145,12 +156,20 @@ mkdir -p $RPM_BUILD_ROOT%{_datadir}/metainfo
 install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_datadir}/metainfo
 %endif
 
-%pre
+%if %systemd_macros
+mkdir -p %{buildroot}%{_sysusersdir}
+install -m 0644 %{SOURCE1} %{buildroot}%{_sysusersdir}/
+%else
 /usr/sbin/groupadd -f -r davmail > /dev/null 2>&1 || :
 /usr/sbin/useradd -r -s /sbin/nologin -d /var/lib/davmail -M \
                   -g davmail davmail > /dev/null 2>&1 || :
+%endif
+
 %if %systemd_macros
+%pre -f davmail.pre
 %service_add_pre davmail.service
+%else
+%pre
 %endif
 
 %post
@@ -226,6 +245,9 @@ fi
 %files
 %defattr (-,root,root,-)
 %{_bindir}/*
+%if %systemd_macros
+%{_sysusersdir}/%{name}-user.conf
+%endif
 
 %if %systemd_support
 %{_unitdir}/davmail.service

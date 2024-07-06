@@ -1,4 +1,8 @@
 -------------------------------------------------------------------
+Thu May 23 2024 Tristan Miller <psychonaut@nothingisreal.com>
+  - Change to using systemd-sysusers
+
+-------------------------------------------------------------------
 Sat Mar 30 2024 Mickael Guessant <mguessan@free.fr>
   - update to 6.2.2
 
