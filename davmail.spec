@@ -75,7 +75,6 @@ Requires: eclipse-swt
 %endif
 
 Source0: %{name}-src-%{version}.tgz
-Source1: %{name}-user.conf
 
 %description
 A POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
@@ -112,7 +111,7 @@ rm lib/swt*
 ant -Dant.java.version=1.8 prepare-dist
 
 %if %systemd_macros
-%sysusers_generate_pre %{SOURCE1} davmail %{name}-user.conf
+%sysusers_generate_pre %{name}-user.conf davmail %{name}-user.conf
 %endif
 
 %install
@@ -158,7 +157,7 @@ install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_
 
 %if %systemd_macros
 mkdir -p %{buildroot}%{_sysusersdir}
-install -m 0644 %{SOURCE1} %{buildroot}%{_sysusersdir}/
+install -m 0644 %{name}-user.conf %{buildroot}%{_sysusersdir}/
 %else
 /usr/sbin/groupadd -f -r davmail > /dev/null 2>&1 || :
 /usr/sbin/useradd -r -s /sbin/nologin -d /var/lib/davmail -M \
