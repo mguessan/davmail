@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # chkconfig: 345 99 05 
-# # description: Java deamon script for davmail (http://davmail.sourceforge.net/) write by qk4l@tem4uk.ru 2011
+# # description: Java daemon script for davmail (http://davmail.sourceforge.net/) write by qk4l@tem4uk.ru 2011
 #
 # Derived from -
 # Home page: http://www.source-code.biz
