@@ -29,6 +29,7 @@ import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.SystemdNotify;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
@@ -183,7 +184,9 @@ public final class DavGateway {
         if (showStartupBanner) {
             DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING", currentVersion, messages));
         }
-        if (!errorMessages.isEmpty()) {
+        if (errorMessages.isEmpty()) {
+            SystemdNotify.ready();
+        } else {
             DavGatewayTray.error(new BundleMessage("LOG_MESSAGE", errorMessages));
         }
 
