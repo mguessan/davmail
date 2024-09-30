@@ -55,6 +55,13 @@ davmail.mode=EWS
 # base Exchange OWA or EWS url
 davmail.url=https://outlook.office365.com/EWS/Exchange.asmx
 
+# optional: non-standard tenants
+#davmail.tld=us
+# login url, default https://login.microsoftonline.com, China https://login.chinacloudapi.cn
+#davmail.loginUrl=https://login.microsoftonline.com
+# Outlook O365 url, default https://outlook.office365.com, China https://partner.outlook.cn
+#davmail.outlookUrl=https://outlook.office365.com
+
 # Listener ports
 davmail.caldavPort=1080
 davmail.imapPort=1143
