@@ -212,12 +212,18 @@ davmail.enableKerberos=false]]>
 
         <section name="Register DavMail windows service">
             <p>A new WinRun4J davmailservice.exe wrapper is available in the windows
-                package.
+                package. Preferred package is the standalone windows package that comes with Zulu JDK.
             </p>
             <p>To register DavMail as a windows service, use:
-                <source>davmailservice --WinRun4J:RegisterService</source>
+                <source>davmailservice64 --WinRun4J:RegisterService</source>
                 or
-                <source>sc create DavMail binPath= \path\to\davmailservice.exe type= own start= auto</source>
+                <source>sc create DavMail binPath= \path\to\davmailservice64.exe type= own start= auto</source>
+            </p>
+            <p>If you get <code>[err] Could not access service manager: 5</code> message make sure you open
+                command line in administrator mode first and run command again.
+                On first start service will create a default <code>davmail.properties</code> file in DavMail
+                directory, note that this is different from user mode where <code>.davmail.properties</code> is
+                located in user home directory. Adjust this configuration to your requirements and restart DavMail.
             </p>
         </section>
 
