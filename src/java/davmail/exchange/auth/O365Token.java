@@ -105,6 +105,11 @@ public class O365Token {
                     JSONObject tokenBody = new JSONObject(decodedJwt);
                     LOGGER.debug("Token: " + tokenBody);
                     username = tokenBody.getString("unique_name");
+                    // detect live.com token
+                    final String liveDotCom = "live.com#";
+                    if (username.startsWith(liveDotCom)) {
+                        username = username.substring(liveDotCom.length());
+                    }
                 } catch (JSONException e) {
                     LOGGER.warn("Invalid id_token " + e.getMessage(), e);
                 }
