@@ -55,9 +55,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
     public static String buildAuthorizeUrl(String tenantId, String clientId, String redirectUri, String username) throws IOException {
         URI uri;
         try {
-            URIBuilder uriBuilder = new URIBuilder()
-                    .setScheme("https")
-                    .setHost("login.microsoftonline.com")
+            URIBuilder uriBuilder = new URIBuilder(Settings.getO365LoginUrl())
                     .addParameter("client_id", clientId)
                     .addParameter("response_type", "code")
                     .addParameter("redirect_uri", redirectUri)
@@ -65,14 +63,18 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     .addParameter("login_hint", username);
 
             // force consent
-            //uriBuilder.addParameter("prompt", "consent")
+            //uriBuilder.addParameter("prompt", "consent");
             // switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
             if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                         .addParameter("scope", "openid " + Settings.OUTLOOK_URL + "/EWS.AccessAsUser.All");
             } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
-                        .addParameter("resource", "https://graph.microsoft.com/");
+                        .addParameter("resource", "https://graph.microsoft.com");
+                // OIDC compliant
+                //uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
+                //        .addParameter("scope", "Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read");
+                        //.addParameter("scope", "openid " + Settings.OUTLOOK_URL + "/EWS.AccessAsUser.All AuditLog.Read.All Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrintJob.ReadWriteBasic SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read");
             } else {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
                         .addParameter("resource", Settings.OUTLOOK_URL);
@@ -217,10 +219,12 @@ public class O365Authenticator implements ExchangeAuthenticator {
                             LOGGER.warn("Authentication successful but user consent or validation needed, please open the following url in a browser");
                             LOGGER.warn(url);
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                        } else if ("50126".equals(config.optString("sErrorCode"))) {
+                            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                        } else if ("50125".equals(config.optString("sErrorCode"))) {
+                            throw new DavMailAuthenticationException("LOG_MESSAGE", "Your organization needs more information to keep your account secure, authenticate once in a web browser and try again");
                         } else if (config.optString("strServiceExceptionMessage") != null) {
                             LOGGER.debug("O365 returned error: " + config.optString("strServiceExceptionMessage"));
-                            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-                        } else if ("50126".equals(config.optString("sErrorCode"))) {
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else {
                             throw new DavMailAuthenticationException("LOG_MESSAGE", "Authentication failed, unknown error: " + config);
@@ -260,7 +264,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
     private String authenticateADFS(HttpClientAdapter httpClientAdapter, String responseBodyAsString, String authorizeUrl) throws IOException, JSONException {
         URI location;
 
-        if (responseBodyAsString.contains("login.microsoftonline.com")) {
+        if (responseBodyAsString.contains(Settings.getO365LoginUrl())) {
             LOGGER.info("Already authenticated through Basic or NTLM");
         } else {
             // parse form to get target url, authenticate as userid
@@ -281,7 +285,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             responseBodyAsString = httpClientAdapter.executeGetRequest(redirectMethod);
         }
 
-        if (!responseBodyAsString.contains("login.microsoftonline.com")) {
+        if (!responseBodyAsString.contains(Settings.getO365LoginUrl())) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
         }
         String targetUrl = extract("action=\"([^\"]+)\"", responseBodyAsString);
@@ -318,7 +322,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             throw new IOException("Unknown ADFS authentication failure");
         }
 
-        if ("device.login.microsoftonline.com".equals(location.getHost())) {
+        if (location.getHost().startsWith("device")) {
             location = processDeviceLogin(httpClientAdapter, location);
         }
         String query = location.getQuery();
@@ -348,7 +352,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
         String responseBodyAsString = httpClient.executeGetRequest(deviceLoginMethod);
 
-        if (responseBodyAsString.contains("login.microsoftonline.com")) {
+        if (responseBodyAsString.contains(Settings.getO365LoginUrl())) {
             String ctx = extract("name=\"ctx\" value=\"([^\"]+)\"", responseBodyAsString);
             String flowtoken = extract("name=\"flowtoken\" value=\"([^\"]+)\"", responseBodyAsString);
 
