@@ -72,7 +72,7 @@ import java.util.List;
 public class HttpClientAdapter implements Closeable {
     static final Logger LOGGER = Logger.getLogger("davmail.http.HttpClientAdapter");
 
-    static final String[] SUPPORTED_PROTOCOLS = new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"};
+    static final String[] SUPPORTED_PROTOCOLS = new String[]{"TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"};
     static final Registry<ConnectionSocketFactory> SCHEME_REGISTRY;
     static String WORKSTATION_NAME = "UNKNOWN";
     static final int MAX_REDIRECTS = 10;
@@ -129,7 +129,7 @@ public class HttpClientAdapter implements Closeable {
     BasicCookieStore cookieStore = new BasicCookieStore() {
         @Override
         public void addCookie(final Cookie cookie) {
-            LOGGER.debug("Add cookie " + cookie);
+            //LOGGER.debug("Add cookie " + cookie);
             super.addCookie(cookie);
         }
     };
