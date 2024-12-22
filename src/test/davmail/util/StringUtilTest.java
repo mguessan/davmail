@@ -66,7 +66,7 @@ public class StringUtilTest extends TestCase {
             for (int i = 0; i < 1000000; i++) {
                 //String result = StringUtil.encodePlusSign(value);
                 //String result = value.replaceAll("\\+", "%2B");
-                                                 
+
                 int length = value.length();
                 @SuppressWarnings("MismatchedQueryAndUpdateOfStringBuilder") StringBuilder buffer = new StringBuilder(length);
                 /*int startIndex = 0;
