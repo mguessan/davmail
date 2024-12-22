@@ -21,6 +21,8 @@ package davmail.util;
 import davmail.http.URIUtil;
 import junit.framework.TestCase;
 
+import static org.junit.Assert.assertThrows;
+
 /**
  * Test StringUtil.
  */
@@ -92,6 +94,22 @@ public class StringUtilTest extends TestCase {
             }
             System.out.println("Elapsed: " + (System.currentTimeMillis() - startTime) + " ms");
         }
+    }
+
+    public void testParseQuotedImapString() {
+        assertEquals("", StringUtil.parseQuotedImapString("\"\""));
+        assertEquals("*", StringUtil.parseQuotedImapString("\"*\""));
+        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString(""));
+        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("test"));
+        assertEquals("test", StringUtil.parseQuotedImapString("\"test\""));
+        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("\"test"));
+        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("test\""));
+        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("\"\\test\""));
+        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("\"test\\\""));
+        assertEquals("foo\\bar", StringUtil.parseQuotedImapString("\"foo\\\\bar\""));
+        assertEquals("\\bar", StringUtil.parseQuotedImapString("\"\\\\bar\""));
+        assertEquals("foo\\", StringUtil.parseQuotedImapString("\"foo\\\\\""));
+        assertEquals("\\", StringUtil.parseQuotedImapString("\"\\\\\""));
     }
 
     public void testRemoveQuotes() {
