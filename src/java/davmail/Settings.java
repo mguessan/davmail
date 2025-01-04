@@ -148,7 +148,7 @@ public final class Settings {
      */
     public static void setDefaultSettings() {
         SETTINGS_PROPERTIES.put("davmail.mode", "EWS");
-        SETTINGS_PROPERTIES.put("davmail.url", O365_URL);
+        SETTINGS_PROPERTIES.put("davmail.url", getO365Url());
         SETTINGS_PROPERTIES.put("davmail.popPort", "1110");
         SETTINGS_PROPERTIES.put("davmail.imapPort", "1143");
         SETTINGS_PROPERTIES.put("davmail.smtpPort", "1025");
@@ -743,11 +743,23 @@ public final class Settings {
         return getProperty("davmail.userAgent", Settings.EDGE_USER_AGENT);
     }
 
-    public static String getO365Url() {
+    public static String getOutlookUrl() {
         String tld = getProperty("davmail.tld");
         String outlookUrl = getProperty("davmail.outlookUrl");
         if (outlookUrl != null) {
             return outlookUrl;
+        } else if (tld == null) {
+            return OUTLOOK_URL;
+        } else {
+            return  "https://outlook.office365."+tld;
+        }
+    }
+
+    public static String getO365Url() {
+        String tld = getProperty("davmail.tld");
+        String outlookUrl = getProperty("davmail.outlookUrl");
+        if (outlookUrl != null) {
+            return outlookUrl+"/EWS/Exchange.asmx";
         } else if (tld == null) {
             return O365_URL;
         } else {
