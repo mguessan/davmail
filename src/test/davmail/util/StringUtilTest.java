@@ -20,6 +20,9 @@ package davmail.util;
 
 import davmail.http.URIUtil;
 import junit.framework.TestCase;
+
+import java.text.ParseException;
+
 import static org.junit.Assert.assertThrows;
 
 /**
@@ -95,16 +98,16 @@ public class StringUtilTest extends TestCase {
         }
     }
 
-    public void testParseQuotedImapString() {
+    public void testParseQuotedImapString() throws ParseException {
         assertEquals("", StringUtil.parseQuotedImapString("\"\""));
         assertEquals("*", StringUtil.parseQuotedImapString("\"*\""));
-        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString(""));
-        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("test"));
+        assertThrows(ParseException.class, () -> StringUtil.parseQuotedImapString(""));
+        assertThrows(ParseException.class, () -> StringUtil.parseQuotedImapString("test"));
         assertEquals("test", StringUtil.parseQuotedImapString("\"test\""));
-        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("\"test"));
-        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("test\""));
-        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("\"\\test\""));
-        assertThrows(IllegalArgumentException.class, () -> StringUtil.parseQuotedImapString("\"test\\\""));
+        assertThrows(ParseException.class, () -> StringUtil.parseQuotedImapString("\"test"));
+        assertThrows(ParseException.class, () -> StringUtil.parseQuotedImapString("test\""));
+        assertThrows(ParseException.class, () -> StringUtil.parseQuotedImapString("\"\\test\""));
+        assertThrows(ParseException.class, () -> StringUtil.parseQuotedImapString("\"test\\\""));
         assertEquals("foo\\bar", StringUtil.parseQuotedImapString("\"foo\\\\bar\""));
         assertEquals("\\bar", StringUtil.parseQuotedImapString("\"\\\\bar\""));
         assertEquals("foo\\", StringUtil.parseQuotedImapString("\"foo\\\\\""));
