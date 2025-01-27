@@ -444,6 +444,74 @@ public final class StringUtil {
     }
 
     /**
+     * Takes a quoted string according to IMAP rfc 3501 and returns its intrinsic (unquoted) string value.
+     *
+     * <p>RFC 3501 defines a quoted string in its ABNF as follows:</p>
+     * <pre>
+     *     quoted          = DQUOTE *QUOTED-CHAR DQUOTE
+     *     DQUOTE          = %x22
+     *                       ; " (Double Quote)
+     *     QUOTED-CHAR     = &lt;any TEXT-CHAR except quoted-specials&gt; /
+     *                       "\" quoted-specials / UTF8-2 / UTF8-3 / UTF8-4
+     *     TEXT-CHAR       = &lt;any CHAR except CR and LF&gt;
+     *     quoted-specials = DQUOTE / "\"
+     * </pre>
+     *
+     * @param quoted the quoted string or null
+     * @return the unquoted string, or null if-and-only-if `quoted` was null
+     * @throws IllegalArgumentException when the given quoted string is not valid
+     */
+    public static String parseQuotedImapString(String quoted) {
+        if (null == quoted) {
+            return null;
+        }
+        byte[] quotedraw = quoted.getBytes(StandardCharsets.UTF_8);
+        if (quotedraw.length < 2) {
+            // not a quoted string. even the empty string is, in it's quoted form, represented as: "\"\""
+            // (two double quotes)
+            throw new IllegalArgumentException("Not a valid imap quoted string (too short): " + quoted);
+        }
+        if ('"' != quotedraw[0]) {
+            throw new IllegalArgumentException("Not a valid imap quoted string (does not start with double quotes): " + quoted);
+        }
+        // the result length is at least by 2 bytes shorter than the input length, as at least the two enclosing
+        // double quotes are removed.
+        byte[] resultraw = new byte[quotedraw.length - 2];
+        // 0 is the index of the first byte in resultraw that is the actual result
+        // resultpos is the index of the last byte in resultraw that is the actual result
+        // resultraw MAY have additional bytes (when resultpos + 1 < resultraw.length), that are not part of the result.
+        int resultpos = 0;
+        // a very mechanical approach, looking at one character at a time
+        boolean backslashmode = false;
+        for (int i = 1; i < quotedraw.length - 1; i++) {
+            if (!backslashmode) {
+                if ('\\' != quotedraw[i]) {
+                    resultraw[resultpos++] = quotedraw[i];
+                } else {
+                    backslashmode = true;
+                }
+            } else {
+                if ('\\' == quotedraw[i] || '"' == quotedraw[i]) {
+                    resultraw[resultpos++] = quotedraw[i];
+                    backslashmode = false;
+                } else {
+                    throw new IllegalArgumentException("Not a valid imap quoted string "
+                            + "(only '\"' and '\\' allowed after '\\') at index " + i + ": " + quoted);
+                }
+            }
+        }
+        if (backslashmode) {
+            throw new IllegalArgumentException("Not a valid imap quoted string "
+                    + "(outer ending quote is backslashed): " + quoted);
+        }
+        if ('"' != quotedraw[quotedraw.length - 1]) {
+            throw new IllegalArgumentException("Not a valid imap quoted string "
+                    + "(does not end with double quotes): " + quoted);
+        }
+        return new String(resultraw, 0, resultpos, StandardCharsets.UTF_8);
+    }
+
+    /**
      * Remove quotes if present on value.
      *
      * @param value input value
