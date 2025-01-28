@@ -749,7 +749,7 @@ public class ImapConnection extends AbstractConnection {
 
     /**
      * Detect shared mailbox access.
-     * see http://msexchangeteam.com/archive/2004/03/31/105275.aspx
+     * see <a href="https://help.ubuntu.com/community/ThunderbirdExchange">Connecting to a Microsoft Exchange Server with Thunderbird</a>
      */
     protected void splitUserName() {
         String[] tokens = null;
@@ -812,7 +812,7 @@ public class ImapConnection extends AbstractConnection {
         sendClient("* " + currentFolder.recent + " RECENT");
     }
 
-    static class MessageWrapper {
+    static protected class MessageWrapper {
         protected OutputStream os;
         protected StringBuilder buffer;
         protected ExchangeSession.Message message;
@@ -892,7 +892,7 @@ public class ImapConnection extends AbstractConnection {
                     appendEnvelope(buffer, messageWrapper);
                 } else if ("BODYSTRUCTURE".equals(param)) {
                     appendBodyStructure(buffer, messageWrapper);
-                } else if ("INTERNALDATE".equals(param) && message.date != null && message.date.length() > 0) {
+                } else if ("INTERNALDATE".equals(param) && message.date != null && !message.date.isEmpty()) {
                     try {
                         SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
                         dateParser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
@@ -937,7 +937,7 @@ public class ImapConnection extends AbstractConnection {
 
                     // try to parse message part index
                     String partIndexString = StringUtil.getToken(param, "[", "]");
-                    if ((partIndexString == null || partIndexString.length() == 0) && !"RFC822.HEADER".equals(param)) {
+                    if ((partIndexString == null || partIndexString.isEmpty()) && !"RFC822.HEADER".equals(param)) {
                         // write message with headers
                         partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
                         partInputStream = messageWrapper.getRawInputStream();
@@ -1479,7 +1479,7 @@ public class ImapConnection extends AbstractConnection {
     /**
      * client side search conditions
      */
-    static final class SearchConditions {
+    static final protected class SearchConditions {
         Boolean flagged;
         Boolean answered;
         Boolean draft;
@@ -2107,7 +2107,7 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    static class ImapTokenizer {
+    static protected class ImapTokenizer {
         char[] value;
         int startIndex;
         Stack<Character> quotes = new Stack<>();
