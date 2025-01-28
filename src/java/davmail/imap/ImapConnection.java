@@ -1847,10 +1847,6 @@ public class ImapConnection extends AbstractConnection {
         } else {
             throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
         }
-        int backslashindex = userName.indexOf('\\');
-        if (backslashindex > 0) {
-            userName = userName.substring(0, backslashindex) + userName.substring(backslashindex + 1);
-        }
     }
 
     /**
@@ -2121,7 +2117,23 @@ public class ImapConnection extends AbstractConnection {
         }
 
         public String nextToken() {
-            return StringUtil.removeQuotes(nextQuotedToken());
+            // Get next token without removing quotes ", {} or ()
+            String token = nextQuotedToken();
+            // note: literal strings not handled here.
+            if( !token.isEmpty() && '"' == token.charAt(0) ) {
+                // token is quoted string.
+                try {
+                    token = StringUtil.parseQuotedImapString(token);
+                } catch (ParseException e) {
+                    LOGGER.warn("Invalid quoted token: "+token);
+                    token = StringUtil.removeQuotes(token);
+                }
+            } else {
+                // use the general method previously also used;
+                // for example unquotes a list. I guess naming could be made better in the future.
+                token = StringUtil.removeQuotes(token);
+            }
+            return token;
         }
 
         protected boolean isQuote(char character) {
