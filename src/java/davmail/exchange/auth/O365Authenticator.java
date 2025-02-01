@@ -19,6 +19,7 @@
 
 package davmail.exchange.auth;
 
+import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.http.HttpClientAdapter;
@@ -27,6 +28,7 @@ import davmail.http.request.PostRequest;
 import davmail.http.request.ResponseWrapper;
 import davmail.http.request.RestRequest;
 import davmail.ui.NumberMatchingFrame;
+import davmail.ui.PasswordPromptDialog;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.log4j.Logger;
@@ -35,7 +37,9 @@ import org.codehaus.jettison.json.JSONObject;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.regex.Matcher;
@@ -388,12 +392,25 @@ public class O365Authenticator implements ExchangeAuthenticator {
         String urlProcessAuth = config.optString("urlPost", Settings.getO365LoginUrl() + tenantId + "/SAS/ProcessAuth");
 
         boolean isMFAMethodSupported = false;
+        String chosenAuthMethodId = null;
+        String chosenAuthMethodPrompt = null;
 
         for (int i = 0; i < config.getJSONArray("arrUserProofs").length(); i++) {
             JSONObject authMethod = (JSONObject) config.getJSONArray("arrUserProofs").get(i);
-            LOGGER.debug("Authentication method: " + authMethod.getString("authMethodId"));
-            if ("PhoneAppNotification".equals(authMethod.getString("authMethodId"))) {
+            String authMethodId = authMethod.getString("authMethodId");
+            LOGGER.debug("Authentication method: " + authMethodId);
+            if ("PhoneAppNotification".equals(authMethodId)) {
                 LOGGER.debug("Found phone app auth method " + authMethod.getString("display"));
+                isMFAMethodSupported = true;
+                chosenAuthMethodId = authMethodId;
+                chosenAuthMethodPrompt = authMethod.getString("display");
+                // prefer phone app
+                break;
+            }
+            if ("OneWaySMS".equals(authMethodId)) {
+                LOGGER.debug("Found OneWaySMS auth method " + authMethod.getString("display"));
+                chosenAuthMethodId = authMethodId;
+                chosenAuthMethodPrompt = authMethod.getString("display");
                 isMFAMethodSupported = true;
             }
         }
@@ -428,7 +445,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
         // only support PhoneAppNotification
         JSONObject beginAuthJson = new JSONObject();
-        beginAuthJson.put("AuthMethodId", "PhoneAppNotification");
+        beginAuthJson.put("AuthMethodId", chosenAuthMethodId);
         beginAuthJson.put("Ctx", context);
         beginAuthJson.put("FlowToken", flowToken);
         beginAuthJson.put("Method", "BeginAuth");
@@ -446,12 +463,14 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
         // display number matching value to user
         NumberMatchingFrame numberMatchingFrame = null;
-        if (entropy != null) {
+        if (entropy != null && !"0".equals(entropy)) {
             LOGGER.info("Number matching value for " + username + ": " + entropy);
             if (!Settings.getBooleanProperty("davmail.server") && !GraphicsEnvironment.isHeadless()) {
                 numberMatchingFrame = new NumberMatchingFrame(entropy);
             }
         }
+
+        String smsCode = retrieveSmsCode(chosenAuthMethodId, chosenAuthMethodPrompt);
 
         context = config.getString("Ctx");
         flowToken = config.getString("FlowToken");
@@ -478,12 +497,16 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 endAuthMethod.setRequestHeader("hpgrequestid", hpgrequestid);
 
                 JSONObject endAuthJson = new JSONObject();
-                endAuthJson.put("AuthMethodId", "PhoneAppNotification");
+                endAuthJson.put("AuthMethodId", chosenAuthMethodId);
                 endAuthJson.put("Ctx", context);
                 endAuthJson.put("FlowToken", flowToken);
                 endAuthJson.put("Method", "EndAuth");
                 endAuthJson.put("PollCount", "1");
                 endAuthJson.put("SessionId", sessionId);
+
+                // When in beginAuthMethod is used 'AuthMethodId': 'OneWaySMS', then in endAuthMethod is send SMS code
+                // via attribute 'AdditionalAuthData'
+                endAuthJson.put("AdditionalAuthData", smsCode);
 
                 endAuthMethod.setJsonBody(endAuthJson);
 
@@ -492,6 +515,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 String resultValue = config.getString("ResultValue");
                 if ("PhoneAppDenied".equals(resultValue) || "PhoneAppNoResponse".equals(resultValue)) {
                     throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_REASON", resultValue);
+                }
+                if ("SMSAuthFailedWrongCodeEntered".equals(resultValue)) {
+                    smsCode = retrieveSmsCode(chosenAuthMethodId, chosenAuthMethodPrompt);
                 }
                 if (config.getBoolean("Success")) {
                     success = true;
@@ -532,6 +558,23 @@ public class O365Authenticator implements ExchangeAuthenticator {
         httpClientAdapter.executePostRequest(processAuthMethod);
         return processAuthMethod.getRedirectLocation();
 
+    }
+
+    private String retrieveSmsCode(String chosenAuthMethodId, String chosenAuthMethodPrompt) throws IOException {
+        String smsCode = null;
+        if ("OneWaySMS".equals(chosenAuthMethodId)) {
+            LOGGER.info("Need to retrieve SMS verification code for " + username);
+            if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
+                // headless or server mode
+                System.out.print(BundleMessage.format("UI_SMS_PHONE_CODE", chosenAuthMethodPrompt));
+                BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
+                smsCode = inReader.readLine();
+            } else {
+                PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(BundleMessage.format("UI_SMS_PHONE_CODE", chosenAuthMethodPrompt));
+                smsCode = String.valueOf(passwordPromptDialog.getPassword());
+            }
+        }
+        return smsCode;
     }
 
     private String executeFollowRedirect(HttpClientAdapter httpClientAdapter, GetRequest getRequest) throws IOException {

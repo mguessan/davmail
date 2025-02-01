@@ -78,11 +78,11 @@ public class PasswordPromptDialog extends JDialog {
         imageLabel.setText(prompt);
         questionPanel.add(imageLabel);
 
-        passwordField.setMaximumSize(passwordField.getPreferredSize());
         passwordField.addActionListener(e -> {
             password = passwordField.getPassword();
             setVisible(false);
         });
+
         JPanel passwordPanel = new JPanel();
         passwordPanel.setLayout(new BoxLayout(passwordPanel, BoxLayout.Y_AXIS));
         if (captchaImage != null) {
@@ -96,6 +96,8 @@ public class PasswordPromptDialog extends JDialog {
         add(questionPanel, BorderLayout.NORTH);
         add(passwordPanel, BorderLayout.CENTER);
         add(getButtonPanel(), BorderLayout.SOUTH);
+        questionPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
+        passwordPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
         setModal(true);
 
         pack();
