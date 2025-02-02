@@ -38,6 +38,7 @@ public class ResolveNamesMethod extends EWSMethod {
         super("Contact", "ResolveNames", "ResolutionSet");
         addMethodOption(SearchScope.ActiveDirectory);
         addMethodOption(RETURN_FULL_CONTACT_DATA);
+        addMethodOption(ContactDataShape.AllProperties);
         unresolvedEntry = new ElementOption("m:UnresolvedEntry", value);
     }
 
@@ -88,6 +89,27 @@ public class ResolveNamesMethod extends EWSMethod {
                     handlePhysicalAddresses(reader, responseItem);
                 } else if ("PhoneNumbers".equals(tagLocalName)) {
                     handlePhoneNumbers(reader, responseItem);
+                } else if ("MSExchangeCertificate".equals(tagLocalName)
+                        || "UserSMIMECertificate".equals(tagLocalName)) {
+                    handleUserCertificate(reader, responseItem, tagLocalName);
+                } else if ("ManagerMailbox".equals(tagLocalName)
+                        || "Attachments".equals(tagLocalName)
+                        || "Photo".equals(tagLocalName)
+                        || "Notes".equals(tagLocalName)
+                        || "HasPicture".equals(tagLocalName)
+                        || "DirectoryId".equals(tagLocalName)
+                        || "Alias".equals(tagLocalName)
+                        || "Categories".equals(tagLocalName)
+                        || "InternetMessageHeaders".equals(tagLocalName)
+                        || "ResponseObjects".equals(tagLocalName)
+                        || "ExtendedProperty".equals(tagLocalName)
+                        || "EffectiveRights".equals(tagLocalName)
+                        || "CompleteName".equals(tagLocalName)
+                        || "Children".equals(tagLocalName)
+                        || "Companies".equals(tagLocalName)
+                        || "ImAddresses".equals(tagLocalName)
+                        || "DirectReports".equals(tagLocalName)) {
+                    skipTag(reader, tagLocalName);
                 } else {
                     responseItem.put(tagLocalName, XMLStreamUtil.getElementText(reader));
                 }
@@ -130,6 +152,37 @@ public class ResolveNamesMethod extends EWSMethod {
                     responseItem.put(key, value);
                 }
             }
+        }
+    }
+
+    protected void handleUserCertificate(XMLStreamReader reader, Item responseItem, String contextTagLocalName) throws XMLStreamException {
+        boolean firstValueRead = false;
+        String certificate = "";
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, contextTagLocalName)) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagLocalName = reader.getLocalName();
+                if ("Base64Binary".equals(tagLocalName)) {
+                    String value = reader.getElementText();
+                    if ((value != null) && !value.isEmpty()) {
+                        if (!firstValueRead) {
+                            // Only first certificate value will be read
+                            certificate = value;
+                        } else {
+                            LOGGER.debug("ResolveNames multiple certificates found, tagLocaleName="
+                                    + contextTagLocalName + " Certificate [" + value + "] ignored");
+                        }
+                    }
+                }
+            }
+        }
+        responseItem.put(contextTagLocalName, certificate);
+    }
+
+    protected void skipTag(XMLStreamReader reader, String tagLocalName) throws XMLStreamException {
+        LOGGER.debug("ResolveNames tag parsing skipped. tagLocalName=" + tagLocalName);
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, tagLocalName)) {
+            reader.next();
         }
     }
 

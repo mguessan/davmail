@@ -2021,6 +2021,9 @@ public abstract class ExchangeSession {
                 writer.writeLine(contactPhoto.content, true);
             }
 
+            writer.appendProperty("KEY1;X509;ENCODING=BASE64", get("msexchangecertificate"));
+            writer.appendProperty("KEY2;X509;ENCODING=BASE64", get("usersmimecertificate"));
+
             writer.endCard();
             return writer.toString();
         }
@@ -2798,6 +2801,10 @@ public abstract class ExchangeSession {
                 } else if ("PHOTO".equals(property.getKey())) {
                     properties.put("photo", property.getValue());
                     properties.put("haspicture", "true");
+                } else if ("KEY1".equals(property.getKey())) {
+                    properties.put("msexchangecertificate", property.getValue());
+                } else if ("KEY2".equals(property.getKey())) {
+                    properties.put("usersmimecertificate", property.getValue());
                 }
             }
             LOGGER.debug("Create or update contact " + itemName + ": " + properties);
@@ -3012,6 +3019,8 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("private");
         CONTACT_ATTRIBUTES.add("sensitivity");
         CONTACT_ATTRIBUTES.add("fburl");
+        CONTACT_ATTRIBUTES.add("msexchangecertificate");
+        CONTACT_ATTRIBUTES.add("usersmimecertificate");
     }
 
     protected static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<>();
@@ -3184,6 +3193,10 @@ public abstract class ExchangeSession {
             loadVtimezone();
         }
         return vTimezone;
+    }
+
+    public void clearVTimezone() {
+        vTimezone = null;
     }
 
     protected abstract void loadVtimezone();
