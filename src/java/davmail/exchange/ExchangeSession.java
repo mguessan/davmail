@@ -2146,13 +2146,17 @@ public abstract class ExchangeSession {
             if (LOGGER.isDebugEnabled() && fromServer) {
                 dumpIndex++;
                 String icsBody = new String(icsContent, StandardCharsets.UTF_8);
+                ICSCalendarValidator.ValidationResult vr = ICSCalendarValidator.validateWithDetails(icsBody); //ifrh
                 dumpICS(icsBody, true, false);
+                LOGGER.debug("Vcalendar body ValidationResult: "+ vr.isValid() +" "+ vr.showReason()); //ifrh
                 LOGGER.debug("Vcalendar body received from server:\n" + icsBody);
             }
             vCalendar = new VCalendar(icsContent, getEmail(), getVTimezone());
             vCalendar.fixVCalendar(fromServer);
             if (LOGGER.isDebugEnabled() && !fromServer) {
                 String resultString = vCalendar.toString();
+                ICSCalendarValidator.ValidationResult vr = ICSCalendarValidator.validateWithDetails(resultString); //ifrh
+                LOGGER.debug("Fixed Vcalendar body ValidationResult: "+ vr.isValid() +" "+ vr.showReason()); //ifrh
                 LOGGER.debug("Fixed Vcalendar body to server:\n" + resultString);
                 dumpICS(resultString, false, true);
             }
