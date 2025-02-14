@@ -542,7 +542,7 @@
     </target>
 
     <target name="download-jre" unless="is.windows">
-        <get src="https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=23&amp;ext=zip&amp;os=windows&amp;arch=x86&amp;hw_bitness=64&amp;bundle_type=jre&amp;features=fx"
+        <get src="https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=21&amp;ext=zip&amp;os=windows&amp;arch=x86&amp;hw_bitness=64&amp;bundle_type=jre&amp;features=fx"
              dest="dist/jrefx.zip"
         />
         <unzip src="dist/jrefx.zip" dest="dist/jre">
@@ -550,29 +550,167 @@
         </unzip>
         <delete file="dist/jrefx.zip"/>
     </target>
-
+    
     <target name="download-build-jre" if="is.windows">
+        <!-- Download and extract Zulu JDK -->
         <mkdir dir="dist"/>
         <get src="https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=21&amp;ext=zip&amp;os=windows&amp;arch=x86&amp;hw_bitness=64&amp;bundle_type=jdk&amp;features=fx"
-             dest="dist/jdkfx.zip"
-        />
+              dest="dist/jdkfx.zip"/>
         <unzip src="dist/jdkfx.zip" dest="dist/jdk">
             <cutdirsmapper dirs="1"/>
         </unzip>
         <delete file="dist/jdkfx.zip"/>
+    
+        <!--   jdeps complains about clashed and missing jar files
+        
+             [exec] Warnung: geteiltes Package: jdk.internal.jimage jrt:/java.base C:\Tools\build\davmail-fix_WinStandaloneJRE\dist\jdk\lib\jrt-fs.jar
+             [exec] Warnung: geteiltes Package: jdk.internal.jimage.decompressor jrt:/java.base C:\Tools\build\davmail-fix_WinStandaloneJRE\dist\jdk\lib\jrt-fs.jar
+             [exec] Warnung: geteiltes Package: jdk.internal.jrtfs jrt:/java.base C:\Tools\build\davmail-fix_WinStandaloneJRE\dist\jdk\lib\jrt-fs.jar
+             [exec] Warnung: geteiltes Package: javax.xml jrt:/java.xml C:\Tools\build\davmail-fix_WinStandaloneJRE\dist\lib\stax-api-1.0.1.jar
+             [exec] davmail.jar -> nicht gefunden
+             [exec]    davmail.web.DavGatewayServletContextListener       -> javax.servlet.ServletContextEvent nicht gefunden
+             [exec]    davmail.web.DavGatewayServletContextListener       -> javax.servlet.ServletContextListener nicht gefunden
+             [exec] jackrabbit-webdav-2.20.15.jar -> nicht gefunden
+             [exec]    org.apache.jackrabbit.webdav.DavServletRequest     -> javax.servlet.http.HttpServletRequest nicht gefunden
+             [exec]    org.apache.jackrabbit.webdav.DavServletResponse    -> javax.servlet.http.HttpServletResponse nicht gefunden
+             [exec]    org.apache.jackrabbit.webdav.header.DepthHeader    -> javax.servlet.http.HttpServletRequest nicht gefunden
+             [exec]    org.apache.jackrabbit.webdav.header.TimeoutHeader  -> javax.servlet.http.HttpServletRequest nicht gefunden
+        -->
+        <!-- download missing dependency -->
+        <get src="https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar"
+             dest="dist/lib/javax.servlet-api-4.0.1.jar"/>
+        <get src="https://repo1.maven.org/maven2/org/apache/jackrabbit/jackrabbit-webdav/2.20.15/jackrabbit-webdav-2.20.15.jar"
+             dest="dist/lib/jackrabbit-webdav-2.20.15.jar"/>
 
-        <echo message="Create custom jre"/>
+        <!-- Remove clashed JAR-file -->
+        <delete file="dist/lib/stax-api-1.0.1.jar"/>
+        <delete file="dist/jdk/lib/jrt-fs.jar"/>
+
+             
+        <!-- Create batch file for jdeps and jlink interaction -->
+        <echo level="info">Creating batch file for JRE creation...</echo>
+        <echo file="create-custom-jre.bat" encoding="ASCII">
+            <![CDATA[
+                @echo off
+                setlocal enabledelayedexpansion
+                
+                REM Set paths based on arguments
+                set "DIST_DIR=%~1"
+                set "CUSTOM_JRE_DIR=%DIST_DIR%\jre"
+                set "JAVA_HOME=%DIST_DIR%\jdk"
+                
+                REM Show current working directory
+                echo Working directory: %CD%
+                echo Distribution directory: %DIST_DIR%
+                echo Custom JRE directory: %CUSTOM_JRE_DIR%
+                echo Java home: %JAVA_HOME%
+                
+                REM Create directories
+                echo Creating directory "%CUSTOM_JRE_DIR%"
+                mkdir "%CUSTOM_JRE_DIR%" > nul 2>&1
+                if exist "%CUSTOM_JRE_DIR%" (
+                   echo ...done
+                   REM dir %DIST_DIR%
+                ) else (
+                   echo ...failed
+                   exit /b 1
+                )
+                
+                REM Verify Java executables exist
+                if not exist "%JAVA_HOME%\bin\jdeps.exe" (
+                    echo Error: jdeps.exe not found
+                    exit /b 1
+                )
+                if not exist "%JAVA_HOME%\bin\jlink.exe" (
+                    echo Error: jlink.exe not found
+                    exit /b 1
+                )
+                
+                echo dir "%JAVA_HOME%\lib"
+                dir "%JAVA_HOME%\lib"
+                
+                echo dir "%DIST_DIR%\lib"
+                dir "%DIST_DIR%\lib"
+                
+                REM Analyze dependencies using jdeps
+                echo Analyzing dependencies...
+                echo "%JAVA_HOME%\bin\jdeps.exe" -summary --recursive ^
+                    --module-path "%JAVA_HOME%\jmods" ^
+                    --class-path "%DIST_DIR%\lib\*;%JAVA_HOME%\lib\*" "%DIST_DIR%\davmail.jar"
+                "%JAVA_HOME%\bin\jdeps.exe" -summary --recursive ^
+                    --module-path "%JAVA_HOME%\jmods" ^
+                    --class-path "%DIST_DIR%\lib\*;%JAVA_HOME%\lib\*" "%DIST_DIR%\davmail.jar"
+                
+                echo Show missing deps info ...
+                echo "%JAVA_HOME%\bin\jdeps.exe" --recursive --missing-deps ^
+                    --module-path "%JAVA_HOME%\jmods" ^
+                    --class-path "%DIST_DIR%\lib\*;%JAVA_HOME%\lib\*" "%DIST_DIR%\davmail.jar"
+                "%JAVA_HOME%\bin\jdeps.exe" --missing-deps -recursive ^
+                    --module-path "%JAVA_HOME%\jmods" ^
+                    --class-path "%DIST_DIR%\lib\*;%JAVA_HOME%\lib\*" "%DIST_DIR%\davmail.jar"
+                    
+                    
+                REM Extract module requirements
+                echo Extracting required modules...
+                echo "%JAVA_HOME%\bin\jdeps.exe" --print-module-deps ^
+                    --ignore-missing-deps ^
+                    --module-path "%JAVA_HOME%\jmods" ^
+                    --class-path "%DIST_DIR%\lib\*;%JAVA_HOME%\lib\*" "%DIST_DIR%\davmail.jar" > "%CUSTOM_JRE_DIR%\module-deps.txt"
+                "%JAVA_HOME%\bin\jdeps.exe" --print-module-deps ^
+                    --ignore-missing-deps ^
+                    --module-path "%JAVA_HOME%\jmods" ^
+                    --class-path "%DIST_DIR%\lib\*;%JAVA_HOME%\lib\*" "%DIST_DIR%\davmail.jar" > "%CUSTOM_JRE_DIR%\module-deps.txt"
+                
+                    
+                REM Create custom JRE using jlink
+                echo Creating custom JRE...
+                echo "%JAVA_HOME%\bin\jlink.exe" --module-path "%JAVA_HOME%\jmods" ^
+                    --add-modules @%CUSTOM_JRE_DIR%\module-deps.txt ^
+                    --output "%CUSTOM_JRE_DIR%/runtime" ^
+                    --bind-services ^
+                    --no-header-files ^
+                    --no-man-pages ^
+                    --strip-debug
+                "%JAVA_HOME%\bin\jlink.exe" --module-path "%JAVA_HOME%\jmods" ^
+                    --add-modules @%CUSTOM_JRE_DIR%\module-deps.txt ^
+                    --output "%CUSTOM_JRE_DIR%/runtime" ^
+                    --bind-services ^
+                    --no-header-files ^
+                    --no-man-pages ^
+                    --strip-debug                    
+                    
+                REM Verify the custom JRE
+                echo Verifying custom JRE...
+                if exist "%CUSTOM_JRE_DIR%\runtime\bin\java.exe" (
+                    "%CUSTOM_JRE_DIR%\runtime\bin\java.exe" --list-modules
+                ) else (
+                    echo Error: java.exe not found in runtime directory
+                    exit /b 1
+                )
+                exit 0
+            ]]>
+        </echo>
+        <!-- start with a cleaned target for JRE -->
         <delete dir="dist/jre"/>
-        <exec dir="." executable="dist/jdk/bin/jlink.exe">
-            <arg value="--add-modules"/>
-            <arg value="java.base,java.datatransfer,java.desktop,java.naming,java.security.jgss,java.security.sasl,java.xml,javafx.base,javafx.controls,javafx.graphics,javafx.swing,javafx.web"/>
-            <arg value="--output"/>
-            <arg value="dist/jre"/>
-            <arg value="--strip-debug"/>
-            <arg value="--no-man-pages"/>
-            <arg value="--no-header-files"/>
+        <!-- Execute the batch file -->
+        <echo level="info">Executing batch file to create custom JRE...</echo>
+        <exec dir="." executable="cmd" failonerror="true">
+            <arg line="/c create-custom-jre.bat ${basedir}\dist"/>
         </exec>
-        <delete dir="dist/jdk"/>
+    
+        <move todir="dist/jre">
+            <fileset dir="dist/jre/runtime" includes="**/*"/>
+        </move>
+    
+        <delete dir="dist/jre/runtime"/>        
+        
+        <!-- nsis needs the file there back again -->
+        <copy file="lib/stax-api-1.0.1.jar" 
+          tofile="dist/lib/stax-api-1.0.1.jar"
+          overwrite="true"/>
+        
+        <!-- Clean up -->
+        <delete file="create-custom-jre.bat"/>
     </target>
 
 </project>
