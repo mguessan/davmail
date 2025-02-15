@@ -66,7 +66,7 @@ public class ICSBufferedReader extends BufferedReader {
                 }
                 nextLine = super.readLine();
             }
-            return currentLine.toString();
+            return ICSCalendarValidator.repairICSContent(currentLine.toString());
         }
     }
 }
