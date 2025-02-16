@@ -47,6 +47,7 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
     }
     protected Date startDate;
     protected Date endDate;
+    protected String count;
     protected HashSet<String> byDays = null;
 
     public void setStartDate(Date startDate) {
@@ -71,6 +72,10 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
         if (recurrencePattern == RecurrencePattern.DailyRecurrence) {
             recurrencePattern = RecurrencePattern.WeeklyRecurrence;
         }
+    }
+
+    public void setCount(String count) {
+        this.count = count;
     }
 
     public enum RecurrencePattern {DailyRecurrence, WeeklyRecurrence,  AbsoluteMonthlyRecurrence, AbsoluteYearlyRecurrence}
@@ -162,7 +167,16 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
     }
 
     private void writeStartEnd(Writer writer) throws IOException {
-        if (endDate == null) {
+        if (count != null) {
+            writer.write("<t:NumberedRecurrence>");
+            writer.write("<t:StartDate>");
+            writer.write(getFormattedDate(startDate));
+            writer.write("</t:StartDate>");
+            writer.write("<t:NumberOfOccurrences>");
+            writer.write(count);
+            writer.write("</t:NumberOfOccurrences>");
+            writer.write("</t:NumberedRecurrence>");
+        } else if (endDate == null) {
             writer.write("<t:NoEndRecurrence><t:StartDate>");
             writer.write(getFormattedDate(startDate));
             writer.write("</t:StartDate></t:NoEndRecurrence>");

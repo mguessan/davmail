@@ -1680,6 +1680,8 @@ public class EwsExchangeSession extends ExchangeSession {
                                 case "UNTIL":
                                     recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value) + "Z"));
                                     break;
+                                case "COUNT":
+                                    recurrenceFieldUpdate.setCount(value);
                                 case "BYDAY":
                                     recurrenceFieldUpdate.setByDay(value.split(","));
                                     break;
