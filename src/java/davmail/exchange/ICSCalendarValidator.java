@@ -1,4 +1,4 @@
-package davmail.exchange; 
+package davmail.exchange;
 import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 
@@ -6,7 +6,7 @@ import org.apache.log4j.Logger;
  * Validator for iCalendar data according to RFC 5545 specifications.
  * This implementation provides comprehensive validation and repair capabilities for iCalendar content,
  * specifically focusing on character validation rather than XML structure.
- * 
+ *
  * This helpful tool addresses synchronization issues between different calendar clients
  * (OWA, Outlook, and Thunderbird via DavMail) where calendar entries containing invalid
  * characters are handled differently across platforms. These problematic entries originate
@@ -16,7 +16,7 @@ import org.apache.log4j.Logger;
  * validator provides detailed validation information about invalid characters and offers
  * repair functionality to automatically remove problematic characters while preserving
  * valid content.
- * 
+ *
  * The implementation was developed to address a specific issue where calendar entries
  * containing invalid string content are hidden in OWA and Outlook, making them inaccessible
  * for manual deletion or repair. Since these entries are not visible in OWA and Outlook,
@@ -33,9 +33,8 @@ import org.apache.log4j.Logger;
 public class ICSCalendarValidator {
     protected static final Logger LOGGER = Logger.getLogger(ICSCalendarValidator.class);
     // Optimized pattern for validation
-    private static final Pattern VALID_CHARS_PATTERN = 
+    private static final Pattern VALID_CHARS_PATTERN =
             Pattern.compile("^[\\x20-\\x7E\u0080-\uFFFF]*$");
-    
     // Constants for better readability
     private static final char NULL_BYTE = '\u0000';
     private static final char SPACE = ' ';
@@ -97,7 +96,7 @@ public class ICSCalendarValidator {
     public static String repairICSContent(String content) {
         if (content == null) return null;
         String message ="ICSCalendarValidator repair characters in ICS content:";
-        
+
         StringBuilder repaired = new StringBuilder();
         boolean lastWasInvalid = false;
 
@@ -112,9 +111,9 @@ public class ICSCalendarValidator {
         }
         String fixed = repaired.toString().trim();
         // just put output to debug logger, only if some invalid characters has been changed.
-        if (!content.equals(fixed)){ 
-            LOGGER.debug ( message + "\n[" + content + "]\n => [" + fixed + "]\n fix complete."); 
-	}
+        if (!content.equals(fixed)){
+            LOGGER.debug ( message + "\n[" + content + "]\n => [" + fixed + "]\n fix complete.");
+        }
         return fixed ;
     }
 
@@ -127,7 +126,7 @@ public class ICSCalendarValidator {
      * @param c The character to check
      * @return true if the character is valid
      */
-    private static boolean isValidChar(char c) {
+    static boolean isValidChar(char c) {
         return c > 0 && !(c == DELETE || (c >= 128 && c <= 159));
     }
 

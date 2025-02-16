@@ -2155,8 +2155,8 @@ public abstract class ExchangeSession {
             vCalendar.fixVCalendar(fromServer);
             if (LOGGER.isDebugEnabled() && !fromServer) {
                 String resultString = vCalendar.toString();
-                ICSCalendarValidator.ValidationResult vr = ICSCalendarValidator.validateWithDetails(resultString); 
-                LOGGER.debug("Fixed Vcalendar body ValidationResult: "+ vr.isValid() +" "+ vr.showReason()); 
+                ICSCalendarValidator.ValidationResult vr = ICSCalendarValidator.validateWithDetails(resultString);
+                LOGGER.debug("Fixed Vcalendar body ValidationResult: "+ vr.isValid() +" "+ vr.showReason());
                 LOGGER.debug("Fixed Vcalendar body to server:\n" + resultString);
                 dumpICS(resultString, false, true);
             }

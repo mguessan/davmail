@@ -1,10 +1,9 @@
-// auto generated testcases based on code 
+// auto generated testcases based on code
 // class under test is davmail/src/java/davmail/exchange/ICSCalendarValidator.java
 
 package davmail.exchange;
 
 import junit.framework.TestCase;
-import davmail.exchange.ICSCalendarValidator;
 
 public class TestICSCalendarValidator extends TestCase {
     // Test data constants
@@ -12,10 +11,6 @@ public class TestICSCalendarValidator extends TestCase {
     private static final String TEXT_WITH_NULLS = "Hello\u0000World";
     private static final String TEXT_WITH_INVALID_CHARS = "Hello\u007FWorld";
     private static final String MIXED_TEXT = "Hello\u0000\u0080World\u007F";
-
-    public TestICSCalendarValidator(String testName) {
-        super(testName);
-    }
 
     public void testIsValidICSContent_Null() {
         assertFalse(ICSCalendarValidator.isValidICSContent(null));
