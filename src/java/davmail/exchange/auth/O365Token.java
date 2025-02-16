@@ -57,14 +57,14 @@ public class O365Token {
     public O365Token(String tenantId, String clientId, String redirectUri, String password) {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
-        this.tokenUrl = Settings.getO365LoginUrl() + tenantId + "/oauth2/token";
+        this.tokenUrl = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/token";
         this.password = password;
     }
 
     public O365Token(String tenantId, String clientId, String redirectUri, String code, String password) throws IOException {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
-        this.tokenUrl = Settings.getO365LoginUrl() + tenantId + "/oauth2/token";
+        this.tokenUrl = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/token";
         this.password = password;
 
         ArrayList<NameValuePair> parameters = new ArrayList<>();

@@ -46,7 +46,7 @@ public final class Settings {
 
     public static final String GRAPH_URL = "https://graph.microsoft.com";
 
-    public static final String O365_LOGIN_URL = "https://login.microsoftonline.com/";
+    public static final String O365_LOGIN_URL = "https://login.microsoftonline.com";
 
     public static final String O365 = "O365";
     public static final String O365_MODERN = "O365Modern";
@@ -775,7 +775,7 @@ public final class Settings {
         } else if (tld == null) {
             return O365_LOGIN_URL;
         } else {
-            return  "https://login.microsoftonline."+tld+"/";
+            return  "https://login.microsoftonline."+tld;
         }
     }
 }
