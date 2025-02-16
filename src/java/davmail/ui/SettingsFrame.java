@@ -105,7 +105,7 @@ public class SettingsFrame extends JFrame {
     protected JCheckBox enableKerberosCheckBox;
     protected JTextField folderSizeLimitField;
     protected JCheckBox smtpSaveInSentCheckBox;
-	protected JCheckBox imapAlwaysApproxMsgSizeCheckBox;
+    protected JCheckBox imapAlwaysApproxMsgSizeCheckBox;
 
     protected JTextField oauthTenantIdField;
     protected JTextField oauthClientIdField;
@@ -173,12 +173,12 @@ public class SettingsFrame extends JFrame {
             modeComboBox.setToolTipText(BundleMessage.format("UI_"+selectedItem+"_HELP"));
             if (selectedItem != null && selectedItem.startsWith("O365")) {
                 urlField.setEnabled(false);
-                urlField.setText(Settings.O365_URL);
+                urlField.setText(Settings.getO365Url());
             } else {
                 urlField.setEnabled(true);
             }
         });
-        urlField = new JTextField(Settings.getProperty("davmail.url"), 20);
+        urlField = new JTextField(Settings.getProperty("davmail.url", Settings.getO365Url()), 20);
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         popPortCheckBox = new JCheckBox();
         popNoSSLCheckBox = new JCheckBox(BundleMessage.format("UI_NO_SSL"), Settings.getBooleanProperty("davmail.ssl.nosecurepop"));
@@ -472,8 +472,8 @@ public class SettingsFrame extends JFrame {
         disableTrayActivitySwitchCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableTrayActivitySwitch", false));
         imapAutoExpungeCheckBox = new JCheckBox();
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
-		imapAlwaysApproxMsgSizeCheckBox = new JCheckBox();
-		imapAlwaysApproxMsgSizeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize", false));
+        imapAlwaysApproxMsgSizeCheckBox = new JCheckBox();
+        imapAlwaysApproxMsgSizeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize", false));
         enableKeepAliveCheckBox = new JCheckBox();
         enableKeepAliveCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKeepAlive", false));
         popMarkReadOnRetrCheckBox = new JCheckBox();
@@ -596,7 +596,7 @@ public class SettingsFrame extends JFrame {
      */
     public void reload() {
         // reload settings in form
-        urlField.setText(Settings.getProperty("davmail.url"));
+        urlField.setText(Settings.getProperty("davmail.url", Settings.getO365Url()));
         popPortField.setText(Settings.getProperty("davmail.popPort"));
         popPortCheckBox.setSelected(Settings.getProperty("davmail.popPort") != null && !Settings.getProperty("davmail.popPort").isEmpty());
         popNoSSLCheckBox.setSelected(Settings.getBooleanProperty("davmail.ssl.nosecurepop"));

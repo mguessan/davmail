@@ -951,7 +951,7 @@ public class LdapConnection extends AbstractConnection {
         objectClasses.add("organizationalUnit");
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("objectClass", objectClasses);
-        attributes.put("description", "DavMail Gateway LDAP for " + Settings.getProperty("davmail.url"));
+        attributes.put("description", "DavMail Gateway LDAP for " + Settings.getProperty("davmail.url", Settings.getO365Url()));
         sendEntry(currentMessageId, BASE_CONTEXT, attributes);
     }
 

@@ -88,7 +88,7 @@ public final class ExchangeSessionFactory {
      * @throws IOException on error
      */
     public static ExchangeSession getInstance(String userName, String password) throws IOException {
-        String baseUrl = Settings.getProperty("davmail.url");
+        String baseUrl = Settings.getProperty("davmail.url", Settings.getO365Url());
         if (Settings.getBooleanProperty("davmail.server")) {
             return getInstance(baseUrl, userName, password);
         } else {
@@ -124,7 +124,7 @@ public final class ExchangeSessionFactory {
             String mode = Settings.getProperty("davmail.mode");
             if (Settings.O365.equals(mode)) {
                 // force url with O365
-                baseUrl = Settings.O365_URL;
+                baseUrl = Settings.getO365Url();
             }
 
             PoolKey poolKey = new PoolKey(baseUrl, userName, password);
@@ -277,7 +277,7 @@ public final class ExchangeSessionFactory {
             if (session.isExpired()) {
                 ExchangeSession.LOGGER.debug("Session " + session + " expired, trying to open a new one");
                 session = null;
-                String baseUrl = Settings.getProperty("davmail.url");
+                String baseUrl = Settings.getProperty("davmail.url", Settings.getO365Url());
                 PoolKey poolKey = new PoolKey(baseUrl, userName, password);
                 // expired session, remove from cache
                 synchronized (LOCK) {
@@ -301,7 +301,7 @@ public final class ExchangeSessionFactory {
      * @throws IOException if unable to access Exchange server
      */
     public static void checkConfig() throws IOException {
-        String url = Settings.getProperty("davmail.url");
+        String url = Settings.getProperty("davmail.url", Settings.getO365Url());
         if (url == null || (!url.startsWith("http://") && !url.startsWith("https://"))) {
             throw new DavMailException("LOG_INVALID_URL", url);
         }
