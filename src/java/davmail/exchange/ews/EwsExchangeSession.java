@@ -1823,7 +1823,17 @@ public class EwsExchangeSession extends ExchangeSession {
                 updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
                 updates.add(Field.createFieldUpdate("subject", vCalendar.getFirstVeventPropertyValue("SUMMARY")));
                 updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
-                updates.add(Field.createFieldUpdate("keywords", vCalendar.getFirstVeventPropertyValue("CATEGORIES")));
+
+                // handle multiple keywords/categories
+                List<VProperty> categories = vCalendar.getFirstVeventProperties("CATEGORIES");
+                if (categories != null) {
+                    HashSet<String> categoryValues = new HashSet<>();
+                    for (VProperty category : categories) {
+                        categoryValues.add(category.getValue());
+                    }
+                    updates.add(Field.createFieldUpdate("keywords", StringUtil.join(categoryValues, ",")));
+                }
+
                 updates.add(Field.createFieldUpdate("startdate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
                 updates.add(Field.createFieldUpdate("duedate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
                 updates.add(Field.createFieldUpdate("datecompleted", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("COMPLETED"))));
