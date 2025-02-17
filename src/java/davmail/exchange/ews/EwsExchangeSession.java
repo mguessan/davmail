@@ -1682,6 +1682,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                     break;
                                 case "COUNT":
                                     recurrenceFieldUpdate.setCount(value);
+                                    break;
                                 case "BYDAY":
                                     recurrenceFieldUpdate.setByDay(value.split(","));
                                     break;
