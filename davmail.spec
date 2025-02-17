@@ -143,7 +143,11 @@ ln -sf %{_sysconfdir}/init.d/davmail $RPM_BUILD_ROOT%{_sbindir}/rcdavmail
 # Actual DavMail files
 install -m 0644 src/java/tray32.png $RPM_BUILD_ROOT%{_datadir}/pixmaps/davmail.png
 rm -f dist/lib/*win32*.jar
+%if 0%{?el6} || 0%{?el7} || 0%{?el8} || 0%{?el9} || 0%{?fedora} || 0%{?is_opensuse} || 0%{?suse_version}
+echo use included swt
+%else
 [ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar $RPM_BUILD_ROOT%{_datadir}/davmail/lib/swt.jar || ln -s /usr/lib/java/swt.jar $RPM_BUILD_ROOT%{_datadir}/davmail/lib/swt.jar
+%endif
 rm -f dist/lib/*x86*.jar
 rm -f dist/lib/*growl*.jar
 rm -f dist/lib/javafx*.jar
