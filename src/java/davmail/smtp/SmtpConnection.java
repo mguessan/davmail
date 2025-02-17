@@ -27,13 +27,13 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 
+import javax.mail.MessagingException;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ public class SmtpConnection extends AbstractConnection {
         try {
             ExchangeSessionFactory.checkConfig();
             sendClient("220 DavMail " + DavGateway.getCurrentVersion() + " SMTP ready at " + new Date());
-            for (; ;) {
+            for (; ; ) {
                 line = readClient();
                 // unable to read line, connection closed ?
                 if (line == null) {
@@ -107,7 +107,7 @@ public class SmtpConnection extends AbstractConnection {
                                 authenticate();
                             } else if ("LOGIN".equalsIgnoreCase(authType)) {
                                 if (tokens.hasMoreTokens()) {
-                                    // user name sent on auth line
+                                    // username sent on auth line
                                     userName = IOUtil.decodeBase64AsString(tokens.nextToken());
                                     sendClient("334 " + IOUtil.encodeBase64AsString("Password:"));
                                     state = State.PASSWORD;
@@ -158,13 +158,7 @@ public class SmtpConnection extends AbstractConnection {
 
                             try {
                                 // read message in buffer
-                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                DoubleDotInputStream doubleDotInputStream = new DoubleDotInputStream(in);
-                                int b;
-                                while ((b = doubleDotInputStream.read()) >= 0) {
-                                    baos.write(b);
-                                }
-                                MimeMessage mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(baos.toByteArray()));
+                                MimeMessage mimeMessage = getMimeMessage();
                                 session.sendMessage(recipients, mimeMessage);
                                 state = State.AUTHENTICATED;
                                 sendClient("250 Queued mail for delivery");
@@ -210,7 +204,7 @@ public class SmtpConnection extends AbstractConnection {
             DavGatewayTray.log(e);
             try {
                 // append a line feed to avoid thunderbird message drop
-                sendClient("421 " + ((e.getMessage() == null) ? e : e.getMessage())+"\n");
+                sendClient("421 " + ((e.getMessage() == null) ? e : e.getMessage()) + "\n");
             } catch (IOException e2) {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
@@ -218,6 +212,16 @@ public class SmtpConnection extends AbstractConnection {
             close();
         }
         DavGatewayTray.resetIcon();
+    }
+
+    private MimeMessage getMimeMessage() throws IOException, MessagingException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DoubleDotInputStream doubleDotInputStream = new DoubleDotInputStream(in);
+        int b;
+        while ((b = doubleDotInputStream.read()) >= 0) {
+            baos.write(b);
+        }
+        return new MimeMessage(null, new SharedByteArrayInputStream(baos.toByteArray()));
     }
 
     /**
@@ -254,10 +258,10 @@ public class SmtpConnection extends AbstractConnection {
     protected void decodeCredentials(String encodedCredentials) throws IOException {
         String decodedCredentials = IOUtil.decodeBase64AsString(encodedCredentials);
         int startIndex = decodedCredentials.indexOf((char) 0);
-        if (startIndex >=0) {
-            int endIndex = decodedCredentials.indexOf((char) 0, startIndex+1);
-            if (endIndex >=0) {
-                userName = decodedCredentials.substring(startIndex+1, endIndex);
+        if (startIndex >= 0) {
+            int endIndex = decodedCredentials.indexOf((char) 0, startIndex + 1);
+            if (endIndex >= 0) {
+                userName = decodedCredentials.substring(startIndex + 1, endIndex);
                 password = decodedCredentials.substring(endIndex + 1);
             } else {
                 throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
