@@ -25,6 +25,7 @@ BuildRequires:	xml-commons-apis
 %endif
 
 %{?fedora:BuildRequires: java-latest-openjdk-devel}
+%{?fedora:BuildRequires: ant-unbound}
 %{?el9:BuildRequires: java-latest-openjdk-devel}
 
 %if 0%{?el7} || 0%{?el8}
