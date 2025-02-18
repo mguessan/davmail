@@ -168,6 +168,7 @@ public class ResolveNamesMethod extends EWSMethod {
                         if (!firstValueRead) {
                             // Only first certificate value will be read
                             certificate = value;
+                            firstValueRead = true;
                         } else {
                             LOGGER.debug("ResolveNames multiple certificates found, tagLocaleName="
                                     + contextTagLocalName + " Certificate [" + value + "] ignored");

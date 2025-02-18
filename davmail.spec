@@ -1,4 +1,4 @@
-%define systemd_support 0%{?suse_version} || 0%{?el7} || 0%{?el8} || 0%{?fedora}
+%define systemd_support 0%{?suse_version} || 0%{?el7} || 0%{?el8} || 0%{?el9} || 0%{?fedora}
 %define systemd_macros 0%{?suse_version}
 
 Summary: A POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
@@ -13,9 +13,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: ant >= 1.7.1, desktop-file-utils
 %{?fedora:BuildRequires: lua}
 # required to define _unitdir macro
-%{?fedora:BuildRequires: systemd}
-%{?el7:BuildRequires: systemd}
-%{?el8:BuildRequires: systemd}
+%{?systemd_support:BuildRequires: systemd}
 # same on suse
 %if %systemd_macros
 BuildRequires: systemd-rpm-macros
@@ -27,6 +25,7 @@ BuildRequires:	xml-commons-apis
 %endif
 
 %{?fedora:BuildRequires: java-latest-openjdk-devel}
+%{?el9:BuildRequires: java-latest-openjdk-devel}
 
 %if 0%{?el7} || 0%{?el8}
 BuildRequires: java-1.8.0-openjdk-devel
@@ -44,7 +43,7 @@ BuildRequires: eclipse-swt
 %endif
 
 # compile with JavaFX on Fedora
-%if 0%{?fedora} > 38
+%if 0%{?fedora} > 38 || 0%{?el9}
 BuildRequires: openjfx
 %endif
 
@@ -62,6 +61,7 @@ Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
 %endif
 
 %{?fedora:Requires: java}
+%{?el9:Requires: java}
 %if 0%{?el7} || 0%{?el8}
 Requires: java-1.8.0-openjdk
 %endif
@@ -96,7 +96,7 @@ export JAVA_HOME=${java_home}
 # /scratch/rpmbuild/davmail-src-4.2.0-2066/build.xml:41: Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8
 export ANT_OPTS="-Dfile.encoding=UTF-8"
 
-%if 0%{?el6} || 0%{?el7} || 0%{?el8} || 0%{?fedora} || 0%{?is_opensuse} || 0%{?suse_version}
+%if 0%{?el6} || 0%{?el7} || 0%{?el8} || 0%{?el9} || 0%{?fedora} || 0%{?is_opensuse} || 0%{?suse_version}
 echo keep included swt on el7 and opensuse
 %else
 # externalize SWT

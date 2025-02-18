@@ -105,7 +105,7 @@ public class SettingsFrame extends JFrame {
     protected JCheckBox enableKerberosCheckBox;
     protected JTextField folderSizeLimitField;
     protected JCheckBox smtpSaveInSentCheckBox;
-	protected JCheckBox imapAlwaysApproxMsgSizeCheckBox;
+    protected JCheckBox imapAlwaysApproxMsgSizeCheckBox;
 
     protected JTextField oauthTenantIdField;
     protected JTextField oauthClientIdField;
@@ -472,8 +472,8 @@ public class SettingsFrame extends JFrame {
         disableTrayActivitySwitchCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableTrayActivitySwitch", false));
         imapAutoExpungeCheckBox = new JCheckBox();
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
-		imapAlwaysApproxMsgSizeCheckBox = new JCheckBox();
-		imapAlwaysApproxMsgSizeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize", false));
+        imapAlwaysApproxMsgSizeCheckBox = new JCheckBox();
+        imapAlwaysApproxMsgSizeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize", false));
         enableKeepAliveCheckBox = new JCheckBox();
         enableKeepAliveCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKeepAlive", false));
         popMarkReadOnRetrCheckBox = new JCheckBox();

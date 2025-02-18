@@ -127,7 +127,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         // common DavMail client id
         String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         // standard native app redirectUri
-        String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", Settings.getO365LoginUrl()+"common/oauth2/nativeclient");
+        String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", Settings.getO365LoginUrl()+"/common/oauth2/nativeclient");
         // company tenantId or common
         tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
@@ -163,7 +163,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
                 String referer = getRequest.getURI().toString();
 
-                RestRequest getCredentialMethod = new RestRequest(Settings.getO365LoginUrl() + tenantId + "/GetCredentialType");
+                RestRequest getCredentialMethod = new RestRequest(Settings.getO365LoginUrl()  + "/" + tenantId + "/GetCredentialType");
                 getCredentialMethod.setRequestHeader("Accept", "application/json");
                 getCredentialMethod.setRequestHeader("canary", apiCanary);
                 getCredentialMethod.setRequestHeader("client-request-id", clientRequestId);
@@ -195,7 +195,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     LOGGER.debug("Detected ADFS, redirecting to " + federationRedirectUrl);
                     code = authenticateRedirectADFS(httpClientAdapter, federationRedirectUrl, url);
                 } else {
-                    PostRequest logonMethod = new PostRequest(Settings.getO365LoginUrl() + tenantId + "/login");
+                    PostRequest logonMethod = new PostRequest(Settings.getO365LoginUrl()  + "/" + tenantId + "/login");
                     logonMethod.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
                     logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
@@ -389,7 +389,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         String urlBeginAuth = config.getString("urlBeginAuth");
         String urlEndAuth = config.getString("urlEndAuth");
         // Get processAuth url from config
-        String urlProcessAuth = config.optString("urlPost", Settings.getO365LoginUrl() + tenantId + "/SAS/ProcessAuth");
+        String urlProcessAuth = config.optString("urlPost", Settings.getO365LoginUrl()  + "/" + tenantId + "/SAS/ProcessAuth");
 
         boolean isMFAMethodSupported = false;
         String chosenAuthMethodId = null;

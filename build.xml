@@ -326,7 +326,6 @@
                     <exclude name="junit-*.jar"/>
                     <exclude name="hamcrest-core-*.jar"/>
                     <exclude name="nsisant-*.jar"/>
-                    <exclude name="servlet-api-*.jar"/>
                     <exclude name="swt-*.jar"/>
                     <exclude name="winrun4j-*.jar"/>
                 </fileset>
@@ -353,7 +352,6 @@
                 <include name="*.jar"/>
                 <include name="*.jnilib"/>
                 <exclude name="nsisant*.jar"/>
-                <exclude name="servlet-api.jar"/>
                 <exclude name="ant-deb-*.jar"/>
                 <exclude name="log4j-*.jar"/>
             </fileset>
@@ -542,7 +540,7 @@
     </target>
 
     <target name="download-jre" unless="is.windows">
-        <get src="https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=23&amp;ext=zip&amp;os=windows&amp;arch=x86&amp;hw_bitness=64&amp;bundle_type=jre&amp;features=fx"
+        <get src="https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=21&amp;ext=zip&amp;os=windows&amp;arch=x86&amp;hw_bitness=64&amp;bundle_type=jre&amp;features=fx"
              dest="dist/jrefx.zip"
         />
         <unzip src="dist/jrefx.zip" dest="dist/jre">
@@ -565,7 +563,7 @@
         <delete dir="dist/jre"/>
         <exec dir="." executable="dist/jdk/bin/jlink.exe">
             <arg value="--add-modules"/>
-            <arg value="java.base,java.datatransfer,java.desktop,java.naming,java.security.jgss,java.security.sasl,java.xml,javafx.base,javafx.controls,javafx.graphics,javafx.swing,javafx.web"/>
+            <arg value="java.base,java.datatransfer,java.desktop,java.naming,jdk.crypto.ec,java.security.jgss,java.security.sasl,java.xml,javafx.base,javafx.controls,javafx.graphics,javafx.swing,javafx.web"/>
             <arg value="--output"/>
             <arg value="dist/jre"/>
             <arg value="--strip-debug"/>

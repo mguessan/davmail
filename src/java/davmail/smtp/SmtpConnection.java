@@ -33,6 +33,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -90,7 +91,7 @@ public class SmtpConnection extends AbstractConnection {
                     } else if ("NOOP".equalsIgnoreCase(command)) {
                         sendClient("250 OK");
                     } else if ("EHLO".equalsIgnoreCase(command)) {
-                        sendClient("250-" + tokens.nextToken());
+                        sendClient("250-davmail");
                         // inform server that AUTH is supported
                         // actually it is mandatory (only way to get credentials)
                         sendClient("250-AUTH LOGIN PLAIN");

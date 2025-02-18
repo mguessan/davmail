@@ -255,7 +255,9 @@ public final class DavGatewayTray {
                             "https://extensions.gnome.org/extension/1503/tray-icons/ " +
                             "to restore normal systray or run DavMail in server mode");
                 }
-                if (Settings.O365_INTERACTIVE.equals(Settings.getProperty("davmail.mode"))) {
+                if (Settings.isWindows()) {
+                    LOGGER.info("Do not try to create SWT tray on windows");
+                } else if (Settings.O365_INTERACTIVE.equals(Settings.getProperty("davmail.mode"))) {
                     LOGGER.info("O365Interactive is not compatible with SWT, do not try to create SWT tray");
                 } else {
                     // first try to load SWT before with Java AWT
