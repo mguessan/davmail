@@ -43,15 +43,14 @@
                 </li>
                 <li>Additional steps on Windows:
                     <ul>
-                        <li>Download and install NSIS from
-                            <a href="http://nsis.sourceforge.net">http://nsis.sourceforge.net</a>
+                        <li>Download and install NSIS 2 from
+                            <a href="https://sourceforge.net/projects/nsis/files/NSIS%202/2.51/">https://sourceforge.net/projects/nsis/files/NSIS%202/2.51/</a>
                         </li>
                         <li>Make sure NSIS install path (C:\Program Files\NSIS) is available in system path</li>
-                        <li>Then get KillProcess plugin from
-                            <a href="http://www.esanu.name/software/index.php/nsis-kill-process/">
-                                http://www.esanu.name/software/index.php/nsis-kill-process/
+                        <li>Then get KillProcess plugin from DavMail source directory
+                            <a href="https://github.com/mguessan/davmail/tree/master/nsis">
+                                https://github.com/mguessan/davmail/tree/master/nsis
                             </a>
-                            or the nsis directory in DavMail source.
                         </li>
                         <li>Copy the processwork.dll library to NSIS plugin directory.</li>
                     </ul>
