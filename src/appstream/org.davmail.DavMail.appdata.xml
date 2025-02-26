@@ -27,12 +27,12 @@
       (gateway running on a server).
     </p>
   </description>
-  <url type="homepage">http://davmail.sourceforge.net</url>
+  <url type="homepage">https://davmail.sourceforge.net</url>
   <url type="donation">https://sourceforge.net/donate/index.php?group_id=184600</url>
   <screenshots>
     <screenshot type="default">
       <image>https://screenshots.debian.net/screenshots/000/015/485/large.png</image>
-      <image>http://davmail.sourceforge.net/images/davmailArchitecture.png</image>
+      <image>https://davmail.sourceforge.net/images/davmailArchitecture.png</image>
     </screenshot>
   </screenshots>
   <project_license>GPL-2.0</project_license>
@@ -54,10 +54,10 @@
           - LDAP: merge https://github.com/mguessan/davmail/pull/353 Add support for retrieving user certificates
 
           ### IMAP
-          - IMAP: fix backslash in password quoted string by: Max-Julian Pogner <max-julian@pogner.at>, finalize merge, call new parsing method from nextToken and remove backslash handling in username
-          - IMAP: fix backslash in password quoted string by: Max-Julian Pogner <max-julian@pogner.at>, review and switch to ParseException for error handling and chars instead of bytes
-          - IMAP: merge unit test for patch fix backslash in password quoted string by: Max-Julian Pogner <max-julian@pogner.at>
-          - IMAP: initial merge of patch fix backslash in password quoted string by: Max-Julian Pogner <max-julian@pogner.at>
+          - IMAP: fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;, finalize merge, call new parsing method from nextToken and remove backslash handling in username
+          - IMAP: fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;, review and switch to ParseException for error handling and chars instead of bytes
+          - IMAP: merge unit test for patch fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;
+          - IMAP: initial merge of patch fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;
           - IMAP: fix https://github.com/mguessan/davmail/issues/359, handle RFC822.TEXT
 
           ### O365
@@ -162,7 +162,7 @@
           - Implement a -token option to launch interactive authenticator and print obtained refresh token, see https://github.com/mguessan/davmail/issues/338
           - O365: Try to adjust ItemId to 140 length, see https://github.com/mguessan/davmail/issues/328
           - O365: prepare GCC-High/DoD endpoints support, fix regression
-          - O365: prepare GCC-High/DoD endpoints support, move outlook login url references to Settings
+          - O365: prepare GCC-High/DoD endpoints support, move Outlook login url references to Settings
           - O365: prepare GCC-High/DoD endpoints support, move outlook url references to Settings
 
           ### EWS
@@ -195,7 +195,7 @@
 
           ### Documentation
           - Doc: update roadmap
-          - Doc: Add donation buttons to Github main readme page
+          - Doc: Add donation buttons to GitHub main readme page
           - Doc: update Thunderbird documentation messages
           - Update release guide, mvn install file no longer required
           - Doc: update Thunderbird documentation, as requested in https://github.com/mguessan/davmail/issues/294
@@ -253,7 +253,7 @@
       <release version="6.2.0" date="2023-11-05">
           <description>
               <p>
-                  Another bugfix release to merge user contributions from Github, refactor Linux build, upgrade dependencies and a few IMAP and Caldav fixes.
+                  Another bugfix release to merge user contributions from GitHub, refactor Linux build, upgrade dependencies and a few IMAP and Caldav fixes.
 
                   ### Security
                   - Update htmlcleaner to 2.29 cf CVE-2023-34624
@@ -345,7 +345,7 @@
                   - Add missing label
                   - Replace active wait with wait/notifyAll
                   - Upgrade woodstox to 1.4.0 and jettison to 1.5.3
-                  - Merge https://github.com/mguessan/davmail/pull/225 remove (most) http:// links in Maven POM
+                  - Merge https://github.com/mguessan/davmail/pull/225 remove (most) http links in Maven POM
                   - Make ScheduledThreadPool thread daemon
                   - Switch to https for version check
                   - DavMailIdleConnectionEvictor fix from audit
@@ -395,7 +395,7 @@
                   ### Documentation
                   - Doc: Remove HttpClient migration warning
                   - Doc: instructions on standalone setup on Linux for best O365 support
-                  - Update readme for Github home page
+                  - Update readme for GitHub home page
               </p>
           </description>
       </release>
