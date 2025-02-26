@@ -4,7 +4,7 @@
 Summary: A POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
 Name: davmail
 URL: http://davmail.sourceforge.net
-Version: 6.2.2
+Version: 6.3.0
 Release: 1%{?dist}
 License: GPL-2.0+
 Group: Applications/Internet
@@ -25,7 +25,10 @@ BuildRequires:	xml-commons-apis
 %endif
 
 %{?fedora:BuildRequires: java-latest-openjdk-devel}
+# fedora rawhide only
+%if 0%{?fedora} > 39
 %{?fedora:BuildRequires: ant-unbound}
+%endif
 %{?el9:BuildRequires: java-latest-openjdk-devel}
 
 %if 0%{?el7} || 0%{?el8}

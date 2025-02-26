@@ -39,8 +39,105 @@
   <developer_name>Mickaël Guessant</developer_name>
   <content_rating type="oars-1.1" />
   <releases>
+      <release version="6.3.0" date="2025-02-26">
+          Merged some contributions provided by users on github, updated embedded jre to 21 for improved TLS 1.3 support,
+          applied documentation fixes, reviewed rpm build to provide el9 compatibility, implemented channel binding for NTLM
+          authentication. Also added a more recent Docker file in contribs, worked on GCC high tenants compatibility.
+          Microsoft Graph backend implementation is in progress but far from complete.
+
+          ### Caldav
+          - Caldav: handle multiple categories on TODO items, see https://github.com/mguessan/davmail/issues/372
+          - Caldav: Merge https://github.com/mguessan/davmail/pull/386 validate and repair Exchange calendar characters
+
+          ### LDAP
+          - LDAP: merge https://github.com/mguessan/davmail/pull/353, fix first certificate selection logic
+          - LDAP: merge https://github.com/mguessan/davmail/pull/353 Add support for retrieving user certificates
+
+          ### IMAP
+          - IMAP: fix backslash in password quoted string by: Max-Julian Pogner <max-julian@pogner.at>, finalize merge, call new parsing method from nextToken and remove backslash handling in username
+          - IMAP: fix backslash in password quoted string by: Max-Julian Pogner <max-julian@pogner.at>, review and switch to ParseException for error handling and chars instead of bytes
+          - IMAP: merge unit test for patch fix backslash in password quoted string by: Max-Julian Pogner <max-julian@pogner.at>
+          - IMAP: initial merge of patch fix backslash in password quoted string by: Max-Julian Pogner <max-julian@pogner.at>
+          - IMAP: fix https://github.com/mguessan/davmail/issues/359, handle RFC822.TEXT
+
+          ### O365
+          - O365: add GCC high example settings in default davmail.properties
+          - O365: https://github.com/mguessan/davmail/pull/380 Remove trailing slash from O365_LOGIN_URL
+          - O365: merge https://github.com/mguessan/davmail/pull/380 Missed one change
+          - O365: merge https://github.com/mguessan/davmail/pull/380 Enhance support for the davmail.outlookUrl property setting and fully support GCC-High endpoints
+          - O365: implement OneWaySMS MFA prompt, see https://github.com/mguessan/davmail/pull/134
+          - O365: get O365 Login Url from settings for non standard tenants and add additional error use case
+          - O365: detect live.com token. Note: may not be enough to make DavMail work with live.com accounts
+          - O365: dropping all workaroungs for OpenJFX bugs that should be fixed in recent versions
+
+          ### EWS
+          - EWS: experimental, try to implement recurrence count with NumberOfOccurrences, see https://github.com/mguessan/davmail/issues/373
+          - EWS: make settings timezoneid higher priority than mailbox configuration, make encode/decode foldername methods public for graph API
+
+          ### Graph
+          - Graph: introduce GRAPH_URL and davmail.loginUrl in Settings
+          - Graph: initiate search filter implementation
+          - Graph: implement folder recursive search
+          - Introduce folderClass
+          - Graph: Create folders unit tests
+          - Graph: fix folder retrieval by id
+          - Graph: initial folder retrieval implementation
+          - Graph: compute graph API property id from name and tag
+          - Graph: Empty Graph ExchangeSession implementation
+          - Graph: prepare graph request builder for graph implementation
+          - Graph: Experimental, introduce davmail.enableGraph property to obtain a token compatible with Microsoft Graph API
+
+          ### Linux
+          - Linux: fix ant dependency for fedora
+          - Linux: davmail.spec to not try to link os provided swt.jar when using embedded one
+          - Linux: work on el9 compatibility for RPM build
+          - Linux: Embed davmail-user.conf in source package, see https://github.com/mguessan/davmail/issues/356
+          - Linux: Create davmail user/group per new conventions in RPM 4.19, merge changes from https://github.com/mguessan/davmail/issues/356
+          - Build: fix https://github.com/mguessan/davmail/issues/346 unable to run jlink on linux
+          - Linux: force shutdown with -token option
+          - Linux: Add OpenJFX case for Kubuntu
+
+          ### Documentation
+          - Doc: update windows build documentation, see https://github.com/mguessan/davmail/issues/384
+          - Doc: merge https://github.com/mguessan/davmail/pull/174 fix docs typo in property davmail.enableKeepAlive
+          - Doc: improve documentation on how to run DavMail as a windows service
+          - Doc: update documentation for non default tenants (US, China)
+          - Doc: provide more information in initial consent for O365 authentication
+          - Doc: update FAQ on application registration in Entra ID (Azure AD)
+          - Doc: mention AppIndicator and KStatusNotifierItem Support in Fedora setup instructions
+
+          ### Docker
+          - Docker: merge https://github.com/mguessan/davmail/pull/381 by SethRobertson Bug 201: Docker support for building and running
+
+          ### NTLM
+          - NTLM: remove CIFS dependency
+          - NTLM: cleanup code from audit
+          - NTLM: use ThreadLocal to manage SecureRandom generators
+          - NTLM: switch to DavMailNTLMSchemeFactory to enable channel binding, see https://github.com/mguessan/davmail/issues/352
+          - NTLM: retrieve certificate from http context
+          - NTLM: Duplicate of NTLMScheme from HttpClient to implement channel binding
+          - NTLM: adjust NTLMEngineImpl to handle channel binding
+          - NTLM: Duplicate code from NTLMEngineImpl to implement channel binding
+
+          ### Enhancements
+          - Fix from audit
+          - Drop web component
+          - Drop servlet-api.jar, no longer required
+          - Drop deprecated DavGatewayServletContextListener (we no longer provide an embedded war file)
+          - Trying to fix custom jre for TLS 1.3, see https://stackoverflow.com/questions/63964939/tls-1-3-handshake-failure-when-using-openjdk-14-java-module-runtime and https://github.com/mguessan/davmail/pull/388
+          - fix download-jre for embedded JDK on windows, fetch version 21
+          - switch davmail linux launcher to zulu JDK 21 for better TLS 1.3 support
+          - switch main package to zulu JDK 21 for better TLS 1.3 support
+          - StringUtilTest CRLF => LF, see https://github.com/mguessan/davmail/pull/378
+          - StringUtil CRLF => LF, see https://github.com/mguessan/davmail/pull/378
+          - Security: Enable TLSv1.3 between DavMail and Exchange/O365
+          - PKCS11: review SunPKCS11ProviderHandler
+          - HttpClient: cleanup from audit
+          - svn ignore .idea
+          - Downgrade jackrabbit to 2.20.15 for java 8 compatibility
+          - Upgrade jackrabbit to 2.21.25 and httpclient to 4.5.14
+      </release>
       <release version="6.2.2" date="2024-03-30">
-          ## DavMail 6.2.2 2024-03-30
           Includes some build process fixes, use jlink to build a customized jre for standalone package,
           Thunderbird configuration documentation updated with new screenshots.
           Also implemented a new -token command line option to launch O365InteractiveAuthenticator and get an authentication token.
@@ -183,11 +280,11 @@
                   - Caldav: adjust isLightning test to include Thunderbird user agent, see https://github.com/mguessan/davmail/issues/287
 
                   ### Linux
-                  - Linux: based on https://github.com/mguessan/davmail/pull/290 by Björn Bidar <bjorn.bidar@thaodan.de>, remove svn commit reference in davmail.spec
+                  - Linux: based on https://github.com/mguessan/davmail/pull/290 by Björn Bidar &lt;bjorn.bidar@thaodan.de&gt;, remove svn commit reference in davmail.spec
                   - Remove svn tag from folder name inside source packages
                   - Linux: remove chkconfig from Requires preun and post in davmail.spec as suggested on build.opensuse.org
                   - Linux: dos2unix davmail.changes
-                  - Linux: update changelog with Björn Bidar <bjorn.bidar@thaodan.de> contribution from https://github.com/mguessan/davmail/pull/289
+                  - Linux: update changelog with Björn Bidar &lt;bjorn.bidar@thaodan.de&gt; contribution from https://github.com/mguessan/davmail/pull/289
                   - Linux: Add back changelog file and convert to OpenSUSE format from https://github.com/mguessan/davmail/pull/289
                   - Linux: Merge changes from https://github.com/mguessan/davmail/pull/290 except %version that may impact release cycle
                   - Linux: convert davmail.spec changelog to OpenSUSE format, see https://github.com/mguessan/davmail/pull/290
@@ -266,7 +363,7 @@
                   - Caldav: Do not try to update modified occurrences on Mozilla thunderbird dismiss event
 
                   ### Security
-                  - Security: Strip packaged log4j jar from JMSSink and JDBCAppender to ensure DavMail is not vulnerable to CVE-2022-23305 & CVE-2022-23302, see https://github.com/mguessan/davmail/issues/250
+                  - Security: Strip packaged log4j jar from JMSSink and JDBCAppender to ensure DavMail is not vulnerable to CVE-2022-23305 &amp; CVE-2022-23302, see https://github.com/mguessan/davmail/issues/250
                   - Remove JMSAppender, SMTPAppender and SocketServer from Log4J binary as an additional security measure (CVE-2019-17571 CVE-2021-4104), even if DavMail is not vulnerable with standard configuration
                   - Upgrade Log4J to latest version 1.2.17 in Winrun4J wrappers
                   - Upgrade Log4J to latest version 1.2.17
