@@ -26,7 +26,7 @@ BuildRequires:	xml-commons-apis
 
 %{?fedora:BuildRequires: java-latest-openjdk-devel}
 # fedora rawhide only
-%if 0%{?fedora} > 39
+%if 0%{?fedora} > 41
 %{?fedora:BuildRequires: ant-unbound}
 %endif
 %{?el9:BuildRequires: java-latest-openjdk-devel}
