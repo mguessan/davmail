@@ -179,8 +179,7 @@ public class ImapConnection extends AbstractConnection {
                                         String folderContext = buildFolderContext(tokens.nextToken());
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + decodeFolderPath(tokens.nextToken());
-                                            String returnOption = getReturnOption(tokens);
-                                            boolean specialOnly = "SPECIAL-USE".equalsIgnoreCase(returnOption);
+                                            boolean specialOnly = decodeIsSpecialOnly(tokens);
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
                                                 List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false, false);
                                                 for (ExchangeSession.Folder folder : folders) {
@@ -707,13 +706,29 @@ public class ImapConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
-    private String getReturnOption(ImapTokenizer tokens) {
-        if (tokens.hasMoreTokens()) {
-            if ("RETURN".equalsIgnoreCase(tokens.nextToken()) && tokens.hasMoreTokens()) {
-                return tokens.nextToken();
-            }
+    /**
+     * Decide if IMAP LIST should return special folders only.
+     *
+     * https://www.rfc-editor.org/rfc/rfc5258
+     * https://www.rfc-editor.org/rfc/rfc6154
+     */
+    private boolean decodeIsSpecialOnly(ImapTokenizer tokens) {
+        if (!tokens.hasMoreTokens()) {
+            return false;
         }
-        return null;
+
+        String token = tokens.nextToken();
+        boolean seenReturn = false;
+
+        if ("RETURN".equalsIgnoreCase(token)) {
+            seenReturn = true;
+            if (!tokens.hasMoreTokens()) {
+                return false;
+            }
+            token = tokens.nextToken();
+        }
+
+        return "SPECIAL-USE".equalsIgnoreCase(token) && !seenReturn;
     }
 
     protected String lastCommand;
