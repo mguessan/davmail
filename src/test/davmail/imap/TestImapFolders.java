@@ -77,5 +77,11 @@ public class TestImapFolders extends AbstractImapTestCase {
     public void testListSpecialUse() throws IOException {
         writeLine(". LIST \"\" \"%\" RETURN (SPECIAL-USE)");
         assertEquals(". OK LIST completed", readFullAnswer("."));
+
+        writeLine(". LIST (SPECIAL-USE) \"\" \"*\"");
+        assertEquals(". OK LIST completed", readFullAnswer("."));
+
+        writeLine(". LIST (SUBSCRIBED SPECIAL-USE) \"\" \"*\"");
+        assertEquals(". OK LIST completed", readFullAnswer("."));
     }
 }
