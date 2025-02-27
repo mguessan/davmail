@@ -176,10 +176,16 @@ public class ImapConnection extends AbstractConnection {
                                 session = ExchangeSessionFactory.getInstance(session, userName, password);
                                 if ("lsub".equalsIgnoreCase(command) || "list".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        String folderContext = buildFolderContext(tokens.nextToken());
+                                        String token = tokens.nextToken();
+                                        // handle list-extended selection option
+                                        // see https://www.rfc-editor.org/rfc/rfc6154 5.2
+                                        boolean specialOnly = token.contains("SPECIAL-USE");
+                                        if (specialOnly && tokens.hasMoreTokens()) {
+                                            token = tokens.nextToken();
+                                        }
+                                        String folderContext = buildFolderContext(token);
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + decodeFolderPath(tokens.nextToken());
-                                            boolean specialOnly = decodeIsSpecialOnly(tokens);
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
                                                 List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false, false);
                                                 for (ExchangeSession.Folder folder : folders) {
@@ -201,7 +207,7 @@ public class ImapConnection extends AbstractConnection {
                                                 boolean wildcard = folderQuery.endsWith("%") && !folderQuery.contains("/") && !folderQuery.equals("%");
                                                 boolean recursive = folderQuery.endsWith("*");
                                                 sendSubFolders(command, folderQuery.substring(0, folderQuery.length() - 1), recursive, wildcard,
-                                                        specialOnly && !folderQuery.equals("%"));
+                                                        specialOnly);
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else {
                                                 ExchangeSession.Folder folder = null;
@@ -704,31 +710,6 @@ public class ImapConnection extends AbstractConnection {
             close();
         }
         DavGatewayTray.resetIcon();
-    }
-
-    /**
-     * Decide if IMAP LIST should return special folders only.
-     *
-     * https://www.rfc-editor.org/rfc/rfc5258
-     * https://www.rfc-editor.org/rfc/rfc6154
-     */
-    private boolean decodeIsSpecialOnly(ImapTokenizer tokens) {
-        if (!tokens.hasMoreTokens()) {
-            return false;
-        }
-
-        String token = tokens.nextToken();
-        boolean seenReturn = false;
-
-        if ("RETURN".equalsIgnoreCase(token)) {
-            seenReturn = true;
-            if (!tokens.hasMoreTokens()) {
-                return false;
-            }
-            token = tokens.nextToken();
-        }
-
-        return "SPECIAL-USE".equalsIgnoreCase(token) && !seenReturn;
     }
 
     protected String lastCommand;
