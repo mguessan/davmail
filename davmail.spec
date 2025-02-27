@@ -29,9 +29,8 @@ BuildRequires:	xml-commons-apis
 %if 0%{?fedora} > 41
 %{?fedora:BuildRequires: ant-unbound}
 %endif
-%{?el9:BuildRequires: java-latest-openjdk-devel}
 
-%if 0%{?el7} || 0%{?el8}
+%if 0%{?el7} || 0%{?el8} || 0%{?el9}
 BuildRequires: java-1.8.0-openjdk-devel
 %endif
 
@@ -47,7 +46,7 @@ BuildRequires: eclipse-swt
 %endif
 
 # compile with JavaFX on Fedora
-%if 0%{?fedora} > 38 || 0%{?el9}
+%if 0%{?fedora} > 38
 BuildRequires: openjfx
 %endif
 
