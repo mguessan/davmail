@@ -1582,7 +1582,7 @@ public class ImapConnection extends AbstractConnection {
         } else //noinspection StatementWithEmptyBody
             if ("OLD".equals(token) || "RECENT".equals(token) || "ALL".equals(token)) {
                 // ignore
-            } else if (token.indexOf(':') >= 0 || token.matches("\\d+(,\\d+)*")) {
+            } else if (token.indexOf(':') >= 0 || token.matches("\\d+") || token.indexOf(',') >= 0) {
                 // range search
                 conditions.indexRange = token;
             } else {
