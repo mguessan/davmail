@@ -65,6 +65,10 @@ public class O365Token {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
         this.tokenUrl = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/token";
+        if ("https://outlook.live.com".equals(Settings.getOutlookUrl())) {
+            this.tokenUrl = "https://login.live.com/oauth20_token.srf";
+            //this.tokenUrl = "https://login.microsoftonline.com/consumers/oauth2/token";
+        }
         this.password = password;
 
         ArrayList<NameValuePair> parameters = new ArrayList<>();
@@ -93,9 +97,16 @@ public class O365Token {
             // precious refresh token
             refreshToken = jsonToken.getString("refresh_token");
             // expires_on is in second, not millisecond
-            expiresOn = jsonToken.getLong("expires_on") * 1000;
+            expiresOn = jsonToken.optLong("expires_on") * 1000;
 
-            LOGGER.debug("Access token expires " + new Date(expiresOn));
+            if (expiresOn > 0) {
+                LOGGER.debug("Access token expires " + new Date(expiresOn));
+            } else {
+                long expiresIn = jsonToken.optLong("expires_in") * 1000;
+                if (expiresIn > 0) {
+                    expiresOn = System.currentTimeMillis()+expiresIn;
+                }
+            }
 
             // get username from id_token
             String idToken = jsonToken.optString("id_token");
@@ -104,11 +115,16 @@ public class O365Token {
                 try {
                     JSONObject tokenBody = new JSONObject(decodedJwt);
                     LOGGER.debug("Token: " + tokenBody);
-                    username = tokenBody.getString("unique_name");
-                    // detect live.com token
-                    final String liveDotCom = "live.com#";
-                    if (username.startsWith(liveDotCom)) {
-                        username = username.substring(liveDotCom.length());
+                    if ("https://login.live.com".equals(tokenBody.optString("iss"))) {
+                        // live.com token
+                        username = tokenBody.optString("email");
+                    } else {
+                        username = tokenBody.getString("unique_name");
+                        // detect live.com token
+                        final String liveDotCom = "live.com#";
+                        if (username.startsWith(liveDotCom)) {
+                            username = username.substring(liveDotCom.length());
+                        }
                     }
                 } catch (JSONException e) {
                     LOGGER.warn("Invalid id_token " + e.getMessage(), e);

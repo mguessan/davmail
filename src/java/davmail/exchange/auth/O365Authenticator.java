@@ -68,13 +68,29 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             // force consent
             //uriBuilder.addParameter("prompt", "consent");
+
+            if ("https://outlook.live.com".equals(Settings.getOutlookUrl())) {
+
+                String liveAuthorizeUrl = "https://login.live.com/oauth20_authorize.srf";
+                uriBuilder = new URIBuilder(liveAuthorizeUrl)
+                        .addParameter("client_id", clientId)
+                        .addParameter("response_type", "code")
+                        .addParameter("redirect_uri", redirectUri)
+                        .addParameter("response_mode", "query")
+                        .addParameter("login_hint", username)
+                        .addParameter("scope", "openid offline_access https://outlook.live.com/EWS.AccessAsUser.All Mail.ReadWrite MailboxSettings.Read")
+                        .addParameter("resource", "https://outlook.live.com")
+                        //.addParameter("prompt", "consent")
+                ;
+
             // switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
-            if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
+            } else if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                         .addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All");
             } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
-                        .addParameter("resource", "https://graph.microsoft.com");
+                        .addParameter("resource", "https://graph.microsoft.com")
+                ;
                 // OIDC compliant
                 //uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                 //        .addParameter("scope", "Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read");
