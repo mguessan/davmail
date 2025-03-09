@@ -65,9 +65,12 @@ public class FolderLoadThread extends Thread {
     public static void loadFolder(ExchangeSession.Folder folder, OutputStream outputStream) throws IOException {
         FolderLoadThread folderLoadThread = new FolderLoadThread(currentThread().getName(), folder);
         folderLoadThread.start();
-        while (!folderLoadThread.isComplete) {
+        while (true) {
             try {
                 folderLoadThread.join(20000);
+		if (folderLoadThread.isComplete) {
+		    break;
+		}
             } catch (InterruptedException e) {
                 LOGGER.warn("Thread interrupted", e);
                 Thread.currentThread().interrupt();
