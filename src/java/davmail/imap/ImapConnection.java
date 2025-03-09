@@ -243,14 +243,11 @@ public class ImapConnection extends AbstractConnection {
                                             if (currentFolder.count() <= 500) {
                                                 // simple folder load
                                                 currentFolder.loadMessages();
-                                                sendClient("* " + currentFolder.count() + " EXISTS");
                                             } else {
                                                 // load folder in a separate thread
-                                                LOGGER.debug("*");
-                                                os.write('*');
-                                                FolderLoadThread.loadFolder(currentFolder, os);
-                                                sendClient(" " + currentFolder.count() + " EXISTS");
+                                                FolderLoadThread.loadFolder(currentFolder, this);
                                             }
+					    sendClient("* " + currentFolder.count() + " EXISTS");
 
                                             sendClient("* " + currentFolder.recent + " RECENT");
                                             sendClient("* OK [UIDVALIDITY 1]");
@@ -619,14 +616,12 @@ public class ImapConnection extends AbstractConnection {
                                         // must retrieve messages
 
                                         // use folder.loadMessages() for small folders only
-                                        LOGGER.debug("*");
-                                        os.write('*');
                                         if (folder.count() <= 500) {
                                             // simple folder load
                                             folder.loadMessages();
                                         } else {
                                             // load folder in a separate thread
-                                            FolderLoadThread.loadFolder(folder, os);
+                                            FolderLoadThread.loadFolder(folder, this);
                                         }
 
                                         String parameters = tokens.nextToken();
@@ -659,7 +654,7 @@ public class ImapConnection extends AbstractConnection {
                                                 answer.append("UNSEEN ").append(folder.unreadCount).append(' ');
                                             }
                                         }
-                                        sendClient(" STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
+                                        sendClient("* STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
                                         sendClient(commandId + " OK " + command + " completed");
                                     } catch (HttpResponseException e) {
                                         sendClient(commandId + " NO folder not found");

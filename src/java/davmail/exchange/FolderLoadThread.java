@@ -19,10 +19,10 @@
 package davmail.exchange;
 
 import davmail.Settings;
+import davmail.AbstractConnection;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.SocketException;
 
 /**
@@ -57,12 +57,11 @@ public class FolderLoadThread extends Thread {
     /**
      * Load folder in a separate thread.
      *
-     * @param folder       current folder
-     * @param outputStream client connection
-     * @throws InterruptedException on error
+     * @param folder           current folder
+     * @param connection       client connection
      * @throws IOException          on error
      */
-    public static void loadFolder(ExchangeSession.Folder folder, OutputStream outputStream) throws IOException {
+    public static void loadFolder(ExchangeSesson.Folder folder, AbstractConnection connection) throws IOException {
         FolderLoadThread folderLoadThread = new FolderLoadThread(currentThread().getName(), folder);
         folderLoadThread.start();
         while (true) {
@@ -78,9 +77,12 @@ public class FolderLoadThread extends Thread {
             LOGGER.debug("Still loading " + folder.folderPath + " (" + folder.count() + " messages)");
             if (Settings.getBooleanProperty("davmail.enableKeepAlive", false)) {
                 try {
-                    outputStream.write(' ');
-                    outputStream.flush();
-                } catch (SocketException e) {
+		    // Could use RFC9585 response code INPROGRESS, but RFC3501
+		    // (IMAP4rev1) says that "Client implementations SHOULD
+		    // ignore response codes that they do not recognize"; send
+		    // untagged OK response to keep connection alive.
+		    connection.sendClient("* OK in progress...");
+                } catch (Exception e) {
                     folderLoadThread.interrupt();
                     throw e;
                 }
