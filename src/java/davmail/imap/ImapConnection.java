@@ -61,6 +61,11 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * Dav Gateway IMAP connection implementation.
@@ -240,13 +245,7 @@ public class ImapConnection extends AbstractConnection {
                                         }
                                         try {
                                             currentFolder = session.getFolder(folderName);
-                                            if (currentFolder.count() <= 500) {
-                                                // simple folder load
-                                                currentFolder.loadMessages();
-                                            } else {
-                                                // load folder in a separate thread
-                                                FolderLoadThread.loadFolder(currentFolder, this);
-                                            }
+					    loadFolder(currentFolder);
 					    sendClient("* " + currentFolder.count() + " EXISTS");
 
                                             sendClient("* " + currentFolder.recent + " RECENT");
@@ -614,15 +613,7 @@ public class ImapConnection extends AbstractConnection {
                                         String folderName = decodeFolderPath(encodedFolderName);
                                         ExchangeSession.Folder folder = session.getFolder(folderName);
                                         // must retrieve messages
-
-                                        // use folder.loadMessages() for small folders only
-                                        if (folder.count() <= 500) {
-                                            // simple folder load
-                                            folder.loadMessages();
-                                        } else {
-                                            // load folder in a separate thread
-                                            FolderLoadThread.loadFolder(folder, this);
-                                        }
+					loadFolder(folder);
 
                                         String parameters = tokens.nextToken();
                                         StringBuilder answer = new StringBuilder();
@@ -805,6 +796,48 @@ public class ImapConnection extends AbstractConnection {
 
         sendClient("* " + currentFolder.count() + " EXISTS");
         sendClient("* " + currentFolder.recent + " RECENT");
+    }
+
+    static private class KeepAlive {
+        private ScheduledExecutorService scheduler;
+        private ScheduledFuture<?> task;
+
+	public KeepAlive(Runnable cb) {
+            scheduler = Executors.newScheduledThreadPool(1, r -> {
+                Thread thread = new Thread(r);
+                thread.setName(currentThread().getName() + "-KeepAlive");
+                return thread;
+            });
+            task = scheduler.scheduleAtFixedRate(cb, 20, 20, TimeUnit.SECONDS);
+	}
+
+	public void cancel() {
+	    task.cancel(true);
+	    scheduler.shutdown();
+	}
+    }
+
+    private void loadFolder(ExchangeSession.Folder folder) throws IOException {
+        final boolean enable = Settings.getBooleanProperty("davmail.enableKeepAlive", false);
+	KeepAlive keepAlive = null;
+
+        if (enable && (folder.count() > 500)) {
+	    Runnable cb = () -> {
+                try {
+                    sendClient("* OK in progress");
+                } catch (IOException ignored) {
+                }
+	    };
+	    keepAlive = new KeepAlive(cb);
+        }
+
+        try {
+            folder.loadMessages();
+        } finally {
+            if (keepAlive != null) {
+                keepAlive.cancel();
+            }
+        }
     }
 
     static class MessageWrapper {
