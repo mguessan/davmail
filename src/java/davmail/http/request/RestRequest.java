@@ -115,7 +115,7 @@ public class RestRequest extends HttpPost implements ResponseHandler<JSONObject>
         this.response = response;
         JSONObject jsonResponse;
         Header contentTypeHeader = response.getFirstHeader("Content-Type");
-        if (contentTypeHeader != null && JSON_CONTENT_TYPE.equals(contentTypeHeader.getValue())) {
+        if (contentTypeHeader != null && (JSON_CONTENT_TYPE.equals(contentTypeHeader.getValue()) || "application/json".equals(contentTypeHeader.getValue()))) {
             try (InputStream inputStream = response.getEntity().getContent()){
                 if (HttpClientAdapter.isGzipEncoded(response)) {
                     jsonResponse = processResponseStream(new GZIPInputStream(inputStream));

@@ -157,13 +157,13 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                 if (location.startsWith(redirectUri)) {
                     LOGGER.debug("Location starts with redirectUri, check code");
 
-                    authenticator.isAuthenticated = location.contains("code=") && location.contains("&session_state=");
+                    authenticator.isAuthenticated = location.contains("code=") /*&& location.contains("&session_state=")*/;
                     if (!authenticator.isAuthenticated && location.contains("error=")) {
                         authenticator.errorCode = location.substring(location.indexOf("error="));
                     }
                     if (authenticator.isAuthenticated) {
                         LOGGER.debug("Authenticated location: " + location);
-                        String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+                        String code = location.substring(location.indexOf("code=") + 5, Math.max(location.indexOf("&session_state="), location.length()));
                         String sessionState = location.substring(location.lastIndexOf('='));
 
                         LOGGER.debug("Authentication Code: " + code);
