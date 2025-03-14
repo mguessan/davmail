@@ -276,7 +276,13 @@ public class HttpClientAdapter implements Closeable {
 
     private Registry<AuthSchemeProvider> getAuthSchemeRegistry() {
         final RegistryBuilder<AuthSchemeProvider> registryBuilder = RegistryBuilder.create();
-        registryBuilder.register(AuthSchemes.NTLM, new DavMailNTLMSchemeFactory())
+        AuthSchemeProvider ntlmSchemeProvider;
+        if (Settings.getBooleanProperty("davmail.enableJcifs", false)) {
+            ntlmSchemeProvider = new JCIFSNTLMSchemeFactory();
+        } else {
+            ntlmSchemeProvider = new DavMailNTLMSchemeFactory();
+        }
+        registryBuilder.register(AuthSchemes.NTLM, ntlmSchemeProvider)
                 .register(AuthSchemes.BASIC, new BasicSchemeFactory())
                 .register(AuthSchemes.DIGEST, new DigestSchemeFactory());
         if (Settings.getBooleanProperty("davmail.enableKerberos")) {
@@ -321,6 +327,9 @@ public class HttpClientAdapter implements Closeable {
                 // separate domain from username in credentials
                 domain = userid.substring(0, backSlashIndex);
                 userid = userid.substring(backSlashIndex + 1);
+            } else if (userid.contains("@")) {
+                // no need for domain name with userPrincipalName
+                domain = "";
             } else {
                 domain = Settings.getProperty("davmail.defaultDomain", "");
             }
