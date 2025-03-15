@@ -228,7 +228,7 @@
         <dependency>
             <groupId>com.sun.mail</groupId>
             <artifactId>javax.mail</artifactId>
-            <version>1.5.6</version>
+            <version>1.6.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.activation</groupId>
@@ -248,12 +248,6 @@
             <optional>true</optional>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/swt-4.9-gtk-linux-x86_64.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <version>2.4</version>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.htmlcleaner</groupId>
