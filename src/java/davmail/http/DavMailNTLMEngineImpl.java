@@ -145,7 +145,6 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
      */
     static String getType1Message(final String host, final String domain) {
         // For compatibility reason do not include domain and host in type 1 message
-        //return new Type1Message(domain, host).getResponse();
         return TYPE_1_MESSAGE;
     }
 
@@ -1837,7 +1836,8 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             final String domain,
             final String workstation) {
         LOGGER.debug("generateType1Msg domain='" + domain + "' workstation='" + workstation + "'");
-        return getType1Message(workstation, domain);
+        // Type 1 message is a constant without domain and workstation
+        return TYPE_1_MESSAGE;
     }
 
     @Override
