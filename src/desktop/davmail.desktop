@@ -9,3 +9,4 @@ Icon=davmail
 Categories=GTK;GNOME;Network;Email;
 Keywords=pop;imap;smtp;exchange;owa;outlook
 GenericName=DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway
+StartupWMClass=davmail-DavGateway
