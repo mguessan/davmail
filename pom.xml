@@ -157,8 +157,8 @@
         <url>https://sourceforge.net/p/davmail/code/HEAD/tree/trunk/</url>
     </scm>
     <issueManagement>
-        <system>SourceForge</system>
-        <url>https://sourceforge.net/p/davmail/_list/tickets</url>
+        <system>Github</system>
+        <url>https://github.com/mguessan/davmail/issues</url>
     </issueManagement>
     <dependencies>
         <dependency>
