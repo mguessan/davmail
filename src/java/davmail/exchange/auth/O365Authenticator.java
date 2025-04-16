@@ -88,12 +88,12 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                         .addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All");
             } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
-                uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
-                        .addParameter("resource", "https://graph.microsoft.com")
-                ;
+                //uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
+                //        .addParameter("resource", "https://graph.microsoft.com")
+                //;
                 // OIDC compliant
-                //uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
-                //        .addParameter("scope", "Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read");
+                uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
+                        .addParameter("scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read");
                         //.addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All AuditLog.Read.All Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrintJob.ReadWriteBasic SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read");
             } else {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
@@ -596,8 +596,12 @@ public class O365Authenticator implements ExchangeAuthenticator {
     private String executeFollowRedirect(HttpClientAdapter httpClientAdapter, GetRequest getRequest) throws IOException {
         LOGGER.debug(getRequest.getURI());
         ResponseWrapper responseWrapper = httpClientAdapter.executeFollowRedirect(getRequest);
-        if (responseWrapper.getURI().getHost().endsWith("okta.com")) {
+        String responseHost = responseWrapper.getURI().getHost();
+        if (responseHost.endsWith("okta.com")) {
             throw new DavMailAuthenticationException("LOG_MESSAGE", "Okta authentication not supported, please try O365Interactive");
+        }
+        if (responseHost.equals("login.live.com")) {
+            throw new DavMailAuthenticationException("LOG_MESSAGE", "Microsoft live authentication not supported, please try O365Interactive");
         }
         return responseWrapper.getResponseBodyAsString();
     }

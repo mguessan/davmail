@@ -65,9 +65,9 @@ public class O365Token {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
         this.tokenUrl = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/token";
-        if ("https://outlook.live.com".equals(Settings.getOutlookUrl())) {
-            this.tokenUrl = "https://login.live.com/oauth20_token.srf";
-            //this.tokenUrl = "https://login.microsoftonline.com/consumers/oauth2/token";
+        if (Settings.getBooleanProperty("davmail.enableGraph")) {
+            // use OIDC endpoint for graph, see https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
+            this.tokenUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
         }
         this.password = password;
 
@@ -117,12 +117,15 @@ public class O365Token {
                     LOGGER.debug("Token: " + tokenBody);
                     if ("https://login.live.com".equals(tokenBody.optString("iss"))) {
                         // live.com token
-                        username = tokenBody.optString("email");
+                        username = tokenBody.optString("email", null);
                     } else {
-                        username = tokenBody.getString("unique_name");
+                        username = tokenBody.optString("unique_name", null);
+                        if (username == null) {
+                            username = tokenBody.optString("preferred_username");
+                        }
                         // detect live.com token
                         final String liveDotCom = "live.com#";
-                        if (username.startsWith(liveDotCom)) {
+                        if (username != null && username.startsWith(liveDotCom)) {
                             username = username.substring(liveDotCom.length());
                         }
                     }
