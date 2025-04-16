@@ -86,7 +86,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             // switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
             } else if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
-                        .addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All");
+                        .addParameter("scope", "openid profile offline_access " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All");
             } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
                 //uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
                 //        .addParameter("resource", "https://graph.microsoft.com")

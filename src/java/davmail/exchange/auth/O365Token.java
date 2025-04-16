@@ -57,18 +57,14 @@ public class O365Token {
     public O365Token(String tenantId, String clientId, String redirectUri, String password) {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
-        this.tokenUrl = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/token";
+        this.tokenUrl = buildTokenUrl(tenantId);
         this.password = password;
     }
 
     public O365Token(String tenantId, String clientId, String redirectUri, String code, String password) throws IOException {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
-        this.tokenUrl = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/token";
-        if (Settings.getBooleanProperty("davmail.enableGraph")) {
-            // use OIDC endpoint for graph, see https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
-            this.tokenUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-        }
+        this.tokenUrl = buildTokenUrl(tenantId);
         this.password = password;
 
         ArrayList<NameValuePair> parameters = new ArrayList<>();
@@ -80,6 +76,16 @@ public class O365Token {
         RestRequest tokenRequest = new RestRequest(tokenUrl, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
 
         executeRequest(tokenRequest);
+    }
+
+    protected String buildTokenUrl(String tenantId) {
+        this.tokenUrl = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/token";
+        // use OIDC endpoint for graph, see https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
+        if (Settings.getBooleanProperty("davmail.enableGraph", false) || Settings.getBooleanProperty("davmail.enableOidc", false)) {
+            return Settings.getO365LoginUrl()+"/"+tenantId+"/oauth2/v2.0/token";
+        } else {
+            return Settings.getO365LoginUrl()+"/"+tenantId+"/oauth2/token";
+        }
     }
 
 
