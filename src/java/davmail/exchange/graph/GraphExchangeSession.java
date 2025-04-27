@@ -27,6 +27,7 @@ import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
 import davmail.http.HttpClientAdapter;
+import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -37,13 +38,14 @@ import org.codehaus.jettison.json.JSONObject;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -132,22 +134,141 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
-        return null;
+    public ExchangeSession.Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            mimeMessage.writeTo(baos);
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage());
+        }
+        baos.close();
+        byte[] mimeContent = IOUtil.encodeBase64(baos.toByteArray());
+
+        // https://learn.microsoft.com/en-us/graph/api/user-post-messages
+
+        FolderId currentFolderId = getFolderIdIfExists(folderPath);
+
+        // create message in default place first
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod("POST")
+                .setContentType("text/plain")
+                .setMimeContent(mimeContent)
+                .setChildType("messages");
+
+        JSONObject draftJsonResponse = executeJsonRequest(httpRequestBuilder);
+
+        JSONObject jsonResponse;
+
+        // TODO refactor
+        // unset draft flag on returned draft message properties
+        try {
+            draftJsonResponse.put("singleValueExtendedProperties",
+                    new JSONArray().put(new JSONObject()
+                            .put("id", Field.get("messageFlags").getGraphId())
+                            .put("value", "4")));
+
+
+            // now use this to recreate message
+            httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod("POST")
+                    .setObjectType("mailFolders")
+                    .setMailbox(currentFolderId.mailbox)
+                    .setObjectId(currentFolderId.id)
+                    .setJsonBody(draftJsonResponse)
+                    .setChildType("messages");
+
+            jsonResponse = executeJsonRequest(httpRequestBuilder);
+
+        } catch (JSONException e) {
+            throw new IOException(e);
+        } finally {
+            try {
+                // delete draft message
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod("DELETE")
+                        .setObjectType("messages")
+                        .setObjectId(draftJsonResponse.getString("id")));
+            } catch (JSONException e) {
+                LOGGER.warn("Unable to delete draft message "+draftJsonResponse.optString("id"));
+            }
+        }
+
+        return buildMessage(jsonResponse);
+    }
+
+    class Message extends ExchangeSession.Message {
+        protected String id;
+
+        @Override
+        public String getPermanentId() {
+            return id;
+        }
+
+        @Override
+        protected InputStream getMimeHeaders() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private Message buildMessage(JSONObject response) {
+        Message message = new Message();
+
+        // get item id
+        message.id = response.optString("id");
+
+        /* TODO
+        message.permanentUrl = response.get(Field.get("permanenturl").getResponseName());
+
+        message.size = response.getInt(Field.get("messageSize").getResponseName());
+        message.uid = response.get(Field.get("uid").getResponseName());
+        message.contentClass = response.get(Field.get("contentclass").getResponseName());
+        message.imapUid = response.getLong(Field.get("imapUid").getResponseName());
+        message.read = response.getBoolean(Field.get("read").getResponseName());
+        message.junk = response.getBoolean(Field.get("junk").getResponseName());
+        message.flagged = "2".equals(response.get(Field.get("flagStatus").getResponseName()));
+        message.draft = (response.getInt(Field.get("messageFlags").getResponseName()) & 8) != 0;
+        String lastVerbExecuted = response.get(Field.get("lastVerbExecuted").getResponseName());
+        message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
+        message.forwarded = "104".equals(lastVerbExecuted);
+        message.date = convertDateFromExchange(response.get(Field.get("date").getResponseName()));
+        message.deleted = "1".equals(response.get(Field.get("deleted").getResponseName()));
+
+        String lastmodified = convertDateFromExchange(response.get(Field.get("lastmodified").getResponseName()));
+        message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
+
+        message.keywords = response.get(Field.get("keywords").getResponseName());
+
+        if (LOGGER.isDebugEnabled()) {
+            StringBuilder buffer = new StringBuilder();
+            buffer.append("Message");
+            if (message.imapUid != 0) {
+                buffer.append(" IMAP uid: ").append(message.imapUid);
+            }
+            if (message.uid != null) {
+                buffer.append(" uid: ").append(message.uid);
+            }
+            buffer.append(" ItemId: ").append(message.itemId.id);
+            buffer.append(" ChangeKey: ").append(message.itemId.changeKey);
+            LOGGER.debug(buffer.toString());
+        }
+         */
+        return message;
+
+    }
+
+
+    @Override
+    public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
+
     }
 
     @Override
-    public void updateMessage(Message message, Map<String, String> properties) throws IOException {
+    public void deleteMessage(ExchangeSession.Message message) throws IOException {
 
     }
 
     @Override
-    public void deleteMessage(Message message) throws IOException {
-
-    }
-
-    @Override
-    protected byte[] getContent(Message message) throws IOException {
+    protected byte[] getContent(ExchangeSession.Message message) throws IOException {
         return new byte[0];
     }
 
@@ -306,11 +427,11 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectId(parentFolderId.id)
                 .setChildType("childFolders")
                 .setExpandFields(FOLDER_PROPERTIES);
-        LOGGER.debug("appendSubFolders "+parentFolderId.mailbox+parentFolderPath);
+        LOGGER.debug("appendSubFolders " + parentFolderId.mailbox + parentFolderPath);
         if (condition != null && !condition.isEmpty()) {
             StringBuilder filter = new StringBuilder();
             condition.appendTo(filter);
-            LOGGER.debug("search filter "+filter);
+            LOGGER.debug("search filter " + filter);
             httpRequestBuilder.setFilter(filter.toString());
         }
 
@@ -570,12 +691,12 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void copyMessage(Message message, String targetFolder) throws IOException {
+    public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
 
     }
 
     @Override
-    public void moveMessage(Message message, String targetFolder) throws IOException {
+    public void moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
 
     }
 
@@ -590,7 +711,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected void moveToTrash(Message message) throws IOException {
+    protected void moveToTrash(ExchangeSession.Message message) throws IOException {
 
     }
 
@@ -738,10 +859,16 @@ public class GraphExchangeSession extends ExchangeSession {
         HttpRequestBase request = httpRequestBuilder
                 .setAccessToken(token.getAccessToken())
                 .build();
+
+        // DEBUG only, disable gzip encoding
+        //request.setHeader("Accept-Encoding", "");
         JSONObject jsonResponse;
         try (
                 CloseableHttpResponse response = httpClient.execute(request)
         ) {
+            if (response.getStatusLine().getStatusCode() == 400) {
+                LOGGER.warn("Request returned "+response.getStatusLine());
+            }
             jsonResponse = new JsonResponseHandler().handleResponse(response);
         }
         return jsonResponse;

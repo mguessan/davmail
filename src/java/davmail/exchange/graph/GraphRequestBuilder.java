@@ -23,6 +23,7 @@ import davmail.Settings;
 import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.FieldURI;
 import davmail.exchange.ews.IndexedFieldURI;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -44,6 +45,8 @@ import java.util.Set;
 public class GraphRequestBuilder {
 
     String method = "POST";
+
+    String contentType = "application/json";
     String baseUrl = Settings.GRAPH_URL;
     String version = "beta";
     String mailbox;
@@ -58,6 +61,8 @@ public class GraphRequestBuilder {
     String accessToken;
 
     JSONObject jsonBody = null;
+
+    byte[] mimeContent;
     private String objectId;
 
     /**
@@ -71,6 +76,15 @@ public class GraphRequestBuilder {
             jsonBody = new JSONObject();
         }
         jsonBody.put(name, value);
+        return this;
+    }
+
+    /**
+     * Replace json body;
+     * @return this
+     */
+    public GraphRequestBuilder setJsonBody(JSONObject jsonBody) {
+        this.jsonBody = jsonBody;
         return this;
     }
 
@@ -106,6 +120,16 @@ public class GraphRequestBuilder {
 
     public GraphRequestBuilder setMethod(String method) {
         this.method = method;
+        return this;
+    }
+
+    public GraphRequestBuilder setContentType(String contentType) {
+        this.contentType = contentType;
+        return this;
+    }
+
+    public GraphRequestBuilder setMimeContent(byte[] mimeContent) {
+        this.mimeContent = mimeContent;
         return this;
     }
 
@@ -207,14 +231,18 @@ public class GraphRequestBuilder {
             HttpRequestBase httpRequest;
             if ("POST".equals(method)) {
                 httpRequest = new HttpPost(uriBuilder.build());
-                if (jsonBody != null) {
+                if (mimeContent != null) {
+                    ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(mimeContent));
+                } else if (jsonBody != null) {
                     ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(jsonBody.toString().getBytes(StandardCharsets.UTF_8)));
                 }
+            } else if ("DELETE".equals(method)){
+                httpRequest = new HttpDelete(uriBuilder.build());
             } else {
                 // default to GET request
                 httpRequest = new HttpGet(uriBuilder.build());
             }
-            httpRequest.setHeader("Content-Type", "application/json");
+            httpRequest.setHeader("Content-Type", contentType);
             httpRequest.setHeader("Authorization", "Bearer " + accessToken);
 
             return httpRequest;
