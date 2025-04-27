@@ -138,7 +138,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         boolean isJFXAvailable = true;
         try {
             Class.forName("javafx.application.Platform");
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | NullPointerException e) {
             LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
             isJFXAvailable = false;
         }
