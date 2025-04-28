@@ -182,10 +182,6 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         defaultItem.addActionListener(settingsListener);
         menu.add(defaultItem);
 
-        JMenuItem logItem = new JMenuItem(BundleMessage.format("UI_SHOW_LOGS"));
-        logItem.addActionListener(e -> DavGatewayTray.showLogs());
-        menu.add(logItem);
-
         // create an action exitListener to listen for exit action executed on the tray icon
         ActionListener exitListener = e -> {
             try {

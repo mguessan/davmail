@@ -23,9 +23,6 @@ import davmail.Settings;
 import davmail.exchange.NetworkDownException;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.log4j.lf5.LF5Appender;
-import org.apache.log4j.lf5.LogLevel;
-import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -436,23 +433,4 @@ public final class DavGatewayTray {
         }
     }
 
-    /**
-     * Open logging window.
-     */
-    public static void showLogs() {
-        Logger rootLogger = Logger.getRootLogger();
-        LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
-        if (lf5Appender == null) {
-            LogBrokerMonitor logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
-                @Override
-                protected void closeAfterConfirm() {
-                    hide();
-                }
-            };
-            lf5Appender = new LF5Appender(logBrokerMonitor);
-            lf5Appender.setName("LF5Appender");
-            rootLogger.addAppender(lf5Appender);
-        }
-        lf5Appender.getLogBrokerMonitor().show();
-    }
 }

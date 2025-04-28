@@ -295,10 +295,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         defaultItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(
                                 () -> openSettingsFrame()));
 
-                        MenuItem logItem = new MenuItem(popup, SWT.PUSH);
-                        logItem.setText(BundleMessage.format("UI_SHOW_LOGS"));
-                        logItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(DavGatewayTray::showLogs));
-
                         MenuItem exitItem = new MenuItem(popup, SWT.PUSH);
                         exitItem.setText(BundleMessage.format("UI_EXIT"));
                         exitItem.addListener(SWT.Selection, event -> DavGateway.stop());

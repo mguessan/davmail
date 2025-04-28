@@ -37,9 +37,6 @@ public class OSXFrameGatewayTray extends FrameGatewayTray implements OSXTrayInte
         menuBar.add(menu);
         mainFrame.setJMenuBar(menuBar);
 
-        JMenuItem logItem = new JMenuItem(BundleMessage.format("UI_SHOW_LOGS"));
-        logItem.addActionListener(e -> DavGatewayTray.showLogs());
-        menu.add(logItem);
     }
 
 

@@ -208,9 +208,6 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         defaultItem.addActionListener(settingsListener);
         popup.add(defaultItem);
 
-        MenuItem logItem = new MenuItem(BundleMessage.format("UI_SHOW_LOGS"));
-        logItem.addActionListener(e -> DavGatewayTray.showLogs());
-        popup.add(logItem);
 
         // create an action exitListener to listen for exit action executed on the tray icon
         ActionListener exitListener = e -> {
