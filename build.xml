@@ -352,7 +352,6 @@
                 <include name="*.jnilib"/>
                 <exclude name="nsisant*.jar"/>
                 <exclude name="ant-deb-*.jar"/>
-                <exclude name="reload4j-*.jar"/>
             </fileset>
         </copy>
         <copy file="src/icon/davmail.png" todir="dist"/>
