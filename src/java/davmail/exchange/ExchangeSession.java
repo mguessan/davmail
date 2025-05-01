@@ -1404,7 +1404,7 @@ public abstract class ExchangeSession {
 
         /**
          * Get permanent message id.
-         * permanentUrl over WebDav or IitemId over EWS
+         * permanentUrl over WebDav or ItemId over EWS
          *
          * @return permanent id
          */
