@@ -156,8 +156,12 @@ public class UnindexedFieldURI implements FieldURI {
 
     @Override
     public String getGraphId() {
-        // todo check valid for other fields?
         return fieldName;
+    }
+
+    @Override
+    public boolean isMultiValued() {
+        return false;
     }
 
 }

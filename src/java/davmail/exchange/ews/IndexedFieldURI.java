@@ -76,4 +76,9 @@ public class IndexedFieldURI implements FieldURI {
     public String getGraphId() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public boolean isMultiValued() {
+        return true;
+    }
 }

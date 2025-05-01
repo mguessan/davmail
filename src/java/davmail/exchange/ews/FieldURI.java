@@ -51,4 +51,6 @@ public interface FieldURI {
      * @return field id
      */
     String getGraphId();
+
+    boolean isMultiValued();
 }

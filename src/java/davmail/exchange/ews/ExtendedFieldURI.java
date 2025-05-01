@@ -166,7 +166,22 @@ public class ExtendedFieldURI implements FieldURI {
 
     @Override
     public String getGraphId() {
-        return propertyType.name()+" "+propertyTag;
+        if (distinguishedPropertySetId == DistinguishedPropertySetType.PublicStrings) {
+            return propertyType.name() + " {00020329-0000-0000-c000-000000000046} Name " + propertyName;
+        }
+        if (distinguishedPropertySetId == DistinguishedPropertySetType.InternetHeaders) {
+            return propertyType.name() + " {00020386-0000-0000-c000-000000000046} Name " + propertyName;
+        }
+        if (distinguishedPropertySetId == DistinguishedPropertySetType.Common) {
+            return propertyType.name() + " {00062008-0000-0000-c000-000000000046} Name " + propertyName;
+        }
+
+        return propertyType.name() + " " + propertyTag;
+    }
+
+    @Override
+    public boolean isMultiValued() {
+        return propertyType == PropertyType.StringArray;
     }
 
 }
