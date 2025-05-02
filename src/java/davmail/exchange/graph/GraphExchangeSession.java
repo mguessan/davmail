@@ -19,6 +19,7 @@
 
 package davmail.exchange.graph;
 
+import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.auth.O365Token;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Implement ExchangeSession based on Microsoft Graph
@@ -70,6 +72,28 @@ public class GraphExchangeSession extends ExchangeSession {
         msgfolderroot,
         searchfolders
     }
+
+    protected static final HashSet<FieldURI> IMAP_MESSAGE_ATTRIBUTES = new HashSet<>();
+
+    static {
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("permanenturl"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("urlcompname"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("uid"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("messageSize"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("imapUid"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("junk"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("flagStatus"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("messageFlags"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("lastVerbExecuted"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("read"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("deleted"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("date"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("lastmodified"));
+        // OSX IMAP requests content-class
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("contentclass"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("keywords"));
+    }
+
 
     protected static class FolderId {
         protected String mailbox;
@@ -146,7 +170,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         // https://learn.microsoft.com/en-us/graph/api/user-post-messages
 
-        FolderId currentFolderId = getFolderIdIfExists(folderPath);
+        FolderId folderId = getFolderIdIfExists(folderPath);
 
         // create message in default place first
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
@@ -172,8 +196,8 @@ public class GraphExchangeSession extends ExchangeSession {
             httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod("POST")
                     .setObjectType("mailFolders")
-                    .setMailbox(currentFolderId.mailbox)
-                    .setObjectId(currentFolderId.id)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectId(folderId.id)
                     .setJsonBody(draftJsonResponse)
                     .setChildType("messages");
 
@@ -189,15 +213,31 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectType("messages")
                         .setObjectId(draftJsonResponse.getString("id")));
             } catch (JSONException e) {
-                LOGGER.warn("Unable to delete draft message "+draftJsonResponse.optString("id"));
+                LOGGER.warn("Unable to delete draft message " + draftJsonResponse.optString("id"));
             }
         }
 
-        return buildMessage(jsonResponse);
+        return buildMessage(executeJsonRequest(new GraphRequestBuilder()
+                .setMethod("GET")
+                .setObjectType("messages")
+                .setMailbox(folderId.mailbox)
+                .setObjectId(jsonResponse.optString("id"))
+                .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)));
+    }
+
+    protected Message getMessageById(String folderPath, String id) throws IOException {
+        FolderId folderId = getFolderIdIfExists(folderPath);
+        return buildMessage(executeJsonRequest(new GraphRequestBuilder()
+                .setMethod("GET")
+                .setObjectType("messages")
+                .setMailbox(folderId.mailbox)
+                .setObjectId(id)
+                .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)));
     }
 
     class Message extends ExchangeSession.Message {
         protected String id;
+        protected String changeKey;
 
         @Override
         public String getPermanentId() {
@@ -213,8 +253,10 @@ public class GraphExchangeSession extends ExchangeSession {
     private Message buildMessage(JSONObject response) {
         Message message = new Message();
 
-        // get item id
-        message.id = response.optString("id");
+        try {
+            // get item id
+            message.id = response.getString("id");
+            message.changeKey = response.getString("changeKey");
 
         /* TODO
         message.permanentUrl = response.get(Field.get("permanenturl").getResponseName());
@@ -222,21 +264,73 @@ public class GraphExchangeSession extends ExchangeSession {
         message.size = response.getInt(Field.get("messageSize").getResponseName());
         message.uid = response.get(Field.get("uid").getResponseName());
         message.contentClass = response.get(Field.get("contentclass").getResponseName());
-        message.imapUid = response.getLong(Field.get("imapUid").getResponseName());
-        message.read = response.getBoolean(Field.get("read").getResponseName());
-        message.junk = response.getBoolean(Field.get("junk").getResponseName());
+        */
+            message.read = response.optBoolean(Field.get("read").getGraphId());
+        /*message.junk = response.getBoolean(Field.get("junk").getResponseName());
         message.flagged = "2".equals(response.get(Field.get("flagStatus").getResponseName()));
-        message.draft = (response.getInt(Field.get("messageFlags").getResponseName()) & 8) != 0;
         String lastVerbExecuted = response.get(Field.get("lastVerbExecuted").getResponseName());
         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
         message.forwarded = "104".equals(lastVerbExecuted);
-        message.date = convertDateFromExchange(response.get(Field.get("date").getResponseName()));
-        message.deleted = "1".equals(response.get(Field.get("deleted").getResponseName()));
+*/
+            message.date = convertDateFromExchange(response.getString("receivedDateTime"));
+            //message.deleted = "1".equals(response.get(Field.get("deleted").getResponseName()));
 
-        String lastmodified = convertDateFromExchange(response.get(Field.get("lastmodified").getResponseName()));
-        message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
+            String lastmodified = convertDateFromExchange(response.optString("lastModifiedDateTime"));
+            message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
 
-        message.keywords = response.get(Field.get("keywords").getResponseName());
+            //message.keywords = response.get(Field.get("keywords").getResponseName());
+        } catch (JSONException | DavMailException e) {
+            LOGGER.warn("Error parsing message " + e.getMessage(), e);
+        }
+
+        JSONArray singleValueExtendedProperties = response.optJSONArray("singleValueExtendedProperties");
+        if (singleValueExtendedProperties != null) {
+            for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
+                try {
+                    JSONObject responseValue = singleValueExtendedProperties.getJSONObject(i);
+                    String responseId = responseValue.optString("id");
+                    if (Field.get("imapUid").getGraphId().equals(responseId)) {
+                        message.imapUid = responseValue.getLong("value");
+                    }
+                    // message flag does not exactly match field
+                    else if ("Integer 0xe07".equals(responseId)) {
+                        message.draft = (responseValue.getLong("value") & 8) != 0;
+                    } else if ("SystemTime 0xe06".equals(responseId)) {
+                        message.date = convertDateFromExchange(responseValue.getString("value"));
+                        // alternative
+                        //message.date = convertDateFromExchange(response.getString("receivedDateTime"));
+                    } else if ("SystemTime 0xe08".equals(responseId)) {
+                        message.size = responseValue.getInt("value");
+                    } else if ("Binary 0xff9".equals(responseId)) {
+                        message.uid = responseValue.getString("value");
+                    }
+
+                } catch (JSONException | DavMailException e) {
+                    LOGGER.warn("Error parsing json response value");
+                }
+            }
+        }
+
+        JSONArray multiValueExtendedProperties = response.optJSONArray("multiValueExtendedProperties");
+        if (multiValueExtendedProperties != null) {
+            for (int i = 0; i < multiValueExtendedProperties.length(); i++) {
+                try {
+                    JSONObject responseValue = multiValueExtendedProperties.getJSONObject(i);
+                    String responseId = responseValue.optString("id");
+                    if (Field.get("keywords").getGraphId().equals(responseId)) {
+                        JSONArray keywordsJsonArray = responseValue.getJSONArray("value");
+                        HashSet<String> keywords = new HashSet<>();
+                        for (int j=0;j<keywordsJsonArray.length();j++) {
+                            keywords.add(keywordsJsonArray.getString(j));
+                        }
+                        message.keywords = StringUtil.join(keywords, ",");
+                    }
+
+                } catch (JSONException e) {
+                    LOGGER.warn("Error parsing json response value");
+                }
+            }
+        }
 
         if (LOGGER.isDebugEnabled()) {
             StringBuilder buffer = new StringBuilder();
@@ -247,15 +341,40 @@ public class GraphExchangeSession extends ExchangeSession {
             if (message.uid != null) {
                 buffer.append(" uid: ").append(message.uid);
             }
-            buffer.append(" ItemId: ").append(message.itemId.id);
-            buffer.append(" ChangeKey: ").append(message.itemId.changeKey);
+            buffer.append(" ItemId: ").append(message.id);
+            buffer.append(" ChangeKey: ").append(message.changeKey);
             LOGGER.debug(buffer.toString());
         }
-         */
+
         return message;
 
     }
 
+    /**
+     * Duplicate from EWSEchangeSession.
+     * TODO refactor
+     * @param exchangeDateValue date returned from O365
+     * @return converted date
+     * @throws DavMailException on error
+     */
+    protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
+        // yyyy-MM-dd'T'HH:mm:ss'Z' to yyyyMMdd'T'HHmmss'Z'
+        if (exchangeDateValue == null) {
+            return null;
+        } else {
+            if (exchangeDateValue.length() != 20) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+            }
+            StringBuilder buffer = new StringBuilder();
+            for (int i = 0; i < exchangeDateValue.length(); i++) {
+                if (i == 4 || i == 7 || i == 13 || i == 16) {
+                    i++;
+                }
+                buffer.append(exchangeDateValue.charAt(i));
+            }
+            return buffer.toString();
+        }
+    }
 
     @Override
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
@@ -269,12 +388,57 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     protected byte[] getContent(ExchangeSession.Message message) throws IOException {
-        return new byte[0];
+        GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
+                .setMethod("GET")
+                .setObjectType("messages")
+                .setObjectId(message.getPermanentId())
+                .setChildType("$value")
+                .setAccessToken(token.getAccessToken());
+
+        // TODO review mime content handling
+        byte[] mimeContent;
+        try (
+                CloseableHttpResponse response = httpClient.execute(graphRequestBuilder.build());
+                InputStream inputStream = response.getEntity().getContent()
+        ) {
+                if (HttpClientAdapter.isGzipEncoded(response)) {
+                    mimeContent = IOUtil.readFully(new GZIPInputStream(inputStream));
+                } else {
+                    mimeContent = IOUtil.readFully(inputStream);
+                }
+        }
+        return mimeContent;
     }
 
     @Override
     public MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException {
-        return null;
+        MessageList messageList = new MessageList();
+        FolderId folderId = getFolderIdIfExists(folderName);
+
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod("GET")
+                .setObjectType("mailFolders")
+                .setMailbox(folderId.mailbox)
+                .setObjectId(folderId.id)
+                .setChildType("messages")
+                .setExpandFields(IMAP_MESSAGE_ATTRIBUTES);
+        LOGGER.debug("searchMessages " + folderId.mailbox + " " + folderName);
+        if (condition != null && !condition.isEmpty()) {
+            StringBuilder filter = new StringBuilder();
+            condition.appendTo(filter);
+            LOGGER.debug("search filter " + filter);
+            httpRequestBuilder.setFilter(filter.toString());
+        }
+
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+
+        while (graphIterator.hasNext()) {
+            Message message = buildMessage(graphIterator.next());
+            message.messageList = messageList;
+            messageList.add(message);
+        }
+
+        return messageList;
     }
 
     static class AttributeCondition extends ExchangeSession.AttributeCondition {
@@ -418,7 +582,6 @@ public class GraphExchangeSession extends ExchangeSession {
     protected void appendSubFolders(List<ExchangeSession.Folder> folders,
                                     String parentFolderPath, FolderId parentFolderId,
                                     Condition condition, boolean recursive) throws IOException {
-        int resultCount = 0;
 
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
@@ -439,7 +602,6 @@ public class GraphExchangeSession extends ExchangeSession {
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext()) {
-            resultCount++;
             Folder folder = buildFolder(graphIterator.next());
             folder.folderId.mailbox = parentFolderId.mailbox;
             if (!parentFolderPath.isEmpty()) {
@@ -867,7 +1029,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 CloseableHttpResponse response = httpClient.execute(request)
         ) {
             if (response.getStatusLine().getStatusCode() == 400) {
-                LOGGER.warn("Request returned "+response.getStatusLine());
+                LOGGER.warn("Request returned " + response.getStatusLine());
             }
             jsonResponse = new JsonResponseHandler().handleResponse(response);
         }

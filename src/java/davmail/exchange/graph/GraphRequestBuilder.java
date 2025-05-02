@@ -29,6 +29,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -43,6 +44,7 @@ import java.util.Set;
  * Build Microsoft graph request
  */
 public class GraphRequestBuilder {
+    protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.graph.GraphRequestBuilder");
 
     String method = "POST";
 
@@ -165,6 +167,9 @@ public class GraphRequestBuilder {
             buffer.append("/").append(childType);
         }
 
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Path: " + buffer);
+        }
         return buffer.toString();
     }
 
@@ -176,7 +181,9 @@ public class GraphRequestBuilder {
         ArrayList<String> singleValueProperties = new ArrayList<>();
         ArrayList<String> multiValueProperties = new ArrayList<>();
         for (FieldURI fieldURI : expandFields) {
-            if (fieldURI instanceof ExtendedFieldURI) {
+            if (fieldURI.isMultiValued()) {
+                multiValueProperties.add(fieldURI.getGraphId());
+            } else if (fieldURI instanceof ExtendedFieldURI) {
                 singleValueProperties.add(fieldURI.getGraphId());
             } else if (fieldURI instanceof IndexedFieldURI) {
                 multiValueProperties.add(fieldURI.getGraphId());
@@ -195,6 +202,9 @@ public class GraphRequestBuilder {
             expand.append("multiValueExtendedProperties($filter=");
             appendExpandProperties(expand, multiValueProperties);
             expand.append(")");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Expand: " + expand);
         }
         return expand.toString();
     }
