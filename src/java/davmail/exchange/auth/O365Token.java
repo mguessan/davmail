@@ -194,7 +194,11 @@ public class O365Token {
         parameters.add(new BasicNameValuePair("refresh_token", refreshToken));
         parameters.add(new BasicNameValuePair("redirect_uri", redirectUri));
         parameters.add(new BasicNameValuePair("client_id", clientId));
-        parameters.add(new BasicNameValuePair("resource", Settings.getOutlookUrl()));
+
+        // resource is not relevant over OIDC
+        if (!Settings.getBooleanProperty("davmail.enableGraph", false) && !Settings.getBooleanProperty("davmail.enableOidc", false)) {
+            parameters.add(new BasicNameValuePair("resource", Settings.getOutlookUrl()));
+        }
 
         RestRequest tokenRequest = new RestRequest(tokenUrl, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
 
