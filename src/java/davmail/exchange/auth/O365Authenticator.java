@@ -70,7 +70,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             //uriBuilder.addParameter("prompt", "consent");
 
             if ("https://outlook.live.com".equals(Settings.getOutlookUrl())) {
-
+                // live.com endpoint, able to obtain a token but EWS endpoint does not work
                 String liveAuthorizeUrl = "https://login.live.com/oauth20_authorize.srf";
                 uriBuilder = new URIBuilder(liveAuthorizeUrl)
                         .addParameter("client_id", clientId)
@@ -88,9 +88,6 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                         .addParameter("scope", "openid profile offline_access " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All");
             } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
-                //uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
-                //        .addParameter("resource", "https://graph.microsoft.com")
-                //;
                 // OIDC compliant
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                         .addParameter("scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read");
