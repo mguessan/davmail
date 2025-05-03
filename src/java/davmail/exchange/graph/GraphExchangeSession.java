@@ -170,7 +170,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         // https://learn.microsoft.com/en-us/graph/api/user-post-messages
 
-        FolderId folderId = getFolderIdIfExists(folderPath);
+        FolderId folderId = getFolderId(folderPath);
 
         // create message in default place first
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
@@ -258,27 +258,13 @@ public class GraphExchangeSession extends ExchangeSession {
             message.id = response.getString("id");
             message.changeKey = response.getString("changeKey");
 
-        /* TODO
-        message.permanentUrl = response.get(Field.get("permanenturl").getResponseName());
-
-        message.size = response.getInt(Field.get("messageSize").getResponseName());
-        message.uid = response.get(Field.get("uid").getResponseName());
-        message.contentClass = response.get(Field.get("contentclass").getResponseName());
-        */
-            message.read = response.optBoolean(Field.get("read").getGraphId());
-        /*message.junk = response.getBoolean(Field.get("junk").getResponseName());
-        message.flagged = "2".equals(response.get(Field.get("flagStatus").getResponseName()));
-        String lastVerbExecuted = response.get(Field.get("lastVerbExecuted").getResponseName());
-        message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
-        message.forwarded = "104".equals(lastVerbExecuted);
-*/
+            message.read = response.getBoolean("isRead");
+            message.draft = response.getBoolean("isDraft");
             message.date = convertDateFromExchange(response.getString("receivedDateTime"));
-            //message.deleted = "1".equals(response.get(Field.get("deleted").getResponseName()));
 
             String lastmodified = convertDateFromExchange(response.optString("lastModifiedDateTime"));
             message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
 
-            //message.keywords = response.get(Field.get("keywords").getResponseName());
         } catch (JSONException | DavMailException e) {
             LOGGER.warn("Error parsing message " + e.getMessage(), e);
         }
@@ -291,21 +277,37 @@ public class GraphExchangeSession extends ExchangeSession {
                     String responseId = responseValue.optString("id");
                     if (Field.get("imapUid").getGraphId().equals(responseId)) {
                         message.imapUid = responseValue.getLong("value");
-                    }
-                    // message flag does not exactly match field
-                    else if ("Integer 0xe07".equals(responseId)) {
-                        message.draft = (responseValue.getLong("value") & 8) != 0;
-                    } else if ("SystemTime 0xe06".equals(responseId)) {
-                        message.date = convertDateFromExchange(responseValue.getString("value"));
-                        // alternative
-                        //message.date = convertDateFromExchange(response.getString("receivedDateTime"));
+                    //}
+                    // message flag does not exactly match field, replace with isDraft
+                    //else if ("Integer 0xe07".equals(responseId)) {
+                        //message.draft = (responseValue.getLong("value") & 8) != 0;
+                    //} else if ("SystemTime 0xe06".equals(responseId)) {
+                        // use receivedDateTime instead
+                        //message.date = convertDateFromExchange(responseValue.getString("value"));
                     } else if ("SystemTime 0xe08".equals(responseId)) {
                         message.size = responseValue.getInt("value");
                     } else if ("Binary 0xff9".equals(responseId)) {
                         message.uid = responseValue.getString("value");
+
+                    } else if ("String 0x670E".equals(responseId)) {
+                        // probably not available over graph
+                        message.permanentUrl = responseValue.getString("value");
+                    } else if ("Integer 0x1081".equals(responseId)) {
+                        String lastVerbExecuted = responseValue.getString("value");
+                        message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
+                        message.forwarded = "104".equals(lastVerbExecuted);
+                    } else if ("String {00020386-0000-0000-C000-000000000046} Name content-class".equals(responseId)) {
+                        // TODO: test this
+                        message.contentClass = responseValue.getString("value");
+                    } else if ("Integer 0x1083".equals(responseId)) {
+                        message.junk = responseValue.getBoolean("value");
+                    } else if ("Integer 0x1090".equals(responseId)) {
+                        message.flagged = "2".equals(responseValue.getString("value"));
+                    } else if ("Integer {00062008-0000-0000-c000-000000000046} Name 0x8570".equals(responseId)) {
+                        message.deleted = "1".equals(responseValue.getString("value"));
                     }
 
-                } catch (JSONException | DavMailException e) {
+                } catch (JSONException e) {
                     LOGGER.warn("Error parsing json response value");
                 }
             }
