@@ -168,55 +168,64 @@ public class GraphExchangeSession extends ExchangeSession {
         baos.close();
         byte[] mimeContent = IOUtil.encodeBase64(baos.toByteArray());
 
+        // do we want message to have draft flag?
+        boolean isDraft = "1".equals(properties.get("draft"));
+
         // https://learn.microsoft.com/en-us/graph/api/user-post-messages
 
         FolderId folderId = getFolderId(folderPath);
 
-        // create message in default place first
-        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+        // create message in default drafts folder first
+
+        JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
                 .setMethod("POST")
                 .setContentType("text/plain")
                 .setMimeContent(mimeContent)
-                .setChildType("messages");
-
-        JSONObject draftJsonResponse = executeJsonRequest(httpRequestBuilder);
-
-        JSONObject jsonResponse;
-
-        // TODO refactor
-        // unset draft flag on returned draft message properties
-        try {
-            draftJsonResponse.put("singleValueExtendedProperties",
-                    new JSONArray().put(new JSONObject()
-                            .put("id", Field.get("messageFlags").getGraphId())
-                            .put("value", "4")));
-
-
-            // now use this to recreate message
-            httpRequestBuilder = new GraphRequestBuilder()
-                    .setMethod("POST")
-                    .setObjectType("mailFolders")
-                    .setMailbox(folderId.mailbox)
-                    .setObjectId(folderId.id)
-                    .setJsonBody(draftJsonResponse)
-                    .setChildType("messages");
-
-            jsonResponse = executeJsonRequest(httpRequestBuilder);
-
-        } catch (JSONException e) {
-            throw new IOException(e);
-        } finally {
+                .setChildType("messages"));
+        if (isDraft) {
             try {
+                jsonResponse = executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("messages")
+                        .setObjectId(jsonResponse.optString("id"))
+                        .setChildType("move")
+                        .setJsonBody(new JSONObject().put("destinationId", folderId.id)));
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
+        } else {
+            String draftMessageId = null;
+            try {
+                // save draft message id
+                draftMessageId = jsonResponse.getString("id");
+
+                // unset draft flag on returned draft message properties
+                // TODO handle other message flags
+                jsonResponse.put("singleValueExtendedProperties",
+                        new JSONArray().put(new JSONObject()
+                                .put("id", Field.get("messageFlags").getGraphId())
+                                .put("value", "4")));
+
+                // now use this to recreate message in the right folder
+                jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod("POST")
+                        .setObjectType("mailFolders")
+                        .setMailbox(folderId.mailbox)
+                        .setObjectId(folderId.id)
+                        .setJsonBody(jsonResponse)
+                        .setChildType("messages"));
+
+            } catch (JSONException e) {
+                throw new IOException(e);
+            } finally {
                 // delete draft message
                 executeJsonRequest(new GraphRequestBuilder()
                         .setMethod("DELETE")
                         .setObjectType("messages")
-                        .setObjectId(draftJsonResponse.getString("id")));
-            } catch (JSONException e) {
-                LOGGER.warn("Unable to delete draft message " + draftJsonResponse.optString("id"));
+                        .setObjectId(draftMessageId));
             }
-        }
 
+        }
         return buildMessage(executeJsonRequest(new GraphRequestBuilder()
                 .setMethod("GET")
                 .setObjectType("messages")
@@ -277,11 +286,11 @@ public class GraphExchangeSession extends ExchangeSession {
                     String responseId = responseValue.optString("id");
                     if (Field.get("imapUid").getGraphId().equals(responseId)) {
                         message.imapUid = responseValue.getLong("value");
-                    //}
-                    // message flag does not exactly match field, replace with isDraft
-                    //else if ("Integer 0xe07".equals(responseId)) {
+                        //}
+                        // message flag does not exactly match field, replace with isDraft
+                        //else if ("Integer 0xe07".equals(responseId)) {
                         //message.draft = (responseValue.getLong("value") & 8) != 0;
-                    //} else if ("SystemTime 0xe06".equals(responseId)) {
+                        //} else if ("SystemTime 0xe06".equals(responseId)) {
                         // use receivedDateTime instead
                         //message.date = convertDateFromExchange(responseValue.getString("value"));
                     } else if ("SystemTime 0xe08".equals(responseId)) {
@@ -322,7 +331,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     if (Field.get("keywords").getGraphId().equals(responseId)) {
                         JSONArray keywordsJsonArray = responseValue.getJSONArray("value");
                         HashSet<String> keywords = new HashSet<>();
-                        for (int j=0;j<keywordsJsonArray.length();j++) {
+                        for (int j = 0; j < keywordsJsonArray.length(); j++) {
                             keywords.add(keywordsJsonArray.getString(j));
                         }
                         message.keywords = StringUtil.join(keywords, ",");
@@ -403,11 +412,11 @@ public class GraphExchangeSession extends ExchangeSession {
                 CloseableHttpResponse response = httpClient.execute(graphRequestBuilder.build());
                 InputStream inputStream = response.getEntity().getContent()
         ) {
-                if (HttpClientAdapter.isGzipEncoded(response)) {
-                    mimeContent = IOUtil.readFully(new GZIPInputStream(inputStream));
-                } else {
-                    mimeContent = IOUtil.readFully(inputStream);
-                }
+            if (HttpClientAdapter.isGzipEncoded(response)) {
+                mimeContent = IOUtil.readFully(new GZIPInputStream(inputStream));
+            } else {
+                mimeContent = IOUtil.readFully(inputStream);
+            }
         }
         return mimeContent;
     }
