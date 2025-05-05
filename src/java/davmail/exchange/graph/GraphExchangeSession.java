@@ -19,6 +19,7 @@
 
 package davmail.exchange.graph;
 
+import davmail.BundleMessage;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
@@ -28,6 +29,7 @@ import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
 import davmail.http.HttpClientAdapter;
+import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -40,6 +42,7 @@ import org.codehaus.jettison.json.JSONObject;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -190,6 +193,15 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectId(jsonResponse.optString("id"))
                         .setChildType("move")
                         .setJsonBody(new JSONObject().put("destinationId", folderId.id)));
+
+                // we have the message in the right folder, apply flags
+                applyMessageProperties(jsonResponse, properties);
+                jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod("PATCH")
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("messages")
+                        .setObjectId(jsonResponse.optString("id"))
+                        .setJsonBody(jsonResponse));
             } catch (JSONException e) {
                 throw new IOException(e);
             }
@@ -205,6 +217,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         new JSONArray().put(new JSONObject()
                                 .put("id", Field.get("messageFlags").getGraphId())
                                 .put("value", "4")));
+                applyMessageProperties(jsonResponse, properties);
 
                 // now use this to recreate message in the right folder
                 jsonResponse = executeJsonRequest(new GraphRequestBuilder()
@@ -234,19 +247,82 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)));
     }
 
+    private void applyMessageProperties(JSONObject jsonResponse, HashMap<String, String> properties) throws JSONException {
+        JSONArray singleValueExtendedProperties = new JSONArray();
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            if ("read".equals(entry.getKey())) {
+                jsonResponse.put("isRead", "1".equals(entry.getValue()));
+            } else if ("junk".equals(entry.getKey())) {
+                singleValueExtendedProperties.put(getSingleValue("junk", entry.getValue()));
+            } else if ("flagged".equals(entry.getKey())) {
+                singleValueExtendedProperties.put(getSingleValue("flagStatus", entry.getValue()));
+            } else if ("answered".equals(entry.getKey())) {
+                singleValueExtendedProperties.put(getSingleValue("flagStatus", entry.getValue()));
+            }
+        }
+        jsonResponse.put("singleValueExtendedProperties", singleValueExtendedProperties);
+        /*
+            for (Map.Entry<String, String> entry : properties.entrySet()) {
+                } else if ("answered".equals(entry.getKey())) {
+                    list.add(Field.createFieldUpdate("lastVerbExecuted", entry.getValue()));
+                    if ("102".equals(entry.getValue())) {
+                        list.add(Field.createFieldUpdate("iconIndex", "261"));
+                    }
+                } else if ("forwarded".equals(entry.getKey())) {
+                    list.add(Field.createFieldUpdate("lastVerbExecuted", entry.getValue()));
+                    if ("104".equals(entry.getValue())) {
+                        list.add(Field.createFieldUpdate("iconIndex", "262"));
+                    }
+                } else if ("draft".equals(entry.getKey())) {
+                    // note: draft is readonly after create
+                    list.add(Field.createFieldUpdate("messageFlags", entry.getValue()));
+                } else if ("deleted".equals(entry.getKey())) {
+                    list.add(Field.createFieldUpdate("deleted", entry.getValue()));
+                } else if ("datereceived".equals(entry.getKey())) {
+                    list.add(Field.createFieldUpdate("datereceived", entry.getValue()));
+                } else if ("keywords".equals(entry.getKey())) {
+                    list.add(Field.createFieldUpdate("keywords", entry.getValue()));
+                }
+            }
+            return list;
+        }
+         */
+    }
+
+    private JSONObject getSingleValue(String fieldName, String value) throws JSONException {
+        return new JSONObject()
+                .put("id", Field.get(fieldName).getGraphId())
+                .put("value", value);
+    }
+
+    private JSONObject getSingleValue(String fieldName, boolean value) throws JSONException {
+        return new JSONObject()
+                .put("id", Field.get(fieldName).getGraphId())
+                .put("value", value);
+    }
+
     protected Message getMessageById(String folderPath, String id) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
         return buildMessage(executeJsonRequest(new GraphRequestBuilder()
                 .setMethod("GET")
-                .setObjectType("messages")
                 .setMailbox(folderId.mailbox)
+                .setObjectType("messages")
                 .setObjectId(id)
                 .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)));
     }
 
     class Message extends ExchangeSession.Message {
+        protected String mailbox;
         protected String id;
         protected String changeKey;
+
+        public void setMailbox(String mailbox) {
+            this.mailbox = mailbox;
+        }
+
+        public String getMailbox() {
+            return mailbox;
+        }
 
         @Override
         public String getPermanentId() {
@@ -309,7 +385,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         // TODO: test this
                         message.contentClass = responseValue.getString("value");
                     } else if ("Integer 0x1083".equals(responseId)) {
-                        message.junk = responseValue.getBoolean("value");
+                        message.junk = "1".equals(responseValue.getString("value"));
                     } else if ("Integer 0x1090".equals(responseId)) {
                         message.flagged = "2".equals(responseValue.getString("value"));
                     } else if ("Integer {00062008-0000-0000-c000-000000000046} Name 0x8570".equals(responseId)) {
@@ -401,6 +477,7 @@ public class GraphExchangeSession extends ExchangeSession {
     protected byte[] getContent(ExchangeSession.Message message) throws IOException {
         GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
+                .setMailbox(((Message)message).mailbox)
                 .setObjectType("messages")
                 .setObjectId(message.getPermanentId())
                 .setChildType("$value")
@@ -412,10 +489,30 @@ public class GraphExchangeSession extends ExchangeSession {
                 CloseableHttpResponse response = httpClient.execute(graphRequestBuilder.build());
                 InputStream inputStream = response.getEntity().getContent()
         ) {
+            // wrap inputstream to log progress
+            FilterInputStream filterInputStream = new FilterInputStream(inputStream) {
+                int totalCount;
+                int lastLogCount;
+
+                @Override
+                public int read(byte[] buffer, int offset, int length) throws IOException {
+                    int count = super.read(buffer, offset, length);
+                    totalCount += count;
+                    if (totalCount - lastLogCount > 1024 * 128) {
+                        DavGatewayTray.debug(new BundleMessage("LOG_DOWNLOAD_PROGRESS", String.valueOf(totalCount / 1024), message.getPermanentId()));
+                        DavGatewayTray.switchIcon();
+                        lastLogCount = totalCount;
+                    }
+                    /*if (count > 0 && LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(new String(buffer, offset, count, "UTF-8"));
+                    }*/
+                    return count;
+                }
+            };
             if (HttpClientAdapter.isGzipEncoded(response)) {
-                mimeContent = IOUtil.readFully(new GZIPInputStream(inputStream));
+                mimeContent = IOUtil.readFully(new GZIPInputStream(filterInputStream));
             } else {
-                mimeContent = IOUtil.readFully(inputStream);
+                mimeContent = IOUtil.readFully(filterInputStream);
             }
         }
         return mimeContent;
@@ -424,7 +521,7 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     public MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException {
         MessageList messageList = new MessageList();
-        FolderId folderId = getFolderIdIfExists(folderName);
+        FolderId folderId = getFolderId(folderName);
 
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
@@ -446,6 +543,7 @@ public class GraphExchangeSession extends ExchangeSession {
         while (graphIterator.hasNext()) {
             Message message = buildMessage(graphIterator.next());
             message.messageList = messageList;
+            message.mailbox = folderId.mailbox;
             messageList.add(message);
         }
 
