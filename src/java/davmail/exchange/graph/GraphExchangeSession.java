@@ -248,49 +248,58 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private void applyMessageProperties(JSONObject jsonResponse, HashMap<String, String> properties) throws JSONException {
-        JSONArray singleValueExtendedProperties = new JSONArray();
+        JSONArray singleValueExtendedProperties = jsonResponse.optJSONArray("singleValueExtendedProperties");
+        if (singleValueExtendedProperties == null) {
+            singleValueExtendedProperties = new JSONArray();
+            jsonResponse.put("singleValueExtendedProperties", singleValueExtendedProperties);
+        }
+
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             if ("read".equals(entry.getKey())) {
                 jsonResponse.put("isRead", "1".equals(entry.getValue()));
             } else if ("junk".equals(entry.getKey())) {
-                singleValueExtendedProperties.put(getSingleValue("junk", entry.getValue()));
+                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("junk", entry.getValue()));
             } else if ("flagged".equals(entry.getKey())) {
-                singleValueExtendedProperties.put(getSingleValue("flagStatus", entry.getValue()));
+                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("flagStatus", entry.getValue()));
             } else if ("answered".equals(entry.getKey())) {
-                singleValueExtendedProperties.put(getSingleValue("lastVerbExecuted", entry.getValue()));
+                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("lastVerbExecuted", entry.getValue()));
                 if ("102".equals(entry.getValue())) {
-                    singleValueExtendedProperties.put(getSingleValue("iconIndex", "261"));
+                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("iconIndex", "261"));
                 }
+            } else if ("forwarded".equals(entry.getKey())) {
+                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("lastVerbExecuted", entry.getValue()));
+                if ("104".equals(entry.getValue())) {
+                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("iconIndex", "262"));
+                }
+            } else if ("deleted".equals(entry.getKey())) {
+                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("deleted", entry.getValue()));
+            } else if ("datereceived".equals(entry.getKey())) {
+                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("datereceived", entry.getValue()));
+            } else if ("keywords".equals(entry.getKey())) {
+                // TODO: test
+                getMultiValueExtendedProperties(jsonResponse).put(getMultiValue("keywords", entry.getValue()));
             }
         }
-        jsonResponse.put("singleValueExtendedProperties", singleValueExtendedProperties);
-        /*
-            for (Map.Entry<String, String> entry : properties.entrySet()) {
-                } else if ("answered".equals(entry.getKey())) {
-                    list.add(Field.createFieldUpdate("lastVerbExecuted", entry.getValue()));
-                    if ("102".equals(entry.getValue())) {
-                        list.add(Field.createFieldUpdate("iconIndex", "261"));
-                    }
-                } else if ("forwarded".equals(entry.getKey())) {
-                    list.add(Field.createFieldUpdate("lastVerbExecuted", entry.getValue()));
-                    if ("104".equals(entry.getValue())) {
-                        list.add(Field.createFieldUpdate("iconIndex", "262"));
-                    }
-                } else if ("draft".equals(entry.getKey())) {
-                    // note: draft is readonly after create
-                    list.add(Field.createFieldUpdate("messageFlags", entry.getValue()));
-                } else if ("deleted".equals(entry.getKey())) {
-                    list.add(Field.createFieldUpdate("deleted", entry.getValue()));
-                } else if ("datereceived".equals(entry.getKey())) {
-                    list.add(Field.createFieldUpdate("datereceived", entry.getValue()));
-                } else if ("keywords".equals(entry.getKey())) {
-                    list.add(Field.createFieldUpdate("keywords", entry.getValue()));
-                }
-            }
-            return list;
-        }
-         */
     }
+
+    private JSONArray getSingleValueExtendedProperties(JSONObject jsonResponse) throws JSONException {
+        JSONArray singleValueExtendedProperties = jsonResponse.optJSONArray("singleValueExtendedProperties");
+        if (singleValueExtendedProperties == null) {
+            singleValueExtendedProperties = new JSONArray();
+            jsonResponse.put("singleValueExtendedProperties", singleValueExtendedProperties);
+        }
+        return singleValueExtendedProperties;
+    }
+
+    private JSONArray getMultiValueExtendedProperties(JSONObject jsonResponse) throws JSONException {
+        JSONArray multiValueExtendedProperties = jsonResponse.optJSONArray("multiValueExtendedProperties");
+        if (multiValueExtendedProperties == null) {
+            multiValueExtendedProperties = new JSONArray();
+            jsonResponse.put("multiValueExtendedProperties", multiValueExtendedProperties);
+        }
+        return multiValueExtendedProperties;
+    }
+
 
     private JSONObject getSingleValue(String fieldName, String value) throws JSONException {
         return new JSONObject()
@@ -302,6 +311,18 @@ public class GraphExchangeSession extends ExchangeSession {
         return new JSONObject()
                 .put("id", Field.get(fieldName).getGraphId())
                 .put("value", value);
+    }
+
+    private JSONObject getMultiValue(String fieldName, String value) throws JSONException {
+        // split value
+        String[] values = value.split(",");
+        JSONArray jsonValues = new JSONArray();
+        for(String singleValue:values) {
+            jsonValues.put(singleValue);
+        }
+        return new JSONObject()
+                .put("id", Field.get(fieldName).getGraphId())
+                .put("value", jsonValues);
     }
 
     protected Message getMessageById(String folderPath, String id) throws IOException {
@@ -480,7 +501,7 @@ public class GraphExchangeSession extends ExchangeSession {
     protected byte[] getContent(ExchangeSession.Message message) throws IOException {
         GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
-                .setMailbox(((Message)message).mailbox)
+                .setMailbox(((Message) message).mailbox)
                 .setObjectType("messages")
                 .setObjectId(message.getPermanentId())
                 .setChildType("$value")
