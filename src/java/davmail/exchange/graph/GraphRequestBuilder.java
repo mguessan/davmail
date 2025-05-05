@@ -25,6 +25,7 @@ import davmail.exchange.ews.FieldURI;
 import davmail.exchange.ews.IndexedFieldURI;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
@@ -246,6 +247,11 @@ public class GraphRequestBuilder {
                 } else if (jsonBody != null) {
                     ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(jsonBody.toString().getBytes(StandardCharsets.UTF_8)));
                 }
+            } else if ("PATCH".equals(method)) {
+                httpRequest = new HttpPatch(uriBuilder.build());
+                if (jsonBody != null) {
+                    ((HttpPatch) httpRequest).setEntity(new ByteArrayEntity(jsonBody.toString().getBytes(StandardCharsets.UTF_8)));
+                }
             } else if ("DELETE".equals(method)){
                 httpRequest = new HttpDelete(uriBuilder.build());
             } else {
@@ -254,6 +260,14 @@ public class GraphRequestBuilder {
             }
             httpRequest.setHeader("Content-Type", contentType);
             httpRequest.setHeader("Authorization", "Bearer " + accessToken);
+
+            if (LOGGER.isDebugEnabled() && jsonBody != null) {
+                try {
+                    LOGGER.debug("Body: " + jsonBody.toString(4));
+                } catch (JSONException e) {
+                    // ignore
+                }
+            }
 
             return httpRequest;
         } catch (URISyntaxException e) {

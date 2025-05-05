@@ -257,7 +257,10 @@ public class GraphExchangeSession extends ExchangeSession {
             } else if ("flagged".equals(entry.getKey())) {
                 singleValueExtendedProperties.put(getSingleValue("flagStatus", entry.getValue()));
             } else if ("answered".equals(entry.getKey())) {
-                singleValueExtendedProperties.put(getSingleValue("flagStatus", entry.getValue()));
+                singleValueExtendedProperties.put(getSingleValue("lastVerbExecuted", entry.getValue()));
+                if ("102".equals(entry.getValue())) {
+                    singleValueExtendedProperties.put(getSingleValue("iconIndex", "261"));
+                }
             }
         }
         jsonResponse.put("singleValueExtendedProperties", singleValueExtendedProperties);
