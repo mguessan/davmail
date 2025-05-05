@@ -83,15 +83,22 @@ public class O365Authenticator implements ExchangeAuthenticator {
                         //.addParameter("prompt", "consent")
                 ;
 
-            // switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
+            } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
+                if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
+                    // OIDC compliant
+                    uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
+                            .addParameter("scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read");
+                    //.addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All AuditLog.Read.All Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrintJob.ReadWriteBasic SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read");
+                } else {
+                    // Outlook desktop relies on classic authorize endpoint
+                    // on graph endpoint default scopes are scope -> AuditLog.Create Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All FileStorageContainer.Selected Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrinterShare.ReadBasic.All PrintJob.Create PrintJob.ReadWriteBasic Reports.Read.All SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read
+                    uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
+                            .addParameter("resource", Settings.getGraphUrl());
+                }
+            // Probably irrelevant except for graph api, see above, switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
             } else if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                         .addParameter("scope", "openid profile offline_access " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All");
-            } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
-                // OIDC compliant
-                uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
-                        .addParameter("scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read");
-                        //.addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All AuditLog.Read.All Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrintJob.ReadWriteBasic SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read");
             } else {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
                         .addParameter("resource", Settings.getOutlookUrl());

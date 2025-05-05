@@ -79,9 +79,8 @@ public class O365Token {
     }
 
     protected String buildTokenUrl(String tenantId) {
-        this.tokenUrl = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/token";
-        // use OIDC endpoint for graph, see https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
-        if (Settings.getBooleanProperty("davmail.enableGraph", false) || Settings.getBooleanProperty("davmail.enableOidc", false)) {
+        if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
+            // OIDC configuration visible at https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
             return Settings.getO365LoginUrl()+"/"+tenantId+"/oauth2/v2.0/token";
         } else {
             return Settings.getO365LoginUrl()+"/"+tenantId+"/oauth2/token";
