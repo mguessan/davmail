@@ -767,6 +767,23 @@ public final class Settings {
         }
     }
 
+    /**
+     * Handle custom graph endpoints.
+     * See https://learn.microsoft.com/en-us/graph/deployments
+     * @return graph endpoint url
+     */
+    public static String getGraphUrl() {
+        String tld = getProperty("davmail.tld");
+        String graphUrl = getProperty("davmail.graphUrl");
+        if (graphUrl != null) {
+            return graphUrl;
+        } else if (tld == null) {
+            return GRAPH_URL;
+        } else {
+            return  "https://graph.microsoft."+tld;
+        }
+    }
+
     public static String getO365LoginUrl() {
         String tld = getProperty("davmail.tld");
         String loginUrl = getProperty("davmail.loginUrl");
