@@ -36,6 +36,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -1299,8 +1300,10 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             if (peerServerCertificate != null) {
                 responseTargetInformation = addGssMicAvsToTargetInfo(targetInformation, peerServerCertificate);
                 computeMic = true;
+                LOGGER.debug("Included certificate info for channel binding subject:"+((X509Certificate)peerServerCertificate).getSubjectX500Principal());
             } else {
                 computeMic = false;
+                LOGGER.debug("Certificate info not available for channel binding");
             }
 
             // Create a cipher generator class.  Use domain BEFORE it gets modified!
@@ -1854,7 +1857,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
 
         final DavMailNTLMEngineImpl.Type2Message t2m = new DavMailNTLMEngineImpl.Type2Message(challenge);
 
-        LOGGER.debug("generateType3Msg type2Flags " + t2m.getFlags() + " target='" + t2m.getTarget() + " username='" + username + "'");
+        LOGGER.debug("generateType3Msg type2Flags=" + t2m.getFlags() + " target='" + t2m.getTarget() + "' username='" + username +"' domain='" + domain + "' workstation='" + workstation + "'");
 
         return getType3Message(
                 username,
