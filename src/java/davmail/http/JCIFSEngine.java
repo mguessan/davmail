@@ -46,12 +46,20 @@ public final class JCIFSEngine implements NTLMEngine {
     public String generateType1Msg(final String domain, final String workstation) {
         final Type1Message type1Message = new Type1Message(TYPE_1_FLAGS, domain, workstation);
         LOGGER.debug("Generate Type1Msg "+type1Message);
-        return Base64.encode(type1Message.toByteArray());
+        String encodedType1Message = Base64.encode(type1Message.toByteArray());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(NTLMMessageDecoder.decode(encodedType1Message));
+        }
+        return encodedType1Message;
     }
 
     public String generateType3Msg(final String username, final String password,
                                    final String domain, final String workstation, final String challenge)
             throws NTLMEngineException {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(NTLMMessageDecoder.decode(challenge));
+        }
+
         Type2Message type2Message;
         try {
             type2Message = new Type2Message(Base64.decode(challenge));
@@ -68,7 +76,11 @@ public final class JCIFSEngine implements NTLMEngine {
         Type3Message type3Message = new Type3Message(type2Message, password,
                 domain, username, workstation, type3Flags);
         LOGGER.debug("Generate Type3Msg "+type3Message);
-        return Base64.encode(type3Message.toByteArray());
+        String encodedType3Message = Base64.encode(type3Message.toByteArray());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(NTLMMessageDecoder.decode(encodedType3Message));
+        }
+        return encodedType3Message;
     }
 
 }

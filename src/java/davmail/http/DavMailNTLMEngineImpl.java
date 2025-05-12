@@ -1839,6 +1839,7 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
             final String domain,
             final String workstation) {
         LOGGER.debug("generateType1Msg domain='" + domain + "' workstation='" + workstation + "'");
+        LOGGER.debug(NTLMMessageDecoder.decode(TYPE_1_MESSAGE));
         // Type 1 message is a constant without domain and workstation
         return TYPE_1_MESSAGE;
     }
@@ -1854,12 +1855,15 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
         // need to retrieve raw type 1 and 2 message and connection certificate for channel binding implementation
         byte[] type1MessageBytes = new Type1Message().getBytes();
         byte[] type2MessageBytes = Base64.decodeBase64(challenge.getBytes(DEFAULT_CHARSET));
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(NTLMMessageDecoder.decode(challenge));
+        }
 
         final DavMailNTLMEngineImpl.Type2Message t2m = new DavMailNTLMEngineImpl.Type2Message(challenge);
 
-        LOGGER.debug("generateType3Msg type2Flags=" + t2m.getFlags() + " target='" + t2m.getTarget() + "' username='" + username +"' domain='" + domain + "' workstation='" + workstation + "'");
+        LOGGER.debug("generateType3Msg type2Flags=" + t2m.getFlags() + " target='" + t2m.getTarget() + "' username='" + username + "' domain='" + domain + "' workstation='" + workstation + "'");
 
-        return getType3Message(
+        String type3Message = getType3Message(
                 username,
                 password,
                 workstation,
@@ -1871,6 +1875,10 @@ final class DavMailNTLMEngineImpl implements NTLMEngine {
                 peerServerCertificate,
                 type1MessageBytes,
                 type2MessageBytes);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(NTLMMessageDecoder.decode(type3Message));
+        }
+        return type3Message;
     }
 
 }
