@@ -46,11 +46,13 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -61,6 +63,9 @@ import java.util.zip.GZIPInputStream;
  */
 public class GraphExchangeSession extends ExchangeSession {
 
+    /**
+     * Graph folder is identified by mailbox and id
+     */
     protected class Folder extends ExchangeSession.Folder {
         public FolderId folderId;
     }
@@ -79,6 +84,7 @@ public class GraphExchangeSession extends ExchangeSession {
     protected static final HashSet<FieldURI> IMAP_MESSAGE_ATTRIBUTES = new HashSet<>();
 
     static {
+        // TODO: review, permanenturl is no lonver relevant
         IMAP_MESSAGE_ATTRIBUTES.add(Field.get("permanenturl"));
         IMAP_MESSAGE_ATTRIBUTES.add(Field.get("urlcompname"));
         IMAP_MESSAGE_ATTRIBUTES.add(Field.get("uid"));
@@ -95,6 +101,10 @@ public class GraphExchangeSession extends ExchangeSession {
         // OSX IMAP requests content-class
         IMAP_MESSAGE_ATTRIBUTES.add(Field.get("contentclass"));
         IMAP_MESSAGE_ATTRIBUTES.add(Field.get("keywords"));
+
+        // experimental, retrieve message headers (TODO remove)
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("to"));
+        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("messageheaders"));
     }
 
 
@@ -134,15 +144,20 @@ public class GraphExchangeSession extends ExchangeSession {
     static {
         FOLDER_PROPERTIES.add(Field.get("folderDisplayName"));
         FOLDER_PROPERTIES.add(Field.get("lastmodified"));
+        // TODO: test this
         FOLDER_PROPERTIES.add(Field.get("folderclass"));
         FOLDER_PROPERTIES.add(Field.get("ctag"));
         FOLDER_PROPERTIES.add(Field.get("uidNext"));
     }
 
-    public GraphExchangeSession(HttpClientAdapter httpClient, O365Token token, String userName) {
+    public GraphExchangeSession(HttpClientAdapter httpClient, O365Token token, String userName) throws IOException {
         this.httpClient = httpClient;
         this.token = token;
         this.userName = userName;
+
+        // TODO: review, current mailbox is available through /me
+        currentMailboxPath = "/users/" + userName.toLowerCase();
+
     }
 
     @Override
@@ -150,14 +165,26 @@ public class GraphExchangeSession extends ExchangeSession {
         httpClient.close();
     }
 
+    /**
+     * Format date to exchange search format.
+     * TODO: review
+     *
+     * @param date date object
+     * @return formatted search date
+     */
     @Override
     public String formatSearchDate(Date date) {
-        return null;
+        SimpleDateFormat dateFormatter = new SimpleDateFormat(YYYY_MM_DD_T_HHMMSS_Z, Locale.ENGLISH);
+        dateFormatter.setTimeZone(GMT_TIMEZONE);
+        return dateFormatter.format(date);
     }
 
     @Override
     protected void buildSessionInfo(URI uri) throws IOException {
+        // TODO: review, current mailbox is available through /me
+        currentMailboxPath = "/users/" + userName.toLowerCase();
 
+        LOGGER.debug("Current user email is " + email + ", alias is " + alias + " on " + serverVersion);
     }
 
     @Override
@@ -222,8 +249,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 // now use this to recreate message in the right folder
                 jsonResponse = executeJsonRequest(new GraphRequestBuilder()
                         .setMethod("POST")
-                        .setObjectType("mailFolders")
                         .setMailbox(folderId.mailbox)
+                        .setObjectType("mailFolders")
                         .setObjectId(folderId.id)
                         .setJsonBody(jsonResponse)
                         .setChildType("messages"));
@@ -276,7 +303,6 @@ public class GraphExchangeSession extends ExchangeSession {
             } else if ("datereceived".equals(entry.getKey())) {
                 getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("datereceived", entry.getValue()));
             } else if ("keywords".equals(entry.getKey())) {
-                // TODO: test
                 getMultiValueExtendedProperties(jsonResponse).put(getMultiValue("keywords", entry.getValue()));
             }
         }
@@ -317,7 +343,7 @@ public class GraphExchangeSession extends ExchangeSession {
         // split value
         String[] values = value.split(",");
         JSONArray jsonValues = new JSONArray();
-        for(String singleValue:values) {
+        for (String singleValue : values) {
             jsonValues.put(singleValue);
         }
         return new JSONObject()
@@ -601,8 +627,14 @@ public class GraphExchangeSession extends ExchangeSession {
         @Override
         public void appendTo(StringBuilder buffer) {
             FieldURI fieldURI = getFieldURI();
-            if (Operator.StartsWith.equals(operator)) {
+            if ("String {00020386-0000-0000-c000-000000000046} Name to".equals(fieldURI.getGraphId())) {
+                // TODO: does not work need to switch to search instead of filter
+                buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq 'String {00020386-0000-0000-c000-000000000046} Name to' and contains(ep/value,'")
+                        .append(StringUtil.davSearchEncode(value)).append("'))");
+            } else if (Operator.StartsWith.equals(operator)) {
                 buffer.append("startswith(").append(getFieldURI().getGraphId()).append(",'").append(StringUtil.davSearchEncode(value)).append("')");
+            } else if (Operator.Contains.equals(operator)) {
+                buffer.append("contains(").append(getFieldURI().getGraphId()).append(",'").append(StringUtil.davSearchEncode(value)).append("')");
             } else if (fieldURI instanceof ExtendedFieldURI) {
                 buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(getFieldURI().getGraphId())
                         .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.davSearchEncode(value)).append("')");
@@ -670,7 +702,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public Condition contains(String attributeName, String value) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.Contains, value);
     }
 
     @Override
@@ -768,8 +800,8 @@ public class GraphExchangeSession extends ExchangeSession {
         // base folder get https://graph.microsoft.com/v1.0/me/mailFolders/inbox
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
-                .setObjectType("mailFolders")
                 .setMailbox(folderId.mailbox)
+                .setObjectType("mailFolders")
                 .setObjectId(folderId.id)
                 .setExpandFields(FOLDER_PROPERTIES);
 
@@ -913,16 +945,14 @@ public class GraphExchangeSession extends ExchangeSession {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.msgfolderroot);
             folderNames = folderPath.split("/");
         }
-        if (currentFolderId != null) {
-            String folderClass = currentFolderId.folderClass;
-            for (String folderName : folderNames) {
-                if (!folderName.isEmpty()) {
-                    currentFolderId = getSubFolderByName(currentFolderId, folderName);
-                    if (currentFolderId == null) {
-                        break;
-                    }
-                    currentFolderId.folderClass = folderClass;
+        String folderClass = currentFolderId.folderClass;
+        for (String folderName : folderNames) {
+            if (!folderName.isEmpty()) {
+                currentFolderId = getSubFolderByName(currentFolderId, folderName);
+                if (currentFolderId == null) {
+                    break;
                 }
+                currentFolderId.folderClass = folderClass;
             }
         }
         return currentFolderId;
@@ -939,8 +969,8 @@ public class GraphExchangeSession extends ExchangeSession {
         // TODO rename davSearchEncode
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
-                .setObjectType("mailFolders")
                 .setMailbox(currentFolderId.mailbox)
+                .setObjectType("mailFolders")
                 .setObjectId(currentFolderId.id)
                 .setChildType("childFolders")
                 .setExpandFields(FOLDER_PROPERTIES)
