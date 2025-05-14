@@ -155,9 +155,7 @@ public class GraphExchangeSession extends ExchangeSession {
         this.token = token;
         this.userName = userName;
 
-        // TODO: review, current mailbox is available through /me
-        currentMailboxPath = "/users/" + userName.toLowerCase();
-
+        buildSessionInfo(httpClient.getUri());
     }
 
     @Override
@@ -184,7 +182,11 @@ public class GraphExchangeSession extends ExchangeSession {
         // TODO: review, current mailbox is available through /me
         currentMailboxPath = "/users/" + userName.toLowerCase();
 
-        LOGGER.debug("Current user email is " + email + ", alias is " + alias + " on " + serverVersion);
+        // assume email is username
+        email = userName;
+        alias = userName.substring(0, email.indexOf("@"));
+
+        LOGGER.debug("Current user email is " + email + ", alias is " + alias);
     }
 
     @Override
@@ -275,12 +277,6 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private void applyMessageProperties(JSONObject jsonResponse, HashMap<String, String> properties) throws JSONException {
-        JSONArray singleValueExtendedProperties = jsonResponse.optJSONArray("singleValueExtendedProperties");
-        if (singleValueExtendedProperties == null) {
-            singleValueExtendedProperties = new JSONArray();
-            jsonResponse.put("singleValueExtendedProperties", singleValueExtendedProperties);
-        }
-
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             if ("read".equals(entry.getKey())) {
                 jsonResponse.put("isRead", "1".equals(entry.getValue()));
@@ -520,7 +516,11 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
-
+        executeJsonRequest(new GraphRequestBuilder()
+                .setMethod("DELETE")
+                .setMailbox(((Message) message).mailbox)
+                .setObjectType("messages")
+                .setObjectId(((Message) message).id));
     }
 
     @Override
@@ -575,8 +575,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
-                .setObjectType("mailFolders")
                 .setMailbox(folderId.mailbox)
+                .setObjectType("mailFolders")
                 .setObjectId(folderId.id)
                 .setChildType("messages")
                 .setExpandFields(IMAP_MESSAGE_ATTRIBUTES);
@@ -1017,12 +1017,35 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+        try {
+            FolderId targetFolderId = getFolderId(targetFolder);
 
+            executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
+                    .setMailbox(((Message) message).mailbox)
+                    .setObjectType("messages")
+                    .setObjectId(((Message) message).id)
+                    .setChildType("copy")
+                    .setJsonBody(new JSONObject().put("destinationId", targetFolderId.id)));
+
+        } catch (JSONException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override
     public void moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+        try {
+            FolderId targetFolderId = getFolderId(targetFolder);
 
+            executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
+                    .setMailbox(((Message) message).mailbox)
+                    .setObjectType("messages")
+                    .setObjectId(((Message) message).id)
+                    .setChildType("move")
+                    .setJsonBody(new JSONObject().put("destinationId", targetFolderId.id)));
+        } catch (JSONException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override
@@ -1037,7 +1060,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     protected void moveToTrash(ExchangeSession.Message message) throws IOException {
-
+        moveMessage(message, WellKnownFolderName.deleteditems.name());
     }
 
     @Override
@@ -1072,6 +1095,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public ContactPhoto getContactPhoto(Contact contact) throws IOException {
+        // /me/contacts/{id}/photo/$value
         return null;
     }
 
@@ -1180,7 +1204,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private JSONObject executeJsonRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
-        // TODO handle throttling
+        // TODO handle throttling https://learn.microsoft.com/en-us/graph/throttling
         HttpRequestBase request = httpRequestBuilder
                 .setAccessToken(token.getAccessToken())
                 .build();
