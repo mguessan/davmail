@@ -56,6 +56,9 @@ public class GraphRequestBuilder {
     String objectType;
 
     String childType;
+    String childId;
+
+    String select;
 
     String filter;
 
@@ -111,6 +114,11 @@ public class GraphRequestBuilder {
         return this;
     }
 
+    public GraphRequestBuilder setChildId(String childId) {
+        this.childId = childId;
+        return this;
+    }
+
     public GraphRequestBuilder setFilter(String filter) {
         this.filter = filter;
         return this;
@@ -146,6 +154,11 @@ public class GraphRequestBuilder {
         return this;
     }
 
+    public GraphRequestBuilder setSelect(String select) {
+        this.select = select;
+        return this;
+    }
+
     /**
      * Build request path based on version, username, object type and object id.
      * @return request path
@@ -166,6 +179,9 @@ public class GraphRequestBuilder {
         }
         if (childType != null) {
             buffer.append("/").append(childType);
+        }
+        if (childId != null) {
+            buffer.append("/").append(childId);
         }
 
         if (LOGGER.isDebugEnabled()) {
@@ -231,6 +247,10 @@ public class GraphRequestBuilder {
     public HttpRequestBase build() throws IOException {
         try {
             URIBuilder uriBuilder = new URIBuilder(baseUrl).setPath(buildPath());
+            if (select != null) {
+                uriBuilder.addParameter("$select", select);
+            }
+
             if (expandFields != null) {
                 uriBuilder.addParameter("$expand", buildExpand());
             }

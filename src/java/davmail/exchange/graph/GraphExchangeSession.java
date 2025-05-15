@@ -41,13 +41,16 @@ import org.codehaus.jettison.json.JSONObject;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -208,7 +211,6 @@ public class GraphExchangeSession extends ExchangeSession {
         FolderId folderId = getFolderId(folderPath);
 
         // create message in default drafts folder first
-
         JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
                 .setMethod("POST")
                 .setContentType("text/plain")
@@ -358,17 +360,9 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     class Message extends ExchangeSession.Message {
-        protected String mailbox;
+        protected FolderId folderId;
         protected String id;
         protected String changeKey;
-
-        public void setMailbox(String mailbox) {
-            this.mailbox = mailbox;
-        }
-
-        public String getMailbox() {
-            return mailbox;
-        }
 
         @Override
         public String getPermanentId() {
@@ -377,7 +371,57 @@ public class GraphExchangeSession extends ExchangeSession {
 
         @Override
         protected InputStream getMimeHeaders() {
-            throw new UnsupportedOperationException();
+            InputStream result = null;
+            try {
+                HashSet<FieldURI> expandFields = new HashSet<>();
+                // TODO: review from header (always empty?)
+                expandFields.add(Field.get("from"));
+                expandFields.add(Field.get("messageheaders"));
+
+                JSONObject response = executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod("GET")
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("messages")
+                        .setObjectId(id)
+                        .setExpandFields(expandFields));
+
+                String messageHeaders = null;
+
+                JSONArray singleValueExtendedProperties = response.optJSONArray("singleValueExtendedProperties");
+                if (singleValueExtendedProperties != null) {
+                    for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
+                        try {
+                            JSONObject responseValue = singleValueExtendedProperties.getJSONObject(i);
+                            String responseId = responseValue.optString("id");
+                            if (Field.get("messageheaders").getGraphId().equals(responseId)) {
+                                messageHeaders = responseValue.optString("value");
+                            }
+                        } catch (JSONException e) {
+                            LOGGER.warn("Error parsing json response value");
+                        }
+                    }
+                }
+
+
+                // alternative: use parsed headers response.optJSONArray("internetMessageHeaders");
+                if (messageHeaders != null
+                        // workaround for broken message headers on Exchange 2010
+                        && messageHeaders.toLowerCase().contains("message-id:")) {
+                    // workaround for messages in Sent folder
+                    if (!messageHeaders.contains("From:")) {
+                        // TODO revie
+                        String from = response.optString("from");
+                        messageHeaders = "From: " + from + '\n' + messageHeaders;
+                    }
+
+                    result = new ByteArrayInputStream(messageHeaders.getBytes(StandardCharsets.UTF_8));
+                }
+            } catch (Exception e) {
+                LOGGER.warn(e.getMessage());
+            }
+
+            return result;
+
         }
     }
 
@@ -518,7 +562,7 @@ public class GraphExchangeSession extends ExchangeSession {
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
         executeJsonRequest(new GraphRequestBuilder()
                 .setMethod("DELETE")
-                .setMailbox(((Message) message).mailbox)
+                .setMailbox(((Message) message).folderId.mailbox)
                 .setObjectType("messages")
                 .setObjectId(((Message) message).id));
     }
@@ -527,7 +571,7 @@ public class GraphExchangeSession extends ExchangeSession {
     protected byte[] getContent(ExchangeSession.Message message) throws IOException {
         GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
                 .setMethod("GET")
-                .setMailbox(((Message) message).mailbox)
+                .setMailbox(((Message) message).folderId.mailbox)
                 .setObjectType("messages")
                 .setObjectId(message.getPermanentId())
                 .setChildType("$value")
@@ -593,10 +637,10 @@ public class GraphExchangeSession extends ExchangeSession {
         while (graphIterator.hasNext()) {
             Message message = buildMessage(graphIterator.next());
             message.messageList = messageList;
-            message.mailbox = folderId.mailbox;
+            message.folderId = folderId;
             messageList.add(message);
         }
-
+        Collections.sort(messageList);
         return messageList;
     }
 
@@ -650,9 +694,39 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
+    static class MultiCondition extends ExchangeSession.MultiCondition {
+
+        protected MultiCondition(Operator operator, Condition... conditions) {
+            super(operator, conditions);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            int actualConditionCount = 0;
+            for (Condition condition : conditions) {
+                if (!condition.isEmpty()) {
+                    actualConditionCount++;
+                }
+            }
+            if (actualConditionCount > 0) {
+                boolean isFirst = true;
+
+                for (Condition condition : conditions) {
+                    if (isFirst) {
+                        isFirst = false;
+
+                    } else {
+                        buffer.append(" ").append(operator.toString()).append(" ");
+                    }
+                    condition.appendTo(buffer);
+                }
+            }
+        }
+    }
+
     @Override
     public MultiCondition and(Condition... condition) {
-        return null;
+        return new MultiCondition(Operator.And, condition);
     }
 
     @Override
@@ -1021,7 +1095,7 @@ public class GraphExchangeSession extends ExchangeSession {
             FolderId targetFolderId = getFolderId(targetFolder);
 
             executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
-                    .setMailbox(((Message) message).mailbox)
+                    .setMailbox(((Message) message).folderId.mailbox)
                     .setObjectType("messages")
                     .setObjectId(((Message) message).id)
                     .setChildType("copy")
@@ -1038,7 +1112,7 @@ public class GraphExchangeSession extends ExchangeSession {
             FolderId targetFolderId = getFolderId(targetFolder);
 
             executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
-                    .setMailbox(((Message) message).mailbox)
+                    .setMailbox(((Message) message).folderId.mailbox)
                     .setObjectType("messages")
                     .setObjectId(((Message) message).id)
                     .setChildType("move")
