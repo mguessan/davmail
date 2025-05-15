@@ -27,6 +27,7 @@ import davmail.exchange.auth.ExchangeAuthenticator;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
+import davmail.exchange.graph.GraphExchangeSession;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.GetRequest;
 import org.apache.http.HttpStatus;
@@ -180,7 +181,12 @@ public final class ExchangeSessionFactory {
                     authenticator.setUsername(poolKey.userName);
                     authenticator.setPassword(poolKey.password);
                     authenticator.authenticate();
-                    session = new EwsExchangeSession(authenticator.getExchangeUri(), authenticator.getToken(), poolKey.userName);
+
+                    if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
+                        session = new GraphExchangeSession(authenticator.getHttpClientAdapter(), authenticator.getToken(), poolKey.userName);
+                    } else {
+                        session = new EwsExchangeSession(authenticator.getExchangeUri(), authenticator.getToken(), poolKey.userName);
+                    }
 
                 } else if (Settings.EWS.equals(mode) || Settings.O365.equals(mode)
                         // direct EWS even if mode is different
