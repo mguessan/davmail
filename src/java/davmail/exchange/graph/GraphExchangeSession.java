@@ -194,17 +194,18 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public ExchangeSession.Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
+        byte[] mimeContent;
+        try (
+                ByteArrayOutputStream baos = new ByteArrayOutputStream()
+        ) {
             mimeMessage.writeTo(baos);
+            mimeContent = IOUtil.encodeBase64(baos.toByteArray());
         } catch (MessagingException e) {
-            throw new IOException(e.getMessage());
+            throw new IOException(e.getMessage(), e);
         }
-        baos.close();
-        byte[] mimeContent = IOUtil.encodeBase64(baos.toByteArray());
 
         // do we want message to have draft flag?
-        boolean isDraft = "1".equals(properties.get("draft"));
+        boolean isDraft = properties != null && "1".equals(properties.get("draft"));
 
         // https://learn.microsoft.com/en-us/graph/api/user-post-messages
 
@@ -263,10 +264,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 throw new IOException(e);
             } finally {
                 // delete draft message
-                executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod("DELETE")
-                        .setObjectType("messages")
-                        .setObjectId(draftMessageId));
+                if (draftMessageId != null) {
+                    executeJsonRequest(new GraphRequestBuilder()
+                            .setMethod("DELETE")
+                            .setObjectType("messages")
+                            .setObjectId(draftMessageId));
+                }
             }
 
         }
@@ -279,29 +282,31 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private void applyMessageProperties(JSONObject jsonResponse, HashMap<String, String> properties) throws JSONException {
-        for (Map.Entry<String, String> entry : properties.entrySet()) {
-            if ("read".equals(entry.getKey())) {
-                jsonResponse.put("isRead", "1".equals(entry.getValue()));
-            } else if ("junk".equals(entry.getKey())) {
-                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("junk", entry.getValue()));
-            } else if ("flagged".equals(entry.getKey())) {
-                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("flagStatus", entry.getValue()));
-            } else if ("answered".equals(entry.getKey())) {
-                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("lastVerbExecuted", entry.getValue()));
-                if ("102".equals(entry.getValue())) {
-                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("iconIndex", "261"));
+        if (properties != null) {
+            for (Map.Entry<String, String> entry : properties.entrySet()) {
+                if ("read".equals(entry.getKey())) {
+                    jsonResponse.put("isRead", "1".equals(entry.getValue()));
+                } else if ("junk".equals(entry.getKey())) {
+                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("junk", entry.getValue()));
+                } else if ("flagged".equals(entry.getKey())) {
+                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("flagStatus", entry.getValue()));
+                } else if ("answered".equals(entry.getKey())) {
+                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("lastVerbExecuted", entry.getValue()));
+                    if ("102".equals(entry.getValue())) {
+                        getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("iconIndex", "261"));
+                    }
+                } else if ("forwarded".equals(entry.getKey())) {
+                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("lastVerbExecuted", entry.getValue()));
+                    if ("104".equals(entry.getValue())) {
+                        getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("iconIndex", "262"));
+                    }
+                } else if ("deleted".equals(entry.getKey())) {
+                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("deleted", entry.getValue()));
+                } else if ("datereceived".equals(entry.getKey())) {
+                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("datereceived", entry.getValue()));
+                } else if ("keywords".equals(entry.getKey())) {
+                    getMultiValueExtendedProperties(jsonResponse).put(getMultiValue("keywords", entry.getValue()));
                 }
-            } else if ("forwarded".equals(entry.getKey())) {
-                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("lastVerbExecuted", entry.getValue()));
-                if ("104".equals(entry.getValue())) {
-                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("iconIndex", "262"));
-                }
-            } else if ("deleted".equals(entry.getKey())) {
-                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("deleted", entry.getValue()));
-            } else if ("datereceived".equals(entry.getKey())) {
-                getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("datereceived", entry.getValue()));
-            } else if ("keywords".equals(entry.getKey())) {
-                getMultiValueExtendedProperties(jsonResponse).put(getMultiValue("keywords", entry.getValue()));
             }
         }
     }
@@ -1236,7 +1241,7 @@ public class GraphExchangeSession extends ExchangeSession {
             values = jsonObject.getJSONArray("value");
         }
 
-        public boolean hasNext() throws  IOException {
+        public boolean hasNext() throws IOException {
             if (index < values.length()) {
                 return true;
             } else if (nextLink != null) {
