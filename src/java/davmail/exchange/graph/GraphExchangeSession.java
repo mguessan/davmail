@@ -1236,8 +1236,15 @@ public class GraphExchangeSession extends ExchangeSession {
             values = jsonObject.getJSONArray("value");
         }
 
-        public boolean hasNext() {
-            return nextLink != null || index < values.length();
+        public boolean hasNext() throws  IOException {
+            if (index < values.length()) {
+                return true;
+            } else if (nextLink != null) {
+                fetchNextPage();
+                return values.length() > 0;
+            } else {
+                return false;
+            }
         }
 
         public JSONObject next() throws IOException {
@@ -1254,7 +1261,7 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         }
 
-        private void fetchNextPage() throws IOException, JSONException {
+        private void fetchNextPage() throws IOException {
             HttpGet request = new HttpGet(nextLink);
             request.setHeader("Authorization", "Bearer " + token.getAccessToken());
             try (
@@ -1264,6 +1271,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 nextLink = jsonObject.optString("@odata.nextLink", null);
                 values = jsonObject.getJSONArray("value");
                 index = 0;
+            } catch (JSONException e) {
+                throw new IOException(e.getMessage(), e);
             }
         }
     }
