@@ -32,6 +32,7 @@ import davmail.http.HttpClientAdapter;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -114,6 +115,7 @@ public class GraphExchangeSession extends ExchangeSession {
     protected static class FolderId {
         protected String mailbox;
         protected String id;
+        protected String parentFolderId;
         protected String folderClass;
 
         public FolderId() {
@@ -145,9 +147,8 @@ public class GraphExchangeSession extends ExchangeSession {
     protected static final HashSet<FieldURI> FOLDER_PROPERTIES = new HashSet<>();
 
     static {
-        FOLDER_PROPERTIES.add(Field.get("folderDisplayName"));
+        // reference at https://learn.microsoft.com/en-us/graph/api/resources/mailfolder
         FOLDER_PROPERTIES.add(Field.get("lastmodified"));
-        // TODO: test this
         FOLDER_PROPERTIES.add(Field.get("folderclass"));
         FOLDER_PROPERTIES.add(Field.get("ctag"));
         FOLDER_PROPERTIES.add(Field.get("uidNext"));
@@ -834,7 +835,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectId(parentFolderId.id)
                 .setChildType("childFolders")
                 .setExpandFields(FOLDER_PROPERTIES);
-        LOGGER.debug("appendSubFolders " + parentFolderId.mailbox + parentFolderPath);
+        LOGGER.debug("appendSubFolders " + parentFolderId.mailbox != null ? parentFolderId.mailbox : "me" + " " + parentFolderPath);
         if (condition != null && !condition.isEmpty()) {
             StringBuilder filter = new StringBuilder();
             condition.appendTo(filter);
@@ -842,25 +843,29 @@ public class GraphExchangeSession extends ExchangeSession {
             httpRequestBuilder.setFilter(filter.toString());
         }
 
-        // TODO handle paging
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext()) {
             Folder folder = buildFolder(graphIterator.next());
             folder.folderId.mailbox = parentFolderId.mailbox;
-            if (!parentFolderPath.isEmpty()) {
-                if (parentFolderPath.endsWith("/")) {
-                    folder.folderPath = parentFolderPath + folder.displayName;
+            // check parentFolder
+            if (parentFolderId.id.equals(folder.folderId.parentFolderId)) {
+                if (!parentFolderPath.isEmpty()) {
+                    if (parentFolderPath.endsWith("/")) {
+                        folder.folderPath = parentFolderPath + folder.displayName;
+                    } else {
+                        folder.folderPath = parentFolderPath + '/' + folder.displayName;
+                    }
+                    // TODO folderIdMap?
                 } else {
-                    folder.folderPath = parentFolderPath + '/' + folder.displayName;
+                    folder.folderPath = folder.displayName;
                 }
-                // TODO folderIdMap?
+                folders.add(folder);
+                if (recursive && folder.hasChildren) {
+                    appendSubFolders(folders, folder.folderPath, folder.folderId, condition, true);
+                }
             } else {
-                folder.folderPath = folder.displayName;
-            }
-            folders.add(folder);
-            if (recursive && folder.hasChildren) {
-                appendSubFolders(folders, folder.folderPath, folder.folderId, condition, true);
+                LOGGER.debug("appendSubFolders skip " + folder.folderId.mailbox + " " + folder.folderId.id + " " + folder.displayName + " not a child of " + parentFolderPath);
             }
         }
 
@@ -876,13 +881,24 @@ public class GraphExchangeSession extends ExchangeSession {
     protected Folder internalGetFolder(String folderPath) throws IOException {
         FolderId folderId = getFolderId(folderPath);
 
-        // base folder get https://graph.microsoft.com/v1.0/me/mailFolders/inbox
-        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
-                .setMethod("GET")
-                .setMailbox(folderId.mailbox)
-                .setObjectType("mailFolders")
-                .setObjectId(folderId.id)
-                .setExpandFields(FOLDER_PROPERTIES);
+        GraphRequestBuilder httpRequestBuilder = null;
+        if ("IPF.Appointment".equals(folderId.folderClass)) {
+            httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod("GET")
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("calendars")
+                    .setObjectId(folderId.id)
+                    .setExpandFields(FOLDER_PROPERTIES);
+        } else {
+
+            // base folder get https://graph.microsoft.com/v1.0/me/mailFolders/inbox
+            httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod("GET")
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("mailFolders")
+                    .setObjectId(folderId.id)
+                    .setExpandFields(FOLDER_PROPERTIES);
+        }
 
         JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
 
@@ -900,14 +916,20 @@ public class GraphExchangeSession extends ExchangeSession {
             Folder folder = new Folder();
             folder.folderId = new FolderId();
             folder.folderId.id = jsonResponse.getString("id");
-            // TODO: reevaluate folder name encoding over graph
-            folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.optString("displayName"));
-            folder.count = jsonResponse.getInt("totalItemCount");
-            folder.unreadCount = jsonResponse.getInt("unreadItemCount");
-            // fake recent value
-            folder.recent = folder.unreadCount;
-            // hassubs computed from childFolderCount
-            folder.hasChildren = jsonResponse.getInt("childFolderCount") > 0;
+            folder.folderId.parentFolderId = jsonResponse.optString("parentFolderId", null);
+            if (folder.folderId.parentFolderId == null) {
+                // calendar
+                folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.optString("name"));
+            } else {
+                // TODO: reevaluate folder name encoding over graph
+                folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.getString("displayName"));
+                folder.count = jsonResponse.getInt("totalItemCount");
+                folder.unreadCount = jsonResponse.getInt("unreadItemCount");
+                // fake recent value
+                folder.recent = folder.unreadCount;
+                // hassubs computed from childFolderCount
+                folder.hasChildren = jsonResponse.getInt("childFolderCount") > 0;
+            }
 
             // retrieve property values
             JSONArray singleValueExtendedProperties = jsonResponse.optJSONArray("singleValueExtendedProperties");
@@ -920,6 +942,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         folder.etag = singleValue;
                     } else if (Field.get("folderclass").getGraphId().equals(singleValueId)) {
                         folder.folderClass = singleValue;
+                        folder.folderId.folderClass = folder.folderClass;
                     } else if (Field.get("uidNext").getGraphId().equals(singleValueId)) {
                         folder.uidNext = Long.parseLong(singleValue);
                     } else if (Field.get("ctag").getGraphId().equals(singleValueId)) {
@@ -983,16 +1006,16 @@ public class GraphExchangeSession extends ExchangeSession {
         if ("/public".equals(folderPath)) {
             throw new UnsupportedOperationException("public folders not supported on Graph");
         } else if ("/archive".equals(folderPath)) {
-            return new FolderId(mailbox, WellKnownFolderName.archive);
+            return getWellKnownFolderId(mailbox, WellKnownFolderName.archive);
         } else if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
             throw new UnsupportedOperationException("public folders not supported on Graph");
         } else if (isSubFolderOf(folderPath, ARCHIVE_ROOT)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.archive);
+            currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.archive);
             folderNames = folderPath.substring(ARCHIVE_ROOT.length()).split("/");
         } else if (isSubFolderOf(folderPath, INBOX) ||
                 isSubFolderOf(folderPath, LOWER_CASE_INBOX) ||
                 isSubFolderOf(folderPath, MIXED_CASE_INBOX)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.inbox);
+            currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.inbox);
             folderNames = folderPath.substring(INBOX.length()).split("/");
         } else if (isSubFolderOf(folderPath, CALENDAR)) {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.calendar, "IPF.Appointment");
@@ -1021,7 +1044,8 @@ public class GraphExchangeSession extends ExchangeSession {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.outbox);
             folderNames = folderPath.substring(UNSENT.length()).split("/");
         } else {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.msgfolderroot);
+            // TODO refactor
+            currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.msgfolderroot);
             folderNames = folderPath.split("/");
         }
         String folderClass = currentFolderId.folderClass;
@@ -1037,6 +1061,17 @@ public class GraphExchangeSession extends ExchangeSession {
         return currentFolderId;
     }
 
+    private FolderId getWellKnownFolderId(String mailbox, WellKnownFolderName wellKnownFolderName) throws IOException {
+        JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                .setMethod("GET")
+                .setMailbox(mailbox)
+                .setObjectType("mailFolders")
+                .setObjectId(wellKnownFolderName.name())
+                .setExpandFields(FOLDER_PROPERTIES));
+        // TODO retrieve folderClass
+        return new FolderId(mailbox, jsonResponse.optString("id"));
+    }
+
     /**
      * Search subfolder by name, return null when no folders found
      * @param currentFolderId parent folder id
@@ -1046,14 +1081,24 @@ public class GraphExchangeSession extends ExchangeSession {
      */
     protected FolderId getSubFolderByName(FolderId currentFolderId, String folderName) throws IOException {
         // TODO rename davSearchEncode
-        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
-                .setMethod("GET")
-                .setMailbox(currentFolderId.mailbox)
-                .setObjectType("mailFolders")
-                .setObjectId(currentFolderId.id)
-                .setChildType("childFolders")
-                .setExpandFields(FOLDER_PROPERTIES)
-                .setFilter("displayName eq '" + StringUtil.davSearchEncode(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+        GraphRequestBuilder httpRequestBuilder = null;
+        if ("IPF.Appointment".equals(currentFolderId.folderClass)) {
+            httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod("GET")
+                    .setMailbox(currentFolderId.mailbox)
+                    .setObjectType("calendars")
+                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setFilter("name eq '" + StringUtil.davSearchEncode(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+        } else {
+            httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod("GET")
+                    .setMailbox(currentFolderId.mailbox)
+                    .setObjectType("mailFolders")
+                    .setObjectId(currentFolderId.id)
+                    .setChildType("childFolders")
+                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setFilter("displayName eq '" + StringUtil.davSearchEncode(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+        }
 
         JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
 
@@ -1080,8 +1125,51 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public int createFolder(String folderName, String folderClass, Map<String, String> properties) throws IOException {
-        return 0;
+    public int createFolder(String folderPath, String folderClass, Map<String, String> properties) throws IOException {
+        if ("IPF.Appointment".equals(folderClass) && folderPath.startsWith("calendar/")) {
+            // calendars/calendarName
+            String calendarName = folderPath.substring(folderPath.indexOf('/') + 1);
+            // create calendar
+            try {
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod("POST")
+                        // TODO mailbox?
+                        //.setMailbox("")
+                        .setObjectType("calendars")
+                        .setJsonBody(new JSONObject().put("name", calendarName)));
+
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
+        } else {
+            FolderId parentFolderId;
+            String folderName;
+            if (folderPath.contains("/")) {
+                String parentFolderPath = folderPath.substring(0, folderPath.lastIndexOf('/'));
+                parentFolderId = getFolderId(parentFolderPath);
+                folderName = EwsExchangeSession.decodeFolderName(folderPath.substring(folderPath.lastIndexOf('/') + 1));
+            } else {
+                parentFolderId = getFolderId("");
+                folderName = EwsExchangeSession.decodeFolderName(folderPath);
+            }
+
+            try {
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod("POST")
+                        // TODO mailbox?
+                        .setMailbox(parentFolderId.mailbox)
+                        .setObjectType("mailFolders")
+                        .setObjectId(parentFolderId.id)
+                        .setChildType("childFolders")
+                        .setJsonBody(new JSONObject().put("displayName", folderName)));
+
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
+        }
+
+        return HttpStatus.SC_CREATED;
+
     }
 
     @Override
@@ -1090,7 +1178,27 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void deleteFolder(String folderName) throws IOException {
+    public void deleteFolder(String folderPath) throws IOException {
+        if (folderPath.startsWith("calendar/")) {
+            // TODO shared mailboxes
+            FolderId folderId = getFolderIdIfExists(folderPath);
+            if (folderId != null) {
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod("DELETE")
+                        //.setMailbox()
+                        .setObjectType("calendars")
+                        .setObjectId(folderId.id));
+            }
+        } else {
+            FolderId folderId = getFolderIdIfExists(folderPath);
+            if (folderId != null) {
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod("DELETE")
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("mailFolders")
+                        .setObjectId(folderId.id));
+            }
+        }
 
     }
 
@@ -1128,8 +1236,40 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void moveFolder(String folderName, String targetName) throws IOException {
+    public void moveFolder(String folderPath, String targetFolderPath) throws IOException {
+        FolderId folderId = getFolderId(folderPath);
+        String targetFolderName;
+        String targetFolderParentPath;
+        if (targetFolderPath.contains("/")) {
+            targetFolderParentPath = targetFolderPath.substring(0, targetFolderPath.lastIndexOf('/'));
+            targetFolderName = EwsExchangeSession.decodeFolderName(targetFolderPath.substring(targetFolderPath.lastIndexOf('/') + 1));
+        } else {
+            targetFolderParentPath = "";
+            targetFolderName = EwsExchangeSession.decodeFolderName(targetFolderPath);
+        }
+        FolderId targetFolderId = getFolderId(targetFolderParentPath);
 
+        // rename
+        try {
+            executeJsonRequest(new GraphRequestBuilder().setMethod("PATCH")
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("mailFolders")
+                    .setObjectId(folderId.id)
+                    .setJsonBody(new JSONObject().put("displayName", targetFolderName)));
+        } catch (JSONException e) {
+            throw new IOException(e);
+        }
+
+        try {
+            executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("mailFolders")
+                    .setObjectId(folderId.id)
+                    .setChildType("move")
+                    .setJsonBody(new JSONObject().put("destinationId", targetFolderId.id)));
+        } catch (JSONException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override
