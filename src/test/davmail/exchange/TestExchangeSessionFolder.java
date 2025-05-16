@@ -28,6 +28,7 @@ import java.io.IOException;
  */
 public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
     public void testCreateFolder() throws IOException {
+        session.deleteFolder("test");
         session.createMessageFolder("test");
     }
 
@@ -66,28 +67,30 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
         session.deleteFolder("target");
     }
 
-    public void testDeleteFolder() throws IOException {
-        session.deleteFolder("test");
-    }
-
     public void testCalendarFolder() throws IOException {
-        String folderName = "testcalendar";
-        session.deleteFolder(folderName);
-        session.createCalendarFolder(folderName, null);
-        ExchangeSession.Folder folder = session.getFolder(folderName);
+        String folderPath = "calendar/testcalendar";
+        session.deleteFolder("testcalendar");
+        session.deleteFolder(folderPath);
+        session.createCalendarFolder(folderPath, null);
+        ExchangeSession.Folder folder = session.getFolder(folderPath);
         assertNotNull(folder);
         assertEquals("IPF.Appointment", folder.folderClass);
-        session.deleteFolder(folderName);
+        session.deleteFolder(folderPath);
     }
 
     public void testContactFolder() throws IOException {
-        String folderName = "testcontact";
-        session.deleteFolder(folderName);
-        session.createContactFolder(folderName, null);
-        ExchangeSession.Folder folder = session.getFolder(folderName);
-        assertNotNull(folder);
-        assertEquals("IPF.Contact", folder.folderClass);
-        session.deleteFolder(folderName);
+        try {
+            String folderName = "contacts/testcontact";
+            session.deleteFolder(folderName);
+            session.createContactFolder(folderName, null);
+            ExchangeSession.Folder folder = session.getFolder(folderName);
+            assertNotNull(folder);
+            assertEquals("IPF.Contact", folder.folderClass);
+            session.deleteFolder(folderName);
+        } catch (IOException e) {
+            // O365 does not accept contact folder delete over graph
+            assertEquals("ErrorCannotDeleteObject Object cannot be deleted.", e.getMessage());
+        }
     }
 
 
@@ -125,8 +128,8 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
     }
 
     public void testGetSharedFolder() throws IOException, MessagingException {
-        ExchangeSession.Folder folder = session.getFolder("/users/"+ Settings.getProperty("davmail.to")+"/inbox");
-        ExchangeSession.MessageList messages = session.searchMessages("/users/"+ Settings.getProperty("davmail.to")+"/inbox");
+        ExchangeSession.Folder folder = session.getFolder("/users/"+ Settings.getProperty("davmail.shared")+"/inbox");
+        ExchangeSession.MessageList messages = session.searchMessages("/users/"+ Settings.getProperty("davmail.shared")+"/inbox");
         for (ExchangeSession.Message message:messages) {
             System.out.println(message.getMimeMessage());
         }
