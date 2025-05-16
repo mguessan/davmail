@@ -881,23 +881,19 @@ public class GraphExchangeSession extends ExchangeSession {
     protected Folder internalGetFolder(String folderPath) throws IOException {
         FolderId folderId = getFolderId(folderPath);
 
-        GraphRequestBuilder httpRequestBuilder = null;
+        // base folder get https://graph.microsoft.com/v1.0/me/mailFolders/inbox
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod("GET")
+                .setMailbox(folderId.mailbox)
+                .setObjectType("mailFolders")
+                .setObjectId(folderId.id)
+                .setExpandFields(FOLDER_PROPERTIES);
         if ("IPF.Appointment".equals(folderId.folderClass)) {
-            httpRequestBuilder = new GraphRequestBuilder()
-                    .setMethod("GET")
-                    .setMailbox(folderId.mailbox)
-                    .setObjectType("calendars")
-                    .setObjectId(folderId.id)
-                    .setExpandFields(FOLDER_PROPERTIES);
+            httpRequestBuilder.setObjectType("calendars");
+        } else if ("IPF.Contact".equals(folderId.folderClass)) {
+            httpRequestBuilder.setObjectType("contactFolders");
         } else {
-
-            // base folder get https://graph.microsoft.com/v1.0/me/mailFolders/inbox
-            httpRequestBuilder = new GraphRequestBuilder()
-                    .setMethod("GET")
-                    .setMailbox(folderId.mailbox)
-                    .setObjectType("mailFolders")
-                    .setObjectId(folderId.id)
-                    .setExpandFields(FOLDER_PROPERTIES);
+            httpRequestBuilder.setObjectType("mailFolders");
         }
 
         JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
@@ -923,12 +919,12 @@ public class GraphExchangeSession extends ExchangeSession {
             } else {
                 // TODO: reevaluate folder name encoding over graph
                 folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.getString("displayName"));
-                folder.count = jsonResponse.getInt("totalItemCount");
-                folder.unreadCount = jsonResponse.getInt("unreadItemCount");
+                folder.count = jsonResponse.optInt("totalItemCount");
+                folder.unreadCount = jsonResponse.optInt("unreadItemCount");
                 // fake recent value
                 folder.recent = folder.unreadCount;
                 // hassubs computed from childFolderCount
-                folder.hasChildren = jsonResponse.getInt("childFolderCount") > 0;
+                folder.hasChildren = jsonResponse.optInt("childFolderCount") > 0;
             }
 
             // retrieve property values
@@ -1090,10 +1086,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setExpandFields(FOLDER_PROPERTIES)
                     .setFilter("name eq '" + StringUtil.davSearchEncode(EwsExchangeSession.decodeFolderName(folderName)) + "'");
         } else {
+            String objectType = "mailFolders";
+            if ("IPF.Contact".equals(currentFolderId.folderClass)) {
+                objectType = "contactFolders";
+            }
             httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod("GET")
                     .setMailbox(currentFolderId.mailbox)
-                    .setObjectType("mailFolders")
+                    .setObjectType(objectType)
                     .setObjectId(currentFolderId.id)
                     .setChildType("childFolders")
                     .setExpandFields(FOLDER_PROPERTIES)
@@ -1154,11 +1154,15 @@ public class GraphExchangeSession extends ExchangeSession {
             }
 
             try {
+                String objectType = "mailFolders";
+                if ("IPF.Contact".equals(folderClass)) {
+                    objectType = "contactFolders";
+                }
                 executeJsonRequest(new GraphRequestBuilder()
                         .setMethod("POST")
                         // TODO mailbox?
                         .setMailbox(parentFolderId.mailbox)
-                        .setObjectType("mailFolders")
+                        .setObjectType(objectType)
                         .setObjectId(parentFolderId.id)
                         .setChildType("childFolders")
                         .setJsonBody(new JSONObject().put("displayName", folderName)));
@@ -1192,10 +1196,14 @@ public class GraphExchangeSession extends ExchangeSession {
         } else {
             FolderId folderId = getFolderIdIfExists(folderPath);
             if (folderId != null) {
+                String objectType = "mailFolders";
+                if ("IPF.Contact".equals(folderId.folderClass)) {
+                    objectType = "contactFolders";
+                }
                 executeJsonRequest(new GraphRequestBuilder()
                         .setMethod("DELETE")
                         .setMailbox(folderId.mailbox)
-                        .setObjectType("mailFolders")
+                        .setObjectType(objectType)
                         .setObjectId(folderId.id));
             }
         }
