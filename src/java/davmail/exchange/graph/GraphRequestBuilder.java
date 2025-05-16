@@ -23,6 +23,7 @@ import davmail.Settings;
 import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.FieldURI;
 import davmail.exchange.ews.IndexedFieldURI;
+import davmail.util.IOUtil;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
@@ -184,9 +185,6 @@ public class GraphRequestBuilder {
             buffer.append("/").append(childId);
         }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Path: " + buffer);
-        }
         return buffer.toString();
     }
 
@@ -265,12 +263,12 @@ public class GraphRequestBuilder {
                 if (mimeContent != null) {
                     ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(mimeContent));
                 } else if (jsonBody != null) {
-                    ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(jsonBody.toString().getBytes(StandardCharsets.UTF_8)));
+                    ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(IOUtil.convertToBytes(jsonBody)));
                 }
             } else if ("PATCH".equals(method)) {
                 httpRequest = new HttpPatch(uriBuilder.build());
                 if (jsonBody != null) {
-                    ((HttpPatch) httpRequest).setEntity(new ByteArrayEntity(jsonBody.toString().getBytes(StandardCharsets.UTF_8)));
+                    ((HttpPatch) httpRequest).setEntity(new ByteArrayEntity(IOUtil.convertToBytes(jsonBody)));
                 }
             } else if ("DELETE".equals(method)){
                 httpRequest = new HttpDelete(uriBuilder.build());
@@ -281,11 +279,10 @@ public class GraphRequestBuilder {
             httpRequest.setHeader("Content-Type", contentType);
             httpRequest.setHeader("Authorization", "Bearer " + accessToken);
 
-            if (LOGGER.isDebugEnabled() && jsonBody != null) {
-                try {
-                    LOGGER.debug("Body: " + jsonBody.toString(4));
-                } catch (JSONException e) {
-                    // ignore
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(httpRequest.getMethod() + " " + httpRequest.getURI());
+                if (jsonBody != null) {
+                    LOGGER.debug(jsonBody.toString());
                 }
             }
 
