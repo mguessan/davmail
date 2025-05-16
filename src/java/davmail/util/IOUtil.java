@@ -19,6 +19,8 @@
 package davmail.util;
 
 import org.apache.commons.codec.binary.Base64;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -166,6 +168,25 @@ public final class IOUtil {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         write(inputStream, baos);
         return baos.toByteArray();
+    }
+
+    public static byte[] convertToBytes(JSONObject jsonObject) throws IOException {
+        if (jsonObject == null) {
+            return new byte[0];
+        }
+        byte[] result;
+        try (
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                OutputStreamWriter writer = new java.io.OutputStreamWriter(baos, StandardCharsets.UTF_8);
+        ) {
+            jsonObject.write(writer);
+            writer.flush();
+            result = baos.toByteArray();
+        } catch (JSONException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+        return result;
+
     }
 
 }
