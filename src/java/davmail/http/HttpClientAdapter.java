@@ -32,6 +32,7 @@ import org.apache.http.auth.NTCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.config.AuthSchemes;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -303,6 +304,8 @@ public class HttpClientAdapter implements Closeable {
             authSchemes.add(AuthSchemes.DIGEST);
         }
         return RequestConfig.custom()
+                // fixes Invalid 'expires' attribute
+                .setCookieSpec(CookieSpecs.STANDARD)
                 // socket connect timeout
                 .setConnectTimeout(Settings.getIntProperty("davmail.exchange.connectionTimeout", 10) * 1000)
                 // inactivity timeout
