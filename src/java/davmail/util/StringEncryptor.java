@@ -37,13 +37,14 @@ import java.security.spec.InvalidKeySpecException;
  */
 public class StringEncryptor {
     static final String ALGO = "PBEWithHmacSHA256AndAES_128";
+    static final String DEFAULT_FINGERPRINT = "davmailgateway!&";
     static String fingerprint;
 
     static {
         try {
-            fingerprint = InetAddress.getLocalHost().getCanonicalHostName().substring(0, 16);
+            fingerprint = (InetAddress.getLocalHost().getHostName()+DEFAULT_FINGERPRINT).substring(0, 16);
         } catch (Throwable t) {
-            fingerprint = "davmailgateway!&";
+            fingerprint = DEFAULT_FINGERPRINT;
         }
     }
 
