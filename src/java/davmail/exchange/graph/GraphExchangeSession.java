@@ -314,7 +314,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)));
     }
 
-    private void applyMessageProperties(JSONObject jsonResponse, HashMap<String, String> properties) throws JSONException {
+    private void applyMessageProperties(JSONObject jsonResponse, Map<String, String> properties) throws JSONException {
         if (properties != null) {
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 if ("read".equals(entry.getKey())) {
@@ -497,7 +497,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         //} else if ("SystemTime 0xe06".equals(responseId)) {
                         // use receivedDateTime instead
                         //message.date = convertDateFromExchange(responseValue.getString("value"));
-                    } else if ("SystemTime 0xe08".equals(responseId)) {
+                    } else if ("Integer 0xe08".equals(responseId)) {
                         message.size = responseValue.getInt("value");
                     } else if ("Binary 0xff9".equals(responseId)) {
                         message.uid = responseValue.getString("value");
@@ -593,7 +593,19 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
-
+        try {
+            JSONObject jsonObject = new JSONObject();
+            // we have the message in the right folder, apply flags
+            applyMessageProperties(jsonObject, properties);
+            executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod("PATCH")
+                    .setMailbox(((Message) message).folderId.mailbox)
+                    .setObjectType("messages")
+                    .setObjectId(((Message) message).id)
+                    .setJsonBody(jsonObject));
+        } catch (JSONException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override
