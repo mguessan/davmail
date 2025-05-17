@@ -87,7 +87,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                     // OIDC compliant
                     uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
-                            .addParameter("scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read");
+                            .addParameter("scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Mail.Send");
+                    // TODO: test scope=Settings.getGraphUrl()+"/.default"
                     //.addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All AuditLog.Read.All Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrintJob.ReadWriteBasic SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read");
                 } else {
                     // Outlook desktop relies on classic authorize endpoint
