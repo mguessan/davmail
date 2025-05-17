@@ -177,7 +177,7 @@
                 </batchtest>
             </junit>
         </coverage>
-        <!-- create coverage report -->
+        <!-- create coverage report configuration -->
         <report>
             <executiondata>
                 <file file="target/jacoco.exec"/>
@@ -244,7 +244,7 @@
             </filterchain>
         </copy>
         <zip file="dist/DavMail-MacOSX-${release-name}.app.zip"
-             comment="In order to run DavMail on OSX Mountain Lion or later, you will need to disable Gatekeeper temporarily, see http://davmail.sourceforge.net/macosxsetup.html">
+             comment="In order to run DavMail on OSX Mountain Lion or later, you will need to disable Gatekeeper temporarily, see https://davmail.sourceforge.net/macosxsetup.html">
             <zipfileset dir="dist">
                 <include name="DavMail.app/**/*"/>
                 <exclude name="DavMail.app/Contents/MacOS/davmail"/>
@@ -262,12 +262,12 @@
         <deb todir="dist"
              package="davmail"
              section="mail"
-             depends="openjdk-11-jre|openjdk-8-jre|openjdk-7-jre|openjdk-6-jre|oracle-java7-jre|sun-java6-jre|default-jre,libopenjfx-java,openjfx"
+             depends="openjdk-11-jre|openjdk-8-jre|default-jre,libopenjfx-java,openjfx"
              suggests="libswt-gtk-4-java,libswt-cairo-gtk-4-jni,libswt-gtk2-4-jni">
             <version upstream="${release-name}"/>
             <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
             <description synopsis="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway">
-                Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365
+                Ever wanted to get rid of Outlook? DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365
                 gateway allowing users to use any mail/calendar client (e.g. Thunderbird with Lightning or
                 Apple iCal) with an Exchange server, even from the internet or behind a firewall through
                 Outlook Web Access.
