@@ -72,6 +72,27 @@ public class GraphExchangeSession extends ExchangeSession {
      */
     protected class Folder extends ExchangeSession.Folder {
         public FolderId folderId;
+        protected String specialFlag = "";
+
+        protected void setSpecialFlag(String specialFlag) {
+            this.specialFlag = "\\"+specialFlag+" ";
+        }
+
+        /**
+         * Get IMAP folder flags.
+         *
+         * @return folder flags in IMAP format
+         */
+        @Override
+        public String getFlags() {
+            if (noInferiors) {
+                return specialFlag + "\\NoInferiors";
+            } else if (hasChildren) {
+                return specialFlag + "\\HasChildren";
+            } else {
+                return specialFlag + "\\HasNoChildren";
+            }
+        }
     }
 
     // special folders https://learn.microsoft.com/en-us/graph/api/resources/mailfolder
@@ -83,6 +104,17 @@ public class GraphExchangeSession extends ExchangeSession {
         drafts, inbox, outbox, sentitems, junkemail,
         msgfolderroot,
         searchfolders
+    }
+
+    // https://www.rfc-editor.org/rfc/rfc6154.html map well known names to special flags
+    protected static HashMap<String, String> wellKnownFolderMap = new HashMap<>();
+    static {
+        wellKnownFolderMap.put(WellKnownFolderName.inbox.name(), ExchangeSession.INBOX);
+        wellKnownFolderMap.put(WellKnownFolderName.archive.name(), ExchangeSession.ARCHIVE);
+        wellKnownFolderMap.put(WellKnownFolderName.drafts.name(), ExchangeSession.DRAFTS);
+        wellKnownFolderMap.put(WellKnownFolderName.junkemail.name(), ExchangeSession.JUNK);
+        wellKnownFolderMap.put(WellKnownFolderName.sentitems.name(), ExchangeSession.SENT);
+        wellKnownFolderMap.put(WellKnownFolderName.deleteditems.name(), ExchangeSession.TRASH);
     }
 
     protected static final HashSet<FieldURI> IMAP_MESSAGE_ATTRIBUTES = new HashSet<>();
@@ -730,6 +762,19 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
+    static class NotCondition extends ExchangeSession.NotCondition {
+
+        protected NotCondition(Condition condition) {
+            super(condition);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            buffer.append("not ");
+            condition.appendTo(buffer);
+        }
+    }
+
     @Override
     public MultiCondition and(Condition... condition) {
         return new MultiCondition(Operator.And, condition);
@@ -737,12 +782,12 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public MultiCondition or(Condition... condition) {
-        return null;
+        return new MultiCondition(Operator.Or, condition);
     }
 
     @Override
     public Condition not(Condition condition) {
-        return null;
+        return new NotCondition(condition);
     }
 
     @Override
@@ -917,8 +962,18 @@ public class GraphExchangeSession extends ExchangeSession {
                 // calendar
                 folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.optString("name"));
             } else {
-                // TODO: reevaluate folder name encoding over graph
-                folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.getString("displayName"));
+                String wellKnownName = wellKnownFolderMap.get(jsonResponse.optString("wellKnownName"));
+                if (ExchangeSession.INBOX.equals(wellKnownName)) {
+                    folder.displayName = wellKnownName;
+                } else {
+                    if (wellKnownName != null) {
+                        folder.setSpecialFlag(wellKnownName);
+                    }
+
+                    // TODO: reevaluate folder name encoding over graph
+                    folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.getString("displayName"));
+                }
+
                 folder.count = jsonResponse.optInt("totalItemCount");
                 folder.unreadCount = jsonResponse.optInt("unreadItemCount");
                 // fake recent value
@@ -1077,7 +1132,7 @@ public class GraphExchangeSession extends ExchangeSession {
      */
     protected FolderId getSubFolderByName(FolderId currentFolderId, String folderName) throws IOException {
         // TODO rename davSearchEncode
-        GraphRequestBuilder httpRequestBuilder = null;
+        GraphRequestBuilder httpRequestBuilder;
         if ("IPF.Appointment".equals(currentFolderId.folderClass)) {
             httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod("GET")

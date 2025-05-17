@@ -70,6 +70,7 @@ public abstract class ExchangeSession {
      */
     public static final String CONTACTS = "contacts";
     protected static final String ADDRESSBOOK = "addressbook";
+    protected static final String ARCHIVE = "Archive";
     protected static final String INBOX = "INBOX";
     protected static final String LOWER_CASE_INBOX = "inbox";
     protected static final String MIXED_CASE_INBOX = "Inbox";
