@@ -109,7 +109,7 @@ public class GraphExchangeSession extends ExchangeSession {
         searchfolders
     }
 
-    // https://www.rfc-editor.org/rfc/rfc6154.html map well known names to special flags
+    // https://www.rfc-editor.org/rfc/rfc6154.html map well-known names to special flags
     protected static HashMap<String, String> wellKnownFolderMap = new HashMap<>();
 
     static {
@@ -241,7 +241,7 @@ public class GraphExchangeSession extends ExchangeSession {
             throw new IOException(e.getMessage(), e);
         }
 
-        // do we want message to have draft flag?
+        // do we want created message to have draft flag?
         boolean isDraft = properties != null && "1".equals(properties.get("draft"));
 
         // https://learn.microsoft.com/en-us/graph/api/user-post-messages
@@ -896,7 +896,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectId(parentFolderId.id)
                 .setChildType("childFolders")
                 .setExpandFields(FOLDER_PROPERTIES);
-        LOGGER.debug("appendSubFolders " + parentFolderId.mailbox != null ? parentFolderId.mailbox : "me" + " " + parentFolderPath);
+        LOGGER.debug("appendSubFolders " + (parentFolderId.mailbox != null ? parentFolderId.mailbox : "me") + " " + parentFolderPath);
         if (condition != null && !condition.isEmpty()) {
             StringBuilder filter = new StringBuilder();
             condition.appendTo(filter);
@@ -935,6 +935,22 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
+        byte[] mimeContent;
+        try (
+                ByteArrayOutputStream baos = new ByteArrayOutputStream()
+        ) {
+            mimeMessage.writeTo(baos);
+            mimeContent = IOUtil.encodeBase64(baos.toByteArray());
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+
+        // https://learn.microsoft.com/en-us/graph/api/user-sendmail
+        executeJsonRequest(new GraphRequestBuilder()
+                .setMethod(HttpPost.METHOD_NAME)
+                .setObjectType("sendMail")
+                .setContentType("text/plain")
+                .setMimeContent(mimeContent));
 
     }
 
@@ -1254,9 +1270,9 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void deleteFolder(String folderPath) throws IOException {
+        FolderId folderId = getFolderIdIfExists(folderPath);
         if (folderPath.startsWith("calendar/")) {
             // TODO shared mailboxes
-            FolderId folderId = getFolderIdIfExists(folderPath);
             if (folderId != null) {
                 executeJsonRequest(new GraphRequestBuilder()
                         .setMethod(HttpDelete.METHOD_NAME)
@@ -1265,7 +1281,6 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectId(folderId.id));
             }
         } else {
-            FolderId folderId = getFolderIdIfExists(folderPath);
             if (folderId != null) {
                 String objectType = "mailFolders";
                 if ("IPF.Contact".equals(folderId.folderClass)) {

@@ -37,7 +37,6 @@ import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -265,12 +264,12 @@ public class GraphRequestBuilder {
                 } else if (jsonBody != null) {
                     ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(IOUtil.convertToBytes(jsonBody)));
                 }
-            } else if ("PATCH".equals(method)) {
+            } else if (HttpPatch.METHOD_NAME.equals(method)) {
                 httpRequest = new HttpPatch(uriBuilder.build());
                 if (jsonBody != null) {
                     ((HttpPatch) httpRequest).setEntity(new ByteArrayEntity(IOUtil.convertToBytes(jsonBody)));
                 }
-            } else if ("DELETE".equals(method)){
+            } else if ("DELETE".equals(method)) {
                 httpRequest = new HttpDelete(uriBuilder.build());
             } else {
                 // default to GET request
