@@ -34,7 +34,10 @@ import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPatch;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -75,7 +78,7 @@ public class GraphExchangeSession extends ExchangeSession {
         protected String specialFlag = "";
 
         protected void setSpecialFlag(String specialFlag) {
-            this.specialFlag = "\\"+specialFlag+" ";
+            this.specialFlag = "\\" + specialFlag + " ";
         }
 
         /**
@@ -108,6 +111,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     // https://www.rfc-editor.org/rfc/rfc6154.html map well known names to special flags
     protected static HashMap<String, String> wellKnownFolderMap = new HashMap<>();
+
     static {
         wellKnownFolderMap.put(WellKnownFolderName.inbox.name(), ExchangeSession.INBOX);
         wellKnownFolderMap.put(WellKnownFolderName.archive.name(), ExchangeSession.ARCHIVE);
@@ -246,13 +250,13 @@ public class GraphExchangeSession extends ExchangeSession {
 
         // create message in default drafts folder first
         JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                .setMethod("POST")
+                .setMethod(HttpPost.METHOD_NAME)
                 .setContentType("text/plain")
                 .setMimeContent(mimeContent)
                 .setChildType("messages"));
         if (isDraft) {
             try {
-                jsonResponse = executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
+                jsonResponse = executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("messages")
                         .setObjectId(jsonResponse.optString("id"))
@@ -262,7 +266,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 // we have the message in the right folder, apply flags
                 applyMessageProperties(jsonResponse, properties);
                 jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod("PATCH")
+                        .setMethod(HttpPatch.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("messages")
                         .setObjectId(jsonResponse.optString("id"))
@@ -286,7 +290,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
                 // now use this to recreate message in the right folder
                 jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod("POST")
+                        .setMethod(HttpPost.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("mailFolders")
                         .setObjectId(folderId.id)
@@ -299,7 +303,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 // delete draft message
                 if (draftMessageId != null) {
                     executeJsonRequest(new GraphRequestBuilder()
-                            .setMethod("DELETE")
+                            .setMethod(HttpDelete.METHOD_NAME)
                             .setObjectType("messages")
                             .setObjectId(draftMessageId));
                 }
@@ -307,7 +311,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         }
         return buildMessage(executeJsonRequest(new GraphRequestBuilder()
-                .setMethod("GET")
+                .setMethod(HttpGet.METHOD_NAME)
                 .setObjectType("messages")
                 .setMailbox(folderId.mailbox)
                 .setObjectId(jsonResponse.optString("id"))
@@ -390,7 +394,7 @@ public class GraphExchangeSession extends ExchangeSession {
     protected Message getMessageById(String folderPath, String id) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
         return buildMessage(executeJsonRequest(new GraphRequestBuilder()
-                .setMethod("GET")
+                .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(folderId.mailbox)
                 .setObjectType("messages")
                 .setObjectId(id)
@@ -417,7 +421,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 expandFields.add(Field.get("messageheaders"));
 
                 JSONObject response = executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod("GET")
+                        .setMethod(HttpGet.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("messages")
                         .setObjectId(id)
@@ -598,7 +602,7 @@ public class GraphExchangeSession extends ExchangeSession {
             // we have the message in the right folder, apply flags
             applyMessageProperties(jsonObject, properties);
             executeJsonRequest(new GraphRequestBuilder()
-                    .setMethod("PATCH")
+                    .setMethod(HttpPatch.METHOD_NAME)
                     .setMailbox(((Message) message).folderId.mailbox)
                     .setObjectType("messages")
                     .setObjectId(((Message) message).id)
@@ -611,7 +615,7 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
         executeJsonRequest(new GraphRequestBuilder()
-                .setMethod("DELETE")
+                .setMethod(HttpDelete.METHOD_NAME)
                 .setMailbox(((Message) message).folderId.mailbox)
                 .setObjectType("messages")
                 .setObjectId(((Message) message).id));
@@ -620,7 +624,7 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     protected byte[] getContent(ExchangeSession.Message message) throws IOException {
         GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
-                .setMethod("GET")
+                .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(((Message) message).folderId.mailbox)
                 .setObjectType("messages")
                 .setObjectId(message.getPermanentId())
@@ -668,7 +672,7 @@ public class GraphExchangeSession extends ExchangeSession {
         FolderId folderId = getFolderId(folderName);
 
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
-                .setMethod("GET")
+                .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(folderId.mailbox)
                 .setObjectType("mailFolders")
                 .setObjectId(folderId.id)
@@ -886,7 +890,7 @@ public class GraphExchangeSession extends ExchangeSession {
                                     Condition condition, boolean recursive) throws IOException {
 
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
-                .setMethod("GET")
+                .setMethod(HttpGet.METHOD_NAME)
                 .setObjectType("mailFolders")
                 .setMailbox(parentFolderId.mailbox)
                 .setObjectId(parentFolderId.id)
@@ -940,7 +944,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         // base folder get https://graph.microsoft.com/v1.0/me/mailFolders/inbox
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
-                .setMethod("GET")
+                .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(folderId.mailbox)
                 .setObjectType("mailFolders")
                 .setObjectId(folderId.id)
@@ -1126,7 +1130,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     private FolderId getWellKnownFolderId(String mailbox, WellKnownFolderName wellKnownFolderName) throws IOException {
         JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                .setMethod("GET")
+                .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(mailbox)
                 .setObjectType("mailFolders")
                 .setObjectId(wellKnownFolderName.name())
@@ -1147,7 +1151,7 @@ public class GraphExchangeSession extends ExchangeSession {
         GraphRequestBuilder httpRequestBuilder;
         if ("IPF.Appointment".equals(currentFolderId.folderClass)) {
             httpRequestBuilder = new GraphRequestBuilder()
-                    .setMethod("GET")
+                    .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType("calendars")
                     .setExpandFields(FOLDER_PROPERTIES)
@@ -1158,7 +1162,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 objectType = "contactFolders";
             }
             httpRequestBuilder = new GraphRequestBuilder()
-                    .setMethod("GET")
+                    .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType(objectType)
                     .setObjectId(currentFolderId.id)
@@ -1199,7 +1203,7 @@ public class GraphExchangeSession extends ExchangeSession {
             // create calendar
             try {
                 executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod("POST")
+                        .setMethod(HttpPost.METHOD_NAME)
                         // TODO mailbox?
                         //.setMailbox("")
                         .setObjectType("calendars")
@@ -1226,7 +1230,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     objectType = "contactFolders";
                 }
                 executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod("POST")
+                        .setMethod(HttpPost.METHOD_NAME)
                         // TODO mailbox?
                         .setMailbox(parentFolderId.mailbox)
                         .setObjectType(objectType)
@@ -1255,7 +1259,7 @@ public class GraphExchangeSession extends ExchangeSession {
             FolderId folderId = getFolderIdIfExists(folderPath);
             if (folderId != null) {
                 executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod("DELETE")
+                        .setMethod(HttpDelete.METHOD_NAME)
                         //.setMailbox()
                         .setObjectType("calendars")
                         .setObjectId(folderId.id));
@@ -1268,7 +1272,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     objectType = "contactFolders";
                 }
                 executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod("DELETE")
+                        .setMethod(HttpDelete.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType(objectType)
                         .setObjectId(folderId.id));
@@ -1282,7 +1286,7 @@ public class GraphExchangeSession extends ExchangeSession {
         try {
             FolderId targetFolderId = getFolderId(targetFolder);
 
-            executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
+            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
                     .setMailbox(((Message) message).folderId.mailbox)
                     .setObjectType("messages")
                     .setObjectId(((Message) message).id)
@@ -1299,7 +1303,7 @@ public class GraphExchangeSession extends ExchangeSession {
         try {
             FolderId targetFolderId = getFolderId(targetFolder);
 
-            executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
+            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
                     .setMailbox(((Message) message).folderId.mailbox)
                     .setObjectType("messages")
                     .setObjectId(((Message) message).id)
@@ -1326,7 +1330,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         // rename
         try {
-            executeJsonRequest(new GraphRequestBuilder().setMethod("PATCH")
+            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("mailFolders")
                     .setObjectId(folderId.id)
@@ -1336,7 +1340,7 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         try {
-            executeJsonRequest(new GraphRequestBuilder().setMethod("POST")
+            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("mailFolders")
                     .setObjectId(folderId.id)
