@@ -295,35 +295,10 @@ public class O365Authenticator implements ExchangeAuthenticator {
             ppft = sFTTag.substring(sFTTag.indexOf("value=\"")+7, sFTTag.indexOf("\"/>"));
         }
 
-        //logonMethod.setParameter("ps", "2");
-        //logonMethod.setParameter("psRNGCDefaultType", "");
-        //logonMethod.setParameter("psRNGCEntropy", "");
-        //logonMethod.setParameter("psRNGCSLK", "");
-        //logonMethod.setParameter("canary", "");
-        //logonMethod.setParameter("ctx", "");
-        //logonMethod.setParameter("hpgrequestid", "");
-
         logonMethod.setParameter("PPFT", ppft);
-        //logonMethod.setParameter("PPSX", "Pas");
-        //logonMethod.setParameter("NewUser", "1");
-        //logonMethod.setParameter("FoundMSAs", "");
-        //logonMethod.setParameter("fspost", "0");
-        //logonMethod.setParameter("i21", "0");
-        //logonMethod.setParameter("CookieDisclosure", "0");
-        //logonMethod.setParameter("IsFidoSupported", "0");
-        //logonMethod.setParameter("isSignupPost", "0");
-        //logonMethod.setParameter("isRecoveryAttemptPost", "0");
-        //logonMethod.setParameter("i13", "1");
 
         logonMethod.setParameter("login", username);
         logonMethod.setParameter("loginfmt", username);
-
-        //logonMethod.setParameter("lrt", "");
-        //logonMethod.setParameter("lrtPartition", "");
-        //logonMethod.setParameter("hisRegion", "");
-        //logonMethod.setParameter("hisScaleUnit", "");
-
-        //logonMethod.setParameter("LoginOptions", "1");
 
         logonMethod.setParameter("passwd", password);
 
@@ -672,9 +647,6 @@ public class O365Authenticator implements ExchangeAuthenticator {
         if (responseHost.endsWith("okta.com")) {
             throw new DavMailAuthenticationException("LOG_MESSAGE", "Okta authentication not supported, please try O365Interactive");
         }
-        /*if (responseHost.equals("login.live.com")) {
-            throw new DavMailAuthenticationException("LOG_MESSAGE", "Microsoft live authentication not supported, please try O365Interactive");
-        }*/
         return responseWrapper.getResponseBodyAsString();
     }
 
