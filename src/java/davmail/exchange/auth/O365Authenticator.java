@@ -80,7 +80,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                         .addParameter("login_hint", username)
                         .addParameter("scope", "openid offline_access https://outlook.live.com/EWS.AccessAsUser.All Mail.ReadWrite MailboxSettings.Read")
                         .addParameter("resource", "https://outlook.live.com")
-                        //.addParameter("prompt", "consent")
+                //.addParameter("prompt", "consent")
                 ;
 
             } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
@@ -88,7 +88,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     // OIDC compliant
                     uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                             .addParameter("scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Mail.Send");
-                    // TODO: test scope=Settings.getGraphUrl()+"/.default"
+                    //.addParameter("scope", Settings.getGraphUrl()+"/.default");
                     //.addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All AuditLog.Read.All Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrintJob.ReadWriteBasic SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read");
                 } else {
                     // Outlook desktop relies on classic authorize endpoint
@@ -96,7 +96,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
                             .addParameter("resource", Settings.getGraphUrl());
                 }
-            // Probably irrelevant except for graph api, see above, switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
+                // Probably irrelevant except for graph api, see above, switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
             } else if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                         .addParameter("scope", "openid profile offline_access " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All");
@@ -148,7 +148,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         // common DavMail client id
         String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         // standard native app redirectUri
-        String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", Settings.getO365LoginUrl()+"/common/oauth2/nativeclient");
+        String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", Settings.getO365LoginUrl() + "/common/oauth2/nativeclient");
         // company tenantId or common
         tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
@@ -167,7 +167,13 @@ public class O365Authenticator implements ExchangeAuthenticator {
             GetRequest getRequest = new GetRequest(url);
             String responseBodyAsString = executeFollowRedirect(httpClientAdapter, getRequest);
             String code;
-            if (!responseBodyAsString.contains("Config=")) {
+            if (!responseBodyAsString.contains("Config=") && responseBodyAsString.contains("ServerData =")) {
+                // live.com form
+                JSONObject config = extractServerData(responseBodyAsString);
+
+                String referer = getRequest.getURI().toString();
+                code = authenticateLive(httpClientAdapter, config, referer);
+            } else if (!responseBodyAsString.contains("Config=")) {
                 // we are no longer on Microsoft, try ADFS
                 code = authenticateADFS(httpClientAdapter, responseBodyAsString, url);
             } else {
@@ -184,7 +190,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
                 String referer = getRequest.getURI().toString();
 
-                RestRequest getCredentialMethod = new RestRequest(Settings.getO365LoginUrl()  + "/" + tenantId + "/GetCredentialType");
+                RestRequest getCredentialMethod = new RestRequest(Settings.getO365LoginUrl() + "/" + tenantId + "/GetCredentialType");
                 getCredentialMethod.setRequestHeader("Accept", "application/json");
                 getCredentialMethod.setRequestHeader("canary", apiCanary);
                 getCredentialMethod.setRequestHeader("client-request-id", clientRequestId);
@@ -216,7 +222,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     LOGGER.debug("Detected ADFS, redirecting to " + federationRedirectUrl);
                     code = authenticateRedirectADFS(httpClientAdapter, federationRedirectUrl, url);
                 } else {
-                    PostRequest logonMethod = new PostRequest(Settings.getO365LoginUrl()  + "/" + tenantId + "/login");
+                    PostRequest logonMethod = new PostRequest(Settings.getO365LoginUrl() + "/" + tenantId + "/login");
                     logonMethod.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
                     logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
@@ -276,6 +282,67 @@ public class O365Authenticator implements ExchangeAuthenticator {
             throw new IOException(e + " " + e.getMessage());
         }
 
+    }
+
+    private String authenticateLive(HttpClientAdapter httpClientAdapter, JSONObject config, String referer) throws JSONException, IOException {
+        String urlPost = config.getString("urlPost");
+        PostRequest logonMethod = new PostRequest(urlPost);
+        logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        logonMethod.setRequestHeader("Referer", referer);
+        String sFTTag = config.optString("sFTTag");
+        String ppft = "";
+        if (sFTTag.contains("value=")) {
+            ppft = sFTTag.substring(sFTTag.indexOf("value=\"")+7, sFTTag.indexOf("\"/>"));
+        }
+
+        //logonMethod.setParameter("ps", "2");
+        //logonMethod.setParameter("psRNGCDefaultType", "");
+        //logonMethod.setParameter("psRNGCEntropy", "");
+        //logonMethod.setParameter("psRNGCSLK", "");
+        //logonMethod.setParameter("canary", "");
+        //logonMethod.setParameter("ctx", "");
+        //logonMethod.setParameter("hpgrequestid", "");
+
+        logonMethod.setParameter("PPFT", ppft);
+        //logonMethod.setParameter("PPSX", "Pas");
+        //logonMethod.setParameter("NewUser", "1");
+        //logonMethod.setParameter("FoundMSAs", "");
+        //logonMethod.setParameter("fspost", "0");
+        //logonMethod.setParameter("i21", "0");
+        //logonMethod.setParameter("CookieDisclosure", "0");
+        //logonMethod.setParameter("IsFidoSupported", "0");
+        //logonMethod.setParameter("isSignupPost", "0");
+        //logonMethod.setParameter("isRecoveryAttemptPost", "0");
+        //logonMethod.setParameter("i13", "1");
+
+        logonMethod.setParameter("login", username);
+        logonMethod.setParameter("loginfmt", username);
+
+        //logonMethod.setParameter("lrt", "");
+        //logonMethod.setParameter("lrtPartition", "");
+        //logonMethod.setParameter("hisRegion", "");
+        //logonMethod.setParameter("hisScaleUnit", "");
+
+        //logonMethod.setParameter("LoginOptions", "1");
+
+        logonMethod.setParameter("passwd", password);
+
+        String responseBodyAsString = httpClientAdapter.executePostRequest(logonMethod);
+        URI location = logonMethod.getRedirectLocation();
+        if (location == null) {
+            if (responseBodyAsString.contains("ServerData =")) {
+                String errorMessage = extractServerData(responseBodyAsString).optString("sErrTxt");
+                throw new IOException("Live.com authentication failure: "+errorMessage);
+            }
+        } else {
+            String query = location.getQuery();
+            if (query.contains("code=")) {
+                String code = query.substring(query.indexOf("code=") + 5);
+                LOGGER.debug("Authentication Code: " + code);
+                return code;
+            }
+        }
+        throw new IOException("Unknown Live.com authentication failure");
     }
 
     private String authenticateRedirectADFS(HttpClientAdapter httpClientAdapter, String federationRedirectUrl, String authorizeUrl) throws IOException, JSONException {
@@ -410,7 +477,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         String urlBeginAuth = config.getString("urlBeginAuth");
         String urlEndAuth = config.getString("urlEndAuth");
         // Get processAuth url from config
-        String urlProcessAuth = config.optString("urlPost", Settings.getO365LoginUrl()  + "/" + tenantId + "/SAS/ProcessAuth");
+        String urlProcessAuth = config.optString("urlPost", Settings.getO365LoginUrl() + "/" + tenantId + "/SAS/ProcessAuth");
 
         boolean isMFAMethodSupported = false;
         String chosenAuthMethodId = null;
@@ -605,15 +672,30 @@ public class O365Authenticator implements ExchangeAuthenticator {
         if (responseHost.endsWith("okta.com")) {
             throw new DavMailAuthenticationException("LOG_MESSAGE", "Okta authentication not supported, please try O365Interactive");
         }
-        if (responseHost.equals("login.live.com")) {
+        /*if (responseHost.equals("login.live.com")) {
             throw new DavMailAuthenticationException("LOG_MESSAGE", "Microsoft live authentication not supported, please try O365Interactive");
-        }
+        }*/
         return responseWrapper.getResponseBodyAsString();
     }
 
     public JSONObject extractConfig(String content) throws IOException {
         try {
             return new JSONObject(extract("Config=([^\n]+);", content));
+        } catch (JSONException e1) {
+            LOGGER.debug(content);
+            throw new IOException("Unable to extract config from response body");
+        }
+    }
+
+    /**
+     * Live.com logon form information
+     * @param content response form
+     * @return parsed configuration json
+     * @throws IOException on error
+     */
+    public JSONObject extractServerData(String content) throws IOException {
+        try {
+            return new JSONObject(extract("ServerData =([^\n]+);", content));
         } catch (JSONException e1) {
             LOGGER.debug(content);
             throw new IOException("Unable to extract config from response body");
