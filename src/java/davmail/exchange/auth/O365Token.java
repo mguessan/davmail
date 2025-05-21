@@ -97,6 +97,7 @@ public class O365Token {
             if (jsonToken.opt("error") != null) {
                 throw new IOException(jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
             }
+            LOGGER.debug("Obtained token for scopes: " + jsonToken.optString("scope"));
             // access token expires after one hour
             accessToken = jsonToken.getString("access_token");
             // precious refresh token
