@@ -166,22 +166,47 @@ public class ExtendedFieldURI implements FieldURI {
 
     @Override
     public String getGraphId() {
+        // PropertyId values may only be in one of the following formats:
+        // 'MapiPropertyType namespaceGuid Name propertyName', 'MapiPropertyType namespaceGuid Id propertyId' or 'MapiPropertyType propertyTag'.
+
+        String namespaceGuid = null;
+
         if (distinguishedPropertySetId == DistinguishedPropertySetType.PublicStrings) {
-            return propertyType.name() + " {00020329-0000-0000-c000-000000000046} Name " + propertyName;
+            namespaceGuid = "{00020329-0000-0000-c000-000000000046}";
         }
         if (distinguishedPropertySetId == DistinguishedPropertySetType.InternetHeaders) {
-            return propertyType.name() + " {00020386-0000-0000-c000-000000000046} Name " + propertyName;
+            namespaceGuid = "{00020386-0000-0000-c000-000000000046}";
         }
         if (distinguishedPropertySetId == DistinguishedPropertySetType.Common) {
-            return propertyType.name() + " {00062008-0000-0000-c000-000000000046} Name " + propertyName;
+            namespaceGuid = "{00062008-0000-0000-c000-000000000046}";
+        }
+        if (distinguishedPropertySetId == DistinguishedPropertySetType.Address) {
+            namespaceGuid = "{00062004-0000-0000-c000-000000000046}";
         }
 
-        return propertyType.name() + " " + propertyTag;
+        StringBuilder buffer = new StringBuilder();
+        if (namespaceGuid != null) {
+            buffer.append(propertyType.name()).append(" ").append(namespaceGuid);
+            if (propertyName != null) {
+                buffer.append(" Name ").append(propertyName);
+            } else {
+                buffer.append(" Id ").append("0x").append(Integer.toHexString(propertyId));
+            }
+        } else if (propertyTag != null) {
+            buffer.append(propertyType.name()).append(" ").append(propertyTag);
+        } else {
+            throw new IllegalStateException("Unsupported graph property for graph "+getResponseName());
+        }
+        return buffer.toString();
     }
 
     @Override
     public boolean isMultiValued() {
         return propertyType == PropertyType.StringArray;
+    }
+
+    public boolean isNumber() {
+        return propertyType == PropertyType.Short || propertyType == PropertyType.Integer || propertyType == PropertyType.Long || propertyType == PropertyType.Double;
     }
 
 }

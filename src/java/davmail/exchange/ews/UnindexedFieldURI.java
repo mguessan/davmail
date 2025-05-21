@@ -164,4 +164,10 @@ public class UnindexedFieldURI implements FieldURI {
         return false;
     }
 
+    @Override
+    public boolean isNumber() {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
 }

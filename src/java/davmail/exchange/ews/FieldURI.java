@@ -53,4 +53,6 @@ public interface FieldURI {
     String getGraphId();
 
     boolean isMultiValued();
+
+    boolean isNumber();
 }
