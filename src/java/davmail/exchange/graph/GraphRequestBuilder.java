@@ -28,6 +28,7 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ByteArrayEntity;
@@ -57,6 +58,7 @@ public class GraphRequestBuilder {
 
     String childType;
     String childId;
+    String childSuffix;
 
     String select;
 
@@ -116,6 +118,11 @@ public class GraphRequestBuilder {
 
     public GraphRequestBuilder setChildId(String childId) {
         this.childId = childId;
+        return this;
+    }
+
+    public GraphRequestBuilder setChildSuffix(String childSuffix) {
+        this.childSuffix = childSuffix;
         return this;
     }
 
@@ -182,6 +189,9 @@ public class GraphRequestBuilder {
         }
         if (childId != null) {
             buffer.append("/").append(childId);
+        }
+        if (childSuffix != null) {
+            buffer.append("/").append(childSuffix);
         }
 
         return buffer.toString();
@@ -263,6 +273,12 @@ public class GraphRequestBuilder {
                     ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(mimeContent));
                 } else if (jsonBody != null) {
                     ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(IOUtil.convertToBytes(jsonBody)));
+                }
+            } else if (HttpPut.METHOD_NAME.equals(method)) {
+                // contact picture
+                httpRequest = new HttpPut(uriBuilder.build());
+                if (mimeContent != null) {
+                    ((HttpPut) httpRequest).setEntity(new ByteArrayEntity(mimeContent));
                 }
             } else if (HttpPatch.METHOD_NAME.equals(method)) {
                 httpRequest = new HttpPatch(uriBuilder.build());
