@@ -38,6 +38,7 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -98,6 +99,275 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
+    protected class Contact extends ExchangeSession.Contact {
+        // item id
+        FolderId folderId;
+        String id;
+
+        protected Contact(GraphResponse response) throws DavMailException {
+            id = response.optString("id");
+            etag = response.optString(Field.get("etag").getGraphId());
+
+            displayName = response.optString(Field.get("displayname").getGraphId());
+            // prefer urlcompname (client provided item name) for contacts
+            itemName = StringUtil.decodeUrlcompname(response.optString(Field.get("urlcompname").getGraphId()));
+            // if urlcompname is empty, this is a server created item
+            for (String attributeName : ExchangeSession.CONTACT_ATTRIBUTES) {
+                if (!attributeName.startsWith("smtpemail")) {
+                    String value = response.optString(Field.get(attributeName).getGraphId());
+                    if (value != null && !value.isEmpty()) {
+                        if ("bday".equals(attributeName) || "anniversary".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
+                            value = convertDateFromExchange(value);
+                        }
+                        put(attributeName, value);
+                    }
+                }
+            }
+            // TODO refactor
+            String keywords = response.optString("categories");
+            if (keywords != null) {
+                put("keywords", keywords);
+            }
+
+            JSONArray emailAddresses = response.optJSONArray("emailAddresses");
+            for (int i = 0; i < emailAddresses.length(); i++) {
+                JSONObject emailAddress = emailAddresses.optJSONObject(i);
+                if (emailAddress != null) {
+                    String email = emailAddress.optString("address");
+                    String type = emailAddress.optString("type");
+                    if ("other".equals(type)) {
+                        put("smtpemail3", email);
+                    } else if ("personal".equals(type)) {
+                        put("smtpemail2", email);
+                    } else if ("work".equals(type)) {
+                        put("smtpemail1", email);
+                    }
+                }
+            }
+            // iterate a second time to fill unknown email types
+            for (int i = 0; i < emailAddresses.length(); i++) {
+                JSONObject emailAddress = emailAddresses.optJSONObject(i);
+                if (emailAddress != null) {
+                    String email = emailAddress.optString("address");
+                    String type = emailAddress.optString("type");
+                    if ("unknown".equals(type)) {
+                        if (get("smtpemail1") == null) {
+                            put("smtpemail1", email);
+                        } else if (get("smtpemail2") == null) {
+                            put("smtpemail2", email);
+                        } else if (get("smtpemail3") == null) {
+                            put("smtpemail3", email);
+                        }
+                    }
+                }
+            }
+        }
+
+        protected Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
+            super(folderPath, itemName, properties, etag, noneMatch);
+        }
+
+        /**
+         * Empty constructor for GalFind
+         */
+        protected Contact() {
+        }
+
+        /**
+         * Create or update contact.
+         * <a href="https://learn.microsoft.com/en-us/graph/api/user-post-contacts">user-post-contacts</a>
+         *
+         * @return action result
+         * @throws IOException on error
+         */
+        @Override
+        public ItemResult createOrUpdate() throws IOException {
+
+            FolderId folderId = getFolderId(folderPath);
+            String id = null;
+            String currentEtag = null;
+            JSONObject jsonContact = getContactIfExists(folderId, itemName);
+            if (jsonContact != null) {
+                id = jsonContact.optString("id", null);
+                currentEtag = new GraphResponse(jsonContact).optString(Field.get("etag").getGraphId());
+            }
+
+            ItemResult itemResult = new ItemResult();
+            if ("*".equals(noneMatch)) {
+                // create requested but already exists
+                if (id != null) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            } else if (etag != null) {
+                // update requested
+                if (id == null || !etag.equals(currentEtag)) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            }
+
+            try {
+                JSONObject jsonObject = new JSONObject();
+                for (Map.Entry<String, String> entry : entrySet()) {
+                    if ("keywords".equals(entry.getKey())) {
+                        getMultiValueExtendedProperties(jsonObject).put(getMultiValue("keywords", entry.getValue()));
+                    } else if ("bday".equals(entry.getKey())) {
+                        getSingleValueExtendedProperties(jsonObject).put(getSingleValue(entry.getKey(), convertZuluToIso(entry.getValue())));
+                    } else if ("anniversary".equals(entry.getKey())) {
+                        jsonObject.put("weddingAnniversary", convertZuluToDate(entry.getValue()));
+                    } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")
+                            && !"fileas".equals(entry.getKey())
+                            && !"usersmimecertificate".equals(entry.getKey()) // not supported over Graph
+                            && !"msexchangecertificate".equals(entry.getKey()) // not supported over Graph
+                            && !"pager".equals(entry.getKey()) && !"otherTelephone".equals(entry.getKey()) // see below
+                            && !"photo".equals(entry.getKey())
+                    ) {
+                        getSingleValueExtendedProperties(jsonObject).put(getSingleValue(entry.getKey(), entry.getValue()));
+                    }
+                }
+
+                // pager and otherTelephone is a single field
+                String pager = get("pager");
+                if (pager == null) {
+                    pager = get("otherTelephone");
+                }
+                getSingleValueExtendedProperties(jsonObject).put(getSingleValue("pager", pager));
+
+                // force urlcompname
+                getSingleValueExtendedProperties(jsonObject).put(getSingleValue("urlcompname", convertItemNameToEML(itemName)));
+
+                // handle emails
+                JSONArray emailAddresses = new JSONArray();
+                String smtpemail1 = get("smtpemail1");
+                if (smtpemail1 != null) {
+                    JSONObject emailAddress = new JSONObject();
+                    emailAddress.put("address", smtpemail1);
+                    emailAddress.put("type", "work");
+                    emailAddresses.put(emailAddress);
+                }
+
+                String smtpemail2 = get("smtpemail2");
+                if (smtpemail2 != null) {
+                    JSONObject emailAddress = new JSONObject();
+                    emailAddress.put("address", smtpemail2);
+                    emailAddress.put("type", "personal");
+                    emailAddresses.put(emailAddress);
+                }
+
+                String smtpemail3 = get("smtpemail3");
+                if (smtpemail3 != null) {
+                    JSONObject emailAddress = new JSONObject();
+                    emailAddress.put("address", smtpemail3);
+                    emailAddress.put("type", "other");
+                    emailAddresses.put(emailAddress);
+                }
+                if (emailAddresses.length() > 0) {
+                    jsonObject.put("emailAddresses", emailAddresses);
+                }
+
+                GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
+                if (id == null) {
+                    graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("contactFolders")
+                            .setObjectId(folderId.id)
+                            .setChildType("contacts")
+                            .setJsonBody(jsonObject);
+                } else {
+                    graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("contactFolders")
+                            .setObjectId(folderId.id)
+                            .setChildType("contacts")
+                            .setChildId(id)
+                            .setJsonBody(jsonObject);
+                }
+
+                GraphResponse graphResponse = executeGraphRequest(graphRequestBuilder);
+                JSONObject jsonResponse = graphResponse.jsonObject;
+
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(graphResponse.jsonObject.toString(4));
+                }
+
+                updatePhoto(folderId, graphResponse.optString("id"));
+                // TODO check etag after photo update?
+
+                itemResult.itemName = graphResponse.optString("id");
+                itemResult.etag = graphResponse.optString("@odata.etag");
+                itemResult.status = graphResponse.statusCode;
+
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
+            if (itemResult.status == HttpStatus.SC_CREATED) {
+                LOGGER.debug("Created contact " + getHref());
+            } else {
+                LOGGER.debug("Updated contact " + getHref());
+            }
+
+            return itemResult;
+        }
+
+        private void updatePhoto(FolderId folderId, String contactId) throws IOException {
+            String photo = get("photo");
+            if (photo != null) {
+                // convert image to jpeg
+                byte[] resizedImageBytes = IOUtil.resizeImage(IOUtil.decodeBase64(photo), 90);
+
+                JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpPut.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("contactFolders")
+                        .setObjectId(folderId.id)
+                        .setChildType("contacts")
+                        .setChildId(contactId)
+                        .setChildSuffix("photo/$value")
+                        .setContentType("image/jpeg")
+                        .setMimeContent(resizedImageBytes));
+
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(jsonResponse);
+                }
+            }
+        }
+    }
+
+    /**
+     * Converts a Zulu date-time string to ISO format by removing unnecessary
+     * precision in the fractional seconds if present.
+     *
+     * @param value a date-time string in Zulu format to be converted; may be null.
+     * @return the converted date-time string in ISO format, or the original
+     *         value if it was null.
+     */
+    private String convertZuluToIso(String value) {
+        if (value != null) {
+            return value.replace(".000Z", "Z");
+        } else {
+            return value;
+        }
+    }
+
+    /**
+     * Converts a Zulu date-time string to a basic day format by extracting the
+     * date portion of the string before the "T" character.
+     *
+     * @param value a date-time string in Zulu format to be converted; may be null.
+     *              The string is expected to contain a "T" character separating
+     *              the date and time portions.
+     * @return the extracted date portion as a string if the input contains "T",
+     *         or the original input string if the "T" is not present or the input is null.
+     */
+    private String convertZuluToDate(String value) {
+        if (value != null && value.contains("T")) {
+            return value.substring(0, value.indexOf("T"));
+        } else {
+            return value;
+        }
+    }
+
     // special folders https://learn.microsoft.com/en-us/graph/api/resources/mailfolder
     @SuppressWarnings("SpellCheckingInspection")
     public enum WellKnownFolderName {
@@ -147,6 +417,76 @@ public class GraphExchangeSession extends ExchangeSession {
         IMAP_MESSAGE_ATTRIBUTES.add(Field.get("messageheaders"));
     }
 
+    protected static final HashSet<FieldURI> CONTACT_ATTRIBUTES = new HashSet<>();
+
+    static {
+        CONTACT_ATTRIBUTES.add(Field.get("imapUid"));
+        CONTACT_ATTRIBUTES.add(Field.get("etag"));
+        CONTACT_ATTRIBUTES.add(Field.get("urlcompname"));
+
+        CONTACT_ATTRIBUTES.add(Field.get("extensionattribute1"));
+        CONTACT_ATTRIBUTES.add(Field.get("extensionattribute2"));
+        CONTACT_ATTRIBUTES.add(Field.get("extensionattribute3"));
+        CONTACT_ATTRIBUTES.add(Field.get("extensionattribute4"));
+        CONTACT_ATTRIBUTES.add(Field.get("bday"));
+        CONTACT_ATTRIBUTES.add(Field.get("anniversary"));
+        CONTACT_ATTRIBUTES.add(Field.get("businesshomepage"));
+        CONTACT_ATTRIBUTES.add(Field.get("personalHomePage"));
+        CONTACT_ATTRIBUTES.add(Field.get("cn"));
+        CONTACT_ATTRIBUTES.add(Field.get("co"));
+        CONTACT_ATTRIBUTES.add(Field.get("department"));
+        //CONTACT_ATTRIBUTES.add(Field.get("smtpemail1"));
+        //CONTACT_ATTRIBUTES.add(Field.get("smtpemail2"));
+        //CONTACT_ATTRIBUTES.add(Field.get("smtpemail3"));
+        CONTACT_ATTRIBUTES.add(Field.get("facsimiletelephonenumber"));
+        CONTACT_ATTRIBUTES.add(Field.get("givenName"));
+        CONTACT_ATTRIBUTES.add(Field.get("homeCity"));
+        CONTACT_ATTRIBUTES.add(Field.get("homeCountry"));
+        CONTACT_ATTRIBUTES.add(Field.get("homePhone"));
+        CONTACT_ATTRIBUTES.add(Field.get("homePostalCode"));
+        CONTACT_ATTRIBUTES.add(Field.get("homeState"));
+        CONTACT_ATTRIBUTES.add(Field.get("homeStreet"));
+        CONTACT_ATTRIBUTES.add(Field.get("homepostofficebox"));
+        CONTACT_ATTRIBUTES.add(Field.get("l"));
+        CONTACT_ATTRIBUTES.add(Field.get("manager"));
+        CONTACT_ATTRIBUTES.add(Field.get("mobile"));
+        CONTACT_ATTRIBUTES.add(Field.get("namesuffix"));
+        CONTACT_ATTRIBUTES.add(Field.get("nickname"));
+        CONTACT_ATTRIBUTES.add(Field.get("o"));
+        CONTACT_ATTRIBUTES.add(Field.get("pager"));
+        CONTACT_ATTRIBUTES.add(Field.get("personaltitle"));
+        CONTACT_ATTRIBUTES.add(Field.get("postalcode"));
+        CONTACT_ATTRIBUTES.add(Field.get("postofficebox"));
+        CONTACT_ATTRIBUTES.add(Field.get("profession"));
+        CONTACT_ATTRIBUTES.add(Field.get("roomnumber"));
+        CONTACT_ATTRIBUTES.add(Field.get("secretarycn"));
+        CONTACT_ATTRIBUTES.add(Field.get("sn"));
+        CONTACT_ATTRIBUTES.add(Field.get("spousecn"));
+        CONTACT_ATTRIBUTES.add(Field.get("st"));
+        CONTACT_ATTRIBUTES.add(Field.get("street"));
+        CONTACT_ATTRIBUTES.add(Field.get("telephoneNumber"));
+        CONTACT_ATTRIBUTES.add(Field.get("title"));
+        CONTACT_ATTRIBUTES.add(Field.get("description"));
+        CONTACT_ATTRIBUTES.add(Field.get("im"));
+        CONTACT_ATTRIBUTES.add(Field.get("middlename"));
+        CONTACT_ATTRIBUTES.add(Field.get("lastmodified"));
+        CONTACT_ATTRIBUTES.add(Field.get("otherstreet"));
+        CONTACT_ATTRIBUTES.add(Field.get("otherstate"));
+        CONTACT_ATTRIBUTES.add(Field.get("otherpostofficebox"));
+        CONTACT_ATTRIBUTES.add(Field.get("otherpostalcode"));
+        CONTACT_ATTRIBUTES.add(Field.get("othercountry"));
+        CONTACT_ATTRIBUTES.add(Field.get("othercity"));
+        CONTACT_ATTRIBUTES.add(Field.get("haspicture"));
+        CONTACT_ATTRIBUTES.add(Field.get("keywords"));
+        CONTACT_ATTRIBUTES.add(Field.get("othermobile"));
+        CONTACT_ATTRIBUTES.add(Field.get("otherTelephone"));
+        CONTACT_ATTRIBUTES.add(Field.get("gender"));
+        CONTACT_ATTRIBUTES.add(Field.get("private"));
+        CONTACT_ATTRIBUTES.add(Field.get("sensitivity"));
+        CONTACT_ATTRIBUTES.add(Field.get("fburl"));
+        //CONTACT_ATTRIBUTES.add(Field.get("msexchangecertificate"));
+        //CONTACT_ATTRIBUTES.add(Field.get("usersmimecertificate"));
+    }
 
     protected static class FolderId {
         protected String mailbox;
@@ -368,8 +708,13 @@ public class GraphExchangeSession extends ExchangeSession {
 
 
     private JSONObject getSingleValue(String fieldName, String value) throws JSONException {
+        String graphName = Field.get(fieldName).getGraphId();
+        FieldURI field = Field.get(fieldName);
+        if (field.isNumber() && value == null) {
+            value = "0";
+        }
         return new JSONObject()
-                .put("id", Field.get(fieldName).getGraphId())
+                .put("id", graphName)
                 .put("value", value);
     }
 
@@ -741,9 +1086,8 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         }
 
-
         @Override
-        public boolean isMatch(Contact contact) {
+        public boolean isMatch(ExchangeSession.Contact contact) {
             return false;
         }
     }
@@ -1109,7 +1453,6 @@ public class GraphExchangeSession extends ExchangeSession {
             folderNames = folderPath.substring(TASKS.length()).split("/");
         } else if (isSubFolderOf(folderPath, CONTACTS)) {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.contacts, "IPF.Contact");
-            // TODO subfolders not supported with graph
             folderNames = folderPath.substring(CONTACTS.length()).split("/");
         } else if (isSubFolderOf(folderPath, SENT)) {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.sentitems);
@@ -1382,7 +1725,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public List<Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
+    public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
         return null;
     }
 
@@ -1403,13 +1746,74 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
+        FolderId folderId = getFolderId(folderPath);
+
+        if ("IPF.Contact".equals(folderId.folderClass)) {
+            JSONObject jsonResponse = getContactIfExists(folderId, itemName);
+            if (jsonResponse != null) {
+                Contact contact = new Contact(new GraphResponse(jsonResponse));
+                contact.folderId = folderId;
+                return contact;
+            } else {
+                throw new IOException("Item " + folderPath + " " + itemName + " not found");
+            }
+        } else {
+            return null;
+        }
+    }
+
+    private JSONObject getContactIfExists(FolderId folderId, String itemName) throws IOException {
+        // TODO: build with AttributeCondition
+        String filter = "singleValueExtendedProperties/Any(ep: ep/id eq '" + Field.get("urlcompname").getGraphId() + "' and ep/value eq '" + convertItemNameToEML(itemName) + "')";
+        JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(folderId.mailbox)
+                .setMailbox(folderId.mailbox)
+                .setObjectType("contactFolders")
+                .setObjectId(folderId.id)
+                .setChildType("contacts")
+                .setFilter(filter)
+                .setExpandFields(CONTACT_ATTRIBUTES)
+        );
+        // need at least one value
+        JSONArray values = jsonResponse.optJSONArray("value");
+        if (values != null && values.length() > 0) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Contact " + values.optJSONObject(0));
+            }
+            return values.optJSONObject(0);
+        }
         return null;
     }
 
     @Override
-    public ContactPhoto getContactPhoto(Contact contact) throws IOException {
+    public ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         // /me/contacts/{id}/photo/$value
-        return null;
+        GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(((Contact) contact).folderId.mailbox)
+                .setObjectType("contactFolders")
+                .setObjectId(((Contact) contact).folderId.id)
+                .setChildType("contacts")
+                .setChildId(((Contact) contact).id)
+                .setChildSuffix("photo/$value");
+
+        byte[] contactPhotoBytes;
+        try (
+                CloseableHttpResponse response = httpClient.execute(graphRequestBuilder.build());
+                InputStream inputStream = response.getEntity().getContent()
+        ) {
+            if (HttpClientAdapter.isGzipEncoded(response)) {
+                contactPhotoBytes = IOUtil.readFully(new GZIPInputStream(inputStream));
+            } else {
+                contactPhotoBytes = IOUtil.readFully(inputStream);
+            }
+        }
+        ContactPhoto contactPhoto = new ContactPhoto();
+        contactPhoto.contentType = "image/jpeg";
+        contactPhoto.content = IOUtil.encodeBase64AsString(contactPhotoBytes);
+
+        return contactPhoto;
     }
 
     @Override
@@ -1429,7 +1833,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     protected Contact buildContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
-        return null;
+        return new Contact(folderPath, itemName, properties, StringUtil.removeQuotes(etag), noneMatch);
     }
 
     @Override
@@ -1448,7 +1852,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Map<String, Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
+    public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         return null;
     }
 
@@ -1543,6 +1947,27 @@ public class GraphExchangeSession extends ExchangeSession {
             jsonResponse = new JsonResponseHandler().handleResponse(response);
         }
         return jsonResponse;
+    }
+
+    private GraphResponse executeGraphRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
+        // TODO handle throttling https://learn.microsoft.com/en-us/graph/throttling
+        HttpRequestBase request = httpRequestBuilder
+                .setAccessToken(token.getAccessToken())
+                .build();
+
+        // DEBUG only, disable gzip encoding
+        //request.setHeader("Accept-Encoding", "");
+        GraphResponse graphResponse;
+        try (
+                CloseableHttpResponse response = httpClient.execute(request)
+        ) {
+            if (response.getStatusLine().getStatusCode() == 400) {
+                LOGGER.warn("Request returned " + response.getStatusLine());
+            }
+            graphResponse = new GraphResponse(new JsonResponseHandler().handleResponse(response));
+            graphResponse.statusCode = response.getStatusLine().getStatusCode();
+        }
+        return graphResponse;
     }
 
 }
