@@ -209,21 +209,26 @@ public class GraphExchangeSession extends ExchangeSession {
 
             try {
                 JSONObject jsonObject = new JSONObject();
+                GraphResponse graphObject = new GraphResponse(jsonObject);
                 for (Map.Entry<String, String> entry : entrySet()) {
                     if ("keywords".equals(entry.getKey())) {
-                        getMultiValueExtendedProperties(jsonObject).put(getMultiValue("keywords", entry.getValue()));
+                        //getMultiValueExtendedProperties(jsonObject).put(getMultiValue("keywords", entry.getValue()));
+                        graphObject.setCategories(entry.getValue());
                     } else if ("bday".equals(entry.getKey())) {
-                        getSingleValueExtendedProperties(jsonObject).put(getSingleValue(entry.getKey(), convertZuluToIso(entry.getValue())));
+                        //getSingleValueExtendedProperties(jsonObject).put(getSingleValue(entry.getKey(), convertZuluToIso(entry.getValue())));
+                        graphObject.put(entry.getKey(), convertZuluToIso(entry.getValue()));
                     } else if ("anniversary".equals(entry.getKey())) {
-                        jsonObject.put("weddingAnniversary", convertZuluToDate(entry.getValue()));
+                        //jsonObject.put("weddingAnniversary", convertZuluToDate(entry.getValue()));
+                        graphObject.put("anniversary", convertZuluToDate(entry.getValue()));
                     } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")
-                            && !"fileas".equals(entry.getKey())
+                            && !"fileas".equals(entry.getKey()) // TODO
                             && !"usersmimecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"msexchangecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"pager".equals(entry.getKey()) && !"otherTelephone".equals(entry.getKey()) // see below
                             && !"photo".equals(entry.getKey())
                     ) {
-                        getSingleValueExtendedProperties(jsonObject).put(getSingleValue(entry.getKey(), entry.getValue()));
+                        //getSingleValueExtendedProperties(jsonObject).put(getSingleValue(entry.getKey(), entry.getValue()));
+                        graphObject.put(entry.getKey(), entry.getValue());
                     }
                 }
 
@@ -232,10 +237,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (pager == null) {
                     pager = get("otherTelephone");
                 }
-                getSingleValueExtendedProperties(jsonObject).put(getSingleValue("pager", pager));
+                //getSingleValueExtendedProperties(jsonObject).put(getSingleValue("pager", pager));
+                graphObject.put("pager", pager);
 
                 // force urlcompname
-                getSingleValueExtendedProperties(jsonObject).put(getSingleValue("urlcompname", convertItemNameToEML(itemName)));
+                //getSingleValueExtendedProperties(jsonObject).put(getSingleValue("urlcompname", convertItemNameToEML(itemName)));
+                graphObject.put("urlcompname", convertItemNameToEML(itemName));
 
                 // handle emails
                 JSONArray emailAddresses = new JSONArray();
@@ -262,9 +269,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     emailAddress.put("type", "other");
                     emailAddresses.put(emailAddress);
                 }
-                if (emailAddresses.length() > 0) {
-                    jsonObject.put("emailAddresses", emailAddresses);
-                }
+                //jsonObject.put("emailAddresses", emailAddresses);
+                graphObject.put("emailAddresses", emailAddresses);
 
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
                 if (id == null) {
@@ -285,18 +291,20 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
 
                 GraphResponse graphResponse = executeGraphRequest(graphRequestBuilder);
-                JSONObject jsonResponse = graphResponse.jsonObject;
 
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug(graphResponse.jsonObject.toString(4));
+                    LOGGER.debug(graphResponse.toString(4));
                 }
 
+                itemResult.status = graphResponse.statusCode;
+
                 updatePhoto(folderId, graphResponse.optString("id"));
-                // TODO check etag after photo update?
+
+                // reload to get latest etag
+                graphResponse = new GraphResponse(getContactIfExists(folderId, itemName));
 
                 itemResult.itemName = graphResponse.optString("id");
-                itemResult.etag = graphResponse.optString("@odata.etag");
-                itemResult.status = graphResponse.statusCode;
+                itemResult.etag = graphResponse.optString(Field.get("etag").getGraphId());
 
             } catch (JSONException e) {
                 throw new IOException(e);

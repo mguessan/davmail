@@ -19,8 +19,10 @@
 
 package davmail.exchange.graph;
 
+import davmail.exchange.ews.Field;
 import davmail.util.StringUtil;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.HashSet;
@@ -49,6 +51,7 @@ public class GraphResponse {
         }
         // try to fetch from expanded properties
         if (value == null) {
+            //key = Field.get(key).getGraphId(); TODO
             JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
             if (singleValueExtendedProperties != null) {
                 for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
@@ -66,5 +69,54 @@ public class GraphResponse {
     public JSONArray optJSONArray(String key) {
         return jsonObject.optJSONArray(key);
     }
+
+    public void put(String alias, String value) throws JSONException {
+        String key = Field.get(alias).getGraphId();
+        // assume all expanded properties have a space
+        if (key.contains(" ")) {
+            if (Field.get(alias).isNumber() && value == null) {
+                value = "0";
+            }
+            getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value));
+        } else {
+            jsonObject.put(key, value);
+        }
+    }
+
+    public void put(String key, JSONArray values) throws JSONException {
+        jsonObject.put(key, values);
+    }
+
+    public void setCategories(String values) throws JSONException {
+        if (values != null) {
+            setCategories(values.split(","));
+        } else {
+            jsonObject.put("categories", new JSONArray());
+        }
+    }
+
+    public void setCategories(String[] values) throws JSONException {
+        // assume all expanded properties have a space
+        JSONArray jsonValues = new JSONArray();
+        for (String singleValue : values) {
+            jsonValues.put(singleValue);
+        }
+        jsonObject.put("categories", jsonValues);
+    }
+
+    public String toString(int indentFactor) throws JSONException {
+        return jsonObject.toString(indentFactor);
+    }
+
+    protected JSONArray getSingleValueExtendedProperties() throws JSONException {
+        JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
+        if (singleValueExtendedProperties == null) {
+            singleValueExtendedProperties = new JSONArray();
+            jsonObject.put("singleValueExtendedProperties", singleValueExtendedProperties);
+        }
+        return singleValueExtendedProperties;
+    }
+
+
 }
 

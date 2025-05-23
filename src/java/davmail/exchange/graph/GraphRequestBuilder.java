@@ -208,8 +208,13 @@ public class GraphRequestBuilder {
             if (fieldURI.isMultiValued()) {
                 multiValueProperties.add(fieldURI.getGraphId());
             } else if (fieldURI instanceof ExtendedFieldURI) {
-                singleValueProperties.add(fieldURI.getGraphId());
+                String graphId = fieldURI.getGraphId();
+                // only expanded properties need a singleValueProperties entry
+                if (graphId.contains(" ")) {
+                    singleValueProperties.add(fieldURI.getGraphId());
+                }
             } else if (fieldURI instanceof IndexedFieldURI) {
+                // TODO never happens
                 multiValueProperties.add(fieldURI.getGraphId());
             }
         }
