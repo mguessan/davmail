@@ -104,17 +104,21 @@ public class GraphExchangeSession extends ExchangeSession {
         FolderId folderId;
         String id;
 
-        protected Contact(GraphResponse response) throws DavMailException {
+        protected Contact(GraphObject response) throws DavMailException {
             id = response.optString("id");
-            etag = response.optString(Field.get("etag").getGraphId());
+            etag = response.optString("etag");
 
-            displayName = response.optString(Field.get("displayname").getGraphId());
+            displayName = response.optString("displayname");
             // prefer urlcompname (client provided item name) for contacts
-            itemName = StringUtil.decodeUrlcompname(response.optString(Field.get("urlcompname").getGraphId()));
+            itemName = StringUtil.decodeUrlcompname(response.optString("urlcompname"));
             // if urlcompname is empty, this is a server created item
+            if (itemName == null) {
+                itemName = StringUtil.base64ToUrl(id) + ".EML";
+            }
+
             for (String attributeName : ExchangeSession.CONTACT_ATTRIBUTES) {
                 if (!attributeName.startsWith("smtpemail")) {
-                    String value = response.optString(Field.get(attributeName).getGraphId());
+                    String value = response.optString(attributeName);
                     if (value != null && !value.isEmpty()) {
                         if ("bday".equals(attributeName) || "anniversary".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
                             value = convertDateFromExchange(value);
@@ -189,7 +193,7 @@ public class GraphExchangeSession extends ExchangeSession {
             JSONObject jsonContact = getContactIfExists(folderId, itemName);
             if (jsonContact != null) {
                 id = jsonContact.optString("id", null);
-                currentEtag = new GraphResponse(jsonContact).optString(Field.get("etag").getGraphId());
+                currentEtag = new GraphObject(jsonContact).optString("etag");
             }
 
             ItemResult itemResult = new ItemResult();
@@ -209,7 +213,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
             try {
                 JSONObject jsonObject = new JSONObject();
-                GraphResponse graphObject = new GraphResponse(jsonObject);
+                GraphObject graphObject = new GraphObject(jsonObject);
                 for (Map.Entry<String, String> entry : entrySet()) {
                     if ("keywords".equals(entry.getKey())) {
                         //getMultiValueExtendedProperties(jsonObject).put(getMultiValue("keywords", entry.getValue()));
@@ -290,7 +294,7 @@ public class GraphExchangeSession extends ExchangeSession {
                             .setJsonBody(jsonObject);
                 }
 
-                GraphResponse graphResponse = executeGraphRequest(graphRequestBuilder);
+                GraphObject graphResponse = executeGraphRequest(graphRequestBuilder);
 
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(graphResponse.toString(4));
@@ -301,10 +305,10 @@ public class GraphExchangeSession extends ExchangeSession {
                 updatePhoto(folderId, graphResponse.optString("id"));
 
                 // reload to get latest etag
-                graphResponse = new GraphResponse(getContactIfExists(folderId, itemName));
+                graphResponse = new GraphObject(getContactIfExists(folderId, itemName));
 
                 itemResult.itemName = graphResponse.optString("id");
-                itemResult.etag = graphResponse.optString(Field.get("etag").getGraphId());
+                itemResult.etag = graphResponse.optString("etag");
 
             } catch (JSONException e) {
                 throw new IOException(e);
@@ -579,15 +583,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public ExchangeSession.Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
-        byte[] mimeContent;
-        try (
-                ByteArrayOutputStream baos = new ByteArrayOutputStream()
-        ) {
-            mimeMessage.writeTo(baos);
-            mimeContent = IOUtil.encodeBase64(baos.toByteArray());
-        } catch (MessagingException e) {
-            throw new IOException(e.getMessage(), e);
-        }
+        byte[] mimeContent = IOUtil.encodeBase64(mimeMessage);
 
         // do we want created message to have draft flag?
         boolean isDraft = properties != null && "1".equals(properties.get("draft"));
@@ -1287,22 +1283,12 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
-        byte[] mimeContent;
-        try (
-                ByteArrayOutputStream baos = new ByteArrayOutputStream()
-        ) {
-            mimeMessage.writeTo(baos);
-            mimeContent = IOUtil.encodeBase64(baos.toByteArray());
-        } catch (MessagingException e) {
-            throw new IOException(e.getMessage(), e);
-        }
-
         // https://learn.microsoft.com/en-us/graph/api/user-sendmail
         executeJsonRequest(new GraphRequestBuilder()
                 .setMethod(HttpPost.METHOD_NAME)
                 .setObjectType("sendMail")
                 .setContentType("text/plain")
-                .setMimeContent(mimeContent));
+                .setMimeContent(IOUtil.encodeBase64(mimeMessage)));
 
     }
 
@@ -1326,9 +1312,6 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
-
-        // todo check missing folder
-        //throw new HttpNotFoundException("Folder " + folderPath + " not found");
 
         Folder folder = buildFolder(jsonResponse);
         folder.folderPath = folderPath;
@@ -1759,7 +1742,7 @@ public class GraphExchangeSession extends ExchangeSession {
         if ("IPF.Contact".equals(folderId.folderClass)) {
             JSONObject jsonResponse = getContactIfExists(folderId, itemName);
             if (jsonResponse != null) {
-                Contact contact = new Contact(new GraphResponse(jsonResponse));
+                Contact contact = new Contact(new GraphObject(jsonResponse));
                 contact.folderId = folderId;
                 return contact;
             } else {
@@ -1957,7 +1940,7 @@ public class GraphExchangeSession extends ExchangeSession {
         return jsonResponse;
     }
 
-    private GraphResponse executeGraphRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
+    private GraphObject executeGraphRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         // TODO handle throttling https://learn.microsoft.com/en-us/graph/throttling
         HttpRequestBase request = httpRequestBuilder
                 .setAccessToken(token.getAccessToken())
@@ -1965,17 +1948,17 @@ public class GraphExchangeSession extends ExchangeSession {
 
         // DEBUG only, disable gzip encoding
         //request.setHeader("Accept-Encoding", "");
-        GraphResponse graphResponse;
+        GraphObject graphObject;
         try (
                 CloseableHttpResponse response = httpClient.execute(request)
         ) {
             if (response.getStatusLine().getStatusCode() == 400) {
                 LOGGER.warn("Request returned " + response.getStatusLine());
             }
-            graphResponse = new GraphResponse(new JsonResponseHandler().handleResponse(response));
-            graphResponse.statusCode = response.getStatusLine().getStatusCode();
+            graphObject = new GraphObject(new JsonResponseHandler().handleResponse(response));
+            graphObject.statusCode = response.getStatusLine().getStatusCode();
         }
-        return graphResponse;
+        return graphObject;
     }
 
 }
