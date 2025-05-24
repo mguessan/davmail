@@ -30,11 +30,11 @@ import java.util.HashSet;
 /**
  * Wrapper for Graph API JsonObject
  */
-public class GraphResponse {
+public class GraphObject {
     protected final JSONObject jsonObject;
     protected int statusCode;
 
-    public GraphResponse(JSONObject jsonObject) {
+    public GraphObject(JSONObject jsonObject) {
         this.jsonObject = jsonObject;
     }
 
@@ -51,7 +51,7 @@ public class GraphResponse {
         }
         // try to fetch from expanded properties
         if (value == null) {
-            //key = Field.get(key).getGraphId(); TODO
+            key = Field.get(key).getGraphId();
             JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
             if (singleValueExtendedProperties != null) {
                 for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
