@@ -44,6 +44,8 @@ public class ExtendedFieldURI implements FieldURI {
     protected int propertyId;
     protected final PropertyType propertyType;
 
+    private String graphId;
+
     /**
      * Create extended field uri.
      *
@@ -91,6 +93,11 @@ public class ExtendedFieldURI implements FieldURI {
         this.distinguishedPropertySetId = distinguishedPropertySetId;
         this.propertyName = propertyName;
         this.propertyType = propertyType;
+    }
+
+    public ExtendedFieldURI(int intPropertyTag, PropertyType propertyType, String graphId) {
+        this(intPropertyTag, propertyType);
+        this.graphId = graphId;
     }
 
     public void appendTo(StringBuilder buffer) {
@@ -166,6 +173,9 @@ public class ExtendedFieldURI implements FieldURI {
 
     @Override
     public String getGraphId() {
+        if (graphId != null) {
+            return graphId;
+        }
         // PropertyId values may only be in one of the following formats:
         // 'MapiPropertyType namespaceGuid Name propertyName', 'MapiPropertyType namespaceGuid Id propertyId' or 'MapiPropertyType propertyTag'.
 
