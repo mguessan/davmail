@@ -87,4 +87,9 @@ public class IndexedFieldURI implements FieldURI {
         // TODO
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public boolean isBoolean() {
+        throw new UnsupportedOperationException();
+    }
 }

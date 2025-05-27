@@ -170,4 +170,9 @@ public class UnindexedFieldURI implements FieldURI {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public boolean isBoolean() {
+        throw new UnsupportedOperationException();
+    }
+
 }

@@ -20,6 +20,7 @@
 package davmail.exchange.graph;
 
 import davmail.exchange.ews.Field;
+import davmail.exchange.ews.FieldURI;
 import davmail.util.StringUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -71,11 +72,15 @@ public class GraphObject {
     }
 
     public void put(String alias, String value) throws JSONException {
-        String key = Field.get(alias).getGraphId();
+        FieldURI field = Field.get(alias);
+        String key = field.getGraphId();
         // assume all expanded properties have a space
         if (key.contains(" ")) {
-            if (Field.get(alias).isNumber() && value == null) {
+            if (field.isNumber() && value == null) {
                 value = "0";
+            }
+            if (field.isBoolean() && value == null) {
+                value = "false";
             }
             getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value));
         } else {

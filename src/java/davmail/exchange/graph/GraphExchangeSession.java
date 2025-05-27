@@ -128,10 +128,10 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
             }
             // TODO refactor
-            String keywords = response.optString("categories");
-            if (keywords != null) {
-                put("keywords", keywords);
-            }
+            //String keywords = response.optString("categories");
+            //if (keywords != null) {
+            //    put("keywords", keywords);
+            //}
 
             JSONArray emailAddresses = response.optJSONArray("emailAddresses");
             for (int i = 0; i < emailAddresses.length(); i++) {
@@ -139,12 +139,14 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (emailAddress != null) {
                     String email = emailAddress.optString("address");
                     String type = emailAddress.optString("type");
-                    if ("other".equals(type)) {
-                        put("smtpemail3", email);
-                    } else if ("personal".equals(type)) {
-                        put("smtpemail2", email);
-                    } else if ("work".equals(type)) {
-                        put("smtpemail1", email);
+                    if (email != null && !email.isEmpty()) {
+                        if ("other".equals(type)) {
+                            put("smtpemail3", email);
+                        } else if ("personal".equals(type)) {
+                            put("smtpemail2", email);
+                        } else if ("work".equals(type)) {
+                            put("smtpemail1", email);
+                        }
                     }
                 }
             }
@@ -154,13 +156,15 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (emailAddress != null) {
                     String email = emailAddress.optString("address");
                     String type = emailAddress.optString("type");
-                    if ("unknown".equals(type)) {
-                        if (get("smtpemail1") == null) {
-                            put("smtpemail1", email);
-                        } else if (get("smtpemail2") == null) {
-                            put("smtpemail2", email);
-                        } else if (get("smtpemail3") == null) {
-                            put("smtpemail3", email);
+                    if (email != null && !email.isEmpty()) {
+                        if ("unknown".equals(type)) {
+                            if (get("smtpemail1") == null) {
+                                put("smtpemail1", email);
+                            } else if (get("smtpemail2") == null) {
+                                put("smtpemail2", email);
+                            } else if (get("smtpemail3") == null) {
+                                put("smtpemail3", email);
+                            }
                         }
                     }
                 }

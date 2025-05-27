@@ -219,5 +219,10 @@ public class ExtendedFieldURI implements FieldURI {
         return propertyType == PropertyType.Short || propertyType == PropertyType.Integer || propertyType == PropertyType.Long || propertyType == PropertyType.Double;
     }
 
+    @Override
+    public boolean isBoolean() {
+        return propertyType == PropertyType.Boolean;
+    }
+
 }
 

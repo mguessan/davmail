@@ -55,4 +55,6 @@ public interface FieldURI {
     boolean isMultiValued();
 
     boolean isNumber();
+
+    boolean isBoolean();
 }
