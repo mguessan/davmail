@@ -28,6 +28,7 @@ import java.util.List;
 public class UnindexedFieldURI implements FieldURI {
     protected final String fieldURI;
     protected final String fieldName;
+    protected String graphId;
 
     /**
      * Create unindexed field URI.
@@ -42,6 +43,11 @@ public class UnindexedFieldURI implements FieldURI {
         } else {
             fieldName = fieldURI.substring(colonIndex + 1);
         }
+    }
+
+    public UnindexedFieldURI(String fieldURI, String graphId) {
+        this(fieldURI);
+        this.graphId = graphId;
     }
 
     public void appendTo(StringBuilder buffer) {
@@ -156,7 +162,11 @@ public class UnindexedFieldURI implements FieldURI {
 
     @Override
     public String getGraphId() {
-        return fieldName;
+        if (graphId != null) {
+            return graphId;
+        } else {
+            return fieldName;
+        }
     }
 
     @Override

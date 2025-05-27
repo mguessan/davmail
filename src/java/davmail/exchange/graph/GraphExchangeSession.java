@@ -220,16 +220,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 GraphObject graphObject = new GraphObject(jsonObject);
                 for (Map.Entry<String, String> entry : entrySet()) {
                     if ("keywords".equals(entry.getKey())) {
-                        //getMultiValueExtendedProperties(jsonObject).put(getMultiValue("keywords", entry.getValue()));
                         graphObject.setCategories(entry.getValue());
                     } else if ("bday".equals(entry.getKey())) {
-                        //getSingleValueExtendedProperties(jsonObject).put(getSingleValue(entry.getKey(), convertZuluToIso(entry.getValue())));
                         graphObject.put(entry.getKey(), convertZuluToIso(entry.getValue()));
                     } else if ("anniversary".equals(entry.getKey())) {
-                        //jsonObject.put("weddingAnniversary", convertZuluToDate(entry.getValue()));
-                        graphObject.put("anniversary", convertZuluToDate(entry.getValue()));
+                        graphObject.put(entry.getKey(), convertZuluToDate(entry.getValue()));
                     } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")
-                            && !"fileas".equals(entry.getKey()) // TODO
                             && !"usersmimecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"msexchangecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"pager".equals(entry.getKey()) && !"otherTelephone".equals(entry.getKey()) // see below

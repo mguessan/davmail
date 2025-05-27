@@ -110,7 +110,7 @@ public final class Field {
 
         FIELD_MAP.put("middlename", new ExtendedFieldURI(0x3A44, ExtendedFieldURI.PropertyType.String));
         //FIELD_MAP.put("fileas", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:fileas"));
-        FIELD_MAP.put("fileas", new UnindexedFieldURI("contacts:FileAs"));
+        FIELD_MAP.put("fileas", new UnindexedFieldURI("contacts:FileAs", "fileAs"));
 
         FIELD_MAP.put("members", new UnindexedFieldURI("distributionlist:Members"));
 
@@ -126,7 +126,7 @@ public final class Field {
         FIELD_MAP.put("extensionattribute3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8051, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("extensionattribute4", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8052, ExtendedFieldURI.PropertyType.String));
 
-        FIELD_MAP.put("bday", new ExtendedFieldURI(0x3A42, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("bday", new ExtendedFieldURI(0x3A42, ExtendedFieldURI.PropertyType.SystemTime, "birthday"));
         FIELD_MAP.put("anniversary", new ExtendedFieldURI(0x3A41, ExtendedFieldURI.PropertyType.SystemTime, "weddingAnniversary"));
         FIELD_MAP.put("businesshomepage", new ExtendedFieldURI(0x3A51, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("personalHomePage", new ExtendedFieldURI(0x3A50, ExtendedFieldURI.PropertyType.String));
