@@ -36,7 +36,6 @@ import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -44,9 +43,28 @@ import java.io.StringReader;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.SimpleTimeZone;
+import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.UUID;
 
 /**
  * Exchange session through Outlook Web Access (DAV)
@@ -691,7 +709,7 @@ public abstract class ExchangeSession {
         List<Folder> results = getSubFolders(folderName, folderCondition,
                 recursive);
         // need to include base folder in recursive search, except on root
-        if (recursive && folderName.length() > 0) {
+        if (recursive && !folderName.isEmpty()) {
             results.add(getFolder(folderName));
         }
 
@@ -2129,16 +2147,17 @@ public abstract class ExchangeSession {
                 bodyPart = mimeMessage;
             }
 
+
             if (bodyPart != null) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bodyPart.getDataHandler().writeTo(baos);
-                baos.close();
-                result = baos.toByteArray();
+                try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                    bodyPart.getDataHandler().writeTo(baos);
+                    result = baos.toByteArray();
+                }
             } else {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                mimeMessage.writeTo(baos);
-                baos.close();
-                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), StandardCharsets.UTF_8));
+                try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                    mimeMessage.writeTo(baos);
+                    throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), StandardCharsets.UTF_8));
+                }
             }
             return result;
         }
@@ -2205,21 +2224,12 @@ public abstract class ExchangeSession {
                         .append(after ? "-to" : "-from")
                         .append((after ^ fromServer) ? "-server" : "-client")
                         .append(".ics");
-                if ((icsBody != null) && (icsBody.length() > 0)) {
-                    OutputStreamWriter writer = null;
-                    try {
-                        writer = new OutputStreamWriter(new FileOutputStream(filePath.toString()), StandardCharsets.UTF_8);
+                if ((icsBody != null) && (!icsBody.isEmpty())) {
+                    try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(Paths.get(filePath.toString())), StandardCharsets.UTF_8))
+                    {
                         writer.write(icsBody);
                     } catch (IOException e) {
                         LOGGER.error(e);
-                    } finally {
-                        if (writer != null) {
-                            try {
-                                writer.close();
-                            } catch (IOException e) {
-                                LOGGER.error(e);
-                            }
-                        }
                     }
 
 
@@ -2292,7 +2302,7 @@ public abstract class ExchangeSession {
                 }
 
                 // do not send notification if no recipients found
-                if ((to == null || to.length() == 0) && (cc == null || cc.length() == 0)) {
+                if ((to == null || to.isEmpty()) && (cc == null || cc.isEmpty())) {
                     return null;
                 }
 
@@ -2340,7 +2350,7 @@ public abstract class ExchangeSession {
             writer.writeLn();
             writer.writeLn("------=_NextPart_" + boundary);
 
-            if (description != null && description.length() > 0) {
+            if (description != null && !description.isEmpty()) {
                 writer.writeHeader("Content-Type", "text/plain;\r\n" +
                         "\tcharset=\"utf-8\"");
                 writer.writeHeader("content-transfer-encoding", "8bit");
@@ -2816,8 +2826,8 @@ public abstract class ExchangeSession {
             // reset missing properties to null
             for (String key : CONTACT_ATTRIBUTES) {
                 if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
-                        && !"lastmodified".equals(key) && !"sensitivity".equals(key) &&
-                        !properties.containsKey(key)) {
+                        && !"lastmodified".equals(key) && !"sensitivity".equals(key)
+                        && !properties.containsKey(key)) {
                     properties.put(key, null);
                 }
             }
@@ -2847,7 +2857,7 @@ public abstract class ExchangeSession {
 
     protected String convertZuluDateToBday(String value) {
         String result = null;
-        if (value != null && value.length() > 0) {
+        if (value != null && !value.isEmpty()) {
             try {
                 SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
                 Calendar cal = Calendar.getInstance();
@@ -2863,7 +2873,7 @@ public abstract class ExchangeSession {
 
     protected String convertBDayToZulu(String value) {
         String result = null;
-        if (value != null && value.length() > 0) {
+        if (value != null && !value.isEmpty()) {
             try {
                 SimpleDateFormat parser;
                 if (value.length() == 10) {
@@ -3153,7 +3163,7 @@ public abstract class ExchangeSession {
 
         FreeBusy(SimpleDateFormat icalParser, Date startDate, String fbdata) {
             this.icalParser = icalParser;
-            if (fbdata.length() > 0) {
+            if (!fbdata.isEmpty()) {
                 Calendar currentCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
                 currentCal.setTime(startDate);
 
