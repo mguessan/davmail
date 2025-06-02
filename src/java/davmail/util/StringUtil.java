@@ -412,6 +412,15 @@ public final class StringUtil {
      * @return escaped value
      */
     public static String davSearchEncode(String value) {
+        return escapeQuotes(value);
+    }
+
+    /**
+     * Escape quotes for DAV and graph filters.
+     * @param value input value
+     * @return quoted result
+     */
+    public static String escapeQuotes(String value) {
         String result = value;
         if (result.indexOf('\'') >= 0) {
             result = APOS_PATTERN.matcher(result).replaceAll("''");

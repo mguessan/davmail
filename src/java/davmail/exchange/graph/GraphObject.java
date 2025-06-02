@@ -53,14 +53,19 @@ public class GraphObject {
         // try to fetch from expanded properties
         if (value == null) {
             key = Field.get(key).getGraphId();
-            JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
-            if (singleValueExtendedProperties != null) {
-                for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
-                    JSONObject singleValueObject = singleValueExtendedProperties.optJSONObject(i);
-                    if (singleValueObject != null && key.equals(singleValueObject.optString("id"))) {
-                        value = singleValueObject.optString("value");
-                    }
+            // remapped attributes first
+            value = jsonObject.optString(key, null);
+            // check expanded properties
+            if (value == null) {
+                JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
+                if (singleValueExtendedProperties != null) {
+                    for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
+                        JSONObject singleValueObject = singleValueExtendedProperties.optJSONObject(i);
+                        if (singleValueObject != null && key.equals(singleValueObject.optString("id"))) {
+                            value = singleValueObject.optString("value");
+                        }
 
+                    }
                 }
             }
         }
@@ -80,8 +85,19 @@ public class GraphObject {
                 value = "0";
             }
             if (field.isBoolean() && value == null) {
-                value = "false";
+                //value = "false";
             }
+            getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value == null?JSONObject.NULL:value));
+        } else {
+            jsonObject.put(key, value == null?JSONObject.NULL:value);
+        }
+    }
+
+    public void put(String alias, boolean value) throws JSONException {
+        FieldURI field = Field.get(alias);
+        String key = field.getGraphId();
+        // assume all expanded properties have a space
+        if (key.contains(" ")) {
             getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value));
         } else {
             jsonObject.put(key, value);
@@ -123,5 +139,12 @@ public class GraphObject {
     }
 
 
+    public String getString(String key) throws JSONException {
+        String value = optString(key);
+        if (value == null) {
+            throw new JSONException("JSONObject[" + key + "] not found.");
+        }
+        return value;
+    }
 }
 

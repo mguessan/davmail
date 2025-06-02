@@ -47,7 +47,6 @@ import org.codehaus.jettison.json.JSONObject;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -225,11 +224,13 @@ public class GraphExchangeSession extends ExchangeSession {
                         graphObject.put(entry.getKey(), convertZuluToIso(entry.getValue()));
                     } else if ("anniversary".equals(entry.getKey())) {
                         graphObject.put(entry.getKey(), convertZuluToDate(entry.getValue()));
+                    } else if ("photo".equals(entry.getKey())) {
+                        //
+                        graphObject.put("haspicture", (get("photo") != null) ? "true" : "false");
                     } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")
                             && !"usersmimecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"msexchangecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"pager".equals(entry.getKey()) && !"otherTelephone".equals(entry.getKey()) // see below
-                            && !"photo".equals(entry.getKey())
                     ) {
                         //getSingleValueExtendedProperties(jsonObject).put(getSingleValue(entry.getKey(), entry.getValue()));
                         graphObject.put(entry.getKey(), entry.getValue());
@@ -342,6 +343,15 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(jsonResponse);
                 }
+            } else {
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpDelete.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("contactFolders")
+                        .setObjectId(folderId.id)
+                        .setChildType("contacts")
+                        .setChildId(contactId)
+                        .setChildSuffix("photo"));
             }
         }
     }
@@ -593,28 +603,28 @@ public class GraphExchangeSession extends ExchangeSession {
         FolderId folderId = getFolderId(folderPath);
 
         // create message in default drafts folder first
-        JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+        GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder()
                 .setMethod(HttpPost.METHOD_NAME)
                 .setContentType("text/plain")
                 .setMimeContent(mimeContent)
                 .setChildType("messages"));
         if (isDraft) {
             try {
-                jsonResponse = executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
+                graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("messages")
-                        .setObjectId(jsonResponse.optString("id"))
+                        .setObjectId(graphResponse.optString("id"))
                         .setChildType("move")
                         .setJsonBody(new JSONObject().put("destinationId", folderId.id)));
 
                 // we have the message in the right folder, apply flags
-                applyMessageProperties(jsonResponse, properties);
-                jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                applyMessageProperties(graphResponse, properties);
+                graphResponse = executeGraphRequest(new GraphRequestBuilder()
                         .setMethod(HttpPatch.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("messages")
-                        .setObjectId(jsonResponse.optString("id"))
-                        .setJsonBody(jsonResponse));
+                        .setObjectId(graphResponse.optString("id"))
+                        .setJsonBody(graphResponse.jsonObject));
             } catch (JSONException e) {
                 throw new IOException(e);
             }
@@ -622,23 +632,23 @@ public class GraphExchangeSession extends ExchangeSession {
             String draftMessageId = null;
             try {
                 // save draft message id
-                draftMessageId = jsonResponse.getString("id");
+                draftMessageId = graphResponse.getString("id");
 
                 // unset draft flag on returned draft message properties
                 // TODO handle other message flags
-                jsonResponse.put("singleValueExtendedProperties",
+                graphResponse.put("singleValueExtendedProperties",
                         new JSONArray().put(new JSONObject()
                                 .put("id", Field.get("messageFlags").getGraphId())
                                 .put("value", "4")));
-                applyMessageProperties(jsonResponse, properties);
+                applyMessageProperties(graphResponse, properties);
 
                 // now use this to recreate message in the right folder
-                jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                graphResponse = executeGraphRequest(new GraphRequestBuilder()
                         .setMethod(HttpPost.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("mailFolders")
                         .setObjectId(folderId.id)
-                        .setJsonBody(jsonResponse)
+                        .setJsonBody(graphResponse.jsonObject)
                         .setChildType("messages"));
 
             } catch (JSONException e) {
@@ -658,87 +668,41 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setMethod(HttpGet.METHOD_NAME)
                 .setObjectType("messages")
                 .setMailbox(folderId.mailbox)
-                .setObjectId(jsonResponse.optString("id"))
+                .setObjectId(graphResponse.optString("id"))
                 .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)));
     }
 
-    private void applyMessageProperties(JSONObject jsonResponse, Map<String, String> properties) throws JSONException {
+    private void applyMessageProperties(GraphObject graphResponse, Map<String, String> properties) throws JSONException {
         if (properties != null) {
             for (Map.Entry<String, String> entry : properties.entrySet()) {
+                // TODO
                 if ("read".equals(entry.getKey())) {
-                    jsonResponse.put("isRead", "1".equals(entry.getValue()));
+                    graphResponse.put(entry.getKey(), "1".equals(entry.getValue()));
                 } else if ("junk".equals(entry.getKey())) {
-                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("junk", entry.getValue()));
+                    graphResponse.put(entry.getKey(), entry.getValue());
                 } else if ("flagged".equals(entry.getKey())) {
-                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("flagStatus", entry.getValue()));
+                    graphResponse.put("flagStatus", entry.getValue());
                 } else if ("answered".equals(entry.getKey())) {
-                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("lastVerbExecuted", entry.getValue()));
+                    graphResponse.put("lastVerbExecuted", entry.getValue());
                     if ("102".equals(entry.getValue())) {
-                        getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("iconIndex", "261"));
+                        graphResponse.put("iconIndex", "261");
                     }
                 } else if ("forwarded".equals(entry.getKey())) {
-                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("lastVerbExecuted", entry.getValue()));
+                    graphResponse.put("lastVerbExecuted", entry.getValue());
                     if ("104".equals(entry.getValue())) {
-                        getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("iconIndex", "262"));
+                        graphResponse.put("iconIndex", "262");
                     }
                 } else if ("deleted".equals(entry.getKey())) {
-                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("deleted", entry.getValue()));
+                    graphResponse.put(entry.getKey(), entry.getValue());
                 } else if ("datereceived".equals(entry.getKey())) {
-                    getSingleValueExtendedProperties(jsonResponse).put(getSingleValue("datereceived", entry.getValue()));
+                    graphResponse.put(entry.getKey(), entry.getValue());
                 } else if ("keywords".equals(entry.getKey())) {
-                    getMultiValueExtendedProperties(jsonResponse).put(getMultiValue("keywords", entry.getValue()));
+                    graphResponse.setCategories(entry.getValue());
                 }
             }
         }
     }
 
-    private JSONArray getSingleValueExtendedProperties(JSONObject jsonResponse) throws JSONException {
-        JSONArray singleValueExtendedProperties = jsonResponse.optJSONArray("singleValueExtendedProperties");
-        if (singleValueExtendedProperties == null) {
-            singleValueExtendedProperties = new JSONArray();
-            jsonResponse.put("singleValueExtendedProperties", singleValueExtendedProperties);
-        }
-        return singleValueExtendedProperties;
-    }
-
-    private JSONArray getMultiValueExtendedProperties(JSONObject jsonResponse) throws JSONException {
-        JSONArray multiValueExtendedProperties = jsonResponse.optJSONArray("multiValueExtendedProperties");
-        if (multiValueExtendedProperties == null) {
-            multiValueExtendedProperties = new JSONArray();
-            jsonResponse.put("multiValueExtendedProperties", multiValueExtendedProperties);
-        }
-        return multiValueExtendedProperties;
-    }
-
-
-    private JSONObject getSingleValue(String fieldName, String value) throws JSONException {
-        String graphName = Field.get(fieldName).getGraphId();
-        FieldURI field = Field.get(fieldName);
-        if (field.isNumber() && value == null) {
-            value = "0";
-        }
-        return new JSONObject()
-                .put("id", graphName)
-                .put("value", value);
-    }
-
-    private JSONObject getSingleValue(String fieldName, boolean value) throws JSONException {
-        return new JSONObject()
-                .put("id", Field.get(fieldName).getGraphId())
-                .put("value", value);
-    }
-
-    private JSONObject getMultiValue(String fieldName, String value) throws JSONException {
-        // split value
-        String[] values = value.split(",");
-        JSONArray jsonValues = new JSONArray();
-        for (String singleValue : values) {
-            jsonValues.put(singleValue);
-        }
-        return new JSONObject()
-                .put("id", Field.get(fieldName).getGraphId())
-                .put("value", jsonValues);
-    }
 
     protected Message getMessageById(String folderPath, String id) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
@@ -930,15 +894,19 @@ public class GraphExchangeSession extends ExchangeSession {
         if (exchangeDateValue == null) {
             return null;
         } else {
-            if (exchangeDateValue.length() != 20) {
-                throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
-            }
             StringBuilder buffer = new StringBuilder();
-            for (int i = 0; i < exchangeDateValue.length(); i++) {
-                if (i == 4 || i == 7 || i == 13 || i == 16) {
-                    i++;
+            if (exchangeDateValue.length() == 20 || exchangeDateValue.length() == 10) {
+                for (int i = 0; i < exchangeDateValue.length(); i++) {
+                    if (i == 4 || i == 7 || i == 13 || i == 16) {
+                        i++;
+                    }
+                    buffer.append(exchangeDateValue.charAt(i));
                 }
-                buffer.append(exchangeDateValue.charAt(i));
+                if (exchangeDateValue.length() == 10) {
+                    buffer.append("T000000Z");
+                }
+            } else {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
             }
             return buffer.toString();
         }
@@ -947,15 +915,15 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
         try {
-            JSONObject jsonObject = new JSONObject();
+            GraphObject graphObject = new GraphObject(new JSONObject());
             // we have the message in the right folder, apply flags
-            applyMessageProperties(jsonObject, properties);
+            applyMessageProperties(graphObject, properties);
             executeJsonRequest(new GraphRequestBuilder()
                     .setMethod(HttpPatch.METHOD_NAME)
                     .setMailbox(((Message) message).folderId.mailbox)
                     .setObjectType("messages")
                     .setObjectId(((Message) message).id)
-                    .setJsonBody(jsonObject));
+                    .setJsonBody(graphObject.jsonObject));
         } catch (JSONException e) {
             throw new IOException(e);
         }
@@ -1077,16 +1045,16 @@ public class GraphExchangeSession extends ExchangeSession {
             if ("String {00020386-0000-0000-c000-000000000046} Name to".equals(fieldURI.getGraphId())) {
                 // TODO: does not work need to switch to search instead of filter
                 buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq 'String {00020386-0000-0000-c000-000000000046} Name to' and contains(ep/value,'")
-                        .append(StringUtil.davSearchEncode(value)).append("'))");
+                        .append(StringUtil.escapeQuotes(value)).append("'))");
             } else if (Operator.StartsWith.equals(operator)) {
-                buffer.append("startswith(").append(getFieldURI().getGraphId()).append(",'").append(StringUtil.davSearchEncode(value)).append("')");
+                buffer.append("startswith(").append(getFieldURI().getGraphId()).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (Operator.Contains.equals(operator)) {
-                buffer.append("contains(").append(getFieldURI().getGraphId()).append(",'").append(StringUtil.davSearchEncode(value)).append("')");
+                buffer.append("contains(").append(getFieldURI().getGraphId()).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (fieldURI instanceof ExtendedFieldURI) {
                 buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(getFieldURI().getGraphId())
-                        .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.davSearchEncode(value)).append("')");
+                        .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
             } else {
-                buffer.append(getFieldURI().getGraphId()).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.davSearchEncode(value)).append("'");
+                buffer.append(getFieldURI().getGraphId()).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
             }
         }
 
@@ -1497,7 +1465,7 @@ public class GraphExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected FolderId getSubFolderByName(FolderId currentFolderId, String folderName) throws IOException {
-        // TODO rename davSearchEncode
+        // TODO rename escapeQuotes
         GraphRequestBuilder httpRequestBuilder;
         if ("IPF.Appointment".equals(currentFolderId.folderClass)) {
             httpRequestBuilder = new GraphRequestBuilder()
@@ -1505,7 +1473,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType("calendars")
                     .setExpandFields(FOLDER_PROPERTIES)
-                    .setFilter("name eq '" + StringUtil.davSearchEncode(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+                    .setFilter("name eq '" + StringUtil.escapeQuotes(EwsExchangeSession.decodeFolderName(folderName)) + "'");
         } else {
             String objectType = "mailFolders";
             if ("IPF.Contact".equals(currentFolderId.folderClass)) {
@@ -1518,7 +1486,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectId(currentFolderId.id)
                     .setChildType("childFolders")
                     .setExpandFields(FOLDER_PROPERTIES)
-                    .setFilter("displayName eq '" + StringUtil.davSearchEncode(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+                    .setFilter("displayName eq '" + StringUtil.escapeQuotes(EwsExchangeSession.decodeFolderName(folderName)) + "'");
         }
 
         JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
@@ -1717,7 +1685,33 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
-        return null;
+        ArrayList<ExchangeSession.Contact> contactList = new ArrayList<>();
+        FolderId folderId = getFolderId(folderPath);
+
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(folderId.mailbox)
+                .setObjectType("contactFolders")
+                .setObjectId(folderId.id)
+                .setChildType("contacts")
+                .setExpandFields(CONTACT_ATTRIBUTES);
+        LOGGER.debug("searchContacts " + folderId.mailbox + " " + folderPath);
+        if (condition != null && !condition.isEmpty()) {
+            StringBuilder filter = new StringBuilder();
+            condition.appendTo(filter);
+            LOGGER.debug("search filter " + filter);
+            httpRequestBuilder.setFilter(filter.toString());
+        }
+
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+
+        while (graphIterator.hasNext()) {
+            Contact contact = new Contact(new GraphObject(graphIterator.next()));
+            contact.folderId = folderId;
+            contactList.add(contact);
+        }
+
+        return contactList;
     }
 
     @Override
@@ -1755,7 +1749,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     private JSONObject getContactIfExists(FolderId folderId, String itemName) throws IOException {
         // TODO: build with AttributeCondition
-        String filter = "singleValueExtendedProperties/Any(ep: ep/id eq '" + Field.get("urlcompname").getGraphId() + "' and ep/value eq '" + convertItemNameToEML(itemName) + "')";
+        String filter = "singleValueExtendedProperties/Any(ep: ep/id eq '" + Field.get("urlcompname").getGraphId() + "' and ep/value eq '" + convertItemNameToEML(StringUtil.escapeQuotes(itemName)) + "')";
         JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(folderId.mailbox)
