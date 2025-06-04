@@ -19,11 +19,13 @@
 
 package davmail.exchange.graph;
 
+import davmail.exception.HttpForbiddenException;
 import davmail.http.HttpClientAdapter;
 import davmail.util.IOUtil;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.ResponseHandler;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -70,6 +72,9 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
             }
             if (errorMessage == null) {
                 errorMessage = response.getStatusLine().getReasonPhrase();
+            }
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_FORBIDDEN) {
+                throw new HttpForbiddenException(errorMessage);
             }
             throw new IOException(errorMessage);
         }

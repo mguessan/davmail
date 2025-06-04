@@ -33,7 +33,7 @@ public class ExtendedFieldURI implements FieldURI {
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    protected enum DistinguishedPropertySetType {
+    public enum DistinguishedPropertySetType {
         Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task
     }
 

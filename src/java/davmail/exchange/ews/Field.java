@@ -66,7 +66,7 @@ public final class Field {
         FIELD_MAP.put("imapUid", new ExtendedFieldURI(0x0e23, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("flagStatus", new ExtendedFieldURI(0x1090, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("lastVerbExecuted", new ExtendedFieldURI(0x1081, ExtendedFieldURI.PropertyType.Integer));
-        FIELD_MAP.put("read", new UnindexedFieldURI("message:IsRead"));
+        FIELD_MAP.put("read", new UnindexedFieldURI("message:IsRead", "isRead"));
         FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x0e08, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("date", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));
         // always empty on Exchange 2007
@@ -182,7 +182,7 @@ public final class Field {
         FIELD_MAP.put("street", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8045, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("telephoneNumber", new ExtendedFieldURI(0x3A08, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("title", new ExtendedFieldURI(0x3A17, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String, "personalNotes"));
         FIELD_MAP.put("im", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8062, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("othermobile", new ExtendedFieldURI(0x3A1E, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("internationalisdnnumber", new ExtendedFieldURI(0x3A2D, ExtendedFieldURI.PropertyType.String));

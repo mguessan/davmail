@@ -20,14 +20,18 @@
 package davmail.exchange.graph;
 
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.VObject;
 import davmail.exchange.auth.O365Token;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
+import davmail.exchange.ews.SearchExpression;
 import davmail.http.HttpClientAdapter;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
@@ -61,7 +65,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.NoSuchElementException;
+import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
@@ -1064,6 +1070,63 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
+    protected static class HeaderCondition extends AttributeCondition {
+
+        protected HeaderCondition(String attributeName, String value) {
+            super(attributeName, Operator.Contains, value);
+        }
+
+        @Override
+        protected FieldURI getFieldURI() {
+            return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, attributeName);
+        }
+    }
+
+    protected static class IsNullCondition implements ExchangeSession.Condition, SearchExpression {
+        protected final String attributeName;
+
+        protected IsNullCondition(String attributeName) {
+            this.attributeName = attributeName;
+        }
+
+        public void appendTo(StringBuilder buffer) {
+            buffer.append(Field.get(attributeName).getGraphId()).append(" eq null");
+        }
+
+        public boolean isEmpty() {
+            return false;
+        }
+
+        public boolean isMatch(ExchangeSession.Contact contact) {
+            String actualValue = contact.get(attributeName);
+            return actualValue == null;
+        }
+
+    }
+
+    protected static class ExistsCondition implements ExchangeSession.Condition, SearchExpression {
+        protected final String attributeName;
+
+        protected ExistsCondition(String attributeName) {
+            this.attributeName = attributeName;
+        }
+
+        public void appendTo(StringBuilder buffer) {
+            buffer.append(Field.get(attributeName).getGraphId()).append(" ne null");
+        }
+
+        public boolean isEmpty() {
+            return false;
+        }
+
+        public boolean isMatch(ExchangeSession.Contact contact) {
+            String actualValue = contact.get(attributeName);
+            return actualValue == null;
+        }
+
+    }
+
+
     static class MultiCondition extends ExchangeSession.MultiCondition {
 
         protected MultiCondition(Operator operator, Condition... conditions) {
@@ -1129,32 +1192,32 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public Condition isEqualTo(String attributeName, int value) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, String.valueOf(value));
     }
 
     @Override
     public Condition headerIsEqualTo(String headerName, String value) {
-        return null;
+        return new HeaderCondition(headerName, value);
     }
 
     @Override
     public Condition gte(String attributeName, String value) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.IsGreaterThanOrEqualTo, value);
     }
 
     @Override
     public Condition gt(String attributeName, String value) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.IsGreaterThan, value);
     }
 
     @Override
     public Condition lt(String attributeName, String value) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.IsLessThan, value);
     }
 
     @Override
     public Condition lte(String attributeName, String value) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.IsLessThanOrEqualTo, value);
     }
 
     @Override
@@ -1169,22 +1232,22 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public Condition isNull(String attributeName) {
-        return new AttributeCondition(attributeName, Operator.IsEqualTo, "null");
+        return new IsNullCondition(attributeName);
     }
 
     @Override
     public Condition exists(String attributeName) {
-        return null;
+        return new ExistsCondition(attributeName);
     }
 
     @Override
     public Condition isTrue(String attributeName) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, "true");
     }
 
     @Override
     public Condition isFalse(String attributeName) {
-        return null;
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, "false");
     }
 
     @Override
@@ -1843,12 +1906,40 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     protected String getFreeBusyData(String attendee, String start, String end, int interval) throws IOException {
+        // https://learn.microsoft.com/en-us/graph/outlook-get-free-busy-schedule
+        // POST /me/calendar/getschedule
         return null;
     }
 
     @Override
     protected void loadVtimezone() {
+        try {
+            // default from Davmail settings
+            String timezoneId = Settings.getProperty("davmail.timezoneId", null);
+            // use timezone from mailbox
+            if (timezoneId == null) {
+                try {
+                    timezoneId = getMailboxSettings().optString("timeZone", null);
+                } catch (HttpForbiddenException e) {
+                    LOGGER.warn("token does not grant MailboxSettings.Read");
+                }
+            }
+            // last failover: use GMT
+            if (timezoneId == null) {
+                LOGGER.warn("Unable to get user timezone, using GMT Standard Time. Set davmail.timezoneId setting to override this.");
+                timezoneId = "GMT Standard Time";
+            }
+            this.vTimezone = new VObject(ResourceBundle.getBundle("vtimezones").getString(timezoneId));
 
+        } catch (IOException | MissingResourceException e) {
+            LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
+        }
+    }
+
+    private JSONObject getMailboxSettings() throws IOException {
+        return executeJsonRequest(new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setObjectType("mailboxSettings"));
     }
 
     class GraphIterator {
