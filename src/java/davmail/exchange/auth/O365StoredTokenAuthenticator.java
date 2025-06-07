@@ -67,24 +67,10 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
         // company tenantId or common
         String tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
-        String refreshToken = Settings.getProperty("davmail.oauth."+username.toLowerCase()+".refreshToken");
-        if (refreshToken == null) {
-            // single user mode
-            refreshToken = Settings.getProperty("davmail.oauth.refreshToken");
-        }
-        String accessToken = Settings.getProperty("davmail.oauth.accessToken");
-        if (refreshToken == null && accessToken == null) {
-            LOGGER.warn("No stored Oauth refresh token found for "+username);
-            throw new IOException("No stored Oauth refresh token found for "+username);
-        }
-
-        token = new O365Token(tenantId, clientId, redirectUri, password);
-        if (accessToken != null) {
-            // for tests only: load access token, will expire in at most one hour
-            token.setAccessToken(accessToken);
-        } else {
-            token.setRefreshToken(refreshToken);
-            token.refreshToken();
+        // first try to load stored token
+        token = O365Token.load(tenantId, clientId, redirectUri, username, password);
+        if (token == null) {
+            throw new IOException("No valid refresh token found for "+username);
         }
     }
 
