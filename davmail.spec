@@ -77,7 +77,7 @@ Requires: jre >= 1.8.0
 Requires: eclipse-swt
 %endif
 
-Source0: %{name}-src-%{version}.tgz
+Source0: https://downloads.sourceforge.net/project/%{name}/%{name}/%{version}/%{name}-src-%{version}-3627.tgz
 
 %description
 A POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
