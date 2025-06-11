@@ -19,6 +19,8 @@
 
 package davmail.util;
 
+import davmail.Settings;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -26,27 +28,17 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PBEParameterSpec;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
 /**
- * Encrypt string with user password.
+ * Encrypt string using user password.
  * Simple implementation based on AES
  */
 public class StringEncryptor {
     static final String ALGO = "PBEWithHmacSHA256AndAES_128";
     static final String DEFAULT_FINGERPRINT = "davmailgateway!&";
-    static String fingerprint;
-
-    static {
-        try {
-            fingerprint = (InetAddress.getLocalHost().getHostName()+DEFAULT_FINGERPRINT).substring(0, 16);
-        } catch (Throwable t) {
-            fingerprint = DEFAULT_FINGERPRINT;
-        }
-    }
 
     private final String password;
 
@@ -95,7 +87,7 @@ public class StringEncryptor {
     }
 
     private PBEParameterSpec getPBEParameterSpec() {
-        byte[] bytes = fingerprint.getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = Settings.getProperty("davmail.oauth.fingerprint", DEFAULT_FINGERPRINT).getBytes(StandardCharsets.UTF_8);
         return new PBEParameterSpec(bytes, 10000, new IvParameterSpec(bytes));
     }
 }
