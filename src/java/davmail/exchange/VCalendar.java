@@ -931,4 +931,39 @@ public class VCalendar extends VObject {
         }
         return zuluDateValue;
     }
+
+    /**
+     * Convert date format, keep timezone.
+     * @param vcalendarDateValue input date in ics format
+     * @param tzid ics timezone id
+     * @return converted date
+     * @throws IOException on error
+     */
+    public String convertCalendarDateToGraph(String vcalendarDateValue, String tzid) throws IOException {
+        String graphDateValue = null;
+        TimeZone timeZone;
+        if (tzid == null) {
+            timeZone = ExchangeSession.GMT_TIMEZONE;
+        } else {
+            timeZone = getStandardTimezoneId(tzid);
+        }
+        if (vcalendarDateValue != null) {
+            try {
+                SimpleDateFormat dateParser;
+                if (vcalendarDateValue.length() == 8) {
+                    dateParser = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+                } else {
+                    dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+                }
+                dateParser.setTimeZone(timeZone);
+                SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
+                dateFormatter.setTimeZone(timeZone);
+                graphDateValue = dateFormatter.format(dateParser.parse(vcalendarDateValue));
+            } catch (ParseException e) {
+                throw new IOException("Invalid date " + vcalendarDateValue + " with tzid " + tzid);
+            }
+        }
+        return graphDateValue;
+    }
+
 }
