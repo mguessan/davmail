@@ -206,7 +206,7 @@ public abstract class ExchangeSession {
     /**
      * Test if the session expired.
      *
-     * @return true this session expired
+     * @return true if this session expired
      * @throws NoRouteToHostException on error
      * @throws UnknownHostException   on error
      */
@@ -226,7 +226,7 @@ public abstract class ExchangeSession {
     protected abstract void buildSessionInfo(java.net.URI uri) throws IOException;
 
     /**
-     * Create message in specified folder.
+     * Create a message in specified folder.
      * Will overwrite an existing message with same subject in the same folder
      *
      * @param folderPath  Exchange folder path
@@ -1694,7 +1694,7 @@ public abstract class ExchangeSession {
          */
         @Override
         public int hashCode() {
-            return (int) (imapUid ^ (imapUid >>> 32));
+            return Long.hashCode(imapUid);
         }
 
         public String removeFlag(String flag) {
@@ -3135,12 +3135,7 @@ public abstract class ExchangeSession {
 
         StringBuilder getBusyBuffer(char type) {
             String fbType = FBTYPES.get(type);
-            StringBuilder buffer = busyMap.get(fbType);
-            if (buffer == null) {
-                buffer = new StringBuilder();
-                busyMap.put(fbType, buffer);
-            }
-            return buffer;
+            return busyMap.computeIfAbsent(fbType, k -> new StringBuilder());
         }
 
         void startBusy(char type, Calendar currentCal) {
@@ -3183,7 +3178,7 @@ public abstract class ExchangeSession {
         }
 
         /**
-         * Append freebusy information to buffer.
+         * Append freebusy information to provided buffer.
          *
          * @param buffer String buffer
          */
