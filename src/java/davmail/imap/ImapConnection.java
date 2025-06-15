@@ -30,7 +30,6 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exception.InsufficientStorageException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.exchange.FolderLoadThread;
 import davmail.exchange.MessageCreateThread;
 import davmail.exchange.MessageLoadThread;
 import davmail.ui.tray.DavGatewayTray;
@@ -60,7 +59,23 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.NoSuchElementException;
+import java.util.Stack;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Dav Gateway IMAP connection implementation.
@@ -245,18 +260,8 @@ public class ImapConnection extends AbstractConnection {
                                         }
                                         try {
                                             currentFolder = session.getFolder(folderName);
-                                            if (currentFolder.count() <= 500) {
-                                                // simple folder load
-                                                currentFolder.loadMessages();
-                                                sendClient("* " + currentFolder.count() + " EXISTS");
-                                            } else {
-                                                // load folder in a separate thread
-                                                LOGGER.debug("*");
-                                                os.write('*');
-                                                FolderLoadThread.loadFolder(currentFolder, os);
-                                                sendClient(" " + currentFolder.count() + " EXISTS");
-                                            }
-
+                                            loadFolder(currentFolder);
+                                            sendClient("* " + currentFolder.count() + " EXISTS");
                                             sendClient("* " + currentFolder.recent + " RECENT");
                                             sendClient("* OK [UIDVALIDITY 1]");
                                             if (currentFolder.count() == 0) {
@@ -623,16 +628,7 @@ public class ImapConnection extends AbstractConnection {
                                         ExchangeSession.Folder folder = session.getFolder(folderName);
                                         // must retrieve messages
 
-                                        // use folder.loadMessages() for small folders only
-                                        LOGGER.debug("*");
-                                        os.write('*');
-                                        if (folder.count() <= 500) {
-                                            // simple folder load
-                                            folder.loadMessages();
-                                        } else {
-                                            // load folder in a separate thread
-                                            FolderLoadThread.loadFolder(folder, os);
-                                        }
+                                        loadFolder(folder);
 
                                         String parameters = tokens.nextToken();
                                         StringBuilder answer = new StringBuilder();
@@ -664,7 +660,7 @@ public class ImapConnection extends AbstractConnection {
                                                 answer.append("UNSEEN ").append(folder.unreadCount).append(' ');
                                             }
                                         }
-                                        sendClient(" STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
+                                        sendClient("* STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
                                         sendClient(commandId + " OK " + command + " completed");
                                     } catch (HttpResponseException e) {
                                         sendClient(commandId + " NO folder not found");
@@ -806,6 +802,44 @@ public class ImapConnection extends AbstractConnection {
 
         sendClient("* " + currentFolder.count() + " EXISTS");
         sendClient("* " + currentFolder.recent + " RECENT");
+    }
+
+    static private class KeepAlive {
+        private ScheduledExecutorService scheduler;
+        private ScheduledFuture<?> task;
+
+        public KeepAlive(Runnable cb) {
+            scheduler = Executors.newScheduledThreadPool(1, r -> new Thread(r, currentThread().getName() + "-KeepAlive"));
+            task = scheduler.scheduleAtFixedRate(cb, 20, 20, TimeUnit.SECONDS);
+        }
+
+        public void cancel() {
+            task.cancel(true);
+            scheduler.shutdown();
+        }
+    }
+
+    private void loadFolder(ExchangeSession.Folder folder) throws IOException {
+        final boolean enable = Settings.getBooleanProperty("davmail.enableKeepAlive", false);
+        KeepAlive keepAlive = null;
+
+        if (enable && (folder.count() > 500)) {
+            Runnable progressNotifier = () -> {
+                try {
+                    sendClient("* OK in progress");
+                } catch (IOException ignored) {
+                }
+            };
+            keepAlive = new KeepAlive(progressNotifier);
+        }
+
+        try {
+            folder.loadMessages();
+        } finally {
+            if (keepAlive != null) {
+                keepAlive.cancel();
+            }
+        }
     }
 
     static protected class MessageWrapper {
