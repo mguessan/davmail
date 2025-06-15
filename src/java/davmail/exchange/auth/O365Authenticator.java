@@ -291,7 +291,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
     }
 
     private void checkConfigErrors(JSONObject config) throws DavMailAuthenticationException {
-        if (config.optString("strServiceExceptionMessage") != null) {
+        if (config.optString("strServiceExceptionMessage", null) != null) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_REASON", config.optString("strServiceExceptionMessage"));
         }
     }
