@@ -5,7 +5,7 @@ services:
     davmail:
         container_name: davmail
         hostname: davmail
-        image: davmail
+        image: ghcr.io/mguessan/davmail:stable
         restart: unless-stopped
         ports:
             - 127.0.0.1:1025:1025 # SMTP

@@ -2,7 +2,7 @@ services:
     davmail:
         container_name: davmail
         hostname: davmail
-        image: davmail
+        image: ghcr.io/mguessan/davmail:stable
         restart: unless-stopped
         volumes:
             - ./config:/config
