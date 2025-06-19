@@ -1,0 +1,14 @@
+# If you want to run this on your server (headless) but still login into interactive provides, see src/contribs/docker/headless.md
+# If you want to setup SSL certificates see src/contribs/docker/SSL.md
+
+services:
+    davmail:
+        container_name: davmail
+        hostname: davmail
+        image: davmail
+        restart: unless-stopped
+        ports:
+            - 127.0.0.1:1025:1025 # SMTP
+            - 127.0.0.1:1143:1143 # IMAP
+        volumes:
+            - ./config:/config

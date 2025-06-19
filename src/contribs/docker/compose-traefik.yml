@@ -1,0 +1,26 @@
+services:
+    davmail:
+        container_name: davmail
+        hostname: davmail
+        image: davmail
+        restart: unless-stopped
+        volumes:
+            - ./config:/config
+        labels:
+            - traefik.enable=true
+            # Used for SSl cert
+            - traefik.http.routers.davmail.rule=Host(`davmail.${DOMAIN}`)
+            - traefik.http.routers.davmail.service=noop@internal
+            - traefik.http.routers.davmail.middlewares=sso-required@file
+            # IMAP
+            - traefik.tcp.routers.imap-tls.rule=HostSNI(`*`)
+            - traefik.tcp.routers.imap-tls.entrypoints=imap-tls
+            - traefik.tcp.routers.imap-tls.service=imap-tls
+            - traefik.tcp.services.imap-tls.loadbalancer.server.port=1143
+            - traefik.tcp.routers.imap-tls.tls=true
+            # SMTP
+            - traefik.tcp.routers.smtp-tls.rule=HostSNI(`*`)
+            - traefik.tcp.routers.smtp-tls.entrypoints=smtp-tls
+            - traefik.tcp.routers.smtp-tls.service=smtp-tls
+            - traefik.tcp.services.smtp-tls.loadbalancer.server.port=1025
+            - traefik.tcp.routers.smtp-tls.tls=true
