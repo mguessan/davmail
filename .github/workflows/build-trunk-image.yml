@@ -1,12 +1,12 @@
-name: Build and push the unstable docker image
+name: Build and push the trunk docker image
 
 on:
   push:
     branches:
-      - main
+      - trunk 
 
 jobs:
-  build-unstable-image:
+  build-trunk-image:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: 'trunk'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -29,12 +31,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push unstable
+      - name: Build and push trunk
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:unstable
+            ghcr.io/${{ github.repository }}:trunk
           cache-from: type=gha
           cache-to: type=gha,mode=max
