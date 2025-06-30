@@ -827,7 +827,8 @@ public class ImapConnection extends AbstractConnection {
             Runnable progressNotifier = () -> {
                 try {
                     sendClient("* OK in progress");
-                } catch (IOException ignored) {
+                } catch (IOException e) {
+                    LOGGER.warn("Error while sending progress notification", e);
                 }
             };
             keepAlive = new KeepAlive(progressNotifier);
