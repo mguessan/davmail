@@ -89,9 +89,6 @@ public class GraphObject {
             if (field.isNumber() && value == null) {
                 value = "0";
             }
-            if (field.isBoolean() && value == null) {
-                //value = "false";
-            }
             getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value == null?JSONObject.NULL:value));
         } else {
             jsonObject.put(key, value == null?JSONObject.NULL:value);
@@ -164,7 +161,7 @@ public class GraphObject {
         return null;
     }
 
-    public Date optDateTimeTimeZone(String key) throws ParseException, DavMailException {
+    public Date optDateTimeTimeZone(String key) throws DavMailException {
         JSONObject sectionObject = jsonObject.optJSONObject(key);
         if (sectionObject != null) {
             String timeZone = sectionObject.optString("timeZone");
