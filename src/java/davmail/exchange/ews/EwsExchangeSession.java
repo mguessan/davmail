@@ -102,25 +102,11 @@ public class EwsExchangeSession extends ExchangeSession {
         //AcceptSharingInvitation
     }
 
-    static final Map<String, String> vTodoToTaskStatusMap = new HashMap<>();
-    static final Map<String, String> taskTovTodoStatusMap = new HashMap<>();
     static final Map<String, String> partstatToResponseMap = new HashMap<>();
     static final Map<String, String> responseTypeToPartstatMap = new HashMap<>();
     static final Map<String, String> statusToBusyStatusMap = new HashMap<>();
 
     static {
-        //taskTovTodoStatusMap.put("NotStarted", null);
-        taskTovTodoStatusMap.put("InProgress", "IN-PROCESS");
-        taskTovTodoStatusMap.put("Completed", "COMPLETED");
-        taskTovTodoStatusMap.put("WaitingOnOthers", "NEEDS-ACTION");
-        taskTovTodoStatusMap.put("Deferred", "CANCELLED");
-
-        //vTodoToTaskStatusMap.put(null, "NotStarted");
-        vTodoToTaskStatusMap.put("IN-PROCESS", "InProgress");
-        vTodoToTaskStatusMap.put("COMPLETED", "Completed");
-        vTodoToTaskStatusMap.put("NEEDS-ACTION", "WaitingOnOthers");
-        vTodoToTaskStatusMap.put("CANCELLED", "Deferred");
-
         partstatToResponseMap.put("ACCEPTED", "AcceptItem");
         partstatToResponseMap.put("TENTATIVE", "TentativelyAcceptItem");
         partstatToResponseMap.put("DECLINED", "DeclineItem");
@@ -3119,7 +3105,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return zuluDateValue;
     }
 
-    protected String convertDateFromExchangeToTaskDate(String exchangeDateValue) throws DavMailException {
+    public static String convertDateFromExchangeToTaskDate(String exchangeDateValue) throws DavMailException {
         String zuluDateValue = null;
         if (exchangeDateValue != null) {
             try {
@@ -3181,48 +3167,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 // item name is base64url
                 && itemName.matches("^([A-Za-z0-9-_]{4})*([A-Za-z0-9-_]{4}|[A-Za-z0-9-_]{3}=|[A-Za-z0-9-_]{2}==)\\.EML$")
                 && itemName.indexOf(' ') < 0;
-    }
-
-
-    protected static final Map<String, String> importanceToPriorityMap = new HashMap<>();
-
-    static {
-        importanceToPriorityMap.put("High", "1");
-        importanceToPriorityMap.put("Normal", "5");
-        importanceToPriorityMap.put("Low", "9");
-    }
-
-    protected static final Map<String, String> priorityToImportanceMap = new HashMap<>();
-
-    static {
-        // 0 means undefined, map it to normal
-        priorityToImportanceMap.put("0", "Normal");
-
-        priorityToImportanceMap.put("1", "High");
-        priorityToImportanceMap.put("2", "High");
-        priorityToImportanceMap.put("3", "High");
-        priorityToImportanceMap.put("4", "Normal");
-        priorityToImportanceMap.put("5", "Normal");
-        priorityToImportanceMap.put("6", "Normal");
-        priorityToImportanceMap.put("7", "Low");
-        priorityToImportanceMap.put("8", "Low");
-        priorityToImportanceMap.put("9", "Low");
-    }
-
-    protected String convertPriorityFromExchange(String exchangeImportanceValue) {
-        String value = null;
-        if (exchangeImportanceValue != null) {
-            value = importanceToPriorityMap.get(exchangeImportanceValue);
-        }
-        return value;
-    }
-
-    protected String convertPriorityToExchange(String vTodoPriorityValue) {
-        String value = null;
-        if (vTodoPriorityValue != null) {
-            value = priorityToImportanceMap.get(vTodoPriorityValue);
-        }
-        return value;
     }
 
     /**
