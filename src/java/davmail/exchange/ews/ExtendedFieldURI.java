@@ -74,6 +74,21 @@ public class ExtendedFieldURI implements FieldURI {
      * Create extended field uri.
      *
      * @param distinguishedPropertySetId distinguished property set id
+     * @param propertyId                 property id
+     * @param propertyType               property type
+     * @param graphId                    graphId
+     */
+    public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, int propertyId, PropertyType propertyType, String graphId) {
+        this.distinguishedPropertySetId = distinguishedPropertySetId;
+        this.propertyId = propertyId;
+        this.propertyType = propertyType;
+        this.graphId = graphId;
+    }
+
+    /**
+     * Create extended field uri.
+     *
+     * @param distinguishedPropertySetId distinguished property set id
      * @param propertyName               property name
      */
     public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, String propertyName) {
@@ -193,6 +208,9 @@ public class ExtendedFieldURI implements FieldURI {
         if (distinguishedPropertySetId == DistinguishedPropertySetType.Address) {
             namespaceGuid = "{00062004-0000-0000-c000-000000000046}";
         }
+        if (distinguishedPropertySetId == DistinguishedPropertySetType.Task) {
+            namespaceGuid = "{00062003-0000-0000-c000-000000000046}";
+        }
 
         StringBuilder buffer = new StringBuilder();
         if (namespaceGuid != null) {
@@ -205,7 +223,7 @@ public class ExtendedFieldURI implements FieldURI {
         } else if (propertyTag != null) {
             buffer.append(propertyType.name()).append(" ").append(propertyTag);
         } else {
-            throw new IllegalStateException("Unsupported graph property for graph "+getResponseName());
+            throw new IllegalStateException("Unsupported graph property for graph " + getResponseName());
         }
         return buffer.toString();
     }
