@@ -19,6 +19,7 @@
 
 package davmail.exchange.graph;
 
+import davmail.exception.DavMailException;
 import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
 import davmail.util.StringUtil;
@@ -26,7 +27,11 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.TimeZone;
 
 /**
  * Wrapper for Graph API JsonObject
@@ -51,7 +56,7 @@ public class GraphObject {
             value = StringUtil.join(keywords, ",");
         }
         // try to fetch from expanded properties
-        if (value == null) {
+        else if (value == null) {
             key = Field.get(key).getGraphId();
             // remapped attributes first
             value = jsonObject.optString(key, null);
@@ -145,6 +150,36 @@ public class GraphObject {
             throw new JSONException("JSONObject[" + key + "] not found.");
         }
         return value;
+    }
+
+    public String optString(String section, String key) {
+        JSONObject sectionObject = jsonObject.optJSONObject(section);
+        // try to map with field
+        if (sectionObject == null) {
+            sectionObject = jsonObject.optJSONObject(Field.get(section).getGraphId());
+        }
+        if (sectionObject != null) {
+            return sectionObject.optString(key, null);
+        }
+        return null;
+    }
+
+    public Date optDateTimeTimeZone(String key) throws ParseException, DavMailException {
+        JSONObject sectionObject = jsonObject.optJSONObject(key);
+        if (sectionObject != null) {
+            String timeZone = sectionObject.optString("timeZone");
+            String dateTime = sectionObject.optString("dateTime");
+            if (timeZone != null && dateTime != null) {
+                try {
+                    SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS");
+                    parser.setTimeZone(TimeZone.getTimeZone(timeZone));
+                    return parser.parse(dateTime);
+                } catch (ParseException e) {
+                    throw new DavMailException("EXCEPTION_INVALID_DATE", dateTime);
+                }
+            }
+        }
+        return null;
     }
 }
 
