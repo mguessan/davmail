@@ -25,7 +25,9 @@ import davmail.exception.DavMailException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
+import davmail.exchange.VProperty;
 import davmail.exchange.auth.O365Token;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.exchange.ews.ExtendedFieldURI;
@@ -56,6 +58,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -102,6 +105,206 @@ public class GraphExchangeSession extends ExchangeSession {
                 return specialFlag + "\\HasNoChildren";
             }
         }
+    }
+
+    protected class Event extends ExchangeSession.Event {
+
+        public FolderId folderId;
+
+        public String id;
+
+        protected GraphObject graphObject;
+
+        public Event(FolderId folderId, GraphObject graphObject) {
+            this.folderId = folderId;
+            this.graphObject = graphObject;
+
+            id = graphObject.optString("id");
+            // TODO: test etag
+            etag = graphObject.optString("@odata.etag");
+
+            displayName = graphObject.optString("title");
+            subject = graphObject.optString("title");
+
+            itemName = StringUtil.base64ToUrl(id) + ".EML";
+        }
+
+        public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
+            super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
+            folderId = getFolderId(folderPath);
+        }
+
+        @Override
+        public byte[] getEventContent() throws IOException {
+            byte[] content;
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Get event: " + itemName);
+            }
+            try {
+                if ("IPF.Task".equals(folderId.folderClass)) {
+                    VCalendar localVCalendar = new VCalendar();
+                    VObject vTodo = new VObject();
+                    vTodo.type = "VTODO";
+                    localVCalendar.setTimezone(getVTimezone());
+                    vTodo.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(graphObject.optString("lastModifiedDateTime")));
+                    vTodo.setPropertyValue("CREATED", convertDateFromExchange(graphObject.optString("createdDateTime")));
+                    // use item id as uid
+                    vTodo.setPropertyValue("UID", graphObject.optString("id"));
+                    vTodo.setPropertyValue("TITLE", graphObject.optString("title"));
+                    vTodo.setPropertyValue("SUMMARY", graphObject.optString("title"));
+                    vTodo.setPropertyValue("DESCRIPTION", graphObject.optString("body", "content"));
+                    // TODO refactor
+                    vTodo.setPropertyValue("PRIORITY", convertPriorityFromExchange(graphObject.optString("importance")));
+                    // not supported over graph
+                    //vTodo.setPropertyValue("PERCENT-COMPLETE", );
+                    vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(graphObject.optString("status")));
+
+                    vTodo.setPropertyValue("DUE;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("dueDateTime")));
+                    vTodo.setPropertyValue("DTSTART;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("startDateTime")));
+                    vTodo.setPropertyValue("COMPLETED;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("completedDateTime")));
+
+                    vTodo.setPropertyValue("CATEGORIES", graphObject.optString("categories"));
+
+                    localVCalendar.addVObject(vTodo);
+                    content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
+                } else {
+                    content = new byte[0];
+                    /*content = getItemMethod.getMimeContent();
+                    if (content == null) {
+                        throw new IOException("empty event body");
+                    }
+                    if (!"CalendarItem".equals(type)) {
+                        content = getICS(new SharedByteArrayInputStream(content));
+                    }
+                    VCalendar localVCalendar = new VCalendar(content, email, getVTimezone());
+
+                    String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
+
+                    if ("Exchange2007_SP1".equals(serverVersion)) {
+                        // remove additional reminder
+                        if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
+                            localVCalendar.removeVAlarm();
+                        }
+                        if (calendaruid != null) {
+                            localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
+                        }
+                    }
+                    fixAttendees(getItemMethod, localVCalendar.getFirstVevent());
+                    // fix UID and RECURRENCE-ID, broken at least on Exchange 2007
+                    List<EWSMethod.Occurrence> occurences = getItemMethod.getResponseItem().getOccurrences();
+                    if (occurences != null) {
+                        Iterator<VObject> modifiedOccurrencesIterator = localVCalendar.getModifiedOccurrences().iterator();
+                        for (EWSMethod.Occurrence occurrence : occurences) {
+                            if (modifiedOccurrencesIterator.hasNext()) {
+                                VObject modifiedOccurrence = modifiedOccurrencesIterator.next();
+                                // fix modified occurrences attendees
+                                GetItemMethod getOccurrenceMethod = new GetItemMethod(BaseShape.ID_ONLY, occurrence.itemId, false);
+                                getOccurrenceMethod.addAdditionalProperty(Field.get("requiredattendees"));
+                                getOccurrenceMethod.addAdditionalProperty(Field.get("optionalattendees"));
+                                getOccurrenceMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
+                                getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
+                                executeMethod(getOccurrenceMethod);
+                                fixAttendees(getOccurrenceMethod, modifiedOccurrence);
+                                // LAST-MODIFIED is missing in event content
+                                modifiedOccurrence.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getOccurrenceMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
+
+                                // fix uid, should be the same as main VEVENT
+                                if (calendaruid != null) {
+                                    modifiedOccurrence.setPropertyValue("UID", calendaruid);
+                                }
+
+                                VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
+                                if (recurrenceId != null) {
+                                    recurrenceId.removeParam("TZID");
+                                    recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
+                                }
+                            }
+                        }
+                    }
+                    // LAST-MODIFIED is missing in event content
+                    localVCalendar.setFirstVeventPropertyValue("LAST-MODIFIED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
+
+                    // restore mozilla invitations option
+                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS",
+                            getItemMethod.getResponseItem().get(Field.get("xmozsendinvitations").getResponseName()));
+                    // restore mozilla alarm status
+                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-LASTACK",
+                            getItemMethod.getResponseItem().get(Field.get("xmozlastack").getResponseName()));
+                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME",
+                            getItemMethod.getResponseItem().get(Field.get("xmozsnoozetime").getResponseName()));
+                    // overwrite method
+                    // localVCalendar.setPropertyValue("METHOD", "REQUEST");
+                    content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);*/
+                }
+            } catch (Exception e) {
+                // TODO test?
+                throw buildHttpNotFoundException(e);
+            }
+            return content;
+        }
+
+        @Override
+        public ItemResult createOrUpdate() throws IOException {
+            ItemResult itemResult = new ItemResult();
+            VObject vEvent = vCalendar.getFirstVevent();
+            try {
+                JSONObject jsonObject = new JSONObject();
+
+                // TODO convert date and timezone
+                VProperty dtStart = vEvent.getProperty("DTSTART");
+                String dtStartTzid = dtStart.getParamValue("TZID");
+                jsonObject.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
+
+                VProperty dtEnd = vEvent.getProperty("DTEND");
+                String dtEndTzid = dtEnd.getParamValue("TZID");
+                jsonObject.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
+
+                GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
+                if (id == null) {
+                    graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("calendars")
+                            .setObjectId(folderId.id)
+                            .setChildType("events")
+                            .setJsonBody(jsonObject);
+                } else {
+                    graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("calendars")
+                            .setObjectId(folderId.id)
+                            .setChildType("events")
+                            .setChildId(id)
+                            .setJsonBody(jsonObject);
+                }
+
+                GraphObject graphResponse = executeGraphRequest(graphRequestBuilder);
+                itemResult.status = graphResponse.statusCode;
+
+                // TODO review itemName logic
+                itemResult.itemName = graphResponse.optString("id");
+                itemResult.etag = graphResponse.optString("etag");
+
+
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
+
+            // TODO handle exception occurrences
+
+            return itemResult;
+        }
+
+    }
+
+    private String convertDateTimeTimeZoneToTaskDate(Date exchangeDateValue) {
+        String zuluDateValue = null;
+        if (exchangeDateValue != null) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+            dateFormat.setTimeZone(GMT_TIMEZONE);
+            zuluDateValue = dateFormat.format(exchangeDateValue);
+        }
+        return zuluDateValue;
+
     }
 
     protected class Contact extends ExchangeSession.Contact {
@@ -516,6 +719,27 @@ public class GraphExchangeSession extends ExchangeSession {
         //CONTACT_ATTRIBUTES.add(Field.get("usersmimecertificate"));
     }
 
+    private static final Set<FieldURI> TODO_PROPERTIES = new HashSet<>();
+
+    static {
+        // TODO review new todo properties https://learn.microsoft.com/en-us/graph/api/resources/todotask
+        /*TODO_PROPERTIES.add(Field.get("importance"));
+
+        TODO_PROPERTIES.add(Field.get("subject"));
+        TODO_PROPERTIES.add(Field.get("created"));
+        TODO_PROPERTIES.add(Field.get("lastmodified"));
+        TODO_PROPERTIES.add(Field.get("calendaruid"));
+        TODO_PROPERTIES.add(Field.get("description"));
+        TODO_PROPERTIES.add(Field.get("textbody"));
+        TODO_PROPERTIES.add(Field.get("percentcomplete"));
+        TODO_PROPERTIES.add(Field.get("taskstatus"));
+        TODO_PROPERTIES.add(Field.get("startdate"));
+        TODO_PROPERTIES.add(Field.get("duedate"));
+        TODO_PROPERTIES.add(Field.get("datecompleted"));
+        TODO_PROPERTIES.add(Field.get("keywords"));*/
+    }
+
+
     protected static class FolderId {
         protected String mailbox;
         protected String id;
@@ -528,6 +752,12 @@ public class GraphExchangeSession extends ExchangeSession {
         public FolderId(String mailbox, String id) {
             this.mailbox = mailbox;
             this.id = id;
+        }
+
+        public FolderId(String mailbox, String id, String folderClass) {
+            this.mailbox = mailbox;
+            this.id = id;
+            this.folderClass = folderClass;
         }
 
         public FolderId(String mailbox, WellKnownFolderName wellKnownFolderName) {
@@ -709,17 +939,6 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
-
-    protected Message getMessageById(String folderPath, String id) throws IOException {
-        FolderId folderId = getFolderIdIfExists(folderPath);
-        return buildMessage(executeJsonRequest(new GraphRequestBuilder()
-                .setMethod(HttpGet.METHOD_NAME)
-                .setMailbox(folderId.mailbox)
-                .setObjectType("messages")
-                .setObjectId(id)
-                .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)));
-    }
-
     class Message extends ExchangeSession.Message {
         protected FolderId folderId;
         protected String id;
@@ -889,8 +1108,8 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Duplicate from EWSEchangeSession.
-     * TODO refactor
+     * Lightweigt conversion method to avoid full string to date and back conversions.
+     * Note: Duplicate from EWSEchangeSession, added nanosecond handling
      * @param exchangeDateValue date returned from O365
      * @return converted date
      * @throws DavMailException on error
@@ -901,10 +1120,12 @@ public class GraphExchangeSession extends ExchangeSession {
             return null;
         } else {
             StringBuilder buffer = new StringBuilder();
-            if (exchangeDateValue.length() == 20 || exchangeDateValue.length() == 10) {
+            if (exchangeDateValue.length() == 28 || exchangeDateValue.length() == 20 || exchangeDateValue.length() == 10) {
                 for (int i = 0; i < exchangeDateValue.length(); i++) {
                     if (i == 4 || i == 7 || i == 13 || i == 16) {
                         i++;
+                    } else if (exchangeDateValue.length() == 28 && i == 19) {
+                        i = exchangeDateValue.length() - 1;
                     }
                     buffer.append(exchangeDateValue.charAt(i));
                 }
@@ -1090,7 +1311,13 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         public void appendTo(StringBuilder buffer) {
-            buffer.append(Field.get(attributeName).getGraphId()).append(" eq null");
+            FieldURI fieldURI = Field.get(attributeName);
+            if (fieldURI instanceof ExtendedFieldURI) {
+                buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(fieldURI.getGraphId())
+                        .append("' and ep/value eq null)");
+            } else {
+                buffer.append(fieldURI.getGraphId()).append(" eq null");
+            }
         }
 
         public boolean isEmpty() {
@@ -1171,13 +1398,13 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public MultiCondition and(Condition... condition) {
-        return new MultiCondition(Operator.And, condition);
+    public MultiCondition and(Condition... conditions) {
+        return new MultiCondition(Operator.And, conditions);
     }
 
     @Override
-    public MultiCondition or(Condition... condition) {
-        return new MultiCondition(Operator.Or, condition);
+    public MultiCondition or(Condition... conditions) {
+        return new MultiCondition(Operator.Or, conditions);
     }
 
     @Override
@@ -1471,7 +1698,7 @@ public class GraphExchangeSession extends ExchangeSession {
             // TODO subfolders not supported with graph
             folderNames = folderPath.substring(CALENDAR.length()).split("/");
         } else if (isSubFolderOf(folderPath, TASKS)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.tasks, "IPF.Task");
+            currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.tasks);
             folderNames = folderPath.substring(TASKS.length()).split("/");
         } else if (isSubFolderOf(folderPath, CONTACTS)) {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.contacts, "IPF.Contact");
@@ -1509,15 +1736,40 @@ public class GraphExchangeSession extends ExchangeSession {
         return currentFolderId;
     }
 
+    /**
+     * Build folderId for well-known folders.
+     * Set EWS folderClass values according to: <a href="https://learn.microsoft.com/en-us/exchange/client-developer/exchange-web-services/folders-and-items-in-ews-in-exchange">...</a>
+     * @param mailbox user mailbox
+     * @param wellKnownFolderName well-known value
+     * @return folderId
+     * @throws IOException on error
+     */
     private FolderId getWellKnownFolderId(String mailbox, WellKnownFolderName wellKnownFolderName) throws IOException {
-        JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                .setMethod(HttpGet.METHOD_NAME)
-                .setMailbox(mailbox)
-                .setObjectType("mailFolders")
-                .setObjectId(wellKnownFolderName.name())
-                .setExpandFields(FOLDER_PROPERTIES));
-        // TODO retrieve folderClass
-        return new FolderId(mailbox, jsonResponse.optString("id"));
+        if (wellKnownFolderName == WellKnownFolderName.tasks) {
+            // retrieve folder id from todo endpoint
+            GraphIterator graphIterator = executeSearchRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(mailbox)
+                    .setObjectType("todo/lists"));
+            while (graphIterator.hasNext()) {
+                JSONObject jsonResponse = graphIterator.next();
+                if (jsonResponse.optString("wellknownListName").equals("defaultList")) {
+                    return new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Task");
+                }
+            }
+            // should not happen
+            throw new HttpNotFoundException("Folder '" + wellKnownFolderName.name() + "' not found");
+
+        } else {
+            JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(mailbox)
+                    .setObjectType("mailFolders")
+                    .setObjectId(wellKnownFolderName.name())
+                    .setExpandFields(FOLDER_PROPERTIES));
+            // TODO retrieve folderClass
+            return new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Note");
+        }
     }
 
     /**
@@ -1537,6 +1789,13 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType("calendars")
                     .setExpandFields(FOLDER_PROPERTIES)
                     .setFilter("name eq '" + StringUtil.escapeQuotes(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+        } else if ("IPF.Task".equals(currentFolderId.folderClass)) {
+            httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(currentFolderId.mailbox)
+                    .setObjectType("todo/lists")
+                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setFilter("displayName eq '" + StringUtil.escapeQuotes(EwsExchangeSession.decodeFolderName(folderName)) + "'");
         } else {
             String objectType = "mailFolders";
             if ("IPF.Contact".equals(currentFolderId.folderClass)) {
@@ -1558,7 +1817,7 @@ public class GraphExchangeSession extends ExchangeSession {
         try {
             JSONArray values = jsonResponse.getJSONArray("value");
             if (values.length() > 0) {
-                folderId = new FolderId(currentFolderId.mailbox, values.getJSONObject(0).getString("id"));
+                folderId = new FolderId(currentFolderId.mailbox, values.getJSONObject(0).getString("id"), currentFolderId.folderClass);
             }
         } catch (JSONException e) {
             throw new IOException(e.getMessage(), e);
@@ -1741,9 +2000,47 @@ public class GraphExchangeSession extends ExchangeSession {
         moveMessage(message, WellKnownFolderName.deleteditems.name());
     }
 
+
+    /**
+     * Common item properties
+     */
+    protected static final Set<String> ITEM_PROPERTIES = new HashSet<>();
+
+    static {
+        //ITEM_PROPERTIES.add("etag");
+        //ITEM_PROPERTIES.add("displayname");
+        // calendar CdoInstanceType
+        //ITEM_PROPERTIES.add("instancetype");
+        //ITEM_PROPERTIES.add("urlcompname");
+        //ITEM_PROPERTIES.add("subject");
+    }
+
+    protected static final HashSet<String> EVENT_REQUEST_PROPERTIES = new HashSet<>();
+
+    static {
+        EVENT_REQUEST_PROPERTIES.add("permanenturl");
+        EVENT_REQUEST_PROPERTIES.add("etag");
+        EVENT_REQUEST_PROPERTIES.add("displayname");
+        EVENT_REQUEST_PROPERTIES.add("subject");
+        EVENT_REQUEST_PROPERTIES.add("urlcompname");
+        EVENT_REQUEST_PROPERTIES.add("displayto");
+        EVENT_REQUEST_PROPERTIES.add("displaycc");
+
+        EVENT_REQUEST_PROPERTIES.add("xmozlastack");
+        EVENT_REQUEST_PROPERTIES.add("xmozsnoozetime");
+    }
+
+    protected static final HashSet<String> CALENDAR_ITEM_REQUEST_PROPERTIES = new HashSet<>();
+
+    static {
+        CALENDAR_ITEM_REQUEST_PROPERTIES.addAll(EVENT_REQUEST_PROPERTIES);
+        CALENDAR_ITEM_REQUEST_PROPERTIES.add("ismeeting");
+        CALENDAR_ITEM_REQUEST_PROPERTIES.add("myresponsetype");
+    }
+
     @Override
     protected Set<String> getItemProperties() {
-        return null;
+        return ITEM_PROPERTIES;
     }
 
     @Override
@@ -1778,7 +2075,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public List<Event> getEventMessages(String folderPath) throws IOException {
+    public List<ExchangeSession.Event> getEventMessages(String folderPath) throws IOException {
         return null;
     }
 
@@ -1787,9 +2084,67 @@ public class GraphExchangeSession extends ExchangeSession {
         return null;
     }
 
+    /**
+     * Tasks folders are no longer supported, reroute to todos.
+     * @param folderPath Exchange folder path
+     * @return todos as events
+     * @throws IOException on error
+     */
     @Override
-    public List<Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
-        return null;
+    public List<ExchangeSession.Event> searchTasksOnly(String folderPath) throws IOException {
+        ArrayList<ExchangeSession.Event> eventList = new ArrayList<>();
+        FolderId folderId = getFolderId(folderPath);
+
+        // GET /me/todo/lists/{todoTaskListId}/tasks
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(folderId.mailbox)
+                .setObjectType("todo/lists")
+                .setObjectId(folderId.id)
+                .setChildType("tasks")
+                .setExpandFields(TODO_PROPERTIES);
+        LOGGER.debug("searchTasksOnly " + folderId.mailbox + " " + folderPath);
+
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+
+        while (graphIterator.hasNext()) {
+            Event event = new Event(folderId, new GraphObject(graphIterator.next()));
+            eventList.add(event);
+        }
+
+        return eventList;
+    }
+
+    @Override
+    public List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
+        ArrayList<ExchangeSession.Event> eventList = new ArrayList<>();
+        FolderId folderId = getFolderId(folderPath);
+
+        // /users/{id | userPrincipalName}/calendars/{id}/events
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(folderId.mailbox)
+                .setObjectType("calendars")
+                .setObjectId(folderId.id)
+                .setChildType("events")
+                .setExpandFields(CONTACT_ATTRIBUTES);
+        LOGGER.debug("searchEvents " + folderId.mailbox + " " + folderPath);
+        if (condition != null && !condition.isEmpty()) {
+            StringBuilder filter = new StringBuilder();
+            condition.appendTo(filter);
+            LOGGER.debug("search filter " + filter);
+            httpRequestBuilder.setFilter(filter.toString());
+        }
+
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+
+        while (graphIterator.hasNext()) {
+            Event event = new Event(folderId, new GraphObject(graphIterator.next()));
+            eventList.add(event);
+        }
+
+        return eventList;
+
     }
 
     @Override
@@ -1886,7 +2241,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     protected ItemResult internalCreateOrUpdateEvent(String folderPath, String itemName, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        return null;
+        return new Event(folderPath, itemName, contentClass, icsBody, StringUtil.removeQuotes(etag), noneMatch).createOrUpdate();
     }
 
     @Override
@@ -1901,6 +2256,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
+        // https://learn.microsoft.com/en-us/graph/api/orgcontact-get
         return null;
     }
 
@@ -1998,8 +2354,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     private GraphIterator executeSearchRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         try {
-            JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
-            return new GraphIterator(jsonResponse);
+            return new GraphIterator(executeJsonRequest(httpRequestBuilder));
         } catch (JSONException e) {
             throw new IOException(e.getMessage(), e);
         }
@@ -2013,11 +2368,12 @@ public class GraphExchangeSession extends ExchangeSession {
 
         // DEBUG only, disable gzip encoding
         //request.setHeader("Accept-Encoding", "");
+        //request.setHeader("Prefer", "outlook.timezone=\"GMT Standard Time\"");
         JSONObject jsonResponse;
         try (
                 CloseableHttpResponse response = httpClient.execute(request)
         ) {
-            if (response.getStatusLine().getStatusCode() == 400) {
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                 LOGGER.warn("Request returned " + response.getStatusLine());
             }
             jsonResponse = new JsonResponseHandler().handleResponse(response);
