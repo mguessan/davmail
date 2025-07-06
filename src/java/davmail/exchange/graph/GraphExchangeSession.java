@@ -123,7 +123,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
             id = graphObject.optString("id");
             // TODO: test etag
-            etag = graphObject.optString("@odata.etag");
+            etag = graphObject.optString("changeKey");
 
             displayName = graphObject.optString("subject");
             subject = graphObject.optString("subject");
@@ -265,7 +265,30 @@ public class GraphExchangeSession extends ExchangeSession {
 
         @Override
         public ItemResult createOrUpdate() throws IOException {
+
+            String id = null;
+            String currentEtag = null;
+            JSONObject jsonEvent = getEventIfExists(folderId, itemName);
+            if (jsonEvent != null) {
+                id = jsonEvent.optString("id", null);
+                currentEtag = new GraphObject(jsonEvent).optString("changeKey");
+            }
+
             ItemResult itemResult = new ItemResult();
+            if ("*".equals(noneMatch)) {
+                // create requested but already exists
+                if (id != null) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            } else if (etag != null) {
+                // update requested
+                if (id == null || !etag.equals(currentEtag)) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            }
+
             VObject vEvent = vCalendar.getFirstVevent();
             try {
                 JSONObject jsonObject = new JSONObject();
@@ -304,10 +327,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 } else {
                     graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
                             .setMailbox(folderId.mailbox)
-                            .setObjectType("calendars")
-                            .setObjectId(folderId.id)
-                            .setChildType("events")
-                            .setChildId(id)
+                            .setObjectType("events")
+                            .setObjectId(id)
                             .setJsonBody(jsonObject);
                 }
 
@@ -316,7 +337,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
                 // TODO review itemName logic
                 itemResult.itemName = graphResponse.optString("id") + ".EML";
-                itemResult.etag = graphResponse.optString("etag");
+                itemResult.etag = graphResponse.optString("changeKey");
 
 
             } catch (JSONException e) {
@@ -362,6 +383,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     // keep only html body
                     if (content.contains("<body>") && content.contains("</body>")) {
                         content = content.substring(content.indexOf("<body>") + "<body>".length(), content.indexOf("</body>"));
+                    } else if (content.contains("<body dir=\"ltr\">") && content.contains("</body>")) {
+                        content = content.substring(content.indexOf("<body dir=\"ltr\">") + "<body dir=\"ltr\">".length(), content.indexOf("</body>"));
                     }
                     vProperty = new VProperty(propertyName, convertHtmlToText(content));
                     // escape quotes and remove CR LF from html content
@@ -413,7 +436,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         protected Contact(GraphObject response) throws DavMailException {
             id = response.optString("id");
-            etag = response.optString("etag");
+            etag = response.optString("changeKey");
 
             displayName = response.optString("displayname");
             // prefer urlcompname (client provided item name) for contacts
@@ -504,7 +527,7 @@ public class GraphExchangeSession extends ExchangeSession {
             JSONObject jsonContact = getContactIfExists(folderId, itemName);
             if (jsonContact != null) {
                 id = jsonContact.optString("id", null);
-                currentEtag = new GraphObject(jsonContact).optString("etag");
+                currentEtag = new GraphObject(jsonContact).optString("changeKey");
             }
 
             ItemResult itemResult = new ItemResult();
@@ -2284,36 +2307,48 @@ public class GraphExchangeSession extends ExchangeSession {
         } else {
             throw new IOException("Item " + folderId.mailbox + " " + folderId.id + " " + itemName + " invalid item name");
         }
-        JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+        return executeJsonRequest(new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(folderId.mailbox)
                 .setObjectType("events")
                 .setObjectId(itemId)
                 .setExpandFields(EVENT_ATTRIBUTES)
         );
-        return jsonResponse;
     }
 
     private JSONObject getContactIfExists(FolderId folderId, String itemName) throws IOException {
-        // TODO: build with AttributeCondition
-        String filter = "singleValueExtendedProperties/Any(ep: ep/id eq '" + Field.get("urlcompname").getGraphId() + "' and ep/value eq '" + convertItemNameToEML(StringUtil.escapeQuotes(itemName)) + "')";
-        JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                .setMethod(HttpGet.METHOD_NAME)
-                .setMailbox(folderId.mailbox)
-                .setMailbox(folderId.mailbox)
-                .setObjectType("contactFolders")
-                .setObjectId(folderId.id)
-                .setChildType("contacts")
-                .setFilter(filter)
-                .setExpandFields(CONTACT_ATTRIBUTES)
-        );
-        // need at least one value
-        JSONArray values = jsonResponse.optJSONArray("value");
-        if (values != null && values.length() > 0) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Contact " + values.optJSONObject(0));
+        if (isItemId(itemName)) {
+            // lookup item directly
+            return executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("contactFolders")
+                    .setObjectId(folderId.id)
+                    .setChildType("contacts")
+                    .setChildId(itemName.substring(0, itemName.length()-".EML".length()))
+                    .setExpandFields(CONTACT_ATTRIBUTES)
+            );
+
+        } else {
+            // TODO: build with AttributeCondition
+            String filter = "singleValueExtendedProperties/Any(ep: ep/id eq '" + Field.get("urlcompname").getGraphId() + "' and ep/value eq '" + convertItemNameToEML(StringUtil.escapeQuotes(itemName)) + "')";
+            JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("contactFolders")
+                    .setObjectId(folderId.id)
+                    .setChildType("contacts")
+                    .setFilter(filter)
+                    .setExpandFields(CONTACT_ATTRIBUTES)
+            );
+            // need at least one value
+            JSONArray values = jsonResponse.optJSONArray("value");
+            if (values != null && values.length() > 0) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Contact " + values.optJSONObject(0));
+                }
+                return values.optJSONObject(0);
             }
-            return values.optJSONObject(0);
         }
         return null;
     }
@@ -2530,5 +2565,20 @@ public class GraphExchangeSession extends ExchangeSession {
         }
         return graphObject;
     }
+
+    /**
+     * Check if itemName is long and base64 encoded.
+     * User generated item names are usually short
+     *
+     * @param itemName item name
+     * @return true if itemName is an EWS item id
+     */
+    protected static boolean isItemId(String itemName) {
+        return itemName.length() >= 140
+                // item name is base64url
+                && itemName.matches("^([A-Za-z0-9-_]{4})*([A-Za-z0-9-_]{4}|[A-Za-z0-9-_]{3}=|[A-Za-z0-9-_]{2}==)\\.EML$")
+                && itemName.indexOf(' ') < 0;
+    }
+
 
 }
