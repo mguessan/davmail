@@ -3269,4 +3269,37 @@ public abstract class ExchangeSession {
         return value;
     }
 
+    /**
+     * Possible values are: normal, personal, private, and confidential.
+     * @param sensitivity Exchange sensivity
+     * @return event class
+     */
+    protected String convertClassFromExchange(String sensitivity) {
+        String eventClass;
+        if ("private".equals(sensitivity)) {
+            eventClass = "PRIVATE";
+        } else if ("confidential".equals(sensitivity)) {
+            eventClass = "CONFIDENTIAL";
+        } else if ("personal".equals(sensitivity)) {
+            eventClass = "PRIVATE";
+        } else {
+            // normal
+            eventClass = "PUBLIC";
+        }
+        return eventClass;
+    }
+
+    protected String convertClassToExchange(String eventClass) {
+        String sensitivity;
+        if ("PRIVATE".equals(eventClass)) {
+            sensitivity = "Private";
+        } else if ("CONFIDENTIAL".equals(eventClass)) {
+            sensitivity = "Confidential";
+        } else {
+            // PUBLIC
+            sensitivity = "Normal";
+        }
+        return sensitivity;
+    }
+
 }
