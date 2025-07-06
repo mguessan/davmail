@@ -49,6 +49,8 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.TagNode;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -56,9 +58,9 @@ import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -123,8 +125,8 @@ public class GraphExchangeSession extends ExchangeSession {
             // TODO: test etag
             etag = graphObject.optString("@odata.etag");
 
-            displayName = graphObject.optString("title");
-            subject = graphObject.optString("title");
+            displayName = graphObject.optString("subject");
+            subject = graphObject.optString("subject");
 
             itemName = StringUtil.base64ToUrl(id) + ".EML";
         }
@@ -152,7 +154,9 @@ public class GraphExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("UID", graphObject.optString("id"));
                     vTodo.setPropertyValue("TITLE", graphObject.optString("title"));
                     vTodo.setPropertyValue("SUMMARY", graphObject.optString("title"));
-                    vTodo.setPropertyValue("DESCRIPTION", graphObject.optString("body", "content"));
+
+                    vTodo.addProperty(convertBodyToVproperty("DESCRIPTION", graphObject.optJSONObject("body")));
+
                     // TODO refactor
                     vTodo.setPropertyValue("PRIORITY", convertPriorityFromExchange(graphObject.optString("importance")));
                     // not supported over graph
@@ -168,79 +172,95 @@ public class GraphExchangeSession extends ExchangeSession {
                     localVCalendar.addVObject(vTodo);
                     content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
                 } else {
-                    content = new byte[0];
-                    /*content = getItemMethod.getMimeContent();
-                    if (content == null) {
-                        throw new IOException("empty event body");
-                    }
-                    if (!"CalendarItem".equals(type)) {
-                        content = getICS(new SharedByteArrayInputStream(content));
-                    }
-                    VCalendar localVCalendar = new VCalendar(content, email, getVTimezone());
+                    // with graph API there is no way to directly retrieve the MIME content to access VCALENDAR object
 
-                    String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
+                    VCalendar localVCalendar = new VCalendar();
+                    // TODO: set email?
+                    localVCalendar.setTimezone(getVTimezone());
+                    VObject vEvent = new VObject();
+                    vEvent.type = "VEVENT";
+                    localVCalendar.addVObject(vEvent);
+                    localVCalendar.setFirstVeventPropertyValue("UID", graphObject.optString("iCalUId"));
+                    localVCalendar.setFirstVeventPropertyValue("SUMMARY", graphObject.optString("subject"));
 
-                    if ("Exchange2007_SP1".equals(serverVersion)) {
-                        // remove additional reminder
-                        if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
-                            localVCalendar.removeVAlarm();
-                        }
-                        if (calendaruid != null) {
-                            localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
-                        }
-                    }
-                    fixAttendees(getItemMethod, localVCalendar.getFirstVevent());
-                    // fix UID and RECURRENCE-ID, broken at least on Exchange 2007
-                    List<EWSMethod.Occurrence> occurences = getItemMethod.getResponseItem().getOccurrences();
-                    if (occurences != null) {
-                        Iterator<VObject> modifiedOccurrencesIterator = localVCalendar.getModifiedOccurrences().iterator();
-                        for (EWSMethod.Occurrence occurrence : occurences) {
-                            if (modifiedOccurrencesIterator.hasNext()) {
-                                VObject modifiedOccurrence = modifiedOccurrencesIterator.next();
-                                // fix modified occurrences attendees
-                                GetItemMethod getOccurrenceMethod = new GetItemMethod(BaseShape.ID_ONLY, occurrence.itemId, false);
-                                getOccurrenceMethod.addAdditionalProperty(Field.get("requiredattendees"));
-                                getOccurrenceMethod.addAdditionalProperty(Field.get("optionalattendees"));
-                                getOccurrenceMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
-                                getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
-                                executeMethod(getOccurrenceMethod);
-                                fixAttendees(getOccurrenceMethod, modifiedOccurrence);
-                                // LAST-MODIFIED is missing in event content
-                                modifiedOccurrence.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getOccurrenceMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
+                    localVCalendar.addFirstVeventProperty(convertBodyToVproperty("DESCRIPTION", graphObject.optJSONObject("body")));
 
-                                // fix uid, should be the same as main VEVENT
-                                if (calendaruid != null) {
-                                    modifiedOccurrence.setPropertyValue("UID", calendaruid);
-                                }
+                    localVCalendar.setFirstVeventPropertyValue("LAST-MODIFIED", convertDateFromExchange(graphObject.optString("lastModifiedDateTime")));
+                    localVCalendar.setFirstVeventPropertyValue("DTSTAMP", convertDateFromExchange(graphObject.optString("createdDateTime")));
+                    localVCalendar.addFirstVeventProperty(convertDateTimeTimeZoneToVproperty("DTSTART", graphObject.optJSONObject("start")));
+                    localVCalendar.addFirstVeventProperty(convertDateTimeTimeZoneToVproperty("DTEND", graphObject.optJSONObject("end")));
 
-                                VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
-                                if (recurrenceId != null) {
-                                    recurrenceId.removeParam("TZID");
-                                    recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
-                                }
-                            }
-                        }
-                    }
-                    // LAST-MODIFIED is missing in event content
-                    localVCalendar.setFirstVeventPropertyValue("LAST-MODIFIED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
+                    localVCalendar.setFirstVeventPropertyValue("CLASS", convertClassFromExchange(graphObject.optString("sensitivity")));
+                    localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", graphObject.optString("showAs"));
 
-                    // restore mozilla invitations option
-                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS",
-                            getItemMethod.getResponseItem().get(Field.get("xmozsendinvitations").getResponseName()));
-                    // restore mozilla alarm status
-                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-LASTACK",
-                            getItemMethod.getResponseItem().get(Field.get("xmozlastack").getResponseName()));
-                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME",
-                            getItemMethod.getResponseItem().get(Field.get("xmozsnoozetime").getResponseName()));
-                    // overwrite method
-                    // localVCalendar.setPropertyValue("METHOD", "REQUEST");
-                    content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);*/
+                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS", graphObject.optString("xmozsendinvitations"));
+                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-LASTACK", graphObject.optString("xmozlastack"));
+                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME", graphObject.optString("xmozsnoozetime"));
+
+                    setAttendees(localVCalendar.getFirstVevent());
+
+                    content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
                 }
             } catch (Exception e) {
-                // TODO test?
-                throw buildHttpNotFoundException(e);
+                throw new IOException(e.getMessage(), e);
             }
             return content;
+        }
+
+        private void setAttendees(VObject vEvent) throws JSONException {
+            // handle organizer
+            JSONObject organizer = graphObject.optJSONObject("organizer");
+            if (organizer != null) {
+                vEvent.addProperty(convertEmailAddressToVproperty("ORGANIZER", organizer.optJSONObject("emailAddress")));
+            }
+
+            JSONArray attendees = graphObject.optJSONArray("attendees");
+            if (attendees != null) {
+                for (int i=0;i<attendees.length();i++) {
+                    JSONObject attendee = attendees.getJSONObject(i);
+                    JSONObject emailAddress = attendee.getJSONObject("emailAddress");
+                    VProperty attendeeProperty = convertEmailAddressToVproperty("ATTENDEE", emailAddress);
+
+                    // The response type. Possible values are: none, organizer, tentativelyAccepted, accepted, declined, notResponded.
+                    String responseType = attendee.getJSONObject("status").optString("response");
+                    String myResponseType = graphObject.optString("responseStatus", "response");
+
+                    // TODO Test if applicable
+                    if (email.equalsIgnoreCase(emailAddress.optString("address")) && myResponseType != null) {
+                        attendeeProperty.addParam("PARTSTAT", responseTypeToPartstat(myResponseType));
+                    } else {
+                        attendeeProperty.addParam("PARTSTAT", responseTypeToPartstat(responseType));
+                    }
+                    // the attendee type: required, optional, resource.
+                    String type = attendee.optString("type");
+                    if ("required".equals(type)) {
+                        attendeeProperty.addParam("ROLE", "REQ-PARTICIPANT");
+                    } else if ("optional".equals(type)) {
+                        attendeeProperty.addParam("ROLE", "OPT-PARTICIPANT");
+                    }
+
+                    vEvent.addProperty(attendeeProperty);
+                }
+            }
+        }
+
+        /**
+         * Convert response type to partstat value
+         *
+         * @param responseType response type
+         * @return partstat value
+         */
+        private String responseTypeToPartstat(String responseType) {
+                // The response type. Possible values are: none, organizer, tentativelyAccepted, accepted, declined, notResponded.
+                if ("accepted".equals(responseType) || "organizer".equals(responseType)) {
+                    return "ACCEPTED";
+                } else if ("tentativelyAccepted".equals(responseType)) {
+                    return "TENTATIVE";
+                } else if ("declined".equals(responseType)) {
+                    return "DECLINED";
+                } else {
+                    return "NEEDS-ACTION";
+                }
         }
 
         @Override
@@ -249,6 +269,7 @@ public class GraphExchangeSession extends ExchangeSession {
             VObject vEvent = vCalendar.getFirstVevent();
             try {
                 JSONObject jsonObject = new JSONObject();
+                jsonObject.put("subject", vEvent.getPropertyValue("SUMMARY"));
 
                 // TODO convert date and timezone
                 VProperty dtStart = vEvent.getProperty("DTSTART");
@@ -258,6 +279,19 @@ public class GraphExchangeSession extends ExchangeSession {
                 VProperty dtEnd = vEvent.getProperty("DTEND");
                 String dtEndTzid = dtEnd.getParamValue("TZID");
                 jsonObject.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
+
+                VProperty descriptionProperty = vEvent.getProperty("DESCRIPTION");
+                String description = null;
+                if (descriptionProperty != null) {
+                    description = vEvent.getProperty("DESCRIPTION").getParamValue("ALTREP");
+                }
+                if (description != null && description.startsWith("data:text/html,")) {
+                    description = description.replaceFirst("data:text/html,", "");
+                    jsonObject.put("body", new JSONObject().put("content", description).put("contentType", "html"));
+                } else {
+                    description = vEvent.getPropertyValue("DESCRIPTION");
+                    jsonObject.put("body", new JSONObject().put("content", description).put("contentType", "text"));
+                }
 
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
                 if (id == null) {
@@ -281,7 +315,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 itemResult.status = graphResponse.statusCode;
 
                 // TODO review itemName logic
-                itemResult.itemName = graphResponse.optString("id");
+                itemResult.itemName = graphResponse.optString("id") + ".EML";
                 itemResult.etag = graphResponse.optString("etag");
 
 
@@ -294,6 +328,71 @@ public class GraphExchangeSession extends ExchangeSession {
             return itemResult;
         }
 
+    }
+
+    private String convertHtmlToText(String htmlText) {
+        StringBuilder builder = new StringBuilder();
+
+        HtmlCleaner cleaner = new HtmlCleaner();
+        cleaner.getProperties().setDeserializeEntities(true);
+        try {
+            TagNode node = cleaner.clean(new StringReader(htmlText));
+            for (TagNode childNode : node.getAllElementsList(true)) {
+                builder.append(childNode.getText());
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error converting html to text", e);
+        }
+        return builder.toString();
+    }
+
+    private VProperty convertBodyToVproperty(String propertyName, JSONObject jsonBody) {
+
+        if (jsonBody != null) {
+            // body is html only over graph by default
+            String content = jsonBody.optString("content");
+            String contentType = jsonBody.optString("contentType");
+            VProperty vProperty;
+
+            if ("text".equals(contentType)) {
+                vProperty = new VProperty(propertyName, content);
+            } else {
+                // html
+                if (content != null) {
+                    // keep only html body
+                    if (content.contains("<body>") && content.contains("</body>")) {
+                        content = content.substring(content.indexOf("<body>") + "<body>".length(), content.indexOf("</body>"));
+                    }
+                    vProperty = new VProperty(propertyName, convertHtmlToText(content));
+                    // escape quotes and remove CR LF from html content
+                    content = content.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
+                    vProperty.addParam("ALTREP", "data:text/html," + content);
+                } else {
+                    vProperty = new VProperty(propertyName, null);
+                }
+
+            }
+            return vProperty;
+        }
+        return new VProperty(propertyName, null);
+    }
+
+    private VProperty convertDateTimeTimeZoneToVproperty(String vPropertyName, JSONObject jsonDateTimeTimeZone) throws DavMailException {
+
+        if (jsonDateTimeTimeZone != null) {
+            String timeZone = jsonDateTimeTimeZone.optString("timeZone");
+            String dateTime = jsonDateTimeTimeZone.optString("dateTime");
+            VProperty vProperty = new VProperty(vPropertyName, convertDateFromExchange(dateTime));
+            vProperty.addParam("TZID", timeZone);
+            return vProperty;
+        }
+        return new VProperty(vPropertyName, null);
+    }
+
+    private VProperty convertEmailAddressToVproperty(String propertyName, JSONObject jsonEmailAddress) {
+        VProperty attendeeProperty = new VProperty(propertyName, "mailto:" + jsonEmailAddress.optString("address"));
+        attendeeProperty.addParam("CN", jsonEmailAddress.optString("name"));
+        return attendeeProperty;
     }
 
     private String convertDateTimeTimeZoneToTaskDate(Date exchangeDateValue) {
@@ -739,6 +838,11 @@ public class GraphExchangeSession extends ExchangeSession {
         TODO_PROPERTIES.add(Field.get("keywords"));*/
     }
 
+    protected static final HashSet<FieldURI> EVENT_ATTRIBUTES = new HashSet<>();
+
+    static {
+        //EVENT_ATTRIBUTES.add(Field.get("calendaruid"));
+    }
 
     protected static class FolderId {
         protected String mailbox;
@@ -1120,11 +1224,11 @@ public class GraphExchangeSession extends ExchangeSession {
             return null;
         } else {
             StringBuilder buffer = new StringBuilder();
-            if (exchangeDateValue.length() == 28 || exchangeDateValue.length() == 20 || exchangeDateValue.length() == 10) {
+            if (exchangeDateValue.length() >= 25 || exchangeDateValue.length() == 20 || exchangeDateValue.length() == 10) {
                 for (int i = 0; i < exchangeDateValue.length(); i++) {
                     if (i == 4 || i == 7 || i == 13 || i == 16) {
                         i++;
-                    } else if (exchangeDateValue.length() == 28 && i == 19) {
+                    } else if (exchangeDateValue.length() >= 25 && i == 19) {
                         i = exchangeDateValue.length() - 1;
                     }
                     buffer.append(exchangeDateValue.charAt(i));
@@ -2127,7 +2231,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("calendars")
                 .setObjectId(folderId.id)
                 .setChildType("events")
-                .setExpandFields(CONTACT_ATTRIBUTES);
+                .setExpandFields(EVENT_ATTRIBUTES);
         LOGGER.debug("searchEvents " + folderId.mailbox + " " + folderPath);
         if (condition != null && !condition.isEmpty()) {
             StringBuilder filter = new StringBuilder();
@@ -2160,9 +2264,34 @@ public class GraphExchangeSession extends ExchangeSession {
             } else {
                 throw new IOException("Item " + folderPath + " " + itemName + " not found");
             }
+        } else if ("IPF.Appointment".equals(folderId.folderClass)) {
+            JSONObject jsonResponse = getEventIfExists(folderId, itemName);
+            if (jsonResponse != null) {
+                Event event = new Event(folderId, new GraphObject(jsonResponse));
+                return event;
+            } else {
+                throw new IOException("Item " + folderPath + " " + itemName + " not found");
+            }
         } else {
-            return null;
+            throw new UnsupportedOperationException("Item type " + folderId.folderClass + " not supported");
         }
+    }
+
+    private JSONObject getEventIfExists(FolderId folderId, String itemName) throws IOException {
+        String itemId;
+        if (itemName.endsWith(".EML")) {
+            itemId = itemName.substring(0, itemName.length() - 4);
+        } else {
+            throw new IOException("Item " + folderId.mailbox + " " + folderId.id + " " + itemName + " invalid item name");
+        }
+        JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(folderId.mailbox)
+                .setObjectType("events")
+                .setObjectId(itemId)
+                .setExpandFields(EVENT_ATTRIBUTES)
+        );
+        return jsonResponse;
     }
 
     private JSONObject getContactIfExists(FolderId folderId, String itemName) throws IOException {

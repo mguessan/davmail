@@ -161,6 +161,10 @@ public class GraphObject {
         return null;
     }
 
+    public JSONObject optJSONObject(String key) {
+        return jsonObject.optJSONObject(key);
+    }
+
     public Date optDateTimeTimeZone(String key) throws DavMailException {
         JSONObject sectionObject = jsonObject.optJSONObject(key);
         if (sectionObject != null) {
