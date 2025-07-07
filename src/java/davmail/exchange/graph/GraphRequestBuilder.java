@@ -64,6 +64,8 @@ public class GraphRequestBuilder {
 
     String filter;
 
+    String timeZone;
+
     Set<FieldURI> expandFields;
 
     String accessToken;
@@ -128,6 +130,11 @@ public class GraphRequestBuilder {
 
     public GraphRequestBuilder setFilter(String filter) {
         this.filter = filter;
+        return this;
+    }
+
+    public GraphRequestBuilder setTimezone(String timeZone) {
+        this.timeZone = timeZone;
         return this;
     }
 
@@ -298,6 +305,10 @@ public class GraphRequestBuilder {
             }
             httpRequest.setHeader("Content-Type", contentType);
             httpRequest.setHeader("Authorization", "Bearer " + accessToken);
+
+            if (timeZone != null) {
+                httpRequest.setHeader("Prefer", "outlook.timezone=\""+timeZone+"\"");
+            }
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(httpRequest.getMethod() + " " + httpRequest.getURI());

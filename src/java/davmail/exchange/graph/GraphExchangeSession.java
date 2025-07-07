@@ -35,6 +35,7 @@ import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
 import davmail.exchange.ews.SearchExpression;
 import davmail.http.HttpClientAdapter;
+import davmail.http.URIUtil;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -309,7 +310,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     description = vEvent.getProperty("DESCRIPTION").getParamValue("ALTREP");
                 }
                 if (description != null && description.startsWith("data:text/html,")) {
-                    description = description.replaceFirst("data:text/html,", "");
+                    description = URIUtil.decode(description.replaceFirst("data:text/html,", ""));
                     jsonObject.put("body", new JSONObject().put("content", description).put("contentType", "html"));
                 } else {
                     description = vEvent.getPropertyValue("DESCRIPTION");
@@ -381,15 +382,17 @@ public class GraphExchangeSession extends ExchangeSession {
                 // html
                 if (content != null) {
                     // keep only html body
-                    if (content.contains("<body>") && content.contains("</body>")) {
+                    /*if (content.contains("<body>") && content.contains("</body>")) {
                         content = content.substring(content.indexOf("<body>") + "<body>".length(), content.indexOf("</body>"));
                     } else if (content.contains("<body dir=\"ltr\">") && content.contains("</body>")) {
                         content = content.substring(content.indexOf("<body dir=\"ltr\">") + "<body dir=\"ltr\">".length(), content.indexOf("</body>"));
-                    }
+                    }*/
                     vProperty = new VProperty(propertyName, convertHtmlToText(content));
                     // escape quotes and remove CR LF from html content
-                    content = content.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
-                    vProperty.addParam("ALTREP", "data:text/html," + content);
+                    content = content
+                            //.replace("\"", "\\\"")
+                            .replace("\n", "").replace("\r", "");
+                        vProperty.addParam("ALTREP", "data:text/html," + URIUtil.encodeWithinQuery(content));
                 } else {
                     vProperty = new VProperty(propertyName, null);
                 }
@@ -2254,7 +2257,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("calendars")
                 .setObjectId(folderId.id)
                 .setChildType("events")
-                .setExpandFields(EVENT_ATTRIBUTES);
+                .setExpandFields(EVENT_ATTRIBUTES)
+                .setTimezone(getVTimezone().getPropertyValue("TZID"));
         LOGGER.debug("searchEvents " + folderId.mailbox + " " + folderPath);
         if (condition != null && !condition.isEmpty()) {
             StringBuilder filter = new StringBuilder();
@@ -2302,10 +2306,11 @@ public class GraphExchangeSession extends ExchangeSession {
 
     private JSONObject getEventIfExists(FolderId folderId, String itemName) throws IOException {
         String itemId;
-        if (itemName.endsWith(".EML")) {
+        if (isItemId(itemName)) {
             itemId = itemName.substring(0, itemName.length() - 4);
         } else {
-            throw new IOException("Item " + folderId.mailbox + " " + folderId.id + " " + itemName + " invalid item name");
+            // we don't store urlcompname for events
+            return null;
         }
         return executeJsonRequest(new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
@@ -2313,6 +2318,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("events")
                 .setObjectId(itemId)
                 .setExpandFields(EVENT_ATTRIBUTES)
+                .setTimezone(getVTimezone().getPropertyValue("TZID"))
         );
     }
 
