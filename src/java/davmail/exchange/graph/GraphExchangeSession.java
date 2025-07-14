@@ -217,7 +217,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
             JSONArray attendees = graphObject.optJSONArray("attendees");
             if (attendees != null) {
-                for (int i=0;i<attendees.length();i++) {
+                for (int i = 0; i < attendees.length(); i++) {
                     JSONObject attendee = attendees.getJSONObject(i);
                     JSONObject emailAddress = attendee.getJSONObject("emailAddress");
                     VProperty attendeeProperty = convertEmailAddressToVproperty("ATTENDEE", emailAddress);
@@ -252,16 +252,16 @@ public class GraphExchangeSession extends ExchangeSession {
          * @return partstat value
          */
         private String responseTypeToPartstat(String responseType) {
-                // The response type. Possible values are: none, organizer, tentativelyAccepted, accepted, declined, notResponded.
-                if ("accepted".equals(responseType) || "organizer".equals(responseType)) {
-                    return "ACCEPTED";
-                } else if ("tentativelyAccepted".equals(responseType)) {
-                    return "TENTATIVE";
-                } else if ("declined".equals(responseType)) {
-                    return "DECLINED";
-                } else {
-                    return "NEEDS-ACTION";
-                }
+            // The response type. Possible values are: none, organizer, tentativelyAccepted, accepted, declined, notResponded.
+            if ("accepted".equals(responseType) || "organizer".equals(responseType)) {
+                return "ACCEPTED";
+            } else if ("tentativelyAccepted".equals(responseType)) {
+                return "TENTATIVE";
+            } else if ("declined".equals(responseType)) {
+                return "DECLINED";
+            } else {
+                return "NEEDS-ACTION";
+            }
         }
 
         @Override
@@ -381,18 +381,10 @@ public class GraphExchangeSession extends ExchangeSession {
             } else {
                 // html
                 if (content != null) {
-                    // keep only html body
-                    /*if (content.contains("<body>") && content.contains("</body>")) {
-                        content = content.substring(content.indexOf("<body>") + "<body>".length(), content.indexOf("</body>"));
-                    } else if (content.contains("<body dir=\"ltr\">") && content.contains("</body>")) {
-                        content = content.substring(content.indexOf("<body dir=\"ltr\">") + "<body dir=\"ltr\">".length(), content.indexOf("</body>"));
-                    }*/
                     vProperty = new VProperty(propertyName, convertHtmlToText(content));
-                    // escape quotes and remove CR LF from html content
-                    content = content
-                            //.replace("\"", "\\\"")
-                            .replace("\n", "").replace("\r", "");
-                        vProperty.addParam("ALTREP", "data:text/html," + URIUtil.encodeWithinQuery(content));
+                    // remove CR LF from html content
+                    content = content.replace("\n", "").replace("\r", "");
+                    vProperty.addParam("ALTREP", "data:text/html," + URIUtil.encodeWithinQuery(content));
                 } else {
                     vProperty = new VProperty(propertyName, null);
                 }
@@ -1948,6 +1940,7 @@ public class GraphExchangeSession extends ExchangeSession {
             JSONArray values = jsonResponse.getJSONArray("value");
             if (values.length() > 0) {
                 folderId = new FolderId(currentFolderId.mailbox, values.getJSONObject(0).getString("id"), currentFolderId.folderClass);
+                folderId.parentFolderId = currentFolderId.id;
             }
         } catch (JSONException e) {
             throw new IOException(e.getMessage(), e);
@@ -2331,7 +2324,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType("contactFolders")
                     .setObjectId(folderId.id)
                     .setChildType("contacts")
-                    .setChildId(itemName.substring(0, itemName.length()-".EML".length()))
+                    .setChildId(itemName.substring(0, itemName.length() - ".EML".length()))
                     .setExpandFields(CONTACT_ATTRIBUTES)
             );
 
@@ -2421,7 +2414,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public boolean isMainCalendar(String folderPath) throws IOException {
-        return false;
+        FolderId folderId = getFolderIdIfExists(folderPath);
+        return folderId.parentFolderId == null && WellKnownFolderName.calendar.name().equals(folderId.id);
     }
 
     @Override
