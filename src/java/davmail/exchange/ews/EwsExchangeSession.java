@@ -1027,7 +1027,7 @@ public class EwsExchangeSession extends ExchangeSession {
         folder.folderClass = item.get(Field.get("folderclass").getResponseName());
         folder.etag = item.get(Field.get("lastmodified").getResponseName());
         folder.ctag = item.get(Field.get("ctag").getResponseName());
-        folder.count = item.getInt(Field.get("count").getResponseName());
+        folder.messageCount = item.getInt(Field.get("count").getResponseName());
         folder.unreadCount = item.getInt(Field.get("unread").getResponseName());
         // fake recent value
         folder.recent = folder.unreadCount;

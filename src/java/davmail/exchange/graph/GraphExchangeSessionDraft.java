@@ -162,7 +162,7 @@ public class GraphExchangeSessionDraft extends ExchangeSession {
 
             }
         }
-        folder.count = jsonResponse.getInt("totalItemCount");
+        folder.messageCount = jsonResponse.getInt("totalItemCount");
         folder.unreadCount = jsonResponse.getInt("unreadItemCount");
         folder.hasChildren = jsonResponse.getInt("childFolderCount") > 0;
 
@@ -657,7 +657,7 @@ public class GraphExchangeSessionDraft extends ExchangeSession {
         Folder folder = new Folder();
         try {
             folder.displayName = jsonResponse.optString("displayName");
-            folder.count = jsonResponse.getInt("totalItemCount");
+            folder.messageCount = jsonResponse.getInt("totalItemCount");
             folder.unreadCount = jsonResponse.getInt("unreadItemCount");
             folder.hasChildren = jsonResponse.getInt("childFolderCount") > 0;
 

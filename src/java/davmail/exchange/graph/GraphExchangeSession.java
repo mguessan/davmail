@@ -1721,7 +1721,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.getString("displayName"));
                 }
 
-                folder.count = jsonResponse.optInt("totalItemCount");
+                folder.messageCount = jsonResponse.optInt("totalItemCount");
                 folder.unreadCount = jsonResponse.optInt("unreadItemCount");
                 // fake recent value
                 folder.recent = folder.unreadCount;

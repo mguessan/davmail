@@ -882,12 +882,12 @@ public abstract class ExchangeSession {
         Folder newFolder = getFolder(currentFolder.folderPath);
         if (currentFolder.ctag == null || !currentFolder.ctag.equals(newFolder.ctag)
                 // ctag stamp is limited to second, check message count
-                || !(currentFolder.count == newFolder.count)
+                || !(currentFolder.messageCount == newFolder.messageCount)
         ) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Contenttag or count changed on " + currentFolder.folderPath +
                         " ctag: " + currentFolder.ctag + " => " + newFolder.ctag +
-                        " count: " + currentFolder.count + " => " + newFolder.count
+                        " count: " + currentFolder.messageCount + " => " + newFolder.messageCount
                         + ", reloading messages");
             }
             currentFolder.hasChildren = newFolder.hasChildren;
@@ -1128,7 +1128,7 @@ public abstract class ExchangeSession {
         /**
          * Folder message count.
          */
-        public int count;
+        public int messageCount;
         /**
          * Folder unread message count.
          */
@@ -1262,7 +1262,7 @@ public abstract class ExchangeSession {
          */
         public int count() {
             if (messages == null) {
-                return count;
+                return messageCount;
             } else {
                 return messages.size();
             }
