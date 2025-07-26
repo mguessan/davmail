@@ -133,6 +133,10 @@ public class StringUtilTest extends TestCase {
         assertEquals("test ?", StringUtil.decodeUrlcompname("test %3F"));
     }
 
+    public void testEncodeUrlCompname() {
+        assertEquals("test %7E", StringUtil.encodeUrlcompname("test ~"));
+        assertEquals("test ~", StringUtil.decodeUrlcompname("test %7E"));
+    }
 
     public void testEncodeAltDesc() {
         String desc = "test <b param=\"test\">bold</b>";
