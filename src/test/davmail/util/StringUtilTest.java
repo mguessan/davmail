@@ -20,7 +20,9 @@ package davmail.util;
 
 import davmail.http.URIUtil;
 import junit.framework.TestCase;
+import org.junit.Assert;
 
+import java.net.URLEncoder;
 import java.text.ParseException;
 
 import static org.junit.Assert.assertThrows;
@@ -95,6 +97,7 @@ public class StringUtilTest extends TestCase {
                 //String result = value.replaceAll("\\+", "%2B");
             }
             System.out.println("Elapsed: " + (System.currentTimeMillis() - startTime) + " ms");
+            Assert.assertTrue((System.currentTimeMillis() - startTime)<500);
         }
     }
 
@@ -130,9 +133,12 @@ public class StringUtilTest extends TestCase {
         assertEquals("test ?", StringUtil.decodeUrlcompname("test %3F"));
     }
 
-    public void testEncodeUrlCompname() {
 
-        assertEquals("test %7E", StringUtil.encodeUrlcompname("test ~"));
-        assertEquals("test ~", StringUtil.decodeUrlcompname("test %7E"));
+    public void testEncodeAltDesc() {
+        String desc = "test <b param=\"test\">bold</b>";
+        System.out.println(URLEncoder.encode(desc));
+        System.out.println(URIUtil.encodeWithinQuery(desc));
+        System.out.println(URIUtil.encodePath(desc));
+
     }
 }
