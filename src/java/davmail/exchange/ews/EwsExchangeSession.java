@@ -382,7 +382,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
+    public ExchangeSession.Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -552,7 +552,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return mimeContent;
     }
 
-    protected Message buildMessage(EWSMethod.Item response) throws DavMailException {
+    protected ExchangeSession.Message buildMessage(EWSMethod.Item response) throws DavMailException {
         Message message = new Message();
 
         // get item id
@@ -603,7 +603,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         for (EWSMethod.Item response : responses) {
             if (MESSAGE_TYPES.contains(response.type)) {
-                Message message = buildMessage(response);
+                ExchangeSession.Message message = buildMessage(response);
                 message.messageList = messages;
                 messages.add(message);
             }
@@ -1066,7 +1066,7 @@ public class EwsExchangeSession extends ExchangeSession {
             for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
                 resultCount++;
                 Folder folder = buildFolder(item);
-                if (parentFolderPath.length() > 0) {
+                if (!parentFolderPath.isEmpty()) {
                     if (parentFolderPath.endsWith("/")) {
                         folder.folderPath = parentFolderPath + folder.displayName;
                     } else {
@@ -1261,7 +1261,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
-                if (value != null && value.length() > 0) {
+                if (value != null && !value.isEmpty()) {
                     if ("bday".equals(attributeName) || "anniversary".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
                         value = convertDateFromExchange(value);
                     }
@@ -1886,7 +1886,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                         item.type = partstatToResponseMap.get(vCalendar.getAttendeeStatus());
                         item.referenceItemId = new ItemId("ReferenceItemId", currentItemId.id, currentItemId.changeKey);
-                        if (body != null && body.length() > 0) {
+                        if (body != null && !body.isEmpty()) {
                             item.put("Body", body);
                         }
                         createOrUpdateItemMethod = new CreateItemMethod(messageDisposition,
@@ -1990,10 +1990,10 @@ public class EwsExchangeSession extends ExchangeSession {
                             }
                         }
 
-                        if (requiredAttendees.size() > 0) {
+                        if (!requiredAttendees.isEmpty()) {
                             updates.add(Field.createFieldUpdate("to", StringUtil.join(requiredAttendees, ", ")));
                         }
-                        if (optionalAttendees.size() > 0) {
+                        if (!optionalAttendees.isEmpty()) {
                             updates.add(Field.createFieldUpdate("cc", StringUtil.join(optionalAttendees, ", ")));
                         }
                     }
@@ -2569,7 +2569,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 EWSMethod.Item cancelItem = new EWSMethod.Item();
                 cancelItem.type = "CancelCalendarItem";
                 cancelItem.referenceItemId = new ItemId("ReferenceItemId", item);
-                if (body != null && body.length() > 0) {
+                if (body != null && !body.isEmpty()) {
                     item.put("Body", body);
                 }
                 CreateItemMethod cancelItemMethod = new CreateItemMethod(messageDisposition,
@@ -2659,7 +2659,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void loadVtimezone() {
 
         try {
-            String timezoneId = null;
+            String timezoneId;
             timezoneId = Settings.getProperty("davmail.timezoneId");
             if (timezoneId == null && !"Exchange2007_SP1".equals(serverVersion)) {
                 // On Exchange 2010, get user timezone from server
@@ -2826,7 +2826,7 @@ public class EwsExchangeSession extends ExchangeSession {
             folderNames = folderPath.split("/");
         }
         for (String folderName : folderNames) {
-            if (folderName.length() > 0) {
+            if (!folderName.isEmpty()) {
                 currentFolderId = getSubFolderByName(currentFolderId, folderName);
                 if (currentFolderId == null) {
                     break;
@@ -3121,7 +3121,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected String convertTaskDateToZulu(String value) {
         String result = null;
-        if (value != null && value.length() > 0) {
+        if (value != null && !value.isEmpty()) {
             try {
                 SimpleDateFormat parser = ExchangeSession.getExchangeDateFormat(value);
                 Calendar calendarValue = Calendar.getInstance(GMT_TIMEZONE);
