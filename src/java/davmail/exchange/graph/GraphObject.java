@@ -54,9 +54,14 @@ public class GraphObject {
                 keywords.add(categoriesArray.optString(j));
             }
             value = StringUtil.join(keywords, ",");
-        }
-        // try to fetch from expanded properties
-        else if (value == null) {
+        } else if ("changeKey".equals(key) && value == null) {
+            // tasks don't have an etag field, use @odata.etag
+            String odataEtag = optString("@odata.etag");
+            if (odataEtag != null && odataEtag.startsWith("W/\"") && odataEtag.endsWith("\"")) {
+                value = odataEtag.substring(3, odataEtag.length()-1);
+            }
+            // try to fetch from expanded properties
+        } else if (value == null) {
             key = Field.get(key).getGraphId();
             // remapped attributes first
             value = jsonObject.optString(key, null);
