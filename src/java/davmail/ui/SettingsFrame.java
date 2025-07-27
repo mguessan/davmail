@@ -110,6 +110,7 @@ public class SettingsFrame extends JFrame {
     protected JTextField oauthTenantIdField;
     protected JTextField oauthClientIdField;
     protected JTextField oauthRedirectUriField;
+    protected JTextField oauthTldField;
 
     JCheckBox osxHideFromDockCheckBox;
 
@@ -410,12 +411,13 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOauthPanel() {
-        JPanel oAuthPanel = new JPanel(new GridLayout(3, 2));
+        JPanel oAuthPanel = new JPanel(new GridLayout(4, 2));
         oAuthPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OAUTH")));
 
         oauthTenantIdField = new JTextField(Settings.getProperty("davmail.oauth.tenantId"), 20);
         oauthClientIdField = new JTextField(Settings.getProperty("davmail.oauth.clientId"), 20);
         oauthRedirectUriField = new JTextField(Settings.getProperty("davmail.oauth.redirectUri"), 20);
+        oauthTldField = new JTextField(Settings.getProperty("davmail.tld"), 20);
 
         addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_TENANTID"), oauthTenantIdField,
                 BundleMessage.format("UI_OAUTH_TENANTID_HELP"));
@@ -423,6 +425,8 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_OAUTH_CLIENTID_HELP"));
         addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_REDIRECTURI"), oauthRedirectUriField,
                 BundleMessage.format("UI_OAUTH_REDIRECTURI_HELP"));
+        addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_TLD"), oauthTldField,
+                BundleMessage.format("UI_OAUTH_TLD_HELP"));
         updateMaximumSize(oAuthPanel);
         return oAuthPanel;
     }
@@ -666,6 +670,7 @@ public class SettingsFrame extends JFrame {
         oauthTenantIdField.setText(Settings.getProperty("davmail.oauth.tenantId"));
         oauthClientIdField.setText(Settings.getProperty("davmail.oauth.clientId"));
         oauthRedirectUriField.setText(Settings.getProperty("davmail.oauth.redirectUri"));
+        oauthTldField.setText(Settings.getProperty("davmail.tld"));
 
         rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
@@ -837,6 +842,7 @@ public class SettingsFrame extends JFrame {
             Settings.setProperty("davmail.oauth.tenantId", oauthTenantIdField.getText());
             Settings.setProperty("davmail.oauth.clientId", oauthClientIdField.getText());
             Settings.setProperty("davmail.oauth.redirectUri", oauthRedirectUriField.getText());
+            Settings.setProperty("davmail.tld", oauthTldField.getText());
 
             Settings.setLoggingLevel("rootLogger", (Level) rootLoggingLevelField.getSelectedItem());
             Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());
