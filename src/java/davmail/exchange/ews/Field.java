@@ -259,7 +259,7 @@ public final class Field {
         // task
         FIELD_MAP.put("importance", new UnindexedFieldURI("item:Importance"));
         FIELD_MAP.put("percentcomplete", new UnindexedFieldURI("task:PercentComplete"));
-        FIELD_MAP.put("taskstatus", new UnindexedFieldURI("task:Status"));
+        FIELD_MAP.put("taskstatus", new UnindexedFieldURI("task:Status", "status"));
 
         FIELD_MAP.put("startdate", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Task, 0x8104, ExtendedFieldURI.PropertyType.SystemTime));
         FIELD_MAP.put("duedate", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Task, 0x8105, ExtendedFieldURI.PropertyType.SystemTime));
