@@ -120,10 +120,19 @@ public class GraphExchangeSession extends ExchangeSession {
 
         public Event(FolderId folderId, GraphObject graphObject) {
             this.folderId = folderId;
+
+            if ("IPF.Appointment".equals(folderId.folderClass) && graphObject.optString("taskstatus") != null) {
+                // replace folder on task items requested as part of the default calendar
+                try {
+                    this.folderId = getFolderId(TASKS);
+                } catch (IOException e) {
+                    LOGGER.warn("Unable to replace folder with tasks");
+                }
+            }
+
             this.graphObject = graphObject;
 
             id = graphObject.optString("id");
-            // TODO: test etag
             etag = graphObject.optString("changeKey");
 
             displayName = graphObject.optString("subject");
@@ -2305,14 +2314,28 @@ public class GraphExchangeSession extends ExchangeSession {
             // we don't store urlcompname for events
             return null;
         }
-        return executeJsonRequest(new GraphRequestBuilder()
-                .setMethod(HttpGet.METHOD_NAME)
-                .setMailbox(folderId.mailbox)
-                .setObjectType("events")
-                .setObjectId(itemId)
-                .setExpandFields(EVENT_ATTRIBUTES)
-                .setTimezone(getVTimezone().getPropertyValue("TZID"))
-        );
+        try {
+            return executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("events")
+                    .setObjectId(itemId)
+                    .setExpandFields(EVENT_ATTRIBUTES)
+                    .setTimezone(getVTimezone().getPropertyValue("TZID"))
+            );
+        } catch (HttpNotFoundException e) {
+            // this may be a task item
+            FolderId taskFolderId = getFolderId(TASKS);
+            return executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("todo/lists")
+                    .setObjectId(taskFolderId.id)
+                    .setChildType("tasks")
+                    .setChildId(itemId)
+                    .setExpandFields(TODO_PROPERTIES)
+            );
+        }
     }
 
     private JSONObject getContactIfExists(FolderId folderId, String itemName) throws IOException {
