@@ -198,7 +198,7 @@ public class ImapConnection extends AbstractConnection {
                                         if (specialOnly && tokens.hasMoreTokens()) {
                                             token = tokens.nextToken();
                                         }
-                                        String folderContext = buildFolderContext(token);
+                                        String folderContext = buildFolderPath(token);
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + decodeFolderPath(tokens.nextToken());
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
@@ -297,12 +297,14 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        session.createMessageFolder(decodeFolderPath(tokens.nextToken()));
+                                        // TODO: take path into account
+                                        session.createMessageFolder(buildFolderPath(tokens.nextToken()));
                                         sendClient(commandId + " OK folder created");
                                     } else {
                                         sendClient(commandId + " BAD missing create argument");
                                     }
                                 } else if ("rename".equalsIgnoreCase(command)) {
+                                    // TODO: take path into account
                                     String folderName = decodeFolderPath(tokens.nextToken());
                                     String targetName = decodeFolderPath(tokens.nextToken());
                                     try {
@@ -312,6 +314,7 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("delete".equalsIgnoreCase(command)) {
+                                    // TODO: take path into account
                                     String folderName = decodeFolderPath(tokens.nextToken());
                                     try {
                                         session.deleteFolder(folderName);
@@ -372,7 +375,7 @@ public class ImapConnection extends AbstractConnection {
                                         } else if ("copy".equalsIgnoreCase(subcommand) || "move".equalsIgnoreCase(subcommand)) {
                                             try {
                                                 UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, tokens.nextToken());
-                                                String targetName = buildFolderContext(tokens.nextToken());
+                                                String targetName = buildFolderPath(tokens.nextToken());
                                                 if (!uidRangeIterator.hasNext()) {
                                                     sendClient(commandId + " NO " + "No message found");
                                                 } else {
@@ -454,6 +457,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("copy".equalsIgnoreCase(command) || "move".equalsIgnoreCase(command)) {
                                     try {
                                         RangeIterator rangeIterator = new RangeIterator(currentFolder.messages, tokens.nextToken());
+                                        // TODO: take path into account
                                         String targetName = decodeFolderPath(tokens.nextToken());
                                         if (!rangeIterator.hasNext()) {
                                             sendClient(commandId + " NO " + "No message found");
@@ -473,6 +477,7 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("append".equalsIgnoreCase(command)) {
+                                    // TODO: take path into account
                                     String folderName = decodeFolderPath(tokens.nextToken());
                                     HashMap<String, String> properties = new HashMap<>();
                                     String flags = null;
@@ -623,6 +628,7 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("status".equalsIgnoreCase(command)) {
                                     try {
+                                        // TODO: take path into account
                                         String encodedFolderName = tokens.nextToken();
                                         String folderName = decodeFolderPath(encodedFolderName);
                                         ExchangeSession.Folder folder = session.getFolder(folderName);
@@ -770,11 +776,11 @@ public class ImapConnection extends AbstractConnection {
                 .replaceAll("\\\\", "");
     }
 
-    protected String buildFolderContext(String folderToken) {
+    protected String buildFolderPath(String encodedFolderPath) {
         if (baseMailboxPath == null) {
-            return decodeFolderPath(folderToken);
+            return decodeFolderPath(encodedFolderPath);
         } else {
-            return baseMailboxPath + decodeFolderPath(folderToken);
+            return baseMailboxPath + decodeFolderPath(encodedFolderPath);
         }
     }
 
