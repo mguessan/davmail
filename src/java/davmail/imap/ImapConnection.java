@@ -198,9 +198,9 @@ public class ImapConnection extends AbstractConnection {
                                         if (specialOnly && tokens.hasMoreTokens()) {
                                             token = tokens.nextToken();
                                         }
-                                        String folderContext = buildFolderPath(token);
+
                                         if (tokens.hasMoreTokens()) {
-                                            String folderQuery = folderContext + decodeFolderPath(tokens.nextToken());
+                                            String folderQuery = buildFolderPath(token) + decodeFolderPath(tokens.nextToken());
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
                                                 List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false, false);
                                                 for (ExchangeSession.Folder folder : folders) {
@@ -254,10 +254,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("select".equalsIgnoreCase(command) || "examine".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         @SuppressWarnings({"NonConstantStringShouldBeStringBuffer"})
-                                        String folderName = decodeFolderPath(tokens.nextToken());
-                                        if (baseMailboxPath != null && !folderName.startsWith("/")) {
-                                            folderName = baseMailboxPath + folderName;
-                                        }
+                                        String folderName = buildFolderPath(tokens.nextToken());
                                         try {
                                             currentFolder = session.getFolder(folderName);
                                             loadFolder(currentFolder);
@@ -297,16 +294,14 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        // TODO: take path into account
                                         session.createMessageFolder(buildFolderPath(tokens.nextToken()));
                                         sendClient(commandId + " OK folder created");
                                     } else {
                                         sendClient(commandId + " BAD missing create argument");
                                     }
                                 } else if ("rename".equalsIgnoreCase(command)) {
-                                    // TODO: take path into account
-                                    String folderName = decodeFolderPath(tokens.nextToken());
-                                    String targetName = decodeFolderPath(tokens.nextToken());
+                                    String folderName = buildFolderPath(tokens.nextToken());
+                                    String targetName = buildFolderPath(tokens.nextToken());
                                     try {
                                         session.moveFolder(folderName, targetName);
                                         sendClient(commandId + " OK rename completed");
@@ -314,8 +309,7 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("delete".equalsIgnoreCase(command)) {
-                                    // TODO: take path into account
-                                    String folderName = decodeFolderPath(tokens.nextToken());
+                                    String folderName = buildFolderPath(tokens.nextToken());
                                     try {
                                         session.deleteFolder(folderName);
                                         sendClient(commandId + " OK folder deleted");
@@ -457,8 +451,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("copy".equalsIgnoreCase(command) || "move".equalsIgnoreCase(command)) {
                                     try {
                                         RangeIterator rangeIterator = new RangeIterator(currentFolder.messages, tokens.nextToken());
-                                        // TODO: take path into account
-                                        String targetName = decodeFolderPath(tokens.nextToken());
+                                        String targetName = buildFolderPath(tokens.nextToken());
                                         if (!rangeIterator.hasNext()) {
                                             sendClient(commandId + " NO " + "No message found");
                                         } else {
@@ -477,8 +470,7 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("append".equalsIgnoreCase(command)) {
-                                    // TODO: take path into account
-                                    String folderName = decodeFolderPath(tokens.nextToken());
+                                    String folderName = buildFolderPath(tokens.nextToken());
                                     HashMap<String, String> properties = new HashMap<>();
                                     String flags = null;
                                     String date = null;
@@ -559,7 +551,7 @@ public class ImapConnection extends AbstractConnection {
                                     readClient();
                                     MimeMessage mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(buffer));
 
-                                    String messageName = UUID.randomUUID().toString() + ".EML";
+                                    String messageName = UUID.randomUUID() + ".EML";
                                     try {
                                         ExchangeSession.Message createdMessage = MessageCreateThread.createMessage(session, folderName, messageName, properties, mimeMessage, os, capabilities);
                                         if (createdMessage != null) {
@@ -628,10 +620,8 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("status".equalsIgnoreCase(command)) {
                                     try {
-                                        // TODO: take path into account
                                         String encodedFolderName = tokens.nextToken();
-                                        String folderName = decodeFolderPath(encodedFolderName);
-                                        ExchangeSession.Folder folder = session.getFolder(folderName);
+                                        ExchangeSession.Folder folder = session.getFolder(buildFolderPath(encodedFolderName));
                                         // must retrieve messages
 
                                         loadFolder(folder);
@@ -777,10 +767,11 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected String buildFolderPath(String encodedFolderPath) {
-        if (baseMailboxPath == null) {
-            return decodeFolderPath(encodedFolderPath);
+        String decodedFolderPath = decodeFolderPath(encodedFolderPath);
+        if (baseMailboxPath == null || decodedFolderPath.startsWith("/")) {
+            return decodedFolderPath;
         } else {
-            return baseMailboxPath + decodeFolderPath(encodedFolderPath);
+            return baseMailboxPath + decodedFolderPath;
         }
     }
 
