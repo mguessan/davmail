@@ -5,9 +5,17 @@
 # In case of SWT crash under JDK 9/11, uninstall SWT or remove SWT cases below
 #
 BASE=$(dirname "$0")
-# set memory and enable DNS expiration
-JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60"
-JAVA=java
+# Set default java options (may override in environment when calling this program)
+# Memory and DNS expiration
+: ${JAVA_CORE_OPTS:="-Xmx512M -Dsun.net.inetaddr.ttl=60"}
+# Newer java no longer expose this internal API
+: ${JAVA_NET_OPTS_DFL:="--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED"}
+# User arguments (such as UI scaling)
+: ${JAVA_USER_OPTS:=""}
+# May also pass in CLASSPATH, JFX_CLASSPATH, EXTRA_CLASSPATH, JAVA_EXTRA_OPTS, JAVA_EXTRA2_OPTS, LD_LIBRARY_PATH, SWT_GTK3
+JAVA_NET_OPTS=
+CP_PREFIX=
+CP_SUFFIX=
 
 # Experimental: download Azul JRE FX with command 'davmail azul'
 if [ "x$1" = 'xazul' ]; then
@@ -32,48 +40,68 @@ fi
 # check for embedded jre
 if [ -e "$BASE/jre/bin/java" ]; then
   JAVA=$BASE/jre/bin/java
-  JAVA_OPTS="$JAVA_OPTS --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED"
+  JAVA_NET_OPTS="${JAVA_NET_OPTS_DFL}"
   echo "Using embedded JRE"
   $JAVA -version
-elif  java -version 2>&1 >/dev/null | grep -q "version" ; then
+else
+ : ${JAVA:=java}
+ if $JAVA -version 2>&1 >/dev/null | grep -q "version" ; then
   echo "Using system provided JRE"
-  java -version
+  ${JAVA} -version
 
   if [ -e "/usr/lib/jvm/openjfx" ]; then
     echo "Enable OpenJFX"
-    JAVA_OPTS="$JAVA_OPTS --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED"
-    JAVA_OPTS="$JAVA_OPTS -Djava.library.path=/usr/lib/jvm/openjfx --module-path /usr/lib/jvm/openjfx --add-modules javafx.base,javafx.controls,javafx.web,javafx.fxml,javafx.swing"
+    JAVA_NET_OPTS="${JAVA_NET_OPTS_DFL}"
+    : ${JAVA_EXTRA_OPTS:="-Djava.library.path=/usr/lib/jvm/openjfx --module-path /usr/lib/jvm/openjfx --add-modules javafx.base,javafx.controls,javafx.web,javafx.fxml,javafx.swing"}
   elif [ -e "/usr/share/openjfx" ]; then
     # matches Kubuntu
     echo "Enable OpenJFX"
-    JAVA_OPTS="$JAVA_OPTS --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED"
+    JAVA_NET_OPTS="${JAVA_NET_OPTS_DFL}"
   else
     # add JFX to classpath with OpenJDK 11
-    JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
+    : ${JFX_CLASSPATH:=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar}
   fi
-elif [ -e "$BASE/davmail.jar" ]; then
+ elif [ -e "$BASE/davmail.jar" ]; then
   # display message for platform independent package
   echo "Java not found, try davmail azul to fetch latest Azul JRE"
   exit 1
+ fi
 fi
 
 
-# uncomment this to force JDK 8
+# uncomment this (or set JAVA variable to this when calling program) to force JDK 8
 #JAVA=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 if [ -e "$BASE/davmail.jar" ]; then
     # this is the platform independent package
-    exec "${JAVA}" $JAVA_OPTS -cp "$BASE/davmail.jar:$BASE/lib/*:${JFX_CLASSPATH}" davmail.DavGateway "$@"
+    CP_PREFIX="$BASE/davmail.jar:$BASE/lib/*"
+
 elif [ -e /usr/share/java/swt.jar ]; then
     # SWT 3 is available
-    JAVA_OPTS="$JAVA_OPTS -Djdk.gtk.version=2.2"
-    export LD_LIBRARY_PATH=/usr/lib/jni
-    exec "${JAVA}" $JAVA_OPTS -cp "/usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:${JFX_CLASSPATH}:/usr/share/davmail/lib/*" davmail.DavGateway "$@"
+    : ${JAVA_EXTRA2_OPTS:="-Djdk.gtk.version=2.2"}
+    : ${LD_LIBRARY_PATH:=/usr/lib/jni}
+    export LD_LIBRARY_PATH
+    CP_PREFIX="/usr/share/davmail/davmail.jar:/usr/share/java/swt.jar"
+    CP_SUFFIX="/usr/share/davmail/lib/*"
 elif [ -e /usr/share/java/swt4.jar ]; then
     # SWT 4 is available, force GTK 2 in SWT
-    JAVA_OPTS="$JAVA_OPTS -Djdk.gtk.version=2.2"
-    export LD_LIBRARY_PATH=/usr/lib/jni
-    export SWT_GTK3=0
-    exec "${JAVA}" $JAVA_OPTS -cp "/usr/share/davmail/davmail.jar:/usr/share/java/swt4.jar:${JFX_CLASSPATH}:/usr/share/davmail/lib/*" davmail.DavGateway "$@"
+    : ${JAVA_EXTRA2_OPTS:="-Djdk.gtk.version=2.2"}
+    : ${LD_LIBRARY_PATH:=/usr/lib/jni}
+    : ${SWT_GTK3:=0}
+    export LD_LIBRARY_PATH SWT_GTK3
+
+    CP_PREFIX="/usr/share/davmail/davmail.jar:/usr/share/java/swt4.jar"
+    CP_SUFFIX=":/usr/share/davmail/lib/*"
 else
-    exec "${JAVA}" $JAVA_OPTS -cp "/usr/share/davmail/davmail.jar:/usr/share/davmail/lib/*:${JFX_CLASSPATH}" davmail.DavGateway "$@"
+    CP_PREFIX="/usr/share/davmail/davmail.jar:/usr/share/davmail/lib/*"
 fi
+
+if [ "$CLASSPATH" = "" ]; then
+    CLASSPATH=$CP_PREFIX
+    if [ "$JFX_CLASSPATH" ]; then CLASSPATH="$CLASSPATH:$JFX_CLASSPATH"; fi
+    if [ "$CP_SUFFIX" ]; then CLASSPATH="$CLASSPATH:$CP_SUFFIX"; fi
+    if [ "$EXTRA_CLASSPATH" ]; then CLASSPATH="$CLASSPATH:$EXTRA_CLASSPATH"; fi
+fi
+
+: ${JAVA_OPTS:=$JAVA_CORE_OPTS $JAVA_NET_OPTS $JAVA_EXTRA_OPTS $JAVA_EXTRA2_OPTS $JAVA_USER_OPTS}
+
+exec "${JAVA}" $JAVA_OPTS -cp "$CLASSPATH" davmail.DavGateway "$@"
