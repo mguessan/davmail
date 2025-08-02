@@ -963,7 +963,8 @@ public class GraphExchangeSession extends ExchangeSession {
         byte[] mimeContent = IOUtil.encodeBase64(mimeMessage);
 
         // do we want created message to have draft flag?
-        boolean isDraft = properties != null && "1".equals(properties.get("draft"));
+        // draft is set for mapi PR_MESSAGE_FLAGS property combined with read flag by IMAPConnection
+        boolean isDraft = properties != null && ("8".equals(properties.get("draft")) || "9".equals(properties.get("draft")));
 
         // https://learn.microsoft.com/en-us/graph/api/user-post-messages
 
