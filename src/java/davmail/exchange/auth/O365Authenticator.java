@@ -254,13 +254,15 @@ public class O365Authenticator implements ExchangeAuthenticator {
                             LOGGER.warn("Authentication successful but user consent or validation needed, please open the following url in a browser");
                             LOGGER.warn(url);
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                        } else if ("ConvergedChangePassword".equals(config.optString("pgid"))) {
+                            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
                         } else if ("50126".equals(config.optString("sErrorCode"))) {
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else if ("50125".equals(config.optString("sErrorCode"))) {
                             throw new DavMailAuthenticationException("LOG_MESSAGE", "Your organization needs more information to keep your account secure, authenticate once in a web browser and try again");
                         } else if ("50128".equals(config.optString("sErrorCode"))) {
                             throw new DavMailAuthenticationException("LOG_MESSAGE", "Invalid domain name - No tenant-identifying information found in either the request or implied by any provided credentials.");
-                        } else if (config.optString("strServiceExceptionMessage") != null) {
+                        } else if (config.optString("strServiceExceptionMessage", null) != null) {
                             LOGGER.debug("O365 returned error: " + config.optString("strServiceExceptionMessage"));
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else {
