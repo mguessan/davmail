@@ -196,12 +196,18 @@ public class GraphExchangeSession extends ExchangeSession {
                     localVCalendar.addFirstVeventProperty(convertBodyToVproperty("DESCRIPTION", graphObject.optJSONObject("body")));
 
                     localVCalendar.setFirstVeventPropertyValue("LAST-MODIFIED", convertDateFromExchange(graphObject.optString("lastModifiedDateTime")));
-                    localVCalendar.setFirstVeventPropertyValue("DTSTAMP", convertDateFromExchange(graphObject.optString("createdDateTime")));
+                    localVCalendar.setFirstVeventPropertyValue("DTSTAMP", convertDateFromExchange(graphObject.optString("lastModifiedDateTime")));
                     localVCalendar.addFirstVeventProperty(convertDateTimeTimeZoneToVproperty("DTSTART", graphObject.optJSONObject("start")));
                     localVCalendar.addFirstVeventProperty(convertDateTimeTimeZoneToVproperty("DTEND", graphObject.optJSONObject("end")));
 
                     localVCalendar.setFirstVeventPropertyValue("CLASS", convertClassFromExchange(graphObject.optString("sensitivity")));
-                    localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", graphObject.optString("showAs"));
+
+                    // custom microsoft properties
+                    localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", graphObject.optString("showAs").toUpperCase());
+                    localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", graphObject.optString("isAllDay").toUpperCase());
+                    localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", graphObject.optString("responseRequested").toUpperCase());
+
+                    handleRecurrence(localVCalendar, graphObject);
 
                     localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS", graphObject.optString("xmozsendinvitations"));
                     localVCalendar.setFirstVeventPropertyValue("X-MOZ-LASTACK", graphObject.optString("xmozlastack"));
@@ -215,6 +221,43 @@ public class GraphExchangeSession extends ExchangeSession {
                 throw new IOException(e.getMessage(), e);
             }
             return content;
+        }
+
+        private void handleRecurrence(VCalendar localVCalendar, GraphObject graphObject) throws JSONException, DavMailException {
+
+            JSONObject recurrence = graphObject.optJSONObject("recurrence");
+            if (recurrence != null) {
+                StringBuilder rruleValue = new StringBuilder();
+                JSONObject pattern = recurrence.getJSONObject("pattern");
+                JSONObject range = recurrence.getJSONObject("range");
+                String patternType = pattern.getString("type");
+                int interval = pattern.getInt("interval");
+                String firstDayOfWeek = pattern.getString("firstDayOfWeek");
+                JSONArray daysOfWeek = pattern.getJSONArray("daysOfWeek");
+                String rangeType = range.getString("type");
+
+                rruleValue.append("FREQ=").append(patternType.toUpperCase());
+                if (rangeType.equals("endDate")) {
+                    String endDate = convertDateFromExchange(range.getString("endDate"));
+                    rruleValue.append(";UNTIL=").append(endDate);
+                }
+                if (interval > 0) {
+                    rruleValue.append(";INTERVAL=").append(interval);
+                }
+                if (firstDayOfWeek.length() >= 2) {
+                    rruleValue.append(";WKST=").append(firstDayOfWeek.substring(0, 2).toUpperCase());
+                }
+                if (daysOfWeek.length() > 0) {
+                    ArrayList<String> days = new ArrayList<>();
+                    for (int i=0;i<daysOfWeek.length();i++) {
+                        days.add(daysOfWeek.getString(i).substring(0, 2).toUpperCase());
+                    }
+                    rruleValue.append(";BYDAY=").append(String.join(",", days));
+                }
+
+
+                localVCalendar.addFirstVeventProperty(new VProperty("RRULE", rruleValue.toString()));
+            }
         }
 
         private void setAttendees(VObject vEvent) throws JSONException {
