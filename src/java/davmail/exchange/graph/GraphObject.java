@@ -31,6 +31,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.ResourceBundle;
 import java.util.TimeZone;
 
 /**
@@ -186,6 +187,15 @@ public class GraphObject {
             }
         }
         return null;
+    }
+
+    public static String convertTimezoneFromExchange(String exchangeTimezone) {
+        ResourceBundle tzidsBundle = ResourceBundle.getBundle("stdtimezones");
+        if (tzidsBundle.containsKey(exchangeTimezone)) {
+            return tzidsBundle.getString(exchangeTimezone);
+        } else {
+            return exchangeTimezone;
+        }
     }
 }
 

@@ -62,6 +62,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,7 +76,10 @@ import java.util.MissingResourceException;
 import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.zip.GZIPInputStream;
+
+import static davmail.exchange.graph.GraphObject.convertTimezoneFromExchange;
 
 /**
  * Implement ExchangeSession based on Microsoft Graph
@@ -230,35 +234,104 @@ public class GraphExchangeSession extends ExchangeSession {
                 StringBuilder rruleValue = new StringBuilder();
                 JSONObject pattern = recurrence.getJSONObject("pattern");
                 JSONObject range = recurrence.getJSONObject("range");
+                // daily, weekly, absoluteMonthly, relativeMonthly, absoluteYearly, relativeYearly
                 String patternType = pattern.getString("type");
                 int interval = pattern.getInt("interval");
+                //  first, second, third, fourth, last
+                String index = pattern.optString("index", null);
+                // convert index
+                if ("first".equals(index)) {
+                    index = "1";
+                } else if ("second".equals(index)) {
+                    index = "2";
+                } else if ("third".equals(index)) {
+                    index = "3";
+                } else if ("fourth".equals(index)) {
+                    index = "4";
+                } else if ("last".equals(index)) {
+                    index = "-1";
+                }
+                // The month in which the event occurs
+                String month = pattern.getString("month");
+                if ("0".equals(month)) {
+                    month = null;
+                }
+                // The first day of the week
                 String firstDayOfWeek = pattern.getString("firstDayOfWeek");
-                JSONArray daysOfWeek = pattern.getJSONArray("daysOfWeek");
+                // The day of the month on which the event occurs
+                String dayOfMonth = pattern.getString("dayOfMonth");
+                if ("0".equals(dayOfMonth)) {
+                    dayOfMonth = null;
+                }
+                // A collection of the days of the week on which the event occurs
+                JSONArray daysOfWeek = pattern.optJSONArray("daysOfWeek");
                 String rangeType = range.getString("type");
 
-                rruleValue.append("FREQ=").append(patternType.toUpperCase());
+                rruleValue.append("FREQ=");
+                if (patternType.startsWith("absolute") || patternType.startsWith("relative")) {
+                    rruleValue.append(patternType.substring(8).toUpperCase());
+                } else {
+                    rruleValue.append(patternType.toUpperCase());
+                }
                 if (rangeType.equals("endDate")) {
-                    String endDate = convertDateFromExchange(range.getString("endDate"));
+
+                    // TODO: take into account recurrenceTimeZone
+                    String endDate = buildUntilDate(range.getString("endDate"), range.getString("recurrenceTimeZone"), graphObject.optJSONObject("start"));
                     rruleValue.append(";UNTIL=").append(endDate);
                 }
                 if (interval > 0) {
                     rruleValue.append(";INTERVAL=").append(interval);
                 }
-                if (firstDayOfWeek.length() >= 2) {
-                    rruleValue.append(";WKST=").append(firstDayOfWeek.substring(0, 2).toUpperCase());
+                if (dayOfMonth != null && !dayOfMonth.isEmpty()) {
+                    rruleValue.append(";BYMONTHDAY=").append(dayOfMonth);
                 }
-                if (daysOfWeek.length() > 0) {
+                if (month != null && !month.isEmpty()) {
+                    rruleValue.append(";BYMONTH=").append(month);
+                }
+                if (daysOfWeek != null && daysOfWeek.length() > 0) {
                     ArrayList<String> days = new ArrayList<>();
                     for (int i=0;i<daysOfWeek.length();i++) {
-                        days.add(daysOfWeek.getString(i).substring(0, 2).toUpperCase());
+                        StringBuilder byDay = new StringBuilder();
+                        if (index != null && !"weekly".equals(patternType)) {
+                            byDay.append(index);
+                        }
+                        byDay.append(daysOfWeek.getString(i).substring(0, 2).toUpperCase());
+                        days.add(byDay.toString());
                     }
                     rruleValue.append(";BYDAY=").append(String.join(",", days));
                 }
-
+                if ("weekly".equals(patternType) && firstDayOfWeek.length() >= 2) {
+                    rruleValue.append(";WKST=").append(firstDayOfWeek.substring(0, 2).toUpperCase());
+                }
 
                 localVCalendar.addFirstVeventProperty(new VProperty("RRULE", rruleValue.toString()));
             }
         }
+
+        private String buildUntilDate(String date, String timeZone, JSONObject startDate) throws DavMailException {
+            String result = null;
+            if (date != null && date.length() == 10) {
+                String startDateTimeZone = startDate.optString("timeZone");
+                String startDateDateTime = startDate.optString("dateTime");
+                String untilDateTime = date+startDateDateTime.substring(10);
+
+                if (timeZone == null) {
+                    timeZone = startDateTimeZone;
+                }
+
+                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                try {
+                    result = formatter.format(parser.parse(untilDateTime));
+                } catch (ParseException e) {
+                    throw new DavMailException("EXCEPTION_INVALID_DATE", date);
+                }
+            }
+            return result;
+        }
+
 
         private void setAttendees(VObject vEvent) throws JSONException {
             // handle organizer
