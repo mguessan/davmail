@@ -169,7 +169,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("TITLE", graphObject.optString("title"));
                     vTodo.setPropertyValue("SUMMARY", graphObject.optString("title"));
 
-                    vTodo.addProperty(convertBodyToVproperty("DESCRIPTION", graphObject.optJSONObject("body")));
+                    vTodo.addProperty(convertBodyToVproperty("DESCRIPTION", graphObject));
 
                     // TODO refactor
                     vTodo.setPropertyValue("PRIORITY", convertPriorityFromExchange(graphObject.optString("importance")));
@@ -197,7 +197,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     localVCalendar.setFirstVeventPropertyValue("UID", graphObject.optString("iCalUId"));
                     localVCalendar.setFirstVeventPropertyValue("SUMMARY", graphObject.optString("subject"));
 
-                    localVCalendar.addFirstVeventProperty(convertBodyToVproperty("DESCRIPTION", graphObject.optJSONObject("body")));
+                    localVCalendar.addFirstVeventProperty(convertBodyToVproperty("DESCRIPTION", graphObject));
 
                     localVCalendar.setFirstVeventPropertyValue("LAST-MODIFIED", convertDateFromExchange(graphObject.optString("lastModifiedDateTime")));
                     localVCalendar.setFirstVeventPropertyValue("DTSTAMP", convertDateFromExchange(graphObject.optString("lastModifiedDateTime")));
@@ -210,6 +210,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", graphObject.optString("showAs").toUpperCase());
                     localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", graphObject.optString("isAllDay").toUpperCase());
                     localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", graphObject.optString("responseRequested").toUpperCase());
+
+                    handleException(localVCalendar, graphObject);
 
                     handleRecurrence(localVCalendar, graphObject);
 
@@ -225,6 +227,27 @@ public class GraphExchangeSession extends ExchangeSession {
                 throw new IOException(e.getMessage(), e);
             }
             return content;
+        }
+
+        private void handleException(VCalendar localVCalendar, GraphObject graphObject) throws DavMailException {
+            JSONArray cancelledOccurrences = graphObject.optJSONArray("cancelledOccurrences");
+            if (cancelledOccurrences != null) {
+                for (int i = 0; i < cancelledOccurrences.length(); i++) {
+                    String cancelledOccurrence = null;
+                    try {
+                        cancelledOccurrence = cancelledOccurrences.getString(i);
+                        cancelledOccurrence = cancelledOccurrence.substring(cancelledOccurrence.lastIndexOf('.')+1);
+                        String cancelledDate = convertDateFromExchange(cancelledOccurrence);
+
+                        VProperty startDate = localVCalendar.getFirstVevent().getProperty("DTSTART");
+                        VProperty exDate = new VProperty("EXDATE", cancelledDate.substring(0, 8)+startDate.getValue().substring(8));
+                        exDate.setParam("TZID", startDate.getParamValue("TZID"));
+                        localVCalendar.addFirstVeventProperty(exDate);
+                    } catch (IndexOutOfBoundsException | JSONException e) {
+                        LOGGER.warn("Invalid cancelled occurrence: "+cancelledOccurrence);
+                    }
+                }
+            }
         }
 
         private void handleRecurrence(VCalendar localVCalendar, GraphObject graphObject) throws JSONException, DavMailException {
@@ -493,9 +516,13 @@ public class GraphExchangeSession extends ExchangeSession {
         return builder.toString();
     }
 
-    private VProperty convertBodyToVproperty(String propertyName, JSONObject jsonBody) {
+    private VProperty convertBodyToVproperty(String propertyName, GraphObject graphObject) {
+        JSONObject jsonBody = graphObject.optJSONObject("body");
+        String bodyPreview = graphObject.optString("bodyPreview");
 
-        if (jsonBody != null) {
+        if (jsonBody == null) {
+            return new VProperty(propertyName, bodyPreview);
+        } else {
             // body is html only over graph by default
             String content = jsonBody.optString("content");
             String contentType = jsonBody.optString("contentType");
@@ -517,7 +544,6 @@ public class GraphExchangeSession extends ExchangeSession {
             }
             return vProperty;
         }
-        return new VProperty(propertyName, null);
     }
 
     private VProperty convertDateTimeTimeZoneToVproperty(String vPropertyName, JSONObject jsonDateTimeTimeZone) throws DavMailException {
@@ -981,6 +1007,10 @@ public class GraphExchangeSession extends ExchangeSession {
         TODO_PROPERTIES.add(Field.get("keywords"));*/
     }
 
+    /**
+     * Must set select to retrieve cancelled and exception occurrences so we must specify all properties
+     */
+    protected static final String EVENT_SELECT = "allowNewTimeProposals,attendees,body,bodyPreview,cancelledOccurrences,categories,changeKey,createdDateTime,end,exceptionOccurrences,hasAttachments,iCalUId,id,importance,isAllDay,isOnlineMeeting,isOrganizer,isReminderOn,lastModifiedDateTime,location,organizer,originalStart,recurrence,reminderMinutesBeforeStart,responseRequested,sensitivity,showAs,start,subject,type";
     protected static final HashSet<FieldURI> EVENT_ATTRIBUTES = new HashSet<>();
 
     static {
@@ -2437,6 +2467,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMailbox(folderId.mailbox)
                     .setObjectType("events")
                     .setObjectId(itemId)
+                    .setSelect(EVENT_SELECT)
                     .setExpandFields(EVENT_ATTRIBUTES)
                     .setTimezone(getVTimezone().getPropertyValue("TZID"))
             );
