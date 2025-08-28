@@ -1,5 +1,4 @@
-# If you want to run this on your server (headless) but still login into interactive provides, see src/contribs/docker/headless.md
-# If you want to setup SSL certificates see src/contribs/docker/SSL.md
+# See src/contribs/docker/README.md for instructions
 
 services:
     davmail:
