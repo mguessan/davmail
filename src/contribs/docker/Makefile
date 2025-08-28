@@ -1,7 +1,7 @@
 IMAGE_NAME = mguessan/davmail
 IMAGE_VERSION ?= ""
 
-ifeq ($(IMAGE_VERSION),)
+ifeq ($(IMAGE_VERSION),"")
 	IMAGE_LABEL ?= $(IMAGE_NAME)
 else
 	IMAGE_LABEL ?= $(IMAGE_NAME):${IMAGE_VERSION}
