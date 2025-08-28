@@ -38,6 +38,11 @@ An alternative is COPR on Fedora:
 
 [![Copr build status](https://copr.fedorainfracloud.org/coprs/mguessan/davmail/package/davmail/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/mguessan/davmail)
 
+### Docker
+
+To run davmail in docker, please read [src/contribs/docker/README.md](https://github.com/mguessan/davmail/blob/master/src/contribs/docker/README.md)
+
+
 ## Trunk builds
 Latest working builds are now available on Appveyor:
 
