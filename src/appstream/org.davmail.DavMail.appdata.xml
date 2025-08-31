@@ -39,6 +39,154 @@
   <developer_name>Mickaël Guessant</developer_name>
   <content_rating type="oars-1.1" />
   <releases>
+      <release version="6.4.0" date="2025-08-31">
+          ## DavMail 6.4.0 2025-08-31
+          Includes an experimental Microsoft Graph backend, to enable it see instructions at:
+          https://github.com/mguessan/davmail/issues/404
+          Fixed a long-standing IMAP issue on shared mailbox synchronization, improved GCC high tenants support, reviewed
+          OIDC authentication to prepare graph backend implementation, merged contributions from users, replaced log4j with reload4j.
+          Restored NTLM JCIFS implementation with davmail.enableJcifs setting based on user feedback, tried to improve NTML logging.
+
+          ### Linux
+          - Linux: drop eclipse-swt dependency on Suse, rely on included swt package
+          - Linux: merge https://github.com/flathub/org.davmail.DavMail/blob/master/davmail-desktop-add-wm-class.patch
+          - Linux: additional rpm spec file fixes for rhel 9
+          - Linux: ant-unbound only exist in Fedora Rawhide
+
+          ### O365
+          - O365: Handle password expiration and return a specifig error message
+          - O365: add davmail.tld setting to UI, see https://github.com/mguessan/davmail/issues/284
+          - O365: authenticator fix regression
+          - O365: revert authenticator scope change
+          - O365: improve authenticator error handling
+          - O365: drop hostname based fingerprint, allow user to force salt fingerprint with davmail.oauth.fingerprint setting, see https://github.com/mguessan/davmail/issues/403
+          - O365: review O365StoredTokenAuthenticator to take into account separate tokenFilePath
+          - O365: log token scopes
+          - O365: Fix for https://github.com/mguessan/davmail/issues/403 Salt generation for refresh token encryption seems unstable (BadPaddingException)
+          - O365: refactor authentication to handle various cases with Graph API with new OIDC endpoint and the classic endpoint
+          - O365: cleanup O365Authenticator
+          - O365: fix token parameters in OIDC mode, resource is not relevant
+          - O365: catch NullPointerException on javafx test as reported by a user
+          - O365: refactor tokenUrl build logic
+          - O365: adjustments for live.com OIDC endpoints
+
+          ### EWS
+          - EWS: cleanup from audit
+          - EWS: try to get a valid outlook.com live token
+
+          ### IMAP
+          - IMAP: fix IMAP context folder issue, when using userid/username syntax mailbox context is missing on some IMAP commands
+          - IMAP: Add log statement in case of progress notifier error
+          - IMAP: merge https://github.com/mguessan/davmail/pull/406 Simpler and more conformant keepalive feature
+          - IMAP: fix audit alert Refactor this repetition that can lead to a stack overflow for large inputs.
+          - IMAP: merge https://github.com/mguessan/davmail/pull/392, add support for iOS 18 comma separated uids in range search
+          - IMAP: SPECIAL-USE test cases
+          - IMAP: fix SPECIAL-USE implementation when used as a list-extended selection option, see https://www.rfc-editor.org/rfc/rfc6154 5.2
+
+          ### NTLM
+          - NTLM: dump NTLM message details using NTLMMessageDecoder
+          - NTLM: implement custom NTLM message decoder
+          - NTLM: add debug info in DavMailNTLMEngineImpl
+          - NTLM: without JCIFS workstation and domain are not sent with type1 message
+          - NTLM: Restore JCIFS
+          - NTLM: introduce davmail.enableJcifs setting to enable JCIFS NTLM engine implementation
+
+          ### Enhancements
+          - StringUtilTest add test case on encoding
+          - Cleanup test case from audit
+          - Enhancement from audit: rename folder.count to messageCount
+          - ExchangeSession: cleanup from audit
+          - Fix https://github.com/mguessan/davmail/issues/400 WARN Invalid 'expires' attribute
+          - Cleanup irrevelant dependency on debian package
+          - Upgrade nsi scripts with reload4j 2.0.16
+          - Maven: switch slf4j dependency to reload4j
+          - Upgrade slf4j / switch to reload4j
+          - Upgrade slf4j-api to 2.0.16
+          - Switch slf4j to reload4j instead of log4j
+          - Fix typo
+          - Log4J: fix ant build file
+          - Log4j: remove show logs option as LF5 is no longer available with reload4j
+          - Log4j: switching to reload4j, in place replacement for log4j
+          - Upgrade javamail to 1.6.2
+
+          ### Build
+          - Maven: force slf4j-api to 2.0.16
+          - AppVeyor: switch from sonar.login to sonar.token
+
+          ### Caldav
+          - Caldav: handle quote escaping in parameters
+
+          ### Docker
+          - Docker: merge https://github.com/mguessan/davmail/pull/390 Docker entrypoint script refinements
+
+          ### Documentation
+          - Doc: point issue management to Github
+          - Doc: review appdata doc
+
+          ### Graph
+          - Graph: handle cancelled occurrences on events to build EXDATE vCalendar properties
+          - Graph: make progress on event recurrence implementation, see https://learn.microsoft.com/en-us/graph/api/resources/patternedrecurrence
+          - Graph: initiate recurrence implementation
+          - Graph: fix draft handling, draft is set for mapi PR_MESSAGE_FLAGS property combined with read flag by IMAPConnection
+          - Graph: tasks don't have a changeKey field, retrieve etag value from @odata.etag
+          - Graph: switch back to custom scopes
+          - Graph: manage task items returned as part of default calendar requests
+          - Graph: map taskstatus field to status graphId
+          - Graph: handle item not found with HttpNotFoundException
+          - Graph: implement isMainCalendar
+          - Graph: debug ALTDESC for thunderbird, need to urlencode content
+          - Graph: implement etag search for events and contacts
+          - Graph: handle html body and attendees for caldav support
+          - Graph: move convertClassFromExchange and convertClassToExchange to ExchangeSession
+          - Graph: Checkpoint on event management, new tasks handling based on new todo endpoint and make progress on calendar events
+          - Graph: Move some reference tables from EwsExchangeSession to ExchangeSession to make them available in GraphExchangeSession
+          - Graph: Cleanup from audit
+          - Graph: Additional entry points for graphid value in ExtendedFieldURI
+          - Graph: implement optDateTimeTimeZone in GraphObject to convert DateTimeTimeZone json objects
+          - Graph: new TODO objects in graph require Tasks.ReadWrite OIDC scope
+          - Graph: implement specific date conversion convertCalendarDateToGraph for graph api
+          - Graph: implement more condition logic and retrieve VTIMEZONE from properties
+          - Graph: add a full dump of all timezone definitions as graph does not provide a way to retrieve events as VCALENDAR
+          - Graph: make progress on graph attributes handling, refactor GraphObject
+          - Graph: implement fileAs on contacts and fix bday handling
+          - Graph: handle empty boolean custom property, return null for empty email
+          - Graph: switch to .default for OIDC scopes, will help with outlook desktop tokens, detect 50128 error code using outlook desktop clientid with live.com account
+          - Graph: refactor GraphObject handling
+          - Graph: refactor GraphExchangeSession, cleanup code
+          - Graph: implement custom graphid on Field/ExtendedFieldURI
+          - Graph: refactor graph properties handling
+          - Graph: main contact management implementation, create and update contact, handle attached photo
+          - Graph: implement HttpPut calls and introduce GraphResponse as a wrapper around json response messages
+          - Graph: improve graphId compute logic, add namespaceGuid for DistinguishedPropertySetType.Address, introduce isNumber to avoid error on empty number fields
+          - Graph: minimal form submit for live.com authentication
+          - Graph: implement live.com authentication with simple username/password
+          - Graph: add additional scopes to send mail, manage contacts and access shared mailboxes
+          - Graph: Cleanup from audit
+          - Graph: replace method names with constants
+          - Graph: fix approximate message and implement message update (properties only)
+          - Graph: Handle special folders based on well known names
+          - Graph: implement contact folders management
+          - Graph: update TestExchangeSessionFolder unit tests for graph backend
+          - Graph: Implement calendar folder handling
+          - Graph: Improve logging and performance in GraphRequestBuilder
+          - Graph: Implement IOUtil.convertToBytes to convert JSON to byte array without creating a string
+          - Graph: Enhancements for audit
+          - Graph: Fix iterator, nextLink page can be empty
+          - Graph: enable GraphExchangeSession in ExchangeSessionFactory
+          - Graph: implement getMimeHeaders and MultiCondition
+          - Graph: initiate delete/copy/move message
+          - Graph: make progress on graph backend implementation
+          - Graph: complete properties mapping on message update
+          - Graph: some more work on message update logic (PATCH call)
+          - Graph: implement getGraphUrl to handle various graph api endpoints
+          - Graph: log message download progress, add mailbox attribute to graph message and initiate message flags management
+          - Graph: refactor draft message handling, apply workaround (delete/create) only for non draft messages
+          - Graph: review buildMessage logic to parse properties
+          - Graph: initiate implementation of message handling
+          - Graph: compute graphid for distinguishedProperty properties (PublicStrings, InternetHeaders,Common)
+          - Graph: initiate create message implementation, with workaround for draft flag
+          - Graph: switch to v2.0 OIDC endpoint for graph authentication, adjust token endpoint accordingly
+      </release>
       <release version="6.3.0" date="2025-02-26">
           Merged some contributions provided by users on github, updated embedded jre to 21 for improved TLS 1.3 support,
           applied documentation fixes, reviewed rpm build to provide el9 compatibility, implemented channel binding for NTLM
