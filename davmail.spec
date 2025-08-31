@@ -42,7 +42,6 @@ BuildRequires: eclipse-swt
 
 %if 0%{?is_opensuse} || 0%{?suse_version}
 BuildRequires: java-devel >= 1.8.0
-BuildRequires: eclipse-swt
 %endif
 
 # compile with JavaFX on Fedora
@@ -74,7 +73,6 @@ Requires: eclipse-swt
 %endif
 %if 0%{?is_opensuse} || 0%{?suse_version}
 Requires: jre >= 1.8.0
-Requires: eclipse-swt
 %endif
 
 Source0: %{name}-src-%{version}.tgz
