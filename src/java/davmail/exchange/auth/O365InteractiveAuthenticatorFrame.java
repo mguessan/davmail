@@ -163,7 +163,12 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                     }
                     if (authenticator.isAuthenticated) {
                         LOGGER.debug("Authenticated location: " + location);
-                        String code = location.substring(location.indexOf("code=") + 5, Math.max(location.indexOf("&session_state="), location.length()));
+                        String code;
+                        if (location.contains("&session_state=")) {
+                            code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+                        } else {
+                            code = location.substring(location.indexOf("code=") + 5);
+                        }
                         String sessionState = location.substring(location.lastIndexOf('='));
 
                         LOGGER.debug("Authentication Code: " + code);
