@@ -244,7 +244,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     URI location = logonMethod.getRedirectLocation();
 
                     if (responseBodyAsString != null && responseBodyAsString.contains("arrUserProofs")) {
-                        location = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
+                        logonMethod = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
+                        location = logonMethod.getRedirectLocation();
                     }
 
                     if (location == null || !location.toString().startsWith(redirectUri)) {
@@ -448,7 +449,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             // MFA triggered after device authentication
             if (result == null && responseBodyAsString != null && responseBodyAsString.contains("arrUserProofs")) {
-                result = handleMfa(httpClient, processMethod, username, null);
+                processMethod = handleMfa(httpClient, processMethod, username, null);
+                result = processMethod.getRedirectLocation();
             }
 
             if (result == null) {
@@ -459,7 +461,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         return result;
     }
 
-    private URI handleMfa(HttpClientAdapter httpClientAdapter, PostRequest logonMethod, String username, String clientRequestId) throws IOException, JSONException {
+    private PostRequest handleMfa(HttpClientAdapter httpClientAdapter, PostRequest logonMethod, String username, String clientRequestId) throws IOException, JSONException {
         JSONObject config = extractConfig(logonMethod.getResponseBodyAsString());
         LOGGER.debug("Config=" + config);
 
@@ -615,7 +617,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             throw new IOException("Authentication failed: " + config);
         }
 
-        String authMethod = "PhoneAppOTP";
+        String authMethod = chosenAuthMethodId;
         String type = "22";
 
         context = config.getString("Ctx");
@@ -633,7 +635,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         processAuthMethod.setParameter("hpgrequestid", hpgrequestid);
 
         httpClientAdapter.executePostRequest(processAuthMethod);
-        return processAuthMethod.getRedirectLocation();
+        return processAuthMethod;
 
     }
 
