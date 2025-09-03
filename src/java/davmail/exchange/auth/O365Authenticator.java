@@ -45,6 +45,13 @@ import java.net.URISyntaxException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import org.apache.commons.codec.binary.Base32;
+
 public class O365Authenticator implements ExchangeAuthenticator {
     protected static final Logger LOGGER = Logger.getLogger(O365Authenticator.class);
 
@@ -474,29 +481,48 @@ public class O365Authenticator implements ExchangeAuthenticator {
         String chosenAuthMethodId = null;
         String chosenAuthMethodPrompt = null;
 
+        Map<String, String> authMethods = new HashMap<>();
+        
         for (int i = 0; i < config.getJSONArray("arrUserProofs").length(); i++) {
             JSONObject authMethod = (JSONObject) config.getJSONArray("arrUserProofs").get(i);
             String authMethodId = authMethod.getString("authMethodId");
             LOGGER.debug("Authentication method: " + authMethodId);
-            if ("PhoneAppNotification".equals(authMethodId)) {
+            if ("PhoneAppOTP".equals(authMethodId)) {
+                LOGGER.debug("Found phone app OTP auth method " + authMethod.getString("display"));
+                authMethods.put(authMethodId, authMethod.getString("display"));
+            } else if ("PhoneAppNotification".equals(authMethodId)) {
                 LOGGER.debug("Found phone app auth method " + authMethod.getString("display"));
-                isMFAMethodSupported = true;
-                chosenAuthMethodId = authMethodId;
-                chosenAuthMethodPrompt = authMethod.getString("display");
-                // prefer phone app
-                break;
-            }
-            if ("OneWaySMS".equals(authMethodId)) {
+                authMethods.put(authMethodId, authMethod.getString("display"));
+            } else if ("OneWaySMS".equals(authMethodId)) {
                 LOGGER.debug("Found OneWaySMS auth method " + authMethod.getString("display"));
-                chosenAuthMethodId = authMethodId;
-                chosenAuthMethodPrompt = authMethod.getString("display");
-                isMFAMethodSupported = true;
+                authMethods.put(authMethodId, authMethod.getString("display"));
             }
+        }
+        
+        String authPreferredMethod = Settings.getProperty("davmail.mfa.preferredMethod", "PhoneAppNotification");
+        
+        if (authMethods.containsKey(authPreferredMethod)) {
+            chosenAuthMethodId = authPreferredMethod;
+            chosenAuthMethodPrompt = authMethods.get(authPreferredMethod);
+            isMFAMethodSupported = true;
+        } else if (authMethods.containsKey("PhoneAppNotification")) {
+            chosenAuthMethodId = "PhoneAppNotification";
+            chosenAuthMethodPrompt = authMethods.get("PhoneAppNotification");
+            isMFAMethodSupported = true;
+        } else if (authMethods.containsKey("PhoneAppOTP")) {
+            chosenAuthMethodId = "PhoneAppOTP";
+            chosenAuthMethodPrompt = authMethods.get("PhoneAppOTP");
+            isMFAMethodSupported = true;
+        } else if (authMethods.containsKey("OneWaySMS")) {
+            chosenAuthMethodId = "OneWaySMS";
+            chosenAuthMethodPrompt = authMethods.get("OneWaySMS");
+            isMFAMethodSupported = true;
         }
 
         if (!isMFAMethodSupported) {
             throw new IOException("MFA authentication methods not supported");
         }
+
 
         String context = config.getString("sCtx");
         String flowToken = config.getString("sFT");
@@ -522,7 +548,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         beginAuthMethod.setRequestHeader("hpgid", hpgid);
         beginAuthMethod.setRequestHeader("hpgrequestid", hpgrequestid);
 
-        // only support PhoneAppNotification
+        // added support for only support PhoneAppNotification
         JSONObject beginAuthJson = new JSONObject();
         beginAuthJson.put("AuthMethodId", chosenAuthMethodId);
         beginAuthJson.put("Ctx", context);
@@ -537,20 +563,37 @@ public class O365Authenticator implements ExchangeAuthenticator {
             throw new IOException("Authentication failed: " + config);
         }
 
+        String code = null;
         // look for number matching value
         String entropy = config.optString("Entropy", null);
 
         // display number matching value to user
         NumberMatchingFrame numberMatchingFrame = null;
-        if (entropy != null && !"0".equals(entropy)) {
-            LOGGER.info("Number matching value for " + username + ": " + entropy);
-            if (!Settings.getBooleanProperty("davmail.server") && !GraphicsEnvironment.isHeadless()) {
-                numberMatchingFrame = new NumberMatchingFrame(entropy);
+        
+        if (chosenAuthMethodId.equals("PhoneAppOTP")) {
+        
+            String secretKey = Settings.getProperty("davmail.mfa.otpSecretKey");
+            
+            if (secretKey == null)
+                throw new IOException("Missing secret key for TOTP auth");
+        
+            code = retrieveOTPCode(secretKey, 6, 30);
+            
+            LOGGER.info("PhoneAppOTP code: " + code);
+            
+        } else if (chosenAuthMethodId.equals("PhoneAppNotification")) {
+            if (entropy != null && !"0".equals(entropy)) {
+                LOGGER.info("Number matching value for " + username + ": " + entropy);
+                if (!Settings.getBooleanProperty("davmail.server") && !GraphicsEnvironment.isHeadless()) {
+                    numberMatchingFrame = new NumberMatchingFrame(entropy);
+                }
             }
+        } else if (chosenAuthMethodId.equals("OneWaySMS")) {
+            code = retrieveSmsCode(chosenAuthMethodId, chosenAuthMethodPrompt);
+            
+            LOGGER.info("OneWaySMS code: " + code);
         }
-
-        String smsCode = retrieveSmsCode(chosenAuthMethodId, chosenAuthMethodPrompt);
-
+        
         context = config.getString("Ctx");
         flowToken = config.getString("FlowToken");
         String sessionId = config.getString("SessionId");
@@ -585,7 +628,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
                 // When in beginAuthMethod is used 'AuthMethodId': 'OneWaySMS', then in endAuthMethod is send SMS code
                 // via attribute 'AdditionalAuthData'
-                endAuthJson.put("AdditionalAuthData", smsCode);
+                endAuthJson.put("AdditionalAuthData", code);
 
                 endAuthMethod.setJsonBody(endAuthJson);
 
@@ -596,7 +639,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_REASON", resultValue);
                 }
                 if ("SMSAuthFailedWrongCodeEntered".equals(resultValue)) {
-                    smsCode = retrieveSmsCode(chosenAuthMethodId, chosenAuthMethodPrompt);
+                    code = retrieveSmsCode(chosenAuthMethodId, chosenAuthMethodPrompt);
                 }
                 if (config.getBoolean("Success")) {
                     success = true;
@@ -654,6 +697,44 @@ public class O365Authenticator implements ExchangeAuthenticator {
             }
         }
         return smsCode;
+    }
+    
+    
+    private String retrieveOTPCode(String base32Secret, int digits, int timeStepSeconds) throws IOException {
+        try {
+            
+            long currentTimeSeconds = System.currentTimeMillis() / 1000;
+            long counter = currentTimeSeconds / timeStepSeconds;
+
+            // decode Base32 to bytes
+            byte[] key = new Base32().decode(base32Secret);
+
+            byte[] data = new byte[8];
+            for (int i = 7; i >= 0; i--) {
+                data[i] = (byte) (counter & 0xFF);
+                counter >>= 8;
+            }
+
+            Mac mac = Mac.getInstance("HmacSHA1"); // Can be HmacSHA256 or HmacSHA512 too
+            mac.init(new SecretKeySpec(key, "HmacSHA1"));
+            byte[] hmac = mac.doFinal(data);
+
+            int offset = hmac[hmac.length - 1] & 0xF;
+            int binary =
+                    ((hmac[offset] & 0x7F) << 24) |
+                    ((hmac[offset + 1] & 0xFF) << 16) |
+                    ((hmac[offset + 2] & 0xFF) << 8) |
+                    (hmac[offset + 3] & 0xFF);
+
+            int otp = binary % (int) Math.pow(10, digits);
+            
+            return String.format("%0" + digits + "d", otp);
+            
+        } catch (Exception e1) {
+            LOGGER.debug(e1);
+            throw new IOException("Unable to retrieveOTPCode");
+        }
+        
     }
 
     private String executeFollowRedirect(HttpClientAdapter httpClientAdapter, GetRequest getRequest) throws IOException {
