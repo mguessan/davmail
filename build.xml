@@ -551,7 +551,7 @@
         <delete dir="dist/jre"/>
         <exec dir="." executable="dist/jdk/bin/jlink.exe">
             <arg value="--add-modules"/>
-            <arg value="java.base,java.datatransfer,java.desktop,java.naming,jdk.crypto.ec,java.security.jgss,java.security.sasl,java.xml,javafx.base,javafx.controls,javafx.graphics,javafx.swing,javafx.web"/>
+            <arg value="java.base,java.datatransfer,java.desktop,java.naming,jdk.crypto.ec,java.security.jgss,java.security.sasl,java.xml,javafx.base,javafx.controls,javafx.graphics,javafx.swing,javafx.web,jdk.accessibility"/>
             <arg value="--output"/>
             <arg value="dist/jre"/>
             <arg value="--strip-debug"/>
