@@ -2443,8 +2443,7 @@ public class GraphExchangeSession extends ExchangeSession {
         } else if ("IPF.Appointment".equals(folderId.folderClass)) {
             JSONObject jsonResponse = getEventIfExists(folderId, itemName);
             if (jsonResponse != null) {
-                Event event = new Event(folderId, new GraphObject(jsonResponse));
-                return event;
+                return new Event(folderId, new GraphObject(jsonResponse));
             } else {
                 throw new IOException("Item " + folderPath + " " + itemName + " not found");
             }
@@ -2716,6 +2715,12 @@ public class GraphExchangeSession extends ExchangeSession {
         return jsonResponse;
     }
 
+    /**
+     * Execute graph request and wrap response in a graph object
+     * @param httpRequestBuilder request builder
+     * @return returned graph object
+     * @throws IOException on error
+     */
     private GraphObject executeGraphRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         // TODO handle throttling https://learn.microsoft.com/en-us/graph/throttling
         HttpRequestBase request = httpRequestBuilder
@@ -2728,7 +2733,7 @@ public class GraphExchangeSession extends ExchangeSession {
         try (
                 CloseableHttpResponse response = httpClient.execute(request)
         ) {
-            if (response.getStatusLine().getStatusCode() == 400) {
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                 LOGGER.warn("Request returned " + response.getStatusLine());
             }
             graphObject = new GraphObject(new JsonResponseHandler().handleResponse(response));
@@ -2739,17 +2744,16 @@ public class GraphExchangeSession extends ExchangeSession {
 
     /**
      * Check if itemName is long and base64 encoded.
-     * User generated item names are usually short
+     * User-generated item names are usually short
      *
      * @param itemName item name
      * @return true if itemName is an EWS item id
      */
     protected static boolean isItemId(String itemName) {
         return itemName.length() >= 140
-                // item name is base64url
+                // the item name is base64url
                 && itemName.matches("^([A-Za-z0-9-_]{4})*([A-Za-z0-9-_]{4}|[A-Za-z0-9-_]{3}=|[A-Za-z0-9-_]{2}==)\\.EML$")
                 && itemName.indexOf(' ') < 0;
     }
-
 
 }
