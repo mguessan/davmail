@@ -107,4 +107,11 @@ public class TestICSCalendarValidator extends TestCase {
         assertFalse(ICSCalendarValidator.isValidChar('\u007F')); // delete char
         assertFalse(ICSCalendarValidator.isValidChar('\u0080')); // invalid Unicode
     }
+
+    public void testIsValidCRLF() {
+        assertTrue(ICSCalendarValidator.isValidChar('\r')); // CR
+        assertTrue(ICSCalendarValidator.isValidChar('\n')); // LF
+        assertTrue(ICSCalendarValidator.isValidICSContent("BEGIN:VCALENDAR\r\nEND:VCALENDAR"));
+        assertTrue(ICSCalendarValidator.validateWithDetails("BEGIN:VCALENDAR\r\nEND:VCALENDAR").isValid());
+    }
 }
