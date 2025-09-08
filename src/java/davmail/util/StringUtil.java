@@ -541,4 +541,34 @@ public final class StringUtil {
         return result;
     }
 
+    /**
+     * Decode the folder name with _xF8FF_ or _x003E_ characters.
+     * @param folderName encoded folder name
+     * @return decoded folder name
+     */
+    public static String decodeFolderName(String folderName) {
+        if (folderName.contains("_xF8FF_")) {
+            return folderName.replace("_xF8FF_", "/");
+        }
+        if (folderName.contains("_x003E_")) {
+            return folderName.replace("_x003E_", ">");
+        }
+        return folderName;
+    }
+
+    /**
+     * folderName may contain / or > characters, encode them.
+     * @param folderName folder name to encode
+     * @return encoded folder name
+     */
+    public static String encodeFolderName(String folderName) {
+        if (folderName.contains("/")) {
+            folderName = folderName.replace("/", "_xF8FF_");
+        }
+        if (folderName.contains(">")) {
+            folderName = folderName.replace(">", "_x003E_");
+        }
+        return folderName;
+    }
+
 }

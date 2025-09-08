@@ -29,7 +29,6 @@ import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.exchange.auth.O365Token;
-import davmail.exchange.ews.EwsExchangeSession;
 import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
@@ -1851,7 +1850,7 @@ public class GraphExchangeSession extends ExchangeSession {
             folder.folderId.parentFolderId = jsonResponse.optString("parentFolderId", null);
             if (folder.folderId.parentFolderId == null) {
                 // calendar
-                folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.optString("name"));
+                folder.displayName = StringUtil.encodeFolderName(jsonResponse.optString("name"));
             } else {
                 String wellKnownName = wellKnownFolderMap.get(jsonResponse.optString("wellKnownName"));
                 if (ExchangeSession.INBOX.equals(wellKnownName)) {
@@ -1862,7 +1861,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
 
                     // TODO: reevaluate folder name encoding over graph
-                    folder.displayName = EwsExchangeSession.encodeFolderName(jsonResponse.getString("displayName"));
+                    folder.displayName = StringUtil.encodeFolderName(jsonResponse.getString("displayName"));
                 }
 
                 folder.messageCount = jsonResponse.optInt("totalItemCount");
@@ -2053,14 +2052,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType("calendars")
                     .setExpandFields(FOLDER_PROPERTIES)
-                    .setFilter("name eq '" + StringUtil.escapeQuotes(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+                    .setFilter("name eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         } else if ("IPF.Task".equals(currentFolderId.folderClass)) {
             httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType("todo/lists")
                     .setExpandFields(FOLDER_PROPERTIES)
-                    .setFilter("displayName eq '" + StringUtil.escapeQuotes(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+                    .setFilter("displayName eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         } else {
             String objectType = "mailFolders";
             if ("IPF.Contact".equals(currentFolderId.folderClass)) {
@@ -2073,7 +2072,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectId(currentFolderId.id)
                     .setChildType("childFolders")
                     .setExpandFields(FOLDER_PROPERTIES)
-                    .setFilter("displayName eq '" + StringUtil.escapeQuotes(EwsExchangeSession.decodeFolderName(folderName)) + "'");
+                    .setFilter("displayName eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         }
 
         JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
@@ -2124,10 +2123,10 @@ public class GraphExchangeSession extends ExchangeSession {
             if (folderPath.contains("/")) {
                 String parentFolderPath = folderPath.substring(0, folderPath.lastIndexOf('/'));
                 parentFolderId = getFolderId(parentFolderPath);
-                folderName = EwsExchangeSession.decodeFolderName(folderPath.substring(folderPath.lastIndexOf('/') + 1));
+                folderName = StringUtil.decodeFolderName(folderPath.substring(folderPath.lastIndexOf('/') + 1));
             } else {
                 parentFolderId = getFolderId("");
-                folderName = EwsExchangeSession.decodeFolderName(folderPath);
+                folderName = StringUtil.decodeFolderName(folderPath);
             }
 
             try {
@@ -2226,10 +2225,10 @@ public class GraphExchangeSession extends ExchangeSession {
         String targetFolderParentPath;
         if (targetFolderPath.contains("/")) {
             targetFolderParentPath = targetFolderPath.substring(0, targetFolderPath.lastIndexOf('/'));
-            targetFolderName = EwsExchangeSession.decodeFolderName(targetFolderPath.substring(targetFolderPath.lastIndexOf('/') + 1));
+            targetFolderName = StringUtil.decodeFolderName(targetFolderPath.substring(targetFolderPath.lastIndexOf('/') + 1));
         } else {
             targetFolderParentPath = "";
-            targetFolderName = EwsExchangeSession.decodeFolderName(targetFolderPath);
+            targetFolderName = StringUtil.decodeFolderName(targetFolderPath);
         }
         FolderId targetFolderId = getFolderId(targetFolderParentPath);
 
