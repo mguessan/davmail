@@ -1094,7 +1094,6 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     protected void buildSessionInfo(URI uri) throws IOException {
-        // TODO: review, current mailbox is available through /me
         currentMailboxPath = "/users/" + userName.toLowerCase();
 
         // assume email is username
@@ -1499,15 +1498,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("mailFolders")
                 .setObjectId(folderId.id)
                 .setChildType("messages")
-                .setExpandFields(IMAP_MESSAGE_ATTRIBUTES);
+                .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)
+                .setFilter(condition);
         LOGGER.debug("searchMessages " + folderId.mailbox + " " + folderName);
-        if (condition != null && !condition.isEmpty()) {
-            StringBuilder filter = new StringBuilder();
-            condition.appendTo(filter);
-            LOGGER.debug("search filter " + filter);
-            httpRequestBuilder.setFilter(filter.toString());
-        }
-
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext()) {
@@ -1676,12 +1669,12 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public MultiCondition and(Condition... conditions) {
+    public ExchangeSession.MultiCondition and(Condition... conditions) {
         return new MultiCondition(Operator.And, conditions);
     }
 
     @Override
-    public MultiCondition or(Condition... conditions) {
+    public ExchangeSession.MultiCondition or(Condition... conditions) {
         return new MultiCondition(Operator.Or, conditions);
     }
 
@@ -1779,14 +1772,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setMailbox(parentFolderId.mailbox)
                 .setObjectId(parentFolderId.id)
                 .setChildType("childFolders")
-                .setExpandFields(FOLDER_PROPERTIES);
+                .setExpandFields(FOLDER_PROPERTIES)
+                .setFilter(condition);
         LOGGER.debug("appendSubFolders " + (parentFolderId.mailbox != null ? parentFolderId.mailbox : "me") + " " + parentFolderPath);
-        if (condition != null && !condition.isEmpty()) {
-            StringBuilder filter = new StringBuilder();
-            condition.appendTo(filter);
-            LOGGER.debug("search filter " + filter);
-            httpRequestBuilder.setFilter(filter.toString());
-        }
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
@@ -2058,7 +2046,6 @@ public class GraphExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected FolderId getSubFolderByName(FolderId currentFolderId, String folderName) throws IOException {
-        // TODO rename escapeQuotes
         GraphRequestBuilder httpRequestBuilder;
         if ("IPF.Appointment".equals(currentFolderId.folderClass)) {
             httpRequestBuilder = new GraphRequestBuilder()
@@ -2333,14 +2320,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("contactFolders")
                 .setObjectId(folderId.id)
                 .setChildType("contacts")
-                .setExpandFields(CONTACT_ATTRIBUTES);
+                .setExpandFields(CONTACT_ATTRIBUTES)
+                .setFilter(condition);
         LOGGER.debug("searchContacts " + folderId.mailbox + " " + folderPath);
-        if (condition != null && !condition.isEmpty()) {
-            StringBuilder filter = new StringBuilder();
-            condition.appendTo(filter);
-            LOGGER.debug("search filter " + filter);
-            httpRequestBuilder.setFilter(filter.toString());
-        }
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
@@ -2407,14 +2389,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectId(folderId.id)
                 .setChildType("events")
                 .setExpandFields(EVENT_ATTRIBUTES)
-                .setTimezone(getVTimezone().getPropertyValue("TZID"));
+                .setTimezone(getVTimezone().getPropertyValue("TZID"))
+                .setFilter(condition);
         LOGGER.debug("searchEvents " + folderId.mailbox + " " + folderPath);
-        if (condition != null && !condition.isEmpty()) {
-            StringBuilder filter = new StringBuilder();
-            condition.appendTo(filter);
-            LOGGER.debug("search filter " + filter);
-            httpRequestBuilder.setFilter(filter.toString());
-        }
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
@@ -2499,15 +2476,13 @@ public class GraphExchangeSession extends ExchangeSession {
             );
 
         } else {
-            // TODO: build with AttributeCondition
-            String filter = "singleValueExtendedProperties/Any(ep: ep/id eq '" + Field.get("urlcompname").getGraphId() + "' and ep/value eq '" + convertItemNameToEML(StringUtil.escapeQuotes(itemName)) + "')";
             JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("contactFolders")
                     .setObjectId(folderId.id)
                     .setChildType("contacts")
-                    .setFilter(filter)
+                    .setFilter(isEqualTo("urlcompname", convertItemNameToEML(itemName)))
                     .setExpandFields(CONTACT_ATTRIBUTES)
             );
             // need at least one value

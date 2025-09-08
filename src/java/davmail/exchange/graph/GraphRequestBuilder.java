@@ -20,6 +20,7 @@
 package davmail.exchange.graph;
 
 import davmail.Settings;
+import davmail.exchange.ExchangeSession;
 import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.FieldURI;
 import davmail.exchange.ews.IndexedFieldURI;
@@ -130,6 +131,16 @@ public class GraphRequestBuilder {
 
     public GraphRequestBuilder setFilter(String filter) {
         this.filter = filter;
+        return this;
+    }
+
+    public GraphRequestBuilder setFilter(ExchangeSession.Condition condition) {
+        if (condition != null && !condition.isEmpty()) {
+            StringBuilder buffer = new StringBuilder();
+            condition.appendTo(buffer);
+            LOGGER.debug("filter: " + filter);
+            this.filter = buffer.toString();
+        }
         return this;
     }
 
