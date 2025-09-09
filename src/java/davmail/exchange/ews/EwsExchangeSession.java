@@ -1504,7 +1504,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 executeMethod(getItemMethod);
                                 if (getItemMethod.getResponseItem() != null) {
                                     String itemOriginalStart = getItemMethod.getResponseItem().get(Field.get("originalstart").getResponseName());
-                                    LOGGER.debug("Occurrence " + instanceIndex + " itemOriginalStart " + itemOriginalStart + " looking for " + convertedValue);
+                                        LOGGER.debug("Occurrence " + instanceIndex + " itemOriginalStart " + itemOriginalStart + " looking for " + convertedValue);
                                     if (convertedValue.equals(itemOriginalStart)) {
                                         // found item, delete it
                                         DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(getItemMethod.getResponseItem()),
@@ -1536,7 +1536,7 @@ public class EwsExchangeSession extends ExchangeSession {
          * @param vCalendar     vCalendar object
          * @throws DavMailException on error
          */
-        protected void handleModifiedOccurrences(ItemId currentItemId, VCalendar vCalendar) throws DavMailException {
+        protected void handleModifiedOccurrences(ItemId currentItemId, VCalendar vCalendar, SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations) throws DavMailException {
             for (VObject modifiedOccurrence : vCalendar.getModifiedOccurrences()) {
                 VProperty originalDateProperty = modifiedOccurrence.getProperty("RECURRENCE-ID");
                 String convertedValue;
@@ -1563,7 +1563,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 // found item, update it
                                 UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                         ConflictResolution.AutoResolve,
-                                        SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
+                                        sendMeetingInvitationsOrCancellations,
                                         new ItemId(getItemMethod.getResponseItem()), buildFieldUpdates(vCalendar, modifiedOccurrence, false));
                                 // force context Timezone on Exchange 2010 and 2013
                                 if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
@@ -1799,6 +1799,10 @@ public class EwsExchangeSession extends ExchangeSession {
                     return itemResult;
                 }
             }
+
+            // by default no notifications
+            SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
+
             if (vCalendar.isTodo()) {
                 // create or update task method
                 EWSMethod.Item newItem = new EWSMethod.Item();
@@ -1897,7 +1901,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     } else if (Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                         // other changes with server side managed notifications
                         MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
-                        SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
+
                         if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer() && isMozSendInvitations) {
                             messageDisposition = MessageDisposition.SendAndSaveCopy;
                             sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy;
@@ -2070,7 +2074,7 @@ public class EwsExchangeSession extends ExchangeSession {
             // handle deleted occurrences
             if (!vCalendar.isTodo() && currentItemId != null && !isMeetingResponse && !isMozDismiss) {
                 handleExcludedDates(currentItemId, vCalendar);
-                handleModifiedOccurrences(currentItemId, vCalendar);
+                handleModifiedOccurrences(currentItemId, vCalendar, sendMeetingInvitationsOrCancellations);
             }
 
 
