@@ -65,6 +65,9 @@ public class GraphRequestBuilder {
 
     String filter;
 
+    String startDateTime;
+    String endDateTime;
+
     String timeZone;
 
     Set<FieldURI> expandFields;
@@ -141,6 +144,16 @@ public class GraphRequestBuilder {
             LOGGER.debug("filter: " + filter);
             this.filter = buffer.toString();
         }
+        return this;
+    }
+
+    public GraphRequestBuilder setStartDateTime(String startDateTime) {
+        this.startDateTime = startDateTime;
+        return this;
+    }
+
+    public GraphRequestBuilder setEndDateTime(String endDateTime) {
+        this.endDateTime = endDateTime;
         return this;
     }
 
@@ -287,6 +300,14 @@ public class GraphRequestBuilder {
 
             if (filter != null) {
                 uriBuilder.addParameter("$filter", filter);
+            }
+
+            if (startDateTime != null) {
+                uriBuilder.addParameter("startDateTime", startDateTime);
+            }
+
+            if (endDateTime != null) {
+                uriBuilder.addParameter("endDateTime", endDateTime);
             }
 
             HttpRequestBase httpRequest;

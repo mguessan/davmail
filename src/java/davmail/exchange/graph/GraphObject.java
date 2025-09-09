@@ -157,10 +157,10 @@ public class GraphObject {
 
     public String optString(String section, String key) {
         JSONObject sectionObject = jsonObject.optJSONObject(section);
-        // try to map with field
-        if (sectionObject == null) {
-            sectionObject = jsonObject.optJSONObject(Field.get(section).getGraphId());
-        }
+        // do not try to map with field, moving away from field mapping for graph
+        //if (sectionObject == null) {
+        //  sectionObject = jsonObject.optJSONObject(Field.get(section).getGraphId());
+        //}
         if (sectionObject != null) {
             return sectionObject.optString(key, null);
         }

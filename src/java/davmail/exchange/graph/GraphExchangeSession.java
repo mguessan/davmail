@@ -231,21 +231,25 @@ public class GraphExchangeSession extends ExchangeSession {
         private void handleException(VCalendar localVCalendar, GraphObject graphObject) throws DavMailException {
             JSONArray cancelledOccurrences = graphObject.optJSONArray("cancelledOccurrences");
             if (cancelledOccurrences != null) {
+                HashSet<String> exDateValues = new HashSet<>();
+                VProperty startDate = localVCalendar.getFirstVevent().getProperty("DTSTART");
                 for (int i = 0; i < cancelledOccurrences.length(); i++) {
                     String cancelledOccurrence = null;
                     try {
                         cancelledOccurrence = cancelledOccurrences.getString(i);
-                        cancelledOccurrence = cancelledOccurrence.substring(cancelledOccurrence.lastIndexOf('.')+1);
+                        cancelledOccurrence = cancelledOccurrence.substring(cancelledOccurrence.lastIndexOf('.') + 1);
                         String cancelledDate = convertDateFromExchange(cancelledOccurrence);
 
-                        VProperty startDate = localVCalendar.getFirstVevent().getProperty("DTSTART");
-                        VProperty exDate = new VProperty("EXDATE", cancelledDate.substring(0, 8)+startDate.getValue().substring(8));
-                        exDate.setParam("TZID", startDate.getParamValue("TZID"));
-                        localVCalendar.addFirstVeventProperty(exDate);
+                        exDateValues.add(cancelledDate.substring(0, 8) + startDate.getValue().substring(8));
+
                     } catch (IndexOutOfBoundsException | JSONException e) {
-                        LOGGER.warn("Invalid cancelled occurrence: "+cancelledOccurrence);
+                        LOGGER.warn("Invalid cancelled occurrence: " + cancelledOccurrence);
                     }
                 }
+                // add EXDATE values in a single property, will be converted back to multiple lines by fixICS
+                VProperty exDate = new VProperty("EXDATE", StringUtil.join(exDateValues, ","));
+                exDate.setParam("TZID", startDate.getParamValue("TZID"));
+                localVCalendar.addFirstVeventProperty(exDate);
             }
         }
 
@@ -296,8 +300,6 @@ public class GraphExchangeSession extends ExchangeSession {
                     rruleValue.append(patternType.toUpperCase());
                 }
                 if (rangeType.equals("endDate")) {
-
-                    // TODO: take into account recurrenceTimeZone
                     String endDate = buildUntilDate(range.getString("endDate"), range.getString("recurrenceTimeZone"), graphObject.optJSONObject("start"));
                     rruleValue.append(";UNTIL=").append(endDate);
                 }
@@ -312,7 +314,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
                 if (daysOfWeek != null && daysOfWeek.length() > 0) {
                     ArrayList<String> days = new ArrayList<>();
-                    for (int i=0;i<daysOfWeek.length();i++) {
+                    for (int i = 0; i < daysOfWeek.length(); i++) {
                         StringBuilder byDay = new StringBuilder();
                         if (index != null && !"weekly".equals(patternType)) {
                             byDay.append(index);
@@ -335,7 +337,7 @@ public class GraphExchangeSession extends ExchangeSession {
             if (date != null && date.length() == 10) {
                 String startDateTimeZone = startDate.optString("timeZone");
                 String startDateDateTime = startDate.optString("dateTime");
-                String untilDateTime = date+startDateDateTime.substring(10);
+                String untilDateTime = date + startDateDateTime.substring(10);
 
                 if (timeZone == null) {
                     timeZone = startDateTimeZone;
@@ -416,10 +418,10 @@ public class GraphExchangeSession extends ExchangeSession {
 
             String id = null;
             String currentEtag = null;
-            JSONObject jsonEvent = getEventIfExists(folderId, itemName);
-            if (jsonEvent != null) {
-                id = jsonEvent.optString("id", null);
-                currentEtag = new GraphObject(jsonEvent).optString("changeKey");
+            JSONObject existingJsonEvent = getEventIfExists(folderId, itemName);
+            if (existingJsonEvent != null) {
+                id = existingJsonEvent.optString("id", null);
+                currentEtag = new GraphObject(existingJsonEvent).optString("changeKey");
             }
 
             ItemResult itemResult = new ItemResult();
@@ -464,6 +466,20 @@ public class GraphExchangeSession extends ExchangeSession {
                     jsonObject.put("body", new JSONObject().put("content", description).put("contentType", "text"));
                 }
 
+                if (id != null) {
+                    // assume we can delete occurrence only on new event
+                    List<VProperty> exdateProperty = vEvent.getProperties("EXDATE");
+                    if (exdateProperty != null && !exdateProperty.isEmpty()) {
+                        JSONArray cancelledOccurrences = new JSONArray();
+                        for (VProperty exdate : exdateProperty) {
+                            String exdateTzid = exdate.getParamValue("TZID");
+                            String exDateValue = vCalendar.convertCalendarDateToGraph(exdate.getValue(), exdateTzid);
+                            deleteEventOccurrence(id, exDateValue);
+                        }
+                        jsonObject.put("cancelledOccurrences", cancelledOccurrences);
+                    }
+                }
+
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
                 if (id == null) {
                     graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
@@ -497,6 +513,34 @@ public class GraphExchangeSession extends ExchangeSession {
             return itemResult;
         }
 
+        private void deleteEventOccurrence(String id, String exDateValue) throws IOException, JSONException {
+            String startDateTime = exDateValue.substring(0, 10) + "T00:00:00.0000000";
+            String endDateTime = exDateValue.substring(0, 10) + "T23:59:59.9999999";
+            GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
+            graphRequestBuilder.setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("events")
+                    .setObjectId(id)
+                    .setChildType("instances")
+                    .setStartDateTime(startDateTime)
+                    .setEndDateTime(endDateTime);
+            GraphObject graphResponse = executeGraphRequest(graphRequestBuilder);
+
+            JSONArray occurrences = graphResponse.optJSONArray("value");
+            if (occurrences != null && occurrences.length() > 0) {
+                for (int i = 0; i < occurrences.length(); i++) {
+                    JSONObject occurrence = occurrences.getJSONObject(i);
+                    String occurrenceId = occurrence.optString("id");
+                    if (occurrenceId != null) {
+                        executeJsonRequest(new GraphRequestBuilder().setMethod(HttpDelete.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("events")
+                                .setObjectId(occurrenceId));
+                    }
+                }
+            }
+        }
+
     }
 
     private String convertHtmlToText(String htmlText) {
@@ -517,10 +561,9 @@ public class GraphExchangeSession extends ExchangeSession {
 
     private VProperty convertBodyToVproperty(String propertyName, GraphObject graphObject) {
         JSONObject jsonBody = graphObject.optJSONObject("body");
-        String bodyPreview = graphObject.optString("bodyPreview");
 
         if (jsonBody == null) {
-            return new VProperty(propertyName, bodyPreview);
+            return new VProperty(propertyName, "");
         } else {
             // body is html only over graph by default
             String content = jsonBody.optString("content");
@@ -1531,6 +1574,8 @@ public class GraphExchangeSession extends ExchangeSession {
         private String convertOperator(Operator operator) {
             if (Operator.IsEqualTo.equals(operator)) {
                 return "eq";
+            } else if (Operator.IsGreaterThan.equals(operator)) {
+                return "gt";
             }
             // TODO other operators
             return operator.toString();
@@ -1539,19 +1584,22 @@ public class GraphExchangeSession extends ExchangeSession {
         @Override
         public void appendTo(StringBuilder buffer) {
             FieldURI fieldURI = getFieldURI();
-            if ("String {00020386-0000-0000-c000-000000000046} Name to".equals(fieldURI.getGraphId())) {
+            String graphId = fieldURI.getGraphId();
+            if ("String {00020386-0000-0000-c000-000000000046} Name to".equals(graphId)) {
                 // TODO: does not work need to switch to search instead of filter
                 buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq 'String {00020386-0000-0000-c000-000000000046} Name to' and contains(ep/value,'")
                         .append(StringUtil.escapeQuotes(value)).append("'))");
             } else if (Operator.StartsWith.equals(operator)) {
-                buffer.append("startswith(").append(getFieldURI().getGraphId()).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
+                buffer.append("startswith(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (Operator.Contains.equals(operator)) {
-                buffer.append("contains(").append(getFieldURI().getGraphId()).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
+                buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (fieldURI instanceof ExtendedFieldURI) {
-                buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(getFieldURI().getGraphId())
+                buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                         .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
+            } else if ("start".equals(graphId) || "end".equals(graphId)) {
+                buffer.append(graphId).append("/dateTime ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
             } else {
-                buffer.append(getFieldURI().getGraphId()).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
+                buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
             }
         }
 
@@ -1823,15 +1871,21 @@ public class GraphExchangeSession extends ExchangeSession {
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(folderId.mailbox)
-                .setObjectType("mailFolders")
-                .setObjectId(folderId.id)
-                .setExpandFields(FOLDER_PROPERTIES);
+                .setObjectId(folderId.id);
         if ("IPF.Appointment".equals(folderId.folderClass)) {
-            httpRequestBuilder.setObjectType("calendars");
+            httpRequestBuilder
+                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setObjectType("calendars");
+        } else if ("IPF.Task".equals(folderId.folderClass)) {
+            httpRequestBuilder.setObjectType("todo/lists");
         } else if ("IPF.Contact".equals(folderId.folderClass)) {
-            httpRequestBuilder.setObjectType("contactFolders");
+            httpRequestBuilder
+                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setObjectType("contactFolders");
         } else {
-            httpRequestBuilder.setObjectType("mailFolders");
+            httpRequestBuilder
+                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setObjectType("mailFolders");
         }
 
         JSONObject jsonResponse = executeJsonRequest(httpRequestBuilder);
@@ -2341,7 +2395,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     protected Condition getCalendarItemCondition(Condition dateCondition) {
-        return null;
+        // no specific condition for calendar over graph
+        return dateCondition;
     }
 
     /**
