@@ -53,8 +53,8 @@ public final class Field {
         FIELD_MAP.put("instancetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype", ExtendedFieldURI.PropertyType.Integer));
         //FIELD_MAP.put("dtstart", new ExtendedFieldURI(0x10C3, ExtendedFieldURI.PropertyType.SystemTime));
         //FIELD_MAP.put("dtend", new ExtendedFieldURI(0x10C4, ExtendedFieldURI.PropertyType.SystemTime));
-        FIELD_MAP.put("dtstart", new UnindexedFieldURI("calendar:Start"));
-        FIELD_MAP.put("dtend", new UnindexedFieldURI("calendar:End"));
+        FIELD_MAP.put("dtstart", new UnindexedFieldURI("calendar:Start", "start"));
+        FIELD_MAP.put("dtend", new UnindexedFieldURI("calendar:End", "end"));
 
         FIELD_MAP.put("originalstart", new UnindexedFieldURI("calendar:OriginalStart"));
 
