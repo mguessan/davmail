@@ -163,10 +163,6 @@ install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_
 %if %systemd_macros
 mkdir -p %{buildroot}%{_sysusersdir}
 install -m 0644 %{name}-user.conf %{buildroot}%{_sysusersdir}/
-%else
-/usr/sbin/groupadd -f -r davmail > /dev/null 2>&1 || :
-/usr/sbin/useradd -r -s /sbin/nologin -d /var/lib/davmail -M \
-                  -g davmail davmail > /dev/null 2>&1 || :
 %endif
 
 %if %systemd_macros
@@ -174,6 +170,9 @@ install -m 0644 %{name}-user.conf %{buildroot}%{_sysusersdir}/
 %service_add_pre davmail.service
 %else
 %pre
+/usr/sbin/groupadd -f -r davmail > /dev/null 2>&1 || :
+/usr/sbin/useradd -r -s /sbin/nologin -d /var/lib/davmail -M \
+                  -g davmail davmail > /dev/null 2>&1 || :
 %endif
 
 %post
