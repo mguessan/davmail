@@ -258,6 +258,7 @@ public final class DavGateway {
         if (!Settings.getBooleanProperty("davmail.disableUpdateCheck")) {
             try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT)) {
                 GetRequest getRequest = new GetRequest(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
+                getRequest.setHeader("User-Agent", "Mozilla/5.0");
                 getRequest = httpClientAdapter.executeFollowRedirect(getRequest);
                 version = getRequest.getResponseBodyAsString();
                 LOGGER.debug("DavMail released version: " + version);
