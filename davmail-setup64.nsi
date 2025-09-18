@@ -205,7 +205,7 @@ no_quest:
 
   RMDir "$SMPROGRAMS\DavMail"
   RMDir "$INSTDIR\lib"
-  RMDir "$INSTDIR\jre"
+  RMDir /r "$INSTDIR\jre"
   RMDir "$INSTDIR"
 
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "DavMail"
