@@ -4,7 +4,7 @@
 !define PRODUCT_NAME "DavMail"
 !define PRODUCT_VERSION "${VERSION}"
 !define PRODUCT_PUBLISHER "Mickaël Guessant"
-!define PRODUCT_WEB_SITE "http://sourceforge.net/projects/davmail"
+!define PRODUCT_WEB_SITE "https://davmail.sourceforge.net"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\davmail64.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
@@ -117,6 +117,8 @@ Section "MainSection" SEC01
   File "dist\lib\stax2-api-3.1.1.jar"
   File "dist\lib\winrun4j-0.4.5.jar"
   File "dist\lib\woodstox-core-6.4.0.jar"
+  SetOutPath "$InstDir\jre"
+  File /r "dist\jre\*.*"
 SectionEnd
 
 Section -AdditionalIcons
@@ -203,6 +205,7 @@ no_quest:
 
   RMDir "$SMPROGRAMS\DavMail"
   RMDir "$INSTDIR\lib"
+  RMDir "$INSTDIR\jre"
   RMDir "$INSTDIR"
 
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "DavMail"
