@@ -57,23 +57,25 @@ elif [ -e "$BASE/davmail.jar" ]; then
   exit 1
 fi
 
+if [ -e /usr/lib/java/swt.jar ]; then
+    # latest SWT on Fedora
+    SWT_CLASSPATH=/usr/lib/java/swt.jar
+elif [ -e /usr/share/java/swt.jar ]; then
+    # SWT 3 is available, deprecated?
+    JAVA_OPTS="$JAVA_OPTS -Djdk.gtk.version=2.2"
+    export LD_LIBRARY_PATH=/usr/lib/jni
+    SWT_CLASSPATH=/usr/share/java/swt.jar
+elif [ -e /usr/share/java/swt4.jar ]; then
+    # SWT 4 is available
+    export LD_LIBRARY_PATH=/usr/lib/jni
+    SWT_CLASSPATH=/usr/share/java/swt4.jar
+else
+    SWT_CLASSPATH=
+fi
 
-# uncomment this to force JDK 8
-#JAVA=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 if [ -e "$BASE/davmail.jar" ]; then
     # this is the platform independent package
-    exec "${JAVA}" $JAVA_OPTS -cp "$BASE/davmail.jar:$BASE/lib/*:${JFX_CLASSPATH}" davmail.DavGateway "$@"
-elif [ -e /usr/share/java/swt.jar ]; then
-    # SWT 3 is available
-    JAVA_OPTS="$JAVA_OPTS -Djdk.gtk.version=2.2"
-    export LD_LIBRARY_PATH=/usr/lib/jni
-    exec "${JAVA}" $JAVA_OPTS -cp "/usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:${JFX_CLASSPATH}:/usr/share/davmail/lib/*" davmail.DavGateway "$@"
-elif [ -e /usr/share/java/swt4.jar ]; then
-    # SWT 4 is available, force GTK 2 in SWT
-    JAVA_OPTS="$JAVA_OPTS -Djdk.gtk.version=2.2"
-    export LD_LIBRARY_PATH=/usr/lib/jni
-    export SWT_GTK3=0
-    exec "${JAVA}" $JAVA_OPTS -cp "/usr/share/davmail/davmail.jar:/usr/share/java/swt4.jar:${JFX_CLASSPATH}:/usr/share/davmail/lib/*" davmail.DavGateway "$@"
+    exec "${JAVA}" $JAVA_OPTS -cp "$BASE/davmail.jar:$BASE/lib/*:${SWT_CLASSPATH}:${JFX_CLASSPATH}" davmail.DavGateway "$@"
 else
-    exec "${JAVA}" $JAVA_OPTS -cp "/usr/share/davmail/davmail.jar:/usr/share/davmail/lib/*:${JFX_CLASSPATH}" davmail.DavGateway "$@"
+    exec "${JAVA}" $JAVA_OPTS -cp "/usr/share/davmail/davmail.jar:${SWT_CLASSPATH}:${JFX_CLASSPATH}:/usr/share/davmail/lib/*" davmail.DavGateway "$@"
 fi
