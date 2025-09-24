@@ -252,23 +252,19 @@ public final class DavGatewayTray {
                             "https://extensions.gnome.org/extension/1503/tray-icons/ " +
                             "to restore normal systray or run DavMail in server mode");
                 }
-                if (Settings.isWindows()) {
-                    LOGGER.info("Do not try to create SWT tray on windows");
-                } else {
-                    // first try to load SWT before with Java AWT
-                    ClassLoader classloader = DavGatewayTray.class.getClassLoader();
-                    try {
-                        // trigger ClassNotFoundException
-                        classloader.loadClass("org.eclipse.swt.SWT");
-                        // SWT available, create tray
-                        davGatewayTray = new SwtGatewayTray();
-                        davGatewayTray.init();
-                    } catch (ClassNotFoundException e) {
-                        DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
-                    } catch (Throwable e) {
-                        DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
-                        davGatewayTray = null;
-                    }
+                // first try to load SWT before with Java AWT
+                ClassLoader classloader = DavGatewayTray.class.getClassLoader();
+                try {
+                    // trigger ClassNotFoundException
+                    classloader.loadClass("org.eclipse.swt.SWT");
+                    // SWT available, create tray
+                    davGatewayTray = new SwtGatewayTray();
+                    davGatewayTray.init();
+                } catch (ClassNotFoundException e) {
+                    DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                } catch (Throwable e) {
+                    DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                    davGatewayTray = null;
                 }
                 // try java6 tray support, except on Linux
                 if (davGatewayTray == null /*&& !isLinux()*/) {
