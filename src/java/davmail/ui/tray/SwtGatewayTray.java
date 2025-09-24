@@ -31,7 +31,6 @@ import org.eclipse.swt.graphics.DeviceData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.internal.gtk.OS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
@@ -57,8 +56,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     protected SwtGatewayTray() {
     }
 
-    SettingsFrame settingsFrame;
-    AboutFrame aboutFrame;
+    static SettingsFrame settingsFrame;
+    static AboutFrame aboutFrame;
 
     private static TrayItem trayItem;
     private static ArrayList<java.awt.Image> frameIcons;
@@ -67,11 +66,68 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static Image image2;
     private static Image inactiveImage;
     private static Display display;
+    private static Thread swtThread;
     private static Shell shell;
     private boolean isActive = true;
-    private boolean isReady;
-    private Error error;
+    private static boolean isReady = false;
+    private static Error error;
     private boolean firstMessage = true;
+
+    public static Display initDisplay() {
+        if (!isReady) {
+            swtThread = new Thread("SWT") {
+                @Override
+                public void run() {
+                    try {
+                        display = Display.getDefault();
+                        shell = new Shell(display);
+                        synchronized (LOCK) {
+                            // ready
+                            isReady = true;
+                            LOCK.notifyAll();
+                        }
+
+                        // start main loop, shell can be null before init
+                        while (!shell.isDisposed()) {
+                            if (!display.readAndDispatch()) {
+                                display.sleep();
+                            }
+                        }
+                        // dispose AWT frames
+                        if (settingsFrame != null) {
+                            settingsFrame.dispose();
+                        }
+                        if (aboutFrame != null) {
+                            aboutFrame.dispose();
+                        }
+                        System.exit(0);
+                    } catch (Throwable e) {
+                        LOGGER.error("Error in SWT thread", e);
+                        error = new Error(e);
+                    }
+                }
+            };
+            swtThread.start();
+            while (true) {
+                // wait for SWT init
+                try {
+                    synchronized (LOCK) {
+                        if (error != null) {
+                            throw error;
+                        }
+                        if (isReady) {
+                            break;
+                        }
+                        LOCK.wait(1000);
+                    }
+                } catch (InterruptedException e) {
+                    DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+        return display;
+    }
 
     /**
      * Return AWT Image icon for frame title.
@@ -199,6 +255,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     public void init() {
         boolean isGTK3;
         // SWT 4.9 and later
+        /*
         try {
             Class gtk = Class.forName("org.eclipse.swt.internal.gtk.GTK");
             isGTK3 = (Boolean) gtk.getDeclaredField("GTK3").get(null);
@@ -209,6 +266,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         } catch (Throwable e) {
             // ignore
         }
+
         try {
             Class gdk = Class.forName("org.eclipse.swt.internal.gtk.GDK");
             //noinspection unchecked
@@ -224,7 +282,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             LOGGER.debug("Called org.eclipse.swt.internal.gtk.OS.gdk_error_trap_push");
         } catch (Exception e) {
             // ignore
-        }
+        }*/
         try {
             // workaround for bug when SWT and AWT both try to access Gtk
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
@@ -232,133 +290,90 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
         }
 
-        new Thread("SWT") {
-            @Override
-            public void run() {
-                try {
-                    DeviceData data = new DeviceData();
-                    data.debug = true;
-                    display = new Display(data);
-                    shell = new Shell(display);
+        initDisplay();
 
-                    final Tray tray = display.getSystemTray();
-                    if (tray != null) {
+        display.asyncExec(() -> {
+            try {
+                final Tray tray = display.getSystemTray();
+                if (tray != null) {
 
-                        trayItem = new TrayItem(tray, SWT.NONE);
-                        trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
+                    trayItem = new TrayItem(tray, SWT.NONE);
+                    trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
 
-                        frameIcons = new ArrayList<>();
-                        frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
-                        frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
+                    frameIcons = new ArrayList<>();
+                    frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
+                    frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
 
-                        image = loadSwtImage(AwtGatewayTray.TRAY_PNG);
-                        image2 = loadSwtImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
-                        inactiveImage = loadSwtImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
+                    image = loadSwtImage(AwtGatewayTray.TRAY_PNG);
+                    image2 = loadSwtImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
+                    inactiveImage = loadSwtImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
 
-                        trayItem.setImage(image);
-                        trayItem.addDisposeListener(e -> {
-                            if (image != null && !image.isDisposed()) {
-                                image.dispose();
+                    trayItem.setImage(image);
+                    trayItem.addDisposeListener(e -> {
+                        if (image != null && !image.isDisposed()) {
+                            image.dispose();
+                        }
+                        if (image2 != null && !image2.isDisposed()) {
+                            image2.dispose();
+                        }
+                        if (inactiveImage != null && !inactiveImage.isDisposed()) {
+                            inactiveImage.dispose();
+                        }
+                    });
+
+                    // create a popup menu
+                    final Menu popup = new Menu(shell, SWT.POP_UP);
+                    trayItem.addListener(SWT.MenuDetect, event -> display.asyncExec(
+                            () -> popup.setVisible(true)));
+
+                    MenuItem aboutItem = new MenuItem(popup, SWT.PUSH);
+                    aboutItem.setText(BundleMessage.format("UI_ABOUT"));
+                    aboutItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(
+                            () -> {
+                                if (aboutFrame == null) {
+                                    aboutFrame = new AboutFrame();
+                                }
+                                aboutFrame.update();
+                                aboutFrame.setVisible(true);
+                                aboutFrame.toFront();
+                                aboutFrame.requestFocus();
+                            }));
+
+                    // create menu item for the default action
+                    trayItem.addListener(SWT.DefaultSelection, event -> SwingUtilities.invokeLater(
+                            () -> openSettingsFrame()));
+
+                    MenuItem defaultItem = new MenuItem(popup, SWT.PUSH);
+                    defaultItem.setText(BundleMessage.format("UI_SETTINGS"));
+                    defaultItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(
+                            () -> openSettingsFrame()));
+
+                    MenuItem exitItem = new MenuItem(popup, SWT.PUSH);
+                    exitItem.setText(BundleMessage.format("UI_EXIT"));
+                    exitItem.addListener(SWT.Selection, event -> DavGateway.stop());
+
+                    // display settings frame on first start
+                    if (Settings.isFirstStart()) {
+                        SwingUtilities.invokeLater(() -> {
+                            // create frame on first call
+                            if (settingsFrame == null) {
+                                settingsFrame = new SettingsFrame();
                             }
-                            if (image2 != null && !image2.isDisposed()) {
-                                image2.dispose();
-                            }
-                            if (inactiveImage != null && !inactiveImage.isDisposed()) {
-                                inactiveImage.dispose();
-                            }
+                            settingsFrame.setVisible(true);
+                            settingsFrame.toFront();
+                            settingsFrame.requestFocus();
                         });
 
-                        // create a popup menu
-                        final Menu popup = new Menu(shell, SWT.POP_UP);
-                        trayItem.addListener(SWT.MenuDetect, event -> display.asyncExec(
-                                () -> popup.setVisible(true)));
-
-                        MenuItem aboutItem = new MenuItem(popup, SWT.PUSH);
-                        aboutItem.setText(BundleMessage.format("UI_ABOUT"));
-                        aboutItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(
-                                () -> {
-                                    if (aboutFrame == null) {
-                                        aboutFrame = new AboutFrame();
-                                    }
-                                    aboutFrame.update();
-                                    aboutFrame.setVisible(true);
-                                    aboutFrame.toFront();
-                                    aboutFrame.requestFocus();
-                                }));
-
-                        // create menu item for the default action
-                        trayItem.addListener(SWT.DefaultSelection, event -> SwingUtilities.invokeLater(
-                                () -> openSettingsFrame()));
-
-                        MenuItem defaultItem = new MenuItem(popup, SWT.PUSH);
-                        defaultItem.setText(BundleMessage.format("UI_SETTINGS"));
-                        defaultItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(
-                                () -> openSettingsFrame()));
-
-                        MenuItem exitItem = new MenuItem(popup, SWT.PUSH);
-                        exitItem.setText(BundleMessage.format("UI_EXIT"));
-                        exitItem.addListener(SWT.Selection, event -> DavGateway.stop());
-
-                        // display settings frame on first start
-                        if (Settings.isFirstStart()) {
-                            SwingUtilities.invokeLater(() -> {
-                                // create frame on first call
-                                if (settingsFrame == null) {
-                                    settingsFrame = new SettingsFrame();
-                                }
-                                settingsFrame.setVisible(true);
-                                settingsFrame.toFront();
-                                settingsFrame.requestFocus();
-                            });
-
-                        }
-
-                        synchronized (LOCK) {
-                            // ready
-                            isReady = true;
-                            LOCK.notifyAll();
-                        }
-
-                        while (!shell.isDisposed()) {
-                            if (!display.readAndDispatch()) {
-                                display.sleep();
-                            }
-                        }
                     }
-                    // dispose AWT frames
-                    if (settingsFrame != null) {
-                        settingsFrame.dispose();
-                    }
-                    if (aboutFrame != null) {
-                        aboutFrame.dispose();
-                    }
-                } catch (Exception exc) {
-                    DavGatewayTray.error(exc);
-                } catch (Error exc) {
-                    error = exc;
-                    throw exc;
+
                 }
-                // make sure we do exit
-                System.exit(0);
+            } catch (Exception exc) {
+                DavGatewayTray.error(exc);
+            } catch (Error exc) {
+                error = exc;
+                throw exc;
             }
-        }.start();
-        while (true) {
-            // wait for SWT init
-            try {
-                synchronized (LOCK) {
-                    if (error != null) {
-                        throw error;
-                    }
-                    if (isReady) {
-                        break;
-                    }
-                    LOCK.wait(1000);
-                }
-            } catch (InterruptedException e) {
-                DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
-                Thread.currentThread().interrupt();
-            }
-        }
+        });
     }
 
     private void openSettingsFrame() {
