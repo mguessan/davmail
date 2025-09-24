@@ -27,7 +27,6 @@ import davmail.util.IOUtil;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.graphics.DeviceData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
@@ -219,13 +218,16 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
     /**
      * Load image with current class loader.
+     * Scale to size
      *
      * @param fileName image resource file name
+     * @param size     target image size
      * @return image
      */
-    public static Image loadSwtImage(String fileName) {
+    public static Image loadSwtImage(String fileName, int size) {
         Image result = null;
         try {
+
             ClassLoader classloader = DavGatewayTray.class.getClassLoader();
             URL imageUrl = classloader.getResource(fileName);
             if (imageUrl == null) {
@@ -233,14 +235,14 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             }
             byte[] imageContent = IOUtil.readFully(imageUrl.openStream());
             Image tempImage = new Image(display, new ByteArrayInputStream(imageContent));
-            Image backgroundImage = new Image(null, 24, 24);
+            Image backgroundImage = new Image(null, size, size);
             ImageData imageData = backgroundImage.getImageData();
             imageData.transparentPixel = imageData.getPixel(0, 0);
             backgroundImage.dispose();
             result = new Image(null, imageData);
 
             GC gc = new GC(result);
-            gc.drawImage(tempImage, 4, 4);
+            gc.drawImage(tempImage, 0, 0, tempImage.getBounds().width, tempImage.getBounds().height, 0, 0, size, size);
             tempImage.dispose();
 
         } catch (IOException e) {
@@ -304,9 +306,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
                     frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
 
-                    image = loadSwtImage(AwtGatewayTray.TRAY_PNG);
-                    image2 = loadSwtImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
-                    inactiveImage = loadSwtImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
+                    image = loadSwtImage("tray128.png", 32);
+                    image2 = loadSwtImage("tray128active.png", 32);
+                    inactiveImage = loadSwtImage("tray128inactive.png", 32);
 
                     trayItem.setImage(image);
                     trayItem.addDisposeListener(e -> {
