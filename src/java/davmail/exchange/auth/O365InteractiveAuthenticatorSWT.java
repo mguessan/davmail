@@ -58,7 +58,7 @@ public class O365InteractiveAuthenticatorSWT {
 
             shell.setLayout(new FillLayout());
 
-            shell.setImage(SwtGatewayTray.loadSwtImage("tray.png"));
+            shell.setImage(SwtGatewayTray.loadSwtImage("tray.png", 32));
 
             shell.addListener(SWT.Close, event -> {
                 if (!authenticator.isAuthenticated && authenticator.errorCode == null) {
@@ -75,7 +75,7 @@ public class O365InteractiveAuthenticatorSWT {
                 public void changing(LocationEvent locationEvent) {
                     LOGGER.debug("Navigate to " + locationEvent.toString());
                     String location = locationEvent.location;
-                    //shell.setText("DavMail: " + location);
+
                     if (location.startsWith(redirectUri)) {
 
                         LOGGER.debug("Location starts with redirectUri, check code");
