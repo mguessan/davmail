@@ -211,9 +211,6 @@
         <taskdef name="nsis" classname="net.sf.nsisant.Task">
             <classpath location="lib/nsisant-1.2.jar"/>
         </taskdef>
-        <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
-            <define name="VERSION" value="${release-name}"/>
-        </nsis>
         <nsis script="davmail-setup64.nsi" verbosity="4" out="build64.log" noconfig="yes">
             <define name="VERSION" value="${release-name}"/>
         </nsis>
@@ -358,9 +355,6 @@
         <copy file="src/bin/davmail" todir="dist"/>
 
         <!-- use WinRun4J wrappers -->
-        <copy file="src/winrun4j/davmail.exe" todir="dist"/>
-        <copy file="src/winrun4j/davmailconsole.exe" todir="dist"/>
-        <copy file="src/winrun4j/davmailservice.exe" todir="dist"/>
         <copy file="src/winrun4j/davmail64.exe" todir="dist"/>
         <copy file="src/winrun4j/davmailservice64.exe" todir="dist"/>
     </target>
@@ -547,7 +541,7 @@
         </unzip>
         <delete file="dist/jdkfx.zip"/>
 
-        <echo message="Create custom jre"/>
+        <echo message="Create custom jre" level="info"/>
         <delete dir="dist/jre"/>
         <exec dir="." executable="dist/jdk/bin/jlink.exe">
             <arg value="--add-modules"/>
