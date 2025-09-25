@@ -20,6 +20,7 @@
 package davmail.exchange.auth;
 
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.ui.tray.SwtGatewayTray;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
@@ -50,6 +51,10 @@ public class O365InteractiveAuthenticatorSWT {
     public void authenticate(final String initUrl, final String redirectUri) {
         // initialize SWT
         SwtGatewayTray.initDisplay();
+
+        // allow SSO on windows
+        System.setProperty("org.eclipse.swt.browser.Edge.allowSingleSignOnUsingOSPrimaryAccount",
+                Settings.getProperty("davmail.oauth.allowSingleSignOnUsingOSPrimaryAccount", "true"));
 
         Display.getDefault().asyncExec(() -> {
             final Shell shell = new Shell(Display.getDefault());
@@ -82,6 +87,7 @@ public class O365InteractiveAuthenticatorSWT {
                         authenticator.handleCode(location);
 
                         shell.close();
+                        browser.dispose();
                         shell.dispose();
                     }
 
