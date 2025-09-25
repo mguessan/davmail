@@ -3,7 +3,7 @@
   <id>org.davmail.DavMail.desktop</id>
   <name>DavMail</name>
   <metadata_license>CC0-1.0</metadata_license>
-  <summary>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway</summary>
+  <summary>DavMail O365 and Exchange Gateway</summary>
   <description>
     <p>
       Ever wanted to get rid of Outlook ? DavMail is a
@@ -27,809 +27,752 @@
       (gateway running on a server).
     </p>
   </description>
+  <launchable type="desktop-id">org.davmail.DavMail</launchable>
   <url type="homepage">https://davmail.sourceforge.net</url>
   <url type="donation">https://sourceforge.net/donate/index.php?group_id=184600</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://screenshots.debian.net/screenshots/000/015/485/large.png</image>
       <image>https://davmail.sourceforge.net/images/davmailArchitecture.png</image>
     </screenshot>
   </screenshots>
+  <branding>
+    <color type="primary" scheme_preference="light">#f7f7f7</color>
+    <color type="primary" scheme_preference="dark">#0f172a</color>
+  </branding>
   <project_license>GPL-2.0</project_license>
-  <developer_name>Mickaël Guessant</developer_name>
+  <developer id="org.davmail">
+    <name>Mickaël Guessant</name>
+  </developer>
   <content_rating type="oars-1.1" />
   <releases>
       <release version="6.4.0" date="2025-08-31">
-          ## DavMail 6.4.0 2025-08-31
-          Includes an experimental Microsoft Graph backend, to enable it see instructions at:
-          https://github.com/mguessan/davmail/issues/404
-          Fixed a long-standing IMAP issue on shared mailbox synchronization, improved GCC high tenants support, reviewed
-          OIDC authentication to prepare graph backend implementation, merged contributions from users, replaced log4j with reload4j.
-          Restored NTLM JCIFS implementation with davmail.enableJcifs setting based on user feedback, tried to improve NTML logging.
-
-          ### Linux
-          - Linux: drop eclipse-swt dependency on Suse, rely on included swt package
-          - Linux: merge https://github.com/flathub/org.davmail.DavMail/blob/master/davmail-desktop-add-wm-class.patch
-          - Linux: additional rpm spec file fixes for rhel 9
-          - Linux: ant-unbound only exist in Fedora Rawhide
-
-          ### O365
-          - O365: Handle password expiration and return a specifig error message
-          - O365: add davmail.tld setting to UI, see https://github.com/mguessan/davmail/issues/284
-          - O365: authenticator fix regression
-          - O365: revert authenticator scope change
-          - O365: improve authenticator error handling
-          - O365: drop hostname based fingerprint, allow user to force salt fingerprint with davmail.oauth.fingerprint setting, see https://github.com/mguessan/davmail/issues/403
-          - O365: review O365StoredTokenAuthenticator to take into account separate tokenFilePath
-          - O365: log token scopes
-          - O365: Fix for https://github.com/mguessan/davmail/issues/403 Salt generation for refresh token encryption seems unstable (BadPaddingException)
-          - O365: refactor authentication to handle various cases with Graph API with new OIDC endpoint and the classic endpoint
-          - O365: cleanup O365Authenticator
-          - O365: fix token parameters in OIDC mode, resource is not relevant
-          - O365: catch NullPointerException on javafx test as reported by a user
-          - O365: refactor tokenUrl build logic
-          - O365: adjustments for live.com OIDC endpoints
-
-          ### EWS
-          - EWS: cleanup from audit
-          - EWS: try to get a valid outlook.com live token
-
-          ### IMAP
-          - IMAP: fix IMAP context folder issue, when using userid/username syntax mailbox context is missing on some IMAP commands
-          - IMAP: Add log statement in case of progress notifier error
-          - IMAP: merge https://github.com/mguessan/davmail/pull/406 Simpler and more conformant keepalive feature
-          - IMAP: fix audit alert Refactor this repetition that can lead to a stack overflow for large inputs.
-          - IMAP: merge https://github.com/mguessan/davmail/pull/392, add support for iOS 18 comma separated uids in range search
-          - IMAP: SPECIAL-USE test cases
-          - IMAP: fix SPECIAL-USE implementation when used as a list-extended selection option, see https://www.rfc-editor.org/rfc/rfc6154 5.2
-
-          ### NTLM
-          - NTLM: dump NTLM message details using NTLMMessageDecoder
-          - NTLM: implement custom NTLM message decoder
-          - NTLM: add debug info in DavMailNTLMEngineImpl
-          - NTLM: without JCIFS workstation and domain are not sent with type1 message
-          - NTLM: Restore JCIFS
-          - NTLM: introduce davmail.enableJcifs setting to enable JCIFS NTLM engine implementation
-
-          ### Enhancements
-          - StringUtilTest add test case on encoding
-          - Cleanup test case from audit
-          - Enhancement from audit: rename folder.count to messageCount
-          - ExchangeSession: cleanup from audit
-          - Fix https://github.com/mguessan/davmail/issues/400 WARN Invalid 'expires' attribute
-          - Cleanup irrevelant dependency on debian package
-          - Upgrade nsi scripts with reload4j 2.0.16
-          - Maven: switch slf4j dependency to reload4j
-          - Upgrade slf4j / switch to reload4j
-          - Upgrade slf4j-api to 2.0.16
-          - Switch slf4j to reload4j instead of log4j
-          - Fix typo
-          - Log4J: fix ant build file
-          - Log4j: remove show logs option as LF5 is no longer available with reload4j
-          - Log4j: switching to reload4j, in place replacement for log4j
-          - Upgrade javamail to 1.6.2
-
-          ### Build
-          - Maven: force slf4j-api to 2.0.16
-          - AppVeyor: switch from sonar.login to sonar.token
-
-          ### Caldav
-          - Caldav: handle quote escaping in parameters
-
-          ### Docker
-          - Docker: merge https://github.com/mguessan/davmail/pull/390 Docker entrypoint script refinements
-
-          ### Documentation
-          - Doc: point issue management to Github
-          - Doc: review appdata doc
-
-          ### Graph
-          - Graph: handle cancelled occurrences on events to build EXDATE vCalendar properties
-          - Graph: make progress on event recurrence implementation, see https://learn.microsoft.com/en-us/graph/api/resources/patternedrecurrence
-          - Graph: initiate recurrence implementation
-          - Graph: fix draft handling, draft is set for mapi PR_MESSAGE_FLAGS property combined with read flag by IMAPConnection
-          - Graph: tasks don't have a changeKey field, retrieve etag value from @odata.etag
-          - Graph: switch back to custom scopes
-          - Graph: manage task items returned as part of default calendar requests
-          - Graph: map taskstatus field to status graphId
-          - Graph: handle item not found with HttpNotFoundException
-          - Graph: implement isMainCalendar
-          - Graph: debug ALTDESC for thunderbird, need to urlencode content
-          - Graph: implement etag search for events and contacts
-          - Graph: handle html body and attendees for caldav support
-          - Graph: move convertClassFromExchange and convertClassToExchange to ExchangeSession
-          - Graph: Checkpoint on event management, new tasks handling based on new todo endpoint and make progress on calendar events
-          - Graph: Move some reference tables from EwsExchangeSession to ExchangeSession to make them available in GraphExchangeSession
-          - Graph: Cleanup from audit
-          - Graph: Additional entry points for graphid value in ExtendedFieldURI
-          - Graph: implement optDateTimeTimeZone in GraphObject to convert DateTimeTimeZone json objects
-          - Graph: new TODO objects in graph require Tasks.ReadWrite OIDC scope
-          - Graph: implement specific date conversion convertCalendarDateToGraph for graph api
-          - Graph: implement more condition logic and retrieve VTIMEZONE from properties
-          - Graph: add a full dump of all timezone definitions as graph does not provide a way to retrieve events as VCALENDAR
-          - Graph: make progress on graph attributes handling, refactor GraphObject
-          - Graph: implement fileAs on contacts and fix bday handling
-          - Graph: handle empty boolean custom property, return null for empty email
-          - Graph: switch to .default for OIDC scopes, will help with outlook desktop tokens, detect 50128 error code using outlook desktop clientid with live.com account
-          - Graph: refactor GraphObject handling
-          - Graph: refactor GraphExchangeSession, cleanup code
-          - Graph: implement custom graphid on Field/ExtendedFieldURI
-          - Graph: refactor graph properties handling
-          - Graph: main contact management implementation, create and update contact, handle attached photo
-          - Graph: implement HttpPut calls and introduce GraphResponse as a wrapper around json response messages
-          - Graph: improve graphId compute logic, add namespaceGuid for DistinguishedPropertySetType.Address, introduce isNumber to avoid error on empty number fields
-          - Graph: minimal form submit for live.com authentication
-          - Graph: implement live.com authentication with simple username/password
-          - Graph: add additional scopes to send mail, manage contacts and access shared mailboxes
-          - Graph: Cleanup from audit
-          - Graph: replace method names with constants
-          - Graph: fix approximate message and implement message update (properties only)
-          - Graph: Handle special folders based on well known names
-          - Graph: implement contact folders management
-          - Graph: update TestExchangeSessionFolder unit tests for graph backend
-          - Graph: Implement calendar folder handling
-          - Graph: Improve logging and performance in GraphRequestBuilder
-          - Graph: Implement IOUtil.convertToBytes to convert JSON to byte array without creating a string
-          - Graph: Enhancements for audit
-          - Graph: Fix iterator, nextLink page can be empty
-          - Graph: enable GraphExchangeSession in ExchangeSessionFactory
-          - Graph: implement getMimeHeaders and MultiCondition
-          - Graph: initiate delete/copy/move message
-          - Graph: make progress on graph backend implementation
-          - Graph: complete properties mapping on message update
-          - Graph: some more work on message update logic (PATCH call)
-          - Graph: implement getGraphUrl to handle various graph api endpoints
-          - Graph: log message download progress, add mailbox attribute to graph message and initiate message flags management
-          - Graph: refactor draft message handling, apply workaround (delete/create) only for non draft messages
-          - Graph: review buildMessage logic to parse properties
-          - Graph: initiate implementation of message handling
-          - Graph: compute graphid for distinguishedProperty properties (PublicStrings, InternetHeaders,Common)
-          - Graph: initiate create message implementation, with workaround for draft flag
-          - Graph: switch to v2.0 OIDC endpoint for graph authentication, adjust token endpoint accordingly
-      </release>
-      <release version="6.3.0" date="2025-02-26">
-          Merged some contributions provided by users on github, updated embedded jre to 21 for improved TLS 1.3 support,
-          applied documentation fixes, reviewed rpm build to provide el9 compatibility, implemented channel binding for NTLM
-          authentication. Also added a more recent Docker file in contribs, worked on GCC high tenants compatibility.
-          Microsoft Graph backend implementation is in progress but far from complete.
-
-          ### Caldav
-          - Caldav: handle multiple categories on TODO items, see https://github.com/mguessan/davmail/issues/372
-          - Caldav: Merge https://github.com/mguessan/davmail/pull/386 validate and repair Exchange calendar characters
-
-          ### LDAP
-          - LDAP: merge https://github.com/mguessan/davmail/pull/353, fix first certificate selection logic
-          - LDAP: merge https://github.com/mguessan/davmail/pull/353 Add support for retrieving user certificates
-
-          ### IMAP
-          - IMAP: fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;, finalize merge, call new parsing method from nextToken and remove backslash handling in username
-          - IMAP: fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;, review and switch to ParseException for error handling and chars instead of bytes
-          - IMAP: merge unit test for patch fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;
-          - IMAP: initial merge of patch fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;
-          - IMAP: fix https://github.com/mguessan/davmail/issues/359, handle RFC822.TEXT
-
-          ### O365
-          - O365: add GCC high example settings in default davmail.properties
-          - O365: https://github.com/mguessan/davmail/pull/380 Remove trailing slash from O365_LOGIN_URL
-          - O365: merge https://github.com/mguessan/davmail/pull/380 Missed one change
-          - O365: merge https://github.com/mguessan/davmail/pull/380 Enhance support for the davmail.outlookUrl property setting and fully support GCC-High endpoints
-          - O365: implement OneWaySMS MFA prompt, see https://github.com/mguessan/davmail/pull/134
-          - O365: get O365 Login Url from settings for non standard tenants and add additional error use case
-          - O365: detect live.com token. Note: may not be enough to make DavMail work with live.com accounts
-          - O365: dropping all workaroungs for OpenJFX bugs that should be fixed in recent versions
-
-          ### EWS
-          - EWS: experimental, try to implement recurrence count with NumberOfOccurrences, see https://github.com/mguessan/davmail/issues/373
-          - EWS: make settings timezoneid higher priority than mailbox configuration, make encode/decode foldername methods public for graph API
-
-          ### Graph
-          - Graph: introduce GRAPH_URL and davmail.loginUrl in Settings
-          - Graph: initiate search filter implementation
-          - Graph: implement folder recursive search
-          - Introduce folderClass
-          - Graph: Create folders unit tests
-          - Graph: fix folder retrieval by id
-          - Graph: initial folder retrieval implementation
-          - Graph: compute graph API property id from name and tag
-          - Graph: Empty Graph ExchangeSession implementation
-          - Graph: prepare graph request builder for graph implementation
-          - Graph: Experimental, introduce davmail.enableGraph property to obtain a token compatible with Microsoft Graph API
-
-          ### Linux
-          - Linux: fix ant dependency for fedora
-          - Linux: davmail.spec to not try to link os provided swt.jar when using embedded one
-          - Linux: work on el9 compatibility for RPM build
-          - Linux: Embed davmail-user.conf in source package, see https://github.com/mguessan/davmail/issues/356
-          - Linux: Create davmail user/group per new conventions in RPM 4.19, merge changes from https://github.com/mguessan/davmail/issues/356
-          - Build: fix https://github.com/mguessan/davmail/issues/346 unable to run jlink on linux
-          - Linux: force shutdown with -token option
-          - Linux: Add OpenJFX case for Kubuntu
-
-          ### Documentation
-          - Doc: update windows build documentation, see https://github.com/mguessan/davmail/issues/384
-          - Doc: merge https://github.com/mguessan/davmail/pull/174 fix docs typo in property davmail.enableKeepAlive
-          - Doc: improve documentation on how to run DavMail as a windows service
-          - Doc: update documentation for non default tenants (US, China)
-          - Doc: provide more information in initial consent for O365 authentication
-          - Doc: update FAQ on application registration in Entra ID (Azure AD)
-          - Doc: mention AppIndicator and KStatusNotifierItem Support in Fedora setup instructions
-
-          ### Docker
-          - Docker: merge https://github.com/mguessan/davmail/pull/381 by SethRobertson Bug 201: Docker support for building and running
-
-          ### NTLM
-          - NTLM: remove CIFS dependency
-          - NTLM: cleanup code from audit
-          - NTLM: use ThreadLocal to manage SecureRandom generators
-          - NTLM: switch to DavMailNTLMSchemeFactory to enable channel binding, see https://github.com/mguessan/davmail/issues/352
-          - NTLM: retrieve certificate from http context
-          - NTLM: Duplicate of NTLMScheme from HttpClient to implement channel binding
-          - NTLM: adjust NTLMEngineImpl to handle channel binding
-          - NTLM: Duplicate code from NTLMEngineImpl to implement channel binding
-
-          ### Enhancements
-          - Fix from audit
-          - Drop web component
-          - Drop servlet-api.jar, no longer required
-          - Drop deprecated DavGatewayServletContextListener (we no longer provide an embedded war file)
-          - Trying to fix custom jre for TLS 1.3, see https://stackoverflow.com/questions/63964939/tls-1-3-handshake-failure-when-using-openjdk-14-java-module-runtime and https://github.com/mguessan/davmail/pull/388
-          - fix download-jre for embedded JDK on windows, fetch version 21
-          - switch davmail linux launcher to zulu JDK 21 for better TLS 1.3 support
-          - switch main package to zulu JDK 21 for better TLS 1.3 support
-          - StringUtilTest CRLF => LF, see https://github.com/mguessan/davmail/pull/378
-          - StringUtil CRLF => LF, see https://github.com/mguessan/davmail/pull/378
-          - Security: Enable TLSv1.3 between DavMail and Exchange/O365
-          - PKCS11: review SunPKCS11ProviderHandler
-          - HttpClient: cleanup from audit
-          - svn ignore .idea
-          - Downgrade jackrabbit to 2.20.15 for java 8 compatibility
-          - Upgrade jackrabbit to 2.21.25 and httpclient to 4.5.14
-      </release>
-      <release version="6.2.2" date="2024-03-30">
-          Includes some build process fixes, use jlink to build a customized jre for standalone package,
-          Thunderbird configuration documentation updated with new screenshots.
-          Also implemented a new -token command line option to launch O365InteractiveAuthenticator and get an authentication token.
-
-          ### OSX
-          - OSX: document how to embed Zulu jre inside DavMail app
-
-          ### Enhancements
-          - Fix comment in DavMail shell
-          - Detect missing network connectivity during token refresh to avoid invalidating token
-          - Upgrade JCIFS to 1.3.19 for NTLM support
-          - Cleanup from audit
-          - Drop war package from release files, there are more modern ways to run DavMail in server mode without a webapp container
-          - From audit: place LOCK.wait in a loop
-          - Fix from audit, use try with resource
-          - Cleanup from audit, remove deprecated getSubjectDN, getIssuerDN
-
-          ### O365
-          - O365: Improve error message on missing add-exports, see https://github.com/mguessan/davmail/issues/344
-          - O365: Refactor manual authentication dialog to clearly separate steps
-          - Remove explicit dependency on O365InteractiveAuthenticator for -token option
-          - Implement a -token option to launch interactive authenticator and print obtained refresh token, see https://github.com/mguessan/davmail/issues/338
-          - O365: Try to adjust ItemId to 140 length, see https://github.com/mguessan/davmail/issues/328
-          - O365: prepare GCC-High/DoD endpoints support, fix regression
-          - O365: prepare GCC-High/DoD endpoints support, move Outlook login url references to Settings
-          - O365: prepare GCC-High/DoD endpoints support, move outlook url references to Settings
-
-          ### EWS
-          - EWS: Properly set errorDetail on xml stream error to raise exception
-          - EWS: disable IS_SUPPORTING_EXTERNAL_ENTITIES to fix xml parsing security warning
-
-          ### Caldav
-          - Fix https://github.com/mguessan/davmail/issues/342 map America/Winnipeg to Central Standard Time
-          - Caldav: Fix https://github.com/mguessan/davmail/issues/337 take timezone into account when looking for excluded occurrence
-          - Fix settings implementation, # are allowed in values, see https://github.com/mguessan/davmail/issues/326
-
-          ### IMAP
-          - IMAP: fix https://github.com/mguessan/davmail/issues/339 classcast exception on malformed content
-
-          ### Build
-          - Maven: update compiler to 3.10.1
-          - Maven: optimize dependencies
-          - Maven: exclure httpclient 3 transitive dependency
-          - Appveyor: build only master branch
-          - Build: use jlink to create a custom jre to reduce embedded jre size
-
-          ### Security
-          - Security: fix security alert on Runtime.getRuntime().exec
-          - Security: fix security alert on Runtime.getRuntime().exec
-
-          ### Linux
-          - Linux: force GTK2 only with SWT
-          - Linux: switch to Azul JRE 17 with "davmail azul" command
-          - Linux: Enable OpenJFX on Fedora to make O365Interactive work with Java 17 and later
-
-          ### Documentation
-          - Doc: update roadmap
-          - Doc: Add donation buttons to GitHub main readme page
-          - Doc: update Thunderbird documentation messages
-          - Update release guide, mvn install file no longer required
-          - Doc: update Thunderbird documentation, as requested in https://github.com/mguessan/davmail/issues/294
-          - Doc: update documentation for Thunderbird configuration
-          - Doc: use COPR badge
-          - Doc: update release guide
-          - Doc: reference OpenSuse build service and Fedora COPR for RPM based linux distributions
-          - Update changes file for https://build.opensuse.org/package/show/home:mguessan:davmail/davmail
-      </release>
-      <release version="6.2.1" date="2024-01-04">
-          <description>
-              <p>
-                  Most changes are related to build process and rpm packaging for Fedora/RHEL, also includes a few bug fixes on IMAP
-
-                  ### Security
-                  - Security: Upgrade commons codec to 1.15
-
-                  ### O365
-                  - O365: cleanup from audit
-                  - O365: no longer apply the disable integrity check workaround by default, fixed in openjfx
-                  - O365: add a warning message on FIDO authentication triggered
-                  - O365: allow refresh token persistence without provided password
-                  - O365: Merge https://github.com/mguessan/davmail/pull/236 Changed authentication link log level
-
-                  ### Linux
-                  - Linux: refactor spec file for fedora, do not call old init service scripts and compile with openjfx
-                  - Linux: Fix systemd condition for fedora in spec file
-                  - Linux: Adjust JDK dependencies for RPM build
-
-                  ### Build
-                  - AppVeyor: Cleanup
-                  - AppVeyor: copy plugin to x86-unicode
-                  - AppVeyor: switch to server 2019
-                  - Appveyor: investigate java versions
-                  - AppVeyor: set ANT_HOME value
-                  - AppVeyor: update ant path
-                  - AppVeyor: update ant download path
-                  - Run Sonar scan under JDK19
-                  - Switch Appveyor build to JDK 19
-                  - Maven: fix urls from https://github.com/mguessan/davmail/pull/225 by Stefan Weil
-
-                  ### IMAP
-                  - IMAP: merge patch from https://github.com/mguessan/davmail/pull/140, return folders including special use folders when query is %
-                  - IMAP: implement fetch macro flags, see https://github.com/mguessan/davmail/issues/314
-                  - IMAP: fix APPENDUID value order
-
-                  ### Enhancements
-                  - Cleanup from audit
-                  - Fix typo
-                  - NTLM: improve logging of NTLM negotiation
-                  - Update Winrun4J wrappers with commons codec 1.15
-              </p>
-          </description>
-      </release>
-      <release version="6.2.0" date="2023-11-05">
-          <description>
-              <p>
-                  Another bugfix release to merge user contributions from GitHub, refactor Linux build, upgrade dependencies and a few IMAP and Caldav fixes.
-
-                  ### Security
-                  - Update htmlcleaner to 2.29 cf CVE-2023-34624
-
-                  ### Enhancements
-                  - Drop Travis-ci, no longer working for opensource projects
-                  - fix quotes from audit
-                  - Remove space at end of line +0630=Myanmar Standard Time, see https://github.com/mguessan/davmail/issues/309
-                  - Fix https://github.com/mguessan/davmail/issues/271, keep line order and comments on settings save
-                  - Fix from audit
-                  - Maven: convert pom.xml to UTF-8
-
-                  ### IMAP
-                  - IMAP: merge fix suggested on https://github.com/mguessan/davmail/issues/298
-                  - IMAP: merge according to last comment on https://github.com/mguessan/davmail/pull/239
-                  - IMAP: improve bodystructure handling, merge https://github.com/mguessan/davmail/pull/239
-                  - IMAP: implement APPENDUID and advertise UIDPLUS
-                  - IMAP: implement APPENDUID and advertise UIDPLUS
-                  - IMAP: Prepare uidplus, fetch message after create
-
-                  ### Caldav
-                  - Caldav: Fix nullpointer as in https://github.com/mguessan/davmail/issues/303
-                  - Caldav: Fix https://github.com/mguessan/davmail/issues/309 Thunderbird daily sends TZOFFSETTO with optional second value
-                  - Caldav: adjust isLightning test to include Thunderbird user agent, see https://github.com/mguessan/davmail/issues/287
-
-                  ### Linux
-                  - Linux: based on https://github.com/mguessan/davmail/pull/290 by Björn Bidar &lt;bjorn.bidar@thaodan.de&gt;, remove svn commit reference in davmail.spec
-                  - Remove svn tag from folder name inside source packages
-                  - Linux: remove chkconfig from Requires preun and post in davmail.spec as suggested on build.opensuse.org
-                  - Linux: dos2unix davmail.changes
-                  - Linux: update changelog with Björn Bidar &lt;bjorn.bidar@thaodan.de&gt; contribution from https://github.com/mguessan/davmail/pull/289
-                  - Linux: Add back changelog file and convert to OpenSUSE format from https://github.com/mguessan/davmail/pull/289
-                  - Linux: Merge changes from https://github.com/mguessan/davmail/pull/290 except %version that may impact release cycle
-                  - Linux: convert davmail.spec changelog to OpenSUSE format, see https://github.com/mguessan/davmail/pull/290
-                  - Linux: restore spec file with lf and changelog, see https://github.com/mguessan/davmail/pull/289
-                  - Linux: remove downloaded azul jdk package
-
-                  ### ADFS
-                  - ADFS: merge https://github.com/mguessan/davmail/pull/270 by Felix Engelmann, enable ADFS authentication with SAML assertions
-
-                  ### EWS
-                  - EWS: Cleanup from audit
-                  - EWS: fix https://github.com/mguessan/davmail/issues/299 avoid logging large response message content
-                  - EWS: BackOffMilliseconds unit test
-                  - EWS: parse BackOffMilliseconds value on throttling
-
-                  ### O365
-                  - O365: in O365 interactive, use invokeAndWait on failover to manual to avoid multiple instances of popup window
-                  - Upgrade jettison to 1.5.4 in pom.xml
-                  - Upgrade jettison to 1.5.4
-
-                  ### Windows
-                  - Windows: drop explicit reference to sun.security.mscapi.SunMSCAPI, Windows-MY should be available on all windows JDK
-
-                  ### Documentation
-                  - Doc: Update server properties documentation with davmail.oauth.persistToken
-                  - Doc: fix link to SonarCloud
-              </p>
-          </description>
-      </release>
-      <release version="6.1.0" date="2023-03-19">
-          <description>
-              <p>
-                  First release in a long time to publish pending changes, including Kerberos support fix,
-                  experimental number matching support for upcoming Microsoft authenticator default configuration change,
-                  store new refresh token received at authentication.
-                  In addition, some Log4J specific patches to remove vulnerable classes from library
-                  (even if DavMail is not impacted with standard configuration)
-
-                  ### O365
-                  - O365: implement number matching logic in O365Authenticator
-                  - O365: retrieve number matching value during phone app MFA
-                  - O365: adjust logging level on O365 refresh token error
-                  - O365: change persist token logic to store new refresh token after succesful refresh
-                  - Experimental: store refreshed token when davmail.storeRefreshedToken=true
-
-                  ### Windows
-                  - Windows: Add missing labelReplace active wait with wait/notifyAll in DavService
-                  - Update winrun4j wrappers after lib upgrades
-
-                  ### Linux
-                  - Linux: block davmail azul when davmail script is located under /usr/bin (package installed)
-                  - Linux: fix PosixFilePermissions for writeable only by user
-                  - Linux: try to make .davmail.properties file readable by user only on create
-                  - Linux: improve launch script to take into account script location
-
-
-                  ### Enhancements
-                  - Add missing label
-                  - Replace active wait with wait/notifyAll
-                  - Upgrade woodstox to 1.4.0 and jettison to 1.5.3
-                  - Merge https://github.com/mguessan/davmail/pull/225 remove (most) http links in Maven POM
-                  - Make ScheduledThreadPool thread daemon
-                  - Switch to https for version check
-                  - DavMailIdleConnectionEvictor fix from audit
-                  - Refactor DavMailIdleConnectionEvictor to be less agressive on idle connection checks/purge and use scheduler instead of active polling
-                  - Override SPNegoScheme to take into account DavMail kerberos settings
-
-                  ### Documentation
-                  - Sample syslog configuration
-                  - Update current version in README.md
-                  - OSX: remove reference to Growl in documentation
-                  - Doc: security note on DavMail not vulnerable to CVE-2021-44228
-                  - Doc: add a section on Fedora installation from copr
-
-                  ### Caldav
-                  - Caldav: Do not try to update modified occurrences on Mozilla thunderbird dismiss event
-
-                  ### Security
-                  - Security: Strip packaged log4j jar from JMSSink and JDBCAppender to ensure DavMail is not vulnerable to CVE-2022-23305 &amp; CVE-2022-23302, see https://github.com/mguessan/davmail/issues/250
-                  - Remove JMSAppender, SMTPAppender and SocketServer from Log4J binary as an additional security measure (CVE-2019-17571 CVE-2021-4104), even if DavMail is not vulnerable with standard configuration
-                  - Upgrade Log4J to latest version 1.2.17 in Winrun4J wrappers
-                  - Upgrade Log4J to latest version 1.2.17
-              </p>
-          </description>
-      </release>
-      <release version="6.0.1" date="2021-12-03">
-          <description>
-              <p>
-                  Bugfix release with a few Office 365 enhancements
-
-                  ### O365
-                  - O365: default to MSCAPI on windows for native client certificate access
-                  - O365: name button Send instead of OK in manual authenticator dialog
-                  - OS65: merge https://github.com/mguessan/davmail/pull/158 Added Copy to Clipboard button Manual auth dialog
-
-                  ### Linux
-                  - Linux: improve "davmail azul" error handling
-                  - Linux: Update changelog in RPM spec
-                  - Linux: Fix RPM spec, remote source does not work
-                  - Linux: Merge RPM spec contribution from michals on https://build.opensuse.org, check for systemd support and deploy the right service
-
-                  ### HC4
-                  - HC4: make DavMail Kerberos configuration provider
-
-                  ### EWS
-                  - EWS: merge https://github.com/mguessan/davmail/pull/106 Support servers only offering EWS/Services.wsdl instead of EWS/Exchange.asmx
-
-                  ### Documentation
-                  - Doc: Remove HttpClient migration warning
-                  - Doc: instructions on standalone setup on Linux for best O365 support
-                  - Update readme for GitHub home page
-              </p>
-          </description>
-      </release>
-      <release version="6.0.0" date="2021-07-05">
-          <description>
-              <p>
-                  First major release in a long time, main change is switch from HttpClient 3 to 4, please report any regression related to this major rewrite.
-                  DavMail now supports more O365 configurations, including access to client certificate to validate device trust.
-                  O365 refresh tokens can now be stored securely in a separate (writable) file.
-                  On Linux, in order to ensure the right java version is used, a command line option to download latest Azul JRE with OpenJFX support was added,
-                  on windows a standalone package contains Azul JRE FX 15, on OSX updated universalJavaApplicationStub to latest version.
-
-                  ### OSX:
-                  - OSX: completely drop Growl support
-                  - OSX: prepare possible path for an embedded jre mode
-                  - OSX: update universalJavaApplicationStub to latest version from https://github.com/tofi86/universalJavaApplicationStub/blob/master/src/universalJavaApplicationStub
-
-                  ### Documentation:
-                  - Doc: merge Clarify the usage of imapIdleDelay https://github.com/mguessan/davmail/pull/116
-                  - Doc: add comment on IDLE and timeout setting
-                  - Doc: link to standalone windows package
-                  - Doc: fix Zulu link
-                  - Doc: remove references to Java 6 in documentation
-
-                  ### Build:
-                  - Appveyor: update ant
-                  - Appveyor: build with jdk15
-                  - Appveyor: purge artifacts for all builds except jdk 8
-                  - Build: run Sonar with JDK 11
-                  - Update junit to 4.13.1 in Maven
-                  - Update junit to 4.13.1
-
-                  ### Linux:
-                  - Linux: Experimental: download Azul JRE FX with command 'davmail azul'
-                  - Linux: merge https://github.com/mguessan/davmail/pull/133 Linux Gnome Desktop: fix systray support
-                  - Linux: Update service file to allow 0-1023 ports binding (https://github.com/mguessan/davmail/pull/117)
-
-
-                  ### Windows:
-                  - Windows: switch standalone jre to Azul FX 15
-                  - Windows: create a standalone package with Azul JRE FX in order to have a working O365InteractiveAuthenticator
-                  - Winrun4J: prefer embedded VM for standalone package and export sun.net.www.protocol.https
-                  - Winrun4J: update binaries
-                  - Winrun4J: prepare standalone configuration
-                  - Windows: update winrun4j config to require Java >= 8
-
-                  ### IMAP:
-                  - IMAP: fix thread handling from audit
-                  - IMAP: Compute body part size with failover
-
-                  ### O365:
-                  - O365: log token file creation
-                  - O365: cleanup from audit
-                  - O365: Add davmail.oauth.tokenFilePath to sample properties file
-                  - O365: disable HTTP/2 loader on Java 14 and later to enable custom socket factory
-                  - O365: allow user agent override in O365InteractiveAuthenticator, switch default user agent to latest Edge
-                  - O365: with Java 15 url with code returns as CANCELLED
-                  - O365: MSCAPI and Java version 13 or higher required to access TPM protected client certificate on Windows
-                  - O365: merge first commit from https://github.com/mguessan/davmail/pull/134/ OAuth via ADFS with MFA support
-                  - O365: fix store refreshToken call
-                  - O365: introduce davmail.oauth.tokenFilePath setting to store Oauth tokens in a separate file
-                  - O365: switch to try with resource style
-                  - Drop explicit dependency to netscape.javascript package in O365InteractiveJSLogger
-                  - O365: follow redirects on ADFS authentication
-
-                  ### HC4:
-                  - Refactor ExchangeSessionFactory, create HttpClientAdapter in session
-                  - HC4: update winrun4j binaries
-                  - HC4: drop HttpClient 3 dependency in Maven, winrun4j binaries and nsi setup
-                  - HC4: drop remaining HttpClient 3 classes
-                  - HC4: drop DavMailCookieSpec and DavGatewaySSLProtocolSocketFactory (merge in SSLProtocolSocketFactory)
-                  - HC4: drop DavGatewayHttpClientFacade and RestMethod
-                  - HC4: default to Edge user agent
-                  - HC4: Do not enable NTLM in Kerberos mode
-                  - HC4: switch checkConfig to HttpClient 4
-                  - HC4: merge HC4DavExchangeSession to DavExchangeSession
-                  - HC4: cleanup HC4ExchangeFormAuthenticator references
-                  - HC4: merge HC4ExchangeFormAuthenticator to ExchangeFormAuthenticator, extend authenticator interface to return HttpClientAdapter, switch to DavExchangeSession
-                  - HC4: switch O365 authenticators test code to HttpClient 4
-                  - HC4: adjust CreateItemMethod chunked call
-                  - HC4: switch ExchangeSessionFactory to HttpClient 4
-                  - HC4: add a warning about HttpClient 4 migration
-                  - HC4: Enable ssl logging in addition to wire with HttpClient 4
-                  - HC4: switch EWS implementation to HttpClient 4
-
-                  ### EWS:
-                  - EWS: improve isItemId detection to match base 64 encoded id
-                  - EWS: drop NTLM as a failover logic
-                  - EWS: cleanup unused code now that we have a reliable way to retrieve email address with ConvertId
-                  - EWS: drop property davmail.caldavRealUpdate, no longer used
-                  - EWS: Improved uid handling from audit
-                  - EWS: Enable Woodstox workaround for malformed xml with latest Woodstox version
-
-                  ### Enhancements:
-                  - Clear session pool on DavMail restart
-                  - Upgrade to Woodstox 6.2.0 as it's now available on debian, drop Woodstox patched StreamScanner
-
-                  ### Caldav:
-                  - Caldav: merge https://github.com/mguessan/davmail/pull/139 Fix missing XML encode
-                  - Caldav: use Exchange timezone to compute event time in test case
-                  - Caldav: create test cases for recurring events
-              </p>
-          </description>
-      </release>
-      <release version="5.5.1" date="2019-04-19">
       <description>
           <p>
-              Fix regression on domain\username authentication over IMAP and some cleanup
-
-              ### IMAP:
-              - IMAP: fix https://github.com/mguessan/davmail/issues/100 regression with domain\username authentication
-
-              ### O365:
-              - O365: set jdk.http.ntlm.transparentAuth=allHosts to enable NTLM for ADFS support
-
-              ### Build:
-              - dist cleanup
-              - Update release guide with Fedora copr instructions
-              - Exclude .sonarwork from source package
-              - Build: fix release file name
+              Includes an experimental Microsoft Graph backend, to enable it see instructions at:
+              https://github.com/mguessan/davmail/issues/404
+              Fixed a long-standing IMAP issue on shared mailbox synchronization, improved GCC high tenants support,
+              reviewed
+              OIDC authentication to prepare graph backend implementation, merged contributions from users, replaced
+              log4j with reload4j.
+              Restored NTLM JCIFS implementation with davmail.enableJcifs setting based on user feedback, tried to
+              improve NTML logging.
           </p>
+
+          <p>Linux</p>
+          <ul>
+              <li>drop eclipse-swt dependency on Suse, rely on included swt package</li>
+              <li>merge https://github.com/flathub/org.davmail.DavMail/blob/master/davmail-desktop-add-wm-class.patch</li>
+              <li>additional rpm spec file fixes for rhel 9</li>
+              <li>ant-unbound only exist in Fedora Rawhide</li>
+          </ul>
+
+          <p>O365</p>
+          <ul>
+              <li>Handle password expiration and return a specifig error message</li>
+              <li>add davmail.tld setting to UI, see https://github.com/mguessan/davmail/issues/284</li>
+              <li>authenticator fix regression</li>
+              <li>revert authenticator scope change</li>
+              <li>improve authenticator error handling</li>
+              <li>drop hostname based fingerprint, allow user to force salt fingerprint with davmail.oauth.fingerprint setting, see https://github.com/mguessan/davmail/issues/403</li>
+              <li>review O365StoredTokenAuthenticator to take into account separate tokenFilePath</li>
+              <li>log token scopes</li>
+              <li>Fix for https://github.com/mguessan/davmail/issues/403 Salt generation for refresh token encryption seems unstable (BadPaddingException)</li>
+              <li>refactor authentication to handle various cases with Graph API with new OIDC endpoint and the classic endpoint</li>
+              <li>cleanup O365Authenticator</li>
+              <li>fix token parameters in OIDC mode, resource is not relevant</li>
+              <li>catch NullPointerException on javafx test as reported by a user</li>
+              <li>refactor tokenUrl build logic</li>
+              <li>adjustments for live.com OIDC endpoints</li>
+          </ul>
+
+          <p>EWS</p>
+          <ul>
+              <li>cleanup from audit</li>
+              <li>try to get a valid outlook.com live token</li>
+          </ul>
+
+          <p>IMAP</p>
+          <ul>
+              <li>fix IMAP context folder issue, when using userid/username syntax mailbox context is missing on some IMAP commands</li>
+              <li>Add log statement in case of progress notifier error</li>
+              <li>merge https://github.com/mguessan/davmail/pull/406 Simpler and more conformant keepalive feature</li>
+              <li>fix audit alert Refactor this repetition that can lead to a stack overflow for large inputs.</li>
+              <li>merge https://github.com/mguessan/davmail/pull/392, add support for iOS 18 comma separated uids in range search</li>
+              <li>SPECIAL-USE test cases</li>
+              <li>fix SPECIAL-USE implementation when used as a list-extended selection option, see https://www.rfc-editor.org/rfc/rfc6154 5.2</li>
+          </ul>
+
+          <p>NTLM</p>
+          <ul>
+              <li>dump NTLM message details using NTLMMessageDecoder</li>
+              <li>implement custom NTLM message decoder</li>
+              <li>add debug info in DavMailNTLMEngineImpl</li>
+              <li>without JCIFS workstation and domain are not sent with type1 message</li>
+              <li>Restore JCIFS</li>
+              <li>introduce davmail.enableJcifs setting to enable JCIFS NTLM engine implementation</li>
+          </ul>
+
+          <p>Enhancements</p>
+          <ul>
+              <li>StringUtilTest add test case on encoding</li>
+              <li>Cleanup test case from audit</li>
+              <li>Enhancement from audit: rename folder.count to messageCount</li>
+              <li>ExchangeSession: cleanup from audit</li>
+              <li>Fix https://github.com/mguessan/davmail/issues/400 WARN Invalid 'expires' attribute</li>
+              <li>Cleanup irrevelant dependency on debian package</li>
+              <li>Upgrade nsi scripts with reload4j 2.0.16</li>
+              <li>Maven: switch slf4j dependency to reload4j</li>
+              <li>Upgrade slf4j / switch to reload4j</li>
+              <li>Upgrade slf4j-api to 2.0.16</li>
+              <li>Switch slf4j to reload4j instead of log4j</li>
+              <li>Fix typo</li>
+              <li>Log4J: fix ant build file</li>
+              <li>Log4j: remove show logs option as LF5 is no longer available with reload4j</li>
+              <li>Log4j: switching to reload4j, in place replacement for log4j</li>
+              <li>Upgrade javamail to 1.6.2</li>
+          </ul>
+
+          <p>Build</p>
+          <ul>
+              <li>Maven: force slf4j-api to 2.0.16</li>
+              <li>AppVeyor: switch from sonar.login to sonar.token</li>
+          </ul>
+
+          <p>Caldav</p>
+          <ul>
+              <li>handle quote escaping in parameters</li>
+          </ul>
+
+          <p>Docker</p>
+          <ul>
+              <li>merge https://github.com/mguessan/davmail/pull/390 Docker entrypoint script refinements</li>
+          </ul>
+
+          <p>Documentation</p>
+          <ul>
+              <li>point issue management to Github</li>
+              <li>review appdata doc</li>
+          </ul>
+
+          <p>Graph</p>
+          <ul>
+              <li>handle cancelled occurrences on events to build EXDATE vCalendar properties</li>
+              <li>make progress on event recurrence implementation, see https://learn.microsoft.com/en-us/graph/api/resources/patternedrecurrence</li>
+              <li>initiate recurrence implementation</li>
+              <li>fix draft handling, draft is set for mapi PR_MESSAGE_FLAGS property combined with read flag by IMAPConnection</li>
+              <li>tasks don't have a changeKey field, retrieve etag value from @odata.etag</li>
+              <li>switch back to custom scopes</li>
+              <li>manage task items returned as part of default calendar requests</li>
+              <li>map taskstatus field to status graphId</li>
+              <li>handle item not found with HttpNotFoundException</li>
+              <li>implement isMainCalendar</li>
+              <li>debug ALTDESC for thunderbird, need to urlencode content</li>
+              <li>implement etag search for events and contacts</li>
+              <li>handle html body and attendees for caldav support</li>
+              <li>move convertClassFromExchange and convertClassToExchange to ExchangeSession</li>
+              <li>Checkpoint on event management, new tasks handling based on new todo endpoint and make progress on calendar events</li>
+              <li>Move some reference tables from EwsExchangeSession to ExchangeSession to make them available in GraphExchangeSession</li>
+              <li>Cleanup from audit</li>
+              <li>Additional entry points for graphid value in ExtendedFieldURI</li>
+              <li>implement optDateTimeTimeZone in GraphObject to convert DateTimeTimeZone json objects</li>
+              <li>new TODO objects in graph require Tasks.ReadWrite OIDC scope</li>
+              <li>implement specific date conversion convertCalendarDateToGraph for graph api</li>
+              <li>implement more condition logic and retrieve VTIMEZONE from properties</li>
+              <li>add a full dump of all timezone definitions as graph does not provide a way to retrieve events as VCALENDAR</li>
+              <li>make progress on graph attributes handling, refactor GraphObject</li>
+              <li>implement fileAs on contacts and fix bday handling</li>
+              <li>handle empty boolean custom property, return null for empty email</li>
+              <li>switch to .default for OIDC scopes, will help with outlook desktop tokens, detect 50128 error code using outlook desktop clientid with live.com account</li>
+              <li>refactor GraphObject handling</li>
+              <li>refactor GraphExchangeSession, cleanup code</li>
+              <li>implement custom graphid on Field/ExtendedFieldURI</li>
+              <li>refactor graph properties handling</li>
+              <li>main contact management implementation, create and update contact, handle attached photo</li>
+              <li>implement HttpPut calls and introduce GraphResponse as a wrapper around json response messages</li>
+              <li>improve graphId compute logic, add namespaceGuid for DistinguishedPropertySetType.Address, introduce isNumber to avoid error on empty number fields</li>
+              <li>minimal form submit for live.com authentication</li>
+              <li>implement live.com authentication with simple username/password</li>
+              <li>add additional scopes to send mail, manage contacts and access shared mailboxes</li>
+              <li>Cleanup from audit</li>
+              <li>replace method names with constants</li>
+              <li>fix approximate message and implement message update (properties only)</li>
+              <li>Handle special folders based on well known names</li>
+              <li>implement contact folders management</li>
+              <li>update TestExchangeSessionFolder unit tests for graph backend</li>
+              <li>Implement calendar folder handling</li>
+              <li>Improve logging and performance in GraphRequestBuilder</li>
+              <li>Implement IOUtil.convertToBytes to convert JSON to byte array without creating a string</li>
+              <li>Enhancements for audit</li>
+              <li>Fix iterator, nextLink page can be empty</li>
+              <li>enable GraphExchangeSession in ExchangeSessionFactory</li>
+              <li>implement getMimeHeaders and MultiCondition</li>
+              <li>initiate delete/copy/move message</li>
+              <li>make progress on graph backend implementation</li>
+              <li>complete properties mapping on message update</li>
+              <li>some more work on message update logic (PATCH call)</li>
+              <li>implement getGraphUrl to handle various graph api endpoints</li>
+              <li>log message download progress, add mailbox attribute to graph message and initiate message flags management</li>
+              <li>refactor draft message handling, apply workaround (delete/create) only for non draft messages</li>
+              <li>review buildMessage logic to parse properties</li>
+              <li>initiate implementation of message handling</li>
+              <li>compute graphid for distinguishedProperty properties (PublicStrings, InternetHeaders,Common)</li>
+              <li>initiate create message implementation, with workaround for draft flag</li>
+              <li>switch to v2.0 OIDC endpoint for graph authentication, adjust token endpoint accordingly</li>
+          </ul>
       </description>
       </release>
-      <release version="5.5.0" date="2019-04-15">
+      <release version="6.3.0" date="2025-02-26">
       <description>
         <p>
-            This release contains a lot of bugfixes, enhancements and some user contributions from Github.
-            Most activity is related to HttpClient 4 refactoring, this will probably be the latest version based in HttpClient 3.
-            Minimum Java version is now 8, also dropped Growl support on MacOS.
-            Notable changes for end users are Oauth token persistence to avoid frequent O365 authentications and OIDC support for
-            personal outlook accounts.
-            Known issues: some users reported regressions with form authentication, please report such regressions with log files.
+          Merged some contributions provided by users on github, updated
+          embedded jre to 21 for improved TLS 1.3 support, applied
+          documentation fixes, reviewed rpm build to provide el9
+          compatibility, implemented channel binding for NTLM
+          authentication. Also added a more recent Docker file in
+          contribs, worked on GCC high tenants compatibility.  Microsoft
+          Graph backend implementation is in progress but far from
+          complete.
+        </p>
 
-            ### IMAP:
-            - IMAP: catch non IOException errors in FolderLoadThread
-            - IMAP: fix https://github.com/mguessan/davmail/pull/91 Allow user name to be specified as user@domain.com in addition to domain\user to access shared mailbox
-            - IMAP: unquote CHARSET in IMAP search
-            - IMAP: cleanup test cases
+        <p>Caldav</p>
+        <ul>
+          <li>handle multiple categories on TODO items, see https://github.com/mguessan/davmail/issues/372</li>
+          <li>Merge https://github.com/mguessan/davmail/pull/386 validate and repair Exchange calendar characters</li>
+        </ul>
 
-            ### Documentation:
-            - Doc: describe new Office 365 authentication modes
-            - Doc: remove deprecated enableEWS reference
-            - Doc: Document new connection modes in template davmail.properties
-            - Doc: Add all time downloads badge
-            - Doc: push sonarcloud badges
+        <p>LDAP</p>
+        <ul>
+          <li>merge https://github.com/mguessan/davmail/pull/353, fix first certificate selection logic</li>
+          <li>merge https://github.com/mguessan/davmail/pull/353 Add support for retrieving user certificates</li>
+        </ul>
 
-            ### Enhancements:
-            - Apply xml transformer settings recommended by Sonar
-            - dos2unix template davmail.properties file
-            - prepare migration to https://davmail.sourceforge.io
-            - Settings: cleanup from audit
-            - Latest edge user agent does not work, use Outlook 2013 instead
-            - Convert HTTP code to Java 8
-            - Cleanup from audit
-            - Fix sonar detected vulnerability
-            - Update to Java 8 and code cleanup
-            - Comment HttpURLConnectionWrapper
-            - Fix regression in AbstractServer
-            - Remove unused label
-            - Cleanup from audit at Java 8 language level
+        <p>IMAP</p>
+        <ul>
+          <li>fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;, finalize merge, call new parsing method from nextToken and remove backslash handling in username</li>
+          <li>fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;, review and switch to ParseException for error handling and chars instead of bytes</li>
+          <li>merge unit test for patch fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;</li>
+          <li>initial merge of patch fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;</li>
+          <li>fix https://github.com/mguessan/davmail/issues/359, handle RFC822.TEXT</li>
+        </ul>
 
-            ### Security:
-            - Enable TLSv1.1 and TLSv1.2
+        <p>O365</p>
+        <ul>
+          <li>add GCC high example settings in default davmail.properties</li>
+          <li>https://github.com/mguessan/davmail/pull/380 Remove trailing slash from O365_LOGIN_URL</li>
+          <li>merge https://github.com/mguessan/davmail/pull/380 Missed one change</li>
+          <li>merge https://github.com/mguessan/davmail/pull/380 Enhance support for the davmail.outlookUrl property setting and fully support GCC-High endpoints</li>
+          <li>implement OneWaySMS MFA prompt, see https://github.com/mguessan/davmail/pull/134</li>
+          <li>get O365 Login Url from settings for non standard tenants and add additional error use case</li>
+          <li>detect live.com token. Note: may not be enough to make DavMail work with live.com accounts</li>
+          <li>dropping all workaroungs for OpenJFX bugs that should be fixed in recent versions</li>
+        </ul>
 
-            ### HttpClient 4:
-            - HC4: httpClient is not shared between clients, do not track connection state to enable NTLM connection pooling
-            - HC4: set default connection per route to 5
-            - HC4: refactor Exchange 2007 test cases
-            - HC4: Prepare switch, create a temporary HC4WebDav mode
-            - HC4: ExchangeSession cleanup
-            - HC4: unit test cleanup
-            - HC4: make ExchangeSession independent of HttpClient implementation
-            - HC4: remove reference to old HttpStatus in HttpClientAdapter
-            - HC4: more HC4ExchangeFormAuthenticator refactoring and fixes
-            - HC4: test form authentication failure
-            - HC4: more DavExchangeSession refactoring
-            - HC4: more form authenticator fixes
-            - HC4: create ResponseWrapper interface for PostRequest and GetRequest
-            - HC4: new executeFollowRedirect implementation and get user agent from settings
-            - HC4: cleanup from audit and fix regression, need to follow redirect after OWA authentication
-            - HC4: more authentication test case
-            - HC4: Implement single thread connection evictor
-            - HC4: improve PostRequest and RestRequest
-            - HC4: implement executePostRequest with test case
-            - HC4: new GetRequest implementation with test case
-            - HC4: more request refactoring
-            - Refactor RestRequest to use ResponseHandler mode only
-            - Refactor TestHttpClientAdapter
-            - HC4: improve RestRequest
-            - HC4: remove old HttpException and move to HttpResponseException
-            - HC4: switch to HttpGet
-            - HC4: add buildHttpException to HttpClientAdapter
-            - HC4: cleanup from audit
-            - HC4: keep statusLine in request
-            - HC4: cleanup to finalize migration
-            - HC4: convert encodeAndFixUrl
-            - HC4: Remove old HttpStatus dependency
-            - Remove HttpException dependency
-            - HC4: convert Head and Post methods
-            - HC4: convert GetMethod to HttpGet
-            - HC4: convert remaining http client 3 methods
-            - HC4: Implement create/delete folder
-            - HC4: implement Exchange WebDav search request
-            - HC4: Fix initial uri in HttpClientAdapter
-            - HC4: convert internalGetFolder
-            - HC4: refactor TestCaldavHttpClient4
-            - HC4: more test cases on session creation
-            - HC4: convert getWellKnownFolders, first working version of session creation
-            - HC4: convert checkPublicFolder
-            - HC4: get httpClientAdapter from HC4ExchangeFormAuthenticator
-            - HC4: Main test case for HC4DavExchangeSession
-            - HC4: convert getEmailAndAliasFromOptions
-            - HC4: convert getMailpathFromWelcomePage
-            - HC4: baseline DavExchangeSession for HttpClient 4 migration
-            - HTTP: Improve HttpClientAdapter, enable kerberos support according to setting
-            - HttpClient4: improve HttpClientAdapter
-            - HttpClient4: Test timeouts with proxy
-            - Refactor TestHttpClient4 with try with resource
+        <p>EWS</p>
+        <ul>
+          <li>experimental, try to implement recurrence count with NumberOfOccurrences, see https://github.com/mguessan/davmail/issues/373</li>
+          <li>make settings timezoneid higher priority than mailbox configuration, make encode/decode foldername methods public for graph API</li>
+        </ul>
 
-            ### Caldav:
-            - Caldav: fix https://github.com/mguessan/davmail/pull/88 EXDATE timezone issue
+        <p>Graph</p>
+        <ul>
+          <li>introduce GRAPH_URL and davmail.loginUrl in Settings</li>
+          <li>initiate search filter implementation</li>
+          <li>implement folder recursive search</li>
+          <li>Introduce folderClass</li>
+          <li>Create folders unit tests</li>
+          <li>fix folder retrieval by id</li>
+          <li>initial folder retrieval implementation</li>
+          <li>compute graph API property id from name and tag</li>
+          <li>Empty Graph ExchangeSession implementation</li>
+          <li>prepare graph request builder for graph implementation</li>
+          <li>Experimental, introduce davmail.enableGraph property to obtain a token compatible with Microsoft Graph API</li>
+        </ul>
 
-            ### O365:
-            - O365: fix https://github.com/mguessan/davmail/pull/92 failover for null query with non https URI
-            - O365: refactor O365Authenticator and fix regressions
-            - O365: switch to new executeFollowRedirect implementation
-            - O365: refactor O365Authenticator
-            - Refactor O365InteractiveJSLogger to work with more JDK versions
+        <p>Linux</p>
+        <ul>
+          <li>fix ant dependency for fedora</li>
+          <li>davmail.spec to not try to link os provided swt.jar when using embedded one</li>
+          <li>work on el9 compatibility for RPM build</li>
+          <li>Embed davmail-user.conf in source package, see https://github.com/mguessan/davmail/issues/356</li>
+          <li>Create davmail user/group per new conventions in RPM 4.19, merge changes from https://github.com/mguessan/davmail/issues/356</li>
+          <li>fix https://github.com/mguessan/davmail/issues/346 unable to run jlink on linux</li>
+          <li>force shutdown with -token option</li>
+          <li>Add OpenJFX case for Kubuntu</li>
+        </ul>
 
-            ### Test:
-            - Test: improve notification dialog test
-            - Test: Improve client certificate test
-            - Improve getReleasedVersion test case
-            - Test: Improve base test cases
-            - Add new harmcrest-core junit dependency ant enable IMAP test cases
-            - Test: update junit to 4.12
-            - Run a SSL server socket
-            - Test: cleanup code
-            - Improve TestDavGateway
-            - Make AbstractDavMailTestCase abstract
-            - HttpClient: improve test cases
+        <p>Documentation</p>
+        <ul>
+          <li>update windows build documentation, see https://github.com/mguessan/davmail/issues/384</li>
+          <li>merge https://github.com/mguessan/davmail/pull/174 fix docs typo in property davmail.enableKeepAlive</li>
+          <li>improve documentation on how to run DavMail as a windows service</li>
+          <li>update documentation for non default tenants (US, China)</li>
+          <li>provide more information in initial consent for O365 authentication</li>
+          <li>update FAQ on application registration in Entra ID (Azure AD)</li>
+          <li>mention AppIndicator and KStatusNotifierItem Support in Fedora setup instructions</li>
+        </ul>
 
-            ### Build:
-            - Fix file name for Appveyor trunk builds
-            - Fix git svn warning
-            - try to get svn revision from git
-            - Set jacoco path in sonar config
-            - fix test-compile language level
-            - Upload coverage report to sourceforge for AppVeyor
-            - Prepare Jacoco coverage report
-            - Cleanup unused ant check
-            - Exclude Sonar working directory from package
-            - Appveyor: try to run sonar from Appveyor build
+        <p>Docker</p>
+        <ul>
+          <li>merge https://github.com/mguessan/davmail/pull/381 by SethRobertson Bug 201: Docker support for building and running</li>
+        </ul>
 
-            ### EWS:
-            - EWS: make getPageSize static
-            - EWS: merge PR Allow to configure EWS folder fetch page size https://github.com/mguessan/davmail/pull/79
-            - EWS: fix response handling
-            - EWS: fix O365Authenticator
-            - EWS: fix regression in O365Token
-            - EWS: handle malformed id_token
-            - EWS: refactor authenticators to use davmail.enableOidc
-            - EWS: create a new davmail.enableOidc setting tp switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
-            - EWS: Prepare OIDC support, add v2.0 url in interactive authenticator
-            - EWS: Prepare OIDC support, decode id_token
-            - EWS: enable davmail.oauth.persistToken by default
+        <p>NTLM</p>
+        <ul>
+          <li>remove CIFS dependency</li>
+          <li>cleanup code from audit</li>
+          <li>use ThreadLocal to manage SecureRandom generators</li>
+          <li>switch to DavMailNTLMSchemeFactory to enable channel binding, see https://github.com/mguessan/davmail/issues/352</li>
+          <li>retrieve certificate from http context</li>
+          <li>Duplicate of NTLMScheme from HttpClient to implement channel binding</li>
+          <li>adjust NTLMEngineImpl to handle channel binding</li>
+          <li>Duplicate code from NTLMEngineImpl to implement channel binding</li>
+        </ul>
 
-            ### DAV:
-            - DAV: MOVE returns SC_CONFLICT on missing target folder
-            - Dav: Update to Java 8
+        <p>Enhancements</p>
+        <ul>
+          <li>Fix from audit</li>
+          <li>Drop web component</li>
+          <li>Drop servlet-api.jar, no longer required</li>
+          <li>Drop deprecated DavGatewayServletContextListener (we no longer provide an embedded war file)</li>
+          <li>Trying to fix custom jre for TLS 1.3, see https://stackoverflow.com/questions/63964939/tls-1-3-handshake-failure-when-using-openjdk-14-java-module-runtime and https://github.com/mguessan/davmail/pull/388</li>
+          <li>fix download-jre for embedded JDK on windows, fetch version 21</li>
+          <li>switch davmail linux launcher to zulu JDK 21 for better TLS 1.3 support</li>
+          <li>switch main package to zulu JDK 21 for better TLS 1.3 support</li>
+          <li>StringUtilTest CRLF => LF, see https://github.com/mguessan/davmail/pull/378</li>
+          <li>StringUtil CRLF => LF, see https://github.com/mguessan/davmail/pull/378</li>
+          <li>Security: Enable TLSv1.3 between DavMail and Exchange/O365</li>
+          <li>PKCS11: review SunPKCS11ProviderHandler</li>
+          <li>HttpClient: cleanup from audit</li>
+          <li>svn ignore .idea</li>
+          <li>Downgrade jackrabbit to 2.20.15 for java 8 compatibility</li>
+          <li>Upgrade jackrabbit to 2.21.25 and httpclient to 4.5.14</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.2.2" date="2024-03-30">
+      <description>
+        <p>
+          Includes some build process fixes, use jlink to build a
+          customized jre for standalone package, Thunderbird
+          configuration documentation updated with new screenshots.
 
-            ### SMTP:
-            - SMTP: improve error message handling
-            - SMTP: fix smtp test cases
+          Also implemented a new -token command line option to launch
+          O365InteractiveAuthenticator and get an authentication
+          token.
+        </p>
 
-            ### LDAP:
-            - LDAP: clean test case
-            - LDAP: fix dn authentication
-            - LDAP: Ber code cleanup from audit
-            - LDAP: update LdapConnection to Java 8
-            - LDAP: make parseIntWithTag protected to call it from LdapConnection
-            - Use imported Ber implementation instead of com.sun.jndi.ldap
-            - Import Ber implementation from OpenJDK to avoid compilation warnings
+        <p>OSX</p>
+        <ul>
+          <li>document how to embed Zulu jre inside DavMail app</li>
+        </ul>
 
-            ### OSX:
-            - OSX: drop Growl support
+        <p>Enhancements</p>
+        <ul>
+          <li>Fix comment in DavMail shell</li>
+          <li>Detect missing network connectivity during token refresh to avoid invalidating token</li>
+          <li>Upgrade JCIFS to 1.3.19 for NTLM support</li>
+          <li>Cleanup from audit</li>
+          <li>Drop war package from release files, there are more modern ways to run DavMail in server mode without a webapp container</li>
+          <li>From audit: place LOCK.wait in a loop</li>
+          <li>Fix from audit, use try with resource</li>
+          <li>Cleanup from audit, remove deprecated getSubjectDN, getIssuerDN</li>
+        </ul>
+
+        <p>O365</p>
+        <ul>
+          <li>Improve error message on missing add-exports, see #344</li>
+          <li>Refactor manual authentication dialog to clearly separate steps</li>
+          <li>Remove explicit dependency on O365InteractiveAuthenticator for -token option</li>
+          <li>Implement a -token option to launch interactive authenticator and print obtained refresh token, see #338</li>
+          <li>Try to adjust ItemId to 140 length, see #328</li>
+          <li>prepare GCC-High/DoD endpoints support, fix regression</li>
+          <li>prepare GCC-High/DoD endpoints support, move Outlook login url references to Settings</li>
+          <li>prepare GCC-High/DoD endpoints support, move outlook url references to Settings</li>
+        </ul>
+
+        <p>EWS</p>
+        <ul>
+          <li>Properly set errorDetail on xml stream error to raise exception</li>
+          <li>disable IS_SUPPORTING_EXTERNAL_ENTITIES to fix xml parsing security warning</li>
+        </ul>
+
+        <p>Caldav</p>
+        <ul>
+          <li>Fix #342 map America/Winnipeg to Central Standard Time</li>
+          <li>Fix #337 take timezone into account when looking for excluded occurrence</li>
+          <li>Fix settings implementation, # are allowed in values, see #326</li>
+        </ul>
+
+        <p>IMAP</p>
+        <ul>
+          <li>fix #339 classcast exception on malformed content</li>
+        </ul>
+
+        <p>Build</p>
+        <ul>
+          <li>Maven: update compiler to 3.10.1</li>
+          <li>Maven: optimize dependencies</li>
+          <li>Maven: exclure httpclient 3 transitive dependency</li>
+          <li>Appveyor: build only master branch</li>
+          <li>use jlink to create a custom jre to reduce embedded jre
+          size</li>
+        </ul>
+
+        <p>Security</p>
+        <ul>
+          <li>Security: fix security alert on Runtime.getRuntime().exec</li>
+          <li>Security: fix security alert on Runtime.getRuntime().exec</li>
+        </ul>
+
+        <p>Linux</p>
+        <ul>
+          <li>force GTK2 only with SWT</li>
+          <li>switch to Azul JRE 17 with "davmail azul" command</li>
+          <li>Enable OpenJFX on Fedora to make O365Interactive work with Java 17 and later</li>
+        </ul>
+
+        <p>Documentation</p>
+        <ul>
+          <li>update roadmap</li>
+          <li>Add donation buttons to GitHub main readme page</li>
+          <li>update Thunderbird documentation messages</li>
+          <li>Update release guide, mvn install file no longer required</li>
+          <li>update Thunderbird documentation, as requested in #294</li>
+          <li>update documentation for Thunderbird configuration</li>
+          <li>use COPR badge</li>
+          <li>update release guide</li>
+          <li>reference OpenSuse build service and Fedora COPR for RPM based linux distributions</li>
+          <li>Update changes file for opensuse build service</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.2.1" date="2024-01-04">
+      <description>
+        <p>
+          Most changes are related to build process and rpm
+          packaging for Fedora/RHEL, also includes a few bug
+          fixes on IMAP
+        </p>
+
+        <p>Security</p>
+        <ul>
+          <li>Upgrade commons codec to 1.15</li>
+        </ul>
+
+        <p>O365</p>
+        <ul>
+          <li>cleanup from audit</li>
+          <li>no longer apply the disable integrity check workaround by default, fixed in openjfx</li>
+          <li>add a warning message on FIDO authentication triggered</li>
+          <li>allow refresh token persistence without provided password</li>
+          <li>Merge PR #236 Changed authentication link log level</li>
+        </ul>
+
+        <p>Linux</p>
+        <ul>
+          <li>refactor spec file for fedora, do not call old init service scripts and compile with openjfx</li>
+          <li>Fix systemd condition for fedora in spec file</li>
+          <li>Adjust JDK dependencies for RPM build</li>
+        </ul>
+
+        <p>Build</p>
+        <ul>
+          <li>AppVeyor: Cleanup</li>
+          <li>AppVeyor: copy plugin to x86-unicode</li>
+          <li>AppVeyor: switch to server 2019</li>
+          <li>Appveyor: investigate java versions</li>
+          <li>AppVeyor: set ANT_HOME value</li>
+          <li>AppVeyor: update ant path</li>
+          <li>AppVeyor: update ant download path</li>
+          <li>Run Sonar scan under JDK19</li>
+          <li>Switch Appveyor build to JDK 19</li>
+          <li>Maven: fix urls from PR #225 by Stefan Weil</li>
+        </ul>
+
+        <p>IMAP</p>
+        <ul>
+          <li>merge patch from PR #140, return folders including special use folders when query is %</li>
+          <li>implement fetch macro flags, see issue #314</li>
+          <li>fix APPENDUID value order</li>
+        </ul>
+
+        <p>Enhancements</p>
+        <ul>
+          <li>Cleanup from audit</li>
+          <li>Fix typo</li>
+          <li>NTLM: improve logging of NTLM negotiation</li>
+          <li>Update Winrun4J wrappers with commons codec 1.15</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.2.0" date="2023-11-05">
+      <description>
+        <p>
+          Another bugfix release to merge user contributions
+          from GitHub, refactor Linux build, upgrade
+          dependencies and a few IMAP and Caldav fixes.
+        </p>
+
+        <p>Security</p>
+        <ul>
+          <li>Update htmlcleaner to 2.29 cf CVE-2023-34624</li>
+        </ul>
+
+        <p>Enhancements</p>
+        <ul>
+          <li>Drop Travis-ci, no longer working for opensource projects</li>
+          <li>fix quotes from audit</li>
+          <li>Remove space at end of line +0630=Myanmar Standard Time, see issue #309</li>
+          <li>Fix issue #271, keep line order and comments on settings save</li>
+          <li>Fix from audit</li>
+          <li>Maven: convert pom.xml to UTF-8</li>
+        </ul>
+
+        <p>IMAP</p>
+        <ul>
+          <li>merge fix suggested on issue #298</li>
+          <li>merge according to last comment on PR #239</li>
+          <li>improve bodystructure handling, merge PR #239</li>
+          <li>implement APPENDUID and advertise UIDPLUS</li>
+          <li>implement APPENDUID and advertise UIDPLUS</li>
+          <li>Prepare uidplus, fetch message after create</li>
+        </ul>
+
+        <p>Caldav</p>
+        <ul>
+          <li>Fix nullpointer as in issue #303</li>
+          <li>Fix issue #309 Thunderbird daily sends TZOFFSETTO with optional second value</li>
+          <li>adjust isLightning test to include Thunderbird user agent, see issue #287</li>
+        </ul>
+
+        <p>Linux</p>
+        <ul>
+          <li>based on PR #290 by Björn Bidar &lt;bjorn.bidar@thaodan.de&gt;, remove svn commit reference in davmail.spec</li>
+          <li>Remove svn tag from folder name inside source packages</li>
+          <li>remove chkconfig from Requires preun and post in davmail.spec as suggested on build.opensuse.org</li>
+          <li>dos2unix davmail.changes</li>
+          <li>update changelog with Björn Bidar &lt;bjorn.bidar@thaodan.de&gt; contribution from PR #289 </li>
+          <li>Add back changelog file and convert to OpenSUSE format from PR #289</li>
+          <li>Merge changes from PR #290 except %version that may impact release cycle</li>
+          <li>convert davmail.spec changelog to OpenSUSE format, see PR #290</li>
+          <li>restore spec file with lf and changelog, see PR #290</li>
+          <li>remove downloaded azul jdk package</li>
+        </ul>
+
+        <p>ADFS</p>
+        <ul>
+          <li>merge PR #270 by Felix Engelmann, enable ADFS authentication with SAML assertions</li>
+        </ul>
+
+        <p>EWS</p>
+        <ul>
+          <li>Cleanup from audit</li>
+          <li>fix issue #299 avoid logging large response message content</li>
+          <li>BackOffMilliseconds unit test</li>
+          <li>parse BackOffMilliseconds value on throttling</li>
+        </ul>
+
+        <p>O365</p>
+        <ul>
+          <li>O365: in O365 interactive, use invokeAndWait on failover to manual to avoid multiple instances of popup window</li>
+          <li>Upgrade jettison to 1.5.4 in pom.xml</li>
+          <li>Upgrade jettison to 1.5.4</li>
+        </ul>
+
+        <p>Windows</p>
+        <ul>
+          <li>Windows: drop explicit reference to sun.security.mscapi.SunMSCAPI, Windows-MY should be available on all windows JDK</li>
+        </ul>
+
+        <p>Documentation</p>
+        <ul>
+          <li>Doc: Update server properties documentation with davmail.oauth.persistToken</li>
+          <li>Doc: fix link to SonarCloud</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.1.0" date="2023-03-19">
+      <description>
+        <p>
+          First release in a long time to publish pending changes, including Kerberos support fix,
+          experimental number matching support for upcoming Microsoft authenticator default configuration change,
+          store new refresh token received at authentication.
+          In addition, some Log4J specific patches to remove vulnerable classes from library
+          (even if DavMail is not impacted with standard
+          configuration)
+        </p>
+
+        <p>O365</p>
+        <ul>
+          <li>implement number matching logic in O365Authenticator</li>
+          <li>retrieve number matching value during phone app MFA</li>
+          <li>adjust logging level on O365 refresh token error</li>
+          <li>change persist token logic to store new refresh token after succesful refresh</li>
+          <li>Experimental: store refreshed token when
+          davmail.storeRefreshedToken=true</li>
+        </ul>
+
+        <p>Windows</p>
+        <ul>
+          <li>Add missing labelReplace active wait with wait/notifyAll in DavService</li>
+          <li>Update winrun4j wrappers after lib upgrades</li>
+        </ul>
+
+        <p>Linux</p>
+        <ul>
+          <li>Linux: block davmail azul when davmail script is located under /usr/bin (package installed)</li>
+          <li>Linux: fix PosixFilePermissions for writeable only by user</li>
+          <li>Linux: try to make .davmail.properties file readable by user only on create</li>
+          <li>Linux: improve launch script to take into account
+          script location</li>
+        </ul>
+
+
+        <p>Enhancements</p>
+        <ul>
+          <li>Add missing label</li>
+          <li>Replace active wait with wait/notifyAll</li>
+          <li>Upgrade woodstox to 1.4.0 and jettison to 1.5.3</li>
+          <li>Remove (most) http links in Maven POM</li>
+          <li>Make ScheduledThreadPool thread daemon</li>
+          <li>Switch to https for version check</li>
+          <li>DavMailIdleConnectionEvictor fix from audit</li>
+          <li>Refactor DavMailIdleConnectionEvictor to be less agressive on idle connection checks/purge and use scheduler instead of active polling</li>
+          <li>Override SPNegoScheme to take into account DavMail kerberos settings</li>
+        </ul>
+
+        <p>Documentation</p>
+
+        <ul>
+          <li>Sample syslog configuration</li>
+          <li>Update current version in README.md</li>
+          <li>OSX: remove reference to Growl in documentation</li>
+          <li>Doc: security note on DavMail not vulnerable to CVE-2021-44228</li>
+          <li>Doc: add a section on Fedora installation from
+          copr</li>
+        </ul>
+
+        <p>Caldav</p>
+        <ul>
+          <li>Caldav: Do not try to update modified
+          occurrences on Mozilla thunderbird dismiss
+          event</li>
+        </ul>
+
+        <p>Security</p>
+        <ul>
+          <li>Security: Strip packaged log4j jar from JMSSink and JDBCAppender to ensure DavMail is not vulnerable to CVE-2022-23305 &amp; CVE-2022-23302</li>
+          <li>Remove JMSAppender, SMTPAppender and SocketServer from Log4J binary as an additional security measure (CVE-2019-17571 CVE-2021-4104), even if DavMail is not vulnerable with standard configuration</li>
+          <li>Upgrade Log4J to latest version 1.2.17 in Winrun4J wrappers</li>
+          <li>Upgrade Log4J to latest version 1.2.17</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.0.1" date="2021-12-03">
+      <description>
+        <p>
+          Bugfix release with a few Office 365 enhancements
+        </p>
+
+        <p>O365</p>
+        <ul>
+          <li>default to MSCAPI on windows for native client certificate access</li>
+          <li>name button Send instead of OK in manual authenticator dialog</li>
+          <li>Added Copy to Clipboard button Manual auth
+          dialog (pull request #158)</li>
+        </ul>
+
+        <p>Linux</p>
+        <ul>
+          <li>improve "davmail azul" error handling</li>
+          <li>Update changelog in RPM spec</li>
+          <li>Fix RPM spec, remote source does not work</li>
+          <li>Merge RPM spec contribution from michals from
+          Opensuse Build System, check for systemd support and deploy the right service</li>
+        </ul>
+
+        <p>HC4</p>
+        <ul>
+          <li>make DavMail Kerberos configuration provider</li>
+        </ul>
+
+        <p>EWS</p>
+        <ul>
+          <li>Support servers only offering EWS/Services.wsdl
+          instead of EWS/Exchange.asmx (pull request #106)</li>
+        </ul>
+
+        <p>Documentation</p>
+        <ul>
+          <li>Remove HttpClient migration warning</li>
+          <li>instructions on standalone setup on Linux for best O365 support</li>
+          <li>Update readme for GitHub home page</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.0.0" date="2021-07-05">
+      <description>
+        <p>
+          First major release in a long time, main change is
+          switch from HttpClient 3 to 4, please report any
+          regression related to this major rewrite.
+        </p>
+        <p>
+          DavMail now supports more O365 configurations,
+          including access to client certificate to validate
+          device trust.
+        </p>
+        <p>
+          O365 refresh tokens can now be stored
+          securely in a separate (writable) file.
+        </p>
+        <p>
+          On Linux, in order to ensure the right java version
+          is used, a command line option to download latest
+          Azul JRE with OpenJFX support was added, on windows
+          a standalone package contains Azul JRE FX 15, on OSX
+          updated universalJavaApplicationStub to latest
+          version.
+        </p>
+        <p>
+          See RELEASE-NOTES.md in the source distribution for
+          more details.
+        </p>
+      </description>
+    </release>
+    <release version="5.5.1" date="2019-04-19">
+      <description>
+        <p>Fix regression on domain\username authentication over IMAP and some cleanup</p>
+        <p>IMAP</p>
+        <ul>
+          <li>fix github issue #100 regression with domain\username
+          authentication</li>
+        </ul>
+
+        <p>O365</p>
+        <ul>
+          <li>set jdk.http.ntlm.transparentAuth=allHosts to enable
+          NTLM for ADFS support</li>
+        </ul>
+
+        <p>Build</p>
+        <ul>
+          <li>dist cleanup</li>
+          <li>Update release guide with Fedora copr instructions</li>
+          <li>Exclude .sonarwork from source package</li>
+          <li>Build: fix release file name</li>
+        </ul>
+      </description>
+    </release>
+    <release version="5.5.0" date="2019-04-15">
+      <description>
+        <p>
+          This release contains a lot of bugfixes, enhancements and some user contributions from Github.
+          Most activity is related to HttpClient 4 refactoring, this will probably be the latest version based in HttpClient 3.
+          Minimum Java version is now 8, also dropped Growl support on MacOS.
+          Notable changes for end users are Oauth token persistence to avoid frequent O365 authentications and OIDC support for
+          personal outlook accounts.
+          Known issues: some users reported regressions with form authentication, please report such regressions with log files.
         </p>
       </description>
     </release>
