@@ -115,6 +115,7 @@ Section "MainSection" SEC01
   File "dist\lib\slf4j-reload4j-2.0.16.jar"
   File "dist\lib\stax-api-1.0.1.jar"
   File "dist\lib\stax2-api-3.1.1.jar"
+  File "dist\lib\swt-4.37-win32-x86_64.jar"
   File "dist\lib\winrun4j-0.4.5.jar"
   File "dist\lib\woodstox-core-6.4.0.jar"
   SetOutPath "$InstDir\jre"
@@ -189,6 +190,7 @@ no_quest:
   Delete "$INSTDIR\lib\slf4j-reload4j-2.0.16.jar"
   Delete "$INSTDIR\lib\stax-api-1.0.1.jar"
   Delete "$INSTDIR\lib\stax2-api-3.1.1.jar"
+  Delete "$INSTDIR\lib\swt-4.37-win32-x86_64.jar"
   Delete "$INSTDIR\lib\winrun4j-0.4.5.jar"
   Delete "$INSTDIR\lib\woodstox-core-6.4.0.jar"
 
