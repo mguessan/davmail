@@ -235,15 +235,19 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             }
             byte[] imageContent = IOUtil.readFully(imageUrl.openStream());
             Image tempImage = new Image(display, new ByteArrayInputStream(imageContent));
-            Image backgroundImage = new Image(null, size, size);
-            ImageData imageData = backgroundImage.getImageData();
-            imageData.transparentPixel = imageData.getPixel(0, 0);
-            backgroundImage.dispose();
-            result = new Image(null, imageData);
+            if (Settings.isWindows()) {
+                result = tempImage;
+            } else {
+                Image backgroundImage = new Image(null, size, size);
+                ImageData imageData = backgroundImage.getImageData();
+                imageData.transparentPixel = imageData.getPixel(0, 0);
+                backgroundImage.dispose();
+                result = new Image(null, imageData);
 
-            GC gc = new GC(result);
-            gc.drawImage(tempImage, 0, 0, tempImage.getBounds().width, tempImage.getBounds().height, 0, 0, size, size);
-            tempImage.dispose();
+                GC gc = new GC(result);
+                gc.drawImage(tempImage, 0, 0, tempImage.getBounds().width, tempImage.getBounds().height, 0, 0, size, size);
+                tempImage.dispose();
+            }
 
         } catch (IOException e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
