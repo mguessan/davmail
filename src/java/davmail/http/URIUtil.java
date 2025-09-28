@@ -277,7 +277,7 @@ public class URIUtil {
     public static final BitSet allowed_abs_path = new BitSet(256);
     static {
         allowed_abs_path.or(abs_path);
-        // allowed_abs_path.set('/');  // aleady included
+        // allowed_abs_path.set('/');  // already included
         allowed_abs_path.andNot(percent);
         allowed_abs_path.clear('+');
     }
