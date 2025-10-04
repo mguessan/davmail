@@ -235,10 +235,10 @@
         <dependency>
             <groupId>org.eclipse</groupId>
             <artifactId>swt</artifactId>
-            <version>4.37</version>
+            <version>4.20</version>
             <optional>true</optional>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/swt-4.37-gtk-linux-x86_64.jar</systemPath>
+            <systemPath>${project.basedir}/lib/swt-4.20-gtk-linux-x86_64.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.htmlcleaner</groupId>
