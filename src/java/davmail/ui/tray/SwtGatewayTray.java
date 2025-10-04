@@ -23,13 +23,13 @@ import davmail.DavGateway;
 import davmail.Settings;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
-import davmail.util.IOUtil;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
@@ -38,9 +38,13 @@ import org.eclipse.swt.widgets.ToolTip;
 import org.eclipse.swt.widgets.Tray;
 import org.eclipse.swt.widgets.TrayItem;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 
@@ -218,35 +222,76 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
     /**
      * Load image with current class loader.
+     * No scaling
+     *
+     * @param fileName image resource file name
+     * @return image
+     */
+    public static Image loadSwtImage(String fileName) {
+        Image result = null;
+        try {
+            ClassLoader classloader = DavGatewayTray.class.getClassLoader();
+            URL imageUrl = classloader.getResource(fileName);
+            if (imageUrl == null) {
+                throw new IOException("fileName");
+            }
+            try (InputStream inputStream = imageUrl.openStream()) {
+                result = new Image(display, inputStream);
+
+            }
+
+        } catch (IOException e) {
+            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
+        }
+        return result;
+    }
+
+    /**
+     * Load image with current class loader.
      * Scale to size
      *
      * @param fileName image resource file name
-     * @param size     target image size
+     * @param targetSize     target image size
      * @return image
      */
-    public static Image loadSwtImage(String fileName, int size) {
+    public static Image loadSwtImage(String fileName, int targetSize) {
+        int padding = 0;
         Image result = null;
         try {
-
             ClassLoader classloader = DavGatewayTray.class.getClassLoader();
             URL imageUrl = classloader.getResource(fileName);
             if (imageUrl == null) {
                 throw new IOException(fileName);
             }
-            byte[] imageContent = IOUtil.readFully(imageUrl.openStream());
-            Image tempImage = new Image(display, new ByteArrayInputStream(imageContent));
-            if (Settings.isWindows()) {
-                result = tempImage;
+            BufferedImage bufferedImage;
+            if (Settings.getBooleanProperty("davmail.trayGrayscale", false)) {
+                bufferedImage = DavGatewayTray.convertGrayscale(ImageIO.read(imageUrl));
             } else {
-                Image backgroundImage = new Image(null, size, size);
-                ImageData imageData = backgroundImage.getImageData();
-                imageData.transparentPixel = imageData.getPixel(0, 0);
-                backgroundImage.dispose();
-                result = new Image(null, imageData);
+                bufferedImage = ImageIO.read(imageUrl);
+            }
+            byte[] imageBytes;
+            try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
+                ImageIO.write(bufferedImage, "png", os);
+                imageBytes = os.toByteArray();
+            }
 
+            try (InputStream inputStream = new ByteArrayInputStream(imageBytes)) {
+                Image loadedImage = new Image(display, inputStream);
+
+                ImageData resultImageData = new ImageData(targetSize, targetSize, 24, new PaletteData(0xff0000, 0x00ff00, 0x0000ff));
+                // force init alpha channel
+                resultImageData.setAlpha(0, 0, 0);
+
+                result = new Image(display, resultImageData);
+
+                // drow loaded image over transparent image
                 GC gc = new GC(result);
-                gc.drawImage(tempImage, 0, 0, tempImage.getBounds().width, tempImage.getBounds().height, 0, 0, size, size);
-                tempImage.dispose();
+                gc.setAntialias(SWT.ON);
+                gc.setInterpolation(SWT.HIGH);
+                gc.drawImage(loadedImage, 0, 0, loadedImage.getBounds().width, loadedImage.getBounds().height,
+                        padding, padding, result.getBounds().width - padding, result.getBounds().height - padding);
+                gc.dispose();
+                loadedImage.dispose();
             }
 
         } catch (IOException e) {
@@ -307,12 +352,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
 
                     frameIcons = new ArrayList<>();
-                    frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
-                    frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
+                    frameIcons.add(DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG)));
+                    frameIcons.add(DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG)));
 
-                    image = loadSwtImage("tray128.png", 32);
-                    image2 = loadSwtImage("tray128active.png", 32);
-                    inactiveImage = loadSwtImage("tray128inactive.png", 32);
+                    image = loadSwtImage("tray128.png", 128);
+                    image2 = loadSwtImage("tray128active.png", 128);
+                    inactiveImage = loadSwtImage("tray128inactive.png", 128);
 
                     trayItem.setImage(image);
                     trayItem.addDisposeListener(e -> {
