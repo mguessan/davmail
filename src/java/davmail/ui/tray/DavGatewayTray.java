@@ -343,7 +343,19 @@ public final class DavGatewayTray {
         return result;
     }
 
+    public static BufferedImage convertGrayscale(BufferedImage colorImage) {
+        BufferedImage image = new BufferedImage(colorImage.getWidth(), colorImage.getHeight(),
+                BufferedImage.TYPE_BYTE_GRAY);
+        Graphics g = image.getGraphics();
+        g.drawImage(colorImage, 0, 0, null);
+        g.dispose();
+        return image;
+    }
+
     public static BufferedImage adjustTrayIcon(BufferedImage image) {
+        if (Settings.getBooleanProperty("davmail.trayGrayscale", false)) {
+            image = convertGrayscale(image);
+        }
         Color backgroundColor = null;
         String backgroundColorString = Settings.getProperty("davmail.trayBackgroundColor");
 
