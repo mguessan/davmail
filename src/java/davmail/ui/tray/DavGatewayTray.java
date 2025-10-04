@@ -26,7 +26,9 @@ import org.apache.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
 import java.io.IOException;
 import java.net.URL;
 
@@ -344,12 +346,12 @@ public final class DavGatewayTray {
     }
 
     public static BufferedImage convertGrayscale(BufferedImage colorImage) {
-        BufferedImage image = new BufferedImage(colorImage.getWidth(), colorImage.getHeight(),
-                BufferedImage.TYPE_BYTE_GRAY);
-        Graphics g = image.getGraphics();
-        g.drawImage(colorImage, 0, 0, null);
-        g.dispose();
-        return image;
+        BufferedImage grayImage = new BufferedImage(colorImage.getWidth(), colorImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        ColorConvertOp op = new ColorConvertOp(ColorSpace.getInstance(ColorSpace.CS_GRAY), null);
+        op.filter(colorImage, grayImage);
+
+        return grayImage;
     }
 
     public static BufferedImage adjustTrayIcon(BufferedImage image) {
