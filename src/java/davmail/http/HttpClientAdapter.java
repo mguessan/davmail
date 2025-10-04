@@ -278,7 +278,7 @@ public class HttpClientAdapter implements Closeable {
     private Registry<AuthSchemeProvider> getAuthSchemeRegistry() {
         final RegistryBuilder<AuthSchemeProvider> registryBuilder = RegistryBuilder.create();
         AuthSchemeProvider ntlmSchemeProvider;
-        if (Settings.getBooleanProperty("davmail.enableJcifs", false)) {
+        if (Settings.getBooleanProperty("davmail.enableJcifs", true)) {
             ntlmSchemeProvider = new JCIFSNTLMSchemeFactory();
         } else {
             ntlmSchemeProvider = new DavMailNTLMSchemeFactory();
