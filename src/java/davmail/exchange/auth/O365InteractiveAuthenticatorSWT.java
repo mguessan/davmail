@@ -40,6 +40,9 @@ public class O365InteractiveAuthenticatorSWT {
 
     private O365InteractiveAuthenticator authenticator;
 
+    Shell shell;
+    Browser browser;
+
     public O365InteractiveAuthenticatorSWT() {
 
     }
@@ -57,7 +60,7 @@ public class O365InteractiveAuthenticatorSWT {
                 Settings.getProperty("davmail.oauth.allowSingleSignOnUsingOSPrimaryAccount", "true"));
 
         Display.getDefault().asyncExec(() -> {
-            final Shell shell = new Shell(Display.getDefault());
+            shell = new Shell(Display.getDefault());
             shell.setText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
             shell.setSize(600, 600);
 
@@ -69,9 +72,10 @@ public class O365InteractiveAuthenticatorSWT {
                 if (!authenticator.isAuthenticated && authenticator.errorCode == null) {
                     authenticator.errorCode = "user closed authentication window";
                 }
+                dispose();
             });
 
-            final Browser browser = new Browser(shell, SWT.NONE);
+            browser = new Browser(shell, SWT.NONE);
 
             browser.setUrl(initUrl);
             browser.addTitleListener(titleEvent -> shell.setText("DavMail: " + titleEvent.title));
@@ -87,8 +91,7 @@ public class O365InteractiveAuthenticatorSWT {
                         authenticator.handleCode(location);
 
                         shell.close();
-                        browser.dispose();
-                        shell.dispose();
+                        dispose();
                     }
 
                 }
@@ -102,6 +105,17 @@ public class O365InteractiveAuthenticatorSWT {
             shell.open();
             shell.setActive();
 
+        });
+    }
+
+    private void dispose() {
+        Display.getDefault().asyncExec(() -> {
+            if (browser != null) {
+                browser.dispose();
+            }
+            if (shell != null) {
+                shell.dispose();
+            }
         });
     }
 }
