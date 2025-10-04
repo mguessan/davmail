@@ -69,16 +69,18 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static Image image2;
     private static Image inactiveImage;
     private static Display display;
-    private static Thread swtThread;
     private static Shell shell;
     private boolean isActive = true;
     private static boolean isReady = false;
     private static Error error;
     private boolean firstMessage = true;
 
-    public static Display initDisplay() {
+    public static void initDisplay() {
         if (!isReady) {
-            swtThread = new Thread("SWT") {
+            // ready
+            // start main loop, shell can be null before init
+            // dispose AWT frames
+            Thread swtThread = new Thread("SWT") {
                 @Override
                 public void run() {
                     try {
@@ -129,7 +131,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 }
             }
         }
-        return display;
     }
 
     /**
@@ -270,7 +271,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 bufferedImage = ImageIO.read(imageUrl);
             }
             byte[] imageBytes;
-            try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
+            try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
                 ImageIO.write(bufferedImage, "png", os);
                 imageBytes = os.toByteArray();
             }
@@ -304,36 +305,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      * Create tray icon and register frame listeners.
      */
     public void init() {
-        boolean isGTK3;
-        // SWT 4.9 and later
-        /*
-        try {
-            Class gtk = Class.forName("org.eclipse.swt.internal.gtk.GTK");
-            isGTK3 = (Boolean) gtk.getDeclaredField("GTK3").get(null);
-            LOGGER.debug("org.eclipse.swt.internal.gtk.GTK.GTK3="+isGTK3);
-            if (isGTK3) {
-                LOGGER.warn("GTK 3 not supported, please set SWT_GTK3=0");
-            }
-        } catch (Throwable e) {
-            // ignore
-        }
-
-        try {
-            Class gdk = Class.forName("org.eclipse.swt.internal.gtk.GDK");
-            //noinspection unchecked
-            gdk.getDeclaredMethod("gdk_error_trap_push").invoke(null);
-            LOGGER.debug("Called org.eclipse.swt.internal.gtk.GDK.gdk_error_trap_push");
-        } catch (Throwable e) {
-            // ignore
-        }
-
-        try {
-            //noinspection JavaReflectionMemberAccess
-            OS.class.getDeclaredMethod("gdk_error_trap_push").invoke(null);
-            LOGGER.debug("Called org.eclipse.swt.internal.gtk.OS.gdk_error_trap_push");
-        } catch (Exception e) {
-            // ignore
-        }*/
         try {
             // workaround for bug when SWT and AWT both try to access Gtk
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
