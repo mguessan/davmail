@@ -8,7 +8,7 @@ WORKDIR /davmail
 
 RUN apt-get install -y ant git
 COPY . .
-RUN ant -Dfile.encoding=UTF-8
+RUN ant -Dfile.encoding=UTF-8 jar
 
 
 # Then we run the jar file
@@ -27,7 +27,7 @@ RUN sed -i 's/#davmail.oauth.tokenFilePath=/davmail.oauth.tokenFilePath=\/config
 VOLUME [ "/config" ]
 EXPOSE 1110 1025 1143 1080 1389
 
-COPY --from=builder /davmail/src/contribs/docker/entrypoint.sh /davmail/entrypoint.sh
+COPY --from=builder /davmail/src/docker/entrypoint.sh /davmail/entrypoint.sh
 ENTRYPOINT [ "/davmail/entrypoint.sh" ]
 
 
