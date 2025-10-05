@@ -138,23 +138,10 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         });
 
         // Check if SWT is available
-        boolean isSWTAvailable = false;
-        ClassLoader classloader = O365InteractiveAuthenticator.class.getClassLoader();
-        try {
-            // trigger ClassNotFoundException
-            classloader.loadClass("org.eclipse.swt.SWT");
-            isSWTAvailable = true;
-        } catch (Throwable e) {
-            LOGGER.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
-        }
+        boolean isSWTAvailable = Settings.isSWTAvailable();
 
-        boolean isJFXAvailable = true;
-        try {
-            Class.forName("javafx.application.Platform");
-        } catch (ClassNotFoundException | NullPointerException e) {
-            LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
-            isJFXAvailable = false;
-        }
+
+        boolean isJFXAvailable = Settings.isJFXAvailable();
 
         if (isSWTAvailable) {
             o365InteractiveAuthenticatorSWT = new O365InteractiveAuthenticatorSWT();

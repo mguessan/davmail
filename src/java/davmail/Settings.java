@@ -18,6 +18,7 @@
  */
 package davmail;
 
+import davmail.exchange.auth.O365InteractiveAuthenticator;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.*;
 
@@ -310,7 +311,7 @@ public final class Settings {
                 if (Settings.getBooleanProperty("davmail.server")) {
                     consoleAppender.setThreshold(Level.ALL);
                 } else {
-                    consoleAppender.setThreshold(Level.OFF);
+                    consoleAppender.setThreshold(Level.ALL);
                 }
             }
 
@@ -769,7 +770,7 @@ public final class Settings {
 
     /**
      * Handle custom graph endpoints.
-     * See https://learn.microsoft.com/en-us/graph/deployments
+     * See <a href="https://learn.microsoft.com/en-us/graph/deployments">...</a>
      * @return graph endpoint url
      */
     public static String getGraphUrl() {
@@ -794,5 +795,29 @@ public final class Settings {
         } else {
             return  "https://login.microsoftonline."+tld;
         }
+    }
+
+    public static boolean isSWTAvailable() {
+        boolean isSWTAvailable = false;
+        ClassLoader classloader = Settings.class.getClassLoader();
+        try {
+            // trigger ClassNotFoundException
+            classloader.loadClass("org.eclipse.swt.SWT");
+            isSWTAvailable = true;
+        } catch (Throwable e) {
+            LOGGER.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+        }
+        return isSWTAvailable;
+    }
+
+    public static boolean isJFXAvailable() {
+        boolean isJFXAvailable = false;
+        try {
+            Class.forName("javafx.application.Platform");
+        } catch (ClassNotFoundException | NullPointerException e) {
+            LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
+            isJFXAvailable = false;
+        }
+        return isJFXAvailable;
     }
 }
