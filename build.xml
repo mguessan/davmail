@@ -41,18 +41,16 @@
     </condition>
 
     <condition property="is.java8">
-        <not>
-            <matches string="${ant.java.version}" pattern="1\.[01234567]"/>
-        </not>
+        <matches string="${ant.java.version}" pattern="8"/>
+    </condition>
+
+    <condition property="is.java10">
+        <matches string="${ant.java.version}" pattern="[12][0-9]"/>
     </condition>
 
     <condition property="is.utf8">
         <equals arg1="${file.encoding}" arg2="UTF-8"/>
     </condition>
-
-    <target name="check-java8" unless="is.java8">
-        <fail message="Java 8 or later needed to build DavMail, current version is ${ant.java.version}, check JAVA_HOME"/>
-    </target>
 
     <target name="check-encoding" unless="is.utf8">
         <fail message="Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8"/>
@@ -91,15 +89,16 @@
         <property name="release" value="${version}"/>
     </target>
 
-    <target name="init" depends="check-encoding, check-java8, svnrelease, gitsvnrelease, defaultrelease">
+    <target name="init" depends="check-encoding, svnrelease, gitsvnrelease, defaultrelease">
         <echo message="Creating DavMail ${release} dist package" level="info"/>
         <echo message="Java ${ant.java.version} and JavaFX ${is.javafx.message}" level="info"/>
         <mkdir dir="target/classes"/>
     </target>
 
-    <target name="compile-java9" depends="init">
+    <target name="compile-java10" if="is.java10" depends="init">
         <mkdir dir="target/classes"/>
-        <javac srcdir="src/java" destdir="target/classes" source="9" debug="on" encoding="UTF-8"
+        <echo level="info" message="Compile java 10 or later"/>
+        <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
             <compilerarg value="--add-exports"/>
@@ -112,8 +111,9 @@
         </javac>
     </target>
 
-    <target name="compile-java" depends="init">
+    <target name="compile-java" if="is.java8" depends="init">
         <mkdir dir="target/classes"/>
+        <echo level="info" message="Compile java 8"/>
         <javac srcdir="src/java" destdir="target/classes" source="1.8" target="1.8" debug="on" encoding="UTF-8"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
@@ -123,7 +123,9 @@
         </javac>
     </target>
 
-    <target name="compile" depends="compile-java">
+    <target name="compile">
+        <antcall target="compile-java"/>
+        <antcall target="compile-java10"/>
         <copy todir="target/classes">
             <fileset dir="src/java">
                 <include name="**/*"/>
@@ -341,7 +343,7 @@
         </jar>
     </target>
 
-    <target name="prepare-dist" depends="jar">
+    <target name="prepare-dist" depends="init,jar">
         <echo file="dist/version.txt" message="${release}"/>
         <copy todir="dist/lib">
             <fileset dir="lib">
@@ -356,7 +358,9 @@
 
         <!-- use WinRun4J wrappers -->
         <copy file="src/winrun4j/davmail64.exe" todir="dist"/>
+        <copy file="src/winrun4j/davmail64.ini" todir="dist"/>
         <copy file="src/winrun4j/davmailservice64.exe" todir="dist"/>
+        <copy file="src/winrun4j/davmailservice64.ini" todir="dist"/>
     </target>
 
     <target name="dist" depends="prepare-dist">
@@ -380,6 +384,7 @@
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
                 <include name="davmail*.exe"/>
+                <include name="davmail*.ini"/>
                 <exclude name="lib/swt-*-gtk-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/hamcrest-core-*.jar"/>
@@ -392,8 +397,8 @@
                 <include name="jre/**"/>
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
-                <include name="davmail64.exe"/>
-                <include name="davmailservice64.exe"/>
+                <include name="davmail*.exe"/>
+                <include name="davmail*.ini"/>
                 <exclude name="lib/swt-*-gtk-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/hamcrest-core-*.jar"/>
