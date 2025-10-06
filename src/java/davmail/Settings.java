@@ -18,18 +18,35 @@
  */
 package davmail;
 
-import davmail.exchange.auth.O365InteractiveAuthenticator;
 import davmail.ui.tray.DavGatewayTray;
-import org.apache.log4j.*;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TreeSet;
 
 import static org.apache.http.util.TextUtils.isEmpty;
 
@@ -43,7 +60,7 @@ public final class Settings {
     private static final Logger LOGGER = Logger.getLogger(Settings.class);
 
     public static final String OUTLOOK_URL = "https://outlook.office365.com";
-    public static final String O365_URL = OUTLOOK_URL+"/EWS/Exchange.asmx";
+    public static final String O365_URL = OUTLOOK_URL + "/EWS/Exchange.asmx";
 
     public static final String GRAPH_URL = "https://graph.microsoft.com";
 
@@ -274,8 +291,8 @@ public final class Settings {
                 // create parent directory if needed
                 File logFileDir = logFile.getParentFile();
                 if (logFileDir != null && !logFileDir.exists() && (!logFileDir.mkdirs())) {
-                        DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
-                        throw new IOException();
+                    DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
+                    throw new IOException();
 
                 }
             } else {
@@ -618,11 +635,11 @@ public final class Settings {
         File file = new File(tokenFilePath);
         File parentFile = file.getParentFile();
         if (parentFile != null && (parentFile.mkdirs())) {
-                LOGGER.info("Created token file directory "+parentFile.getAbsolutePath());
+            LOGGER.info("Created token file directory " + parentFile.getAbsolutePath());
 
         }
         if (file.createNewFile()) {
-            LOGGER.info("Created token file "+tokenFilePath);
+            LOGGER.info("Created token file " + tokenFilePath);
         }
     }
 
@@ -752,7 +769,7 @@ public final class Settings {
         } else if (tld == null) {
             return OUTLOOK_URL;
         } else {
-            return  "https://outlook.office365."+tld;
+            return "https://outlook.office365." + tld;
         }
     }
 
@@ -760,11 +777,11 @@ public final class Settings {
         String tld = getProperty("davmail.tld");
         String outlookUrl = getProperty("davmail.outlookUrl");
         if (outlookUrl != null) {
-            return outlookUrl+"/EWS/Exchange.asmx";
+            return outlookUrl + "/EWS/Exchange.asmx";
         } else if (tld == null) {
             return O365_URL;
         } else {
-            return  "https://outlook.office365."+tld+"/EWS/Exchange.asmx";
+            return "https://outlook.office365." + tld + "/EWS/Exchange.asmx";
         }
     }
 
@@ -781,7 +798,7 @@ public final class Settings {
         } else if (tld == null) {
             return GRAPH_URL;
         } else {
-            return  "https://graph.microsoft."+tld;
+            return "https://graph.microsoft." + tld;
         }
     }
 
@@ -793,7 +810,7 @@ public final class Settings {
         } else if (tld == null) {
             return O365_LOGIN_URL;
         } else {
-            return  "https://login.microsoftonline."+tld;
+            return "https://login.microsoftonline." + tld;
         }
     }
 
@@ -814,9 +831,9 @@ public final class Settings {
         boolean isJFXAvailable = false;
         try {
             Class.forName("javafx.application.Platform");
+            isJFXAvailable = true;
         } catch (ClassNotFoundException | NullPointerException e) {
             LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
-            isJFXAvailable = false;
         }
         return isJFXAvailable;
     }
