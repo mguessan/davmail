@@ -151,7 +151,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                 LOGGER.debug("Webview location: " + location);
                 // override console.log
                 O365InteractiveJSLogger.register(webViewEngine);
-                if (LOGGER.isDebugEnabled()) {
+                if (Settings.getBooleanProperty("davmail.webview.debug", false)) {
                     LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
                 }
                 if (location.startsWith(redirectUri)) {
