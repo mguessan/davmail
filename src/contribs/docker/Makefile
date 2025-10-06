@@ -1,27 +1,32 @@
-SUBTAG=:next
-DTARGETS=davmail$(SUBTAG) davbuild$(SUBTAG)
-LOCATION_OF_DAVMAIL_ROOT=$$PWD/../../..
+IMAGE_NAME = mguessan/davmail
+IMAGE_VERSION ?= ""
 
-all: build davmail
+ifeq ($(IMAGE_VERSION),"")
+	IMAGE_LABEL ?= $(IMAGE_NAME)
+else
+	IMAGE_LABEL ?= $(IMAGE_NAME):${IMAGE_VERSION}
+endif
 
-davbuild davmail davupstream davbase:
-	docker build --target $@ -t $@$(SUBTAG) .
+image:
+	@echo "Building Docker image ${IMAGE_LABEL}..."
+	docker build . -t $(IMAGE_LABEL)
 
-clean:
-	rm -f davmail-compile.tar *~
-	-docker rmi $(DTARGETS)
+tag-latest-without-build:
+	@echo "Tagging Docker image ${IMAGE_LABEL} with latest..."
+	docker tag `docker image ls --format '{{.ID}}' $(IMAGE_LABEL)` $(IMAGE_NAME):latest
 
-build: davbuild indirect
+run:
+	@echo "Starting davmail"
+	docker compose up -d
 
-indirect: indirect_compile indirect_archive
+run-gui:
+	@echo "Running davmail with GUI (to get token)"
+	docker run --network=host --rm --name davmail --hostname davmail \
+		-u "$UID" \
+		-e "DISPLAY=${DISPLAY}" \
+		-v /tmp/.X11-unix:/tmp/.X11-unix \
+		-v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" \
+		-v ./config:/config \
+		davmail davmail --token
 
-indirect_compile:
-	docker run -it --memory=1.5g --cpus .3 --rm --name davmail-build -u "$$UID" --entrypoint "" -v "${LOCATION_OF_DAVMAIL_ROOT}:/src" -w /src "davbuild$(SUBTAG)" ant -lib /usr/share/java jar
-
-indirect_archive:
-	tar -cf davmail-compile.tar -C ${LOCATION_OF_DAVMAIL_ROOT}/dist .
-
-test:
-	docker run -it --memory=1.5g --cpus .3 --network=host --rm --name davmail -v /tmp/.X11-unix:/tmp/.X11-unix -e JAVA_OPT_USER=-Dsun.java2d.uiScale=2.0 -e "DISPLAY=$${DISPLAY}" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$${XAUTHORITY:-$$HOME/.Xauthority}:/.Xauthority:ro" -v $$HOME/.davmail.properties.core:/davmail.properties:ro -v $$HOME/.davmail.properties.toks:/davmail.properties.tokens:rw -u "$$UID" davmail:next
-
-.PHONY: all build davmail davbuild davupstream clean indirect indirect_compile indirect_archive
+latest: image tag-latest-without-build
