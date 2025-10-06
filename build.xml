@@ -44,8 +44,19 @@
         <matches string="${ant.java.version}" pattern="8"/>
     </condition>
 
+    <!-- recent debian jdk with openjfx -->
+    <condition property="is.debian">
+        <and>
+            <available file="/usr/share/java/javafx-base.jar"/>
+            <matches string="${ant.java.version}" pattern="[12][0-9]"/>
+        </and>
+    </condition>
+
     <condition property="is.java10">
-        <matches string="${ant.java.version}" pattern="[12][0-9]"/>
+        <and>
+            <isfalse value="${is.debian}"/>
+            <matches string="${ant.java.version}" pattern="[12][0-9]"/>
+        </and>
     </condition>
 
     <condition property="is.utf8">
@@ -95,6 +106,25 @@
         <mkdir dir="target/classes"/>
     </target>
 
+    <target name="compile-debian" if="is.debian" depends="init">
+        <mkdir dir="target/classes"/>
+        <echo level="info" message="Compile on debian with openjfx"/>
+        <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8"
+               includeantruntime="false">
+            <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
+            <compilerarg value="--add-exports"/>
+            <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED"/>
+            <compilerarg value="--add-exports"/>
+            <compilerarg value="java.base/sun.net.www.protocol.https=ALL-UNNAMED"/>
+            <compilerarg value="--module-path"/>
+            <compilerarg value="/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar"/>
+            <compilerarg value="--add-modules=javafx.base,javafx.controls,javafx.fxml,javafx.graphics,javafx.media,javafx.swing,javafx.web"/>
+            <classpath>
+                <path refid="classpath"/>
+            </classpath>
+        </javac>
+    </target>
+
     <target name="compile-java10" if="is.java10" depends="init">
         <mkdir dir="target/classes"/>
         <echo level="info" message="Compile java 10 or later"/>
@@ -126,6 +156,7 @@
     <target name="compile">
         <antcall target="compile-java"/>
         <antcall target="compile-java10"/>
+        <antcall target="compile-debian"/>
         <copy todir="target/classes">
             <fileset dir="src/java">
                 <include name="**/*"/>
