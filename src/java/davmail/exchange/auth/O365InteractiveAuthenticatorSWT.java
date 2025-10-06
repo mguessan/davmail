@@ -24,6 +24,7 @@ import davmail.Settings;
 import davmail.ui.tray.SwtGatewayTray;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTError;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
@@ -60,50 +61,54 @@ public class O365InteractiveAuthenticatorSWT {
                 Settings.getProperty("davmail.oauth.allowSingleSignOnUsingOSPrimaryAccount", "true"));
 
         Display.getDefault().asyncExec(() -> {
-            shell = new Shell(Display.getDefault());
-            shell.setText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
-            shell.setSize(600, 600);
+            try {
+                shell = new Shell(Display.getDefault());
+                shell.setText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
+                shell.setSize(600, 600);
 
-            shell.setLayout(new FillLayout());
+                shell.setLayout(new FillLayout());
 
-            shell.setImage(SwtGatewayTray.loadSwtImage("tray.png", 32));
+                shell.setImage(SwtGatewayTray.loadSwtImage("tray.png", 32));
 
-            shell.addListener(SWT.Close, event -> {
-                if (!authenticator.isAuthenticated && authenticator.errorCode == null) {
-                    authenticator.errorCode = "user closed authentication window";
-                }
-                dispose();
-            });
+                shell.addListener(SWT.Close, event -> {
+                    if (!authenticator.isAuthenticated && authenticator.errorCode == null) {
+                        authenticator.errorCode = "user closed authentication window";
+                    }
+                    dispose();
+                });
 
-            browser = new Browser(shell, SWT.NONE);
+                browser = new Browser(shell, SWT.NONE);
 
-            browser.setUrl(initUrl);
-            browser.addTitleListener(titleEvent -> shell.setText("DavMail: " + titleEvent.title));
-            browser.addLocationListener(new LocationListener() {
-                @Override
-                public void changing(LocationEvent locationEvent) {
-                    LOGGER.debug("Navigate to " + locationEvent.toString());
-                    String location = locationEvent.location;
+                browser.setUrl(initUrl);
+                browser.addTitleListener(titleEvent -> shell.setText("DavMail: " + titleEvent.title));
+                browser.addLocationListener(new LocationListener() {
+                    @Override
+                    public void changing(LocationEvent locationEvent) {
+                        LOGGER.debug("Navigate to " + locationEvent.toString());
+                        String location = locationEvent.location;
 
-                    if (location.startsWith(redirectUri)) {
+                        if (location.startsWith(redirectUri)) {
 
-                        LOGGER.debug("Location starts with redirectUri, check code");
-                        authenticator.handleCode(location);
+                            LOGGER.debug("Location starts with redirectUri, check code");
+                            authenticator.handleCode(location);
 
-                        shell.close();
-                        dispose();
+                            shell.close();
+                            dispose();
+                        }
+
                     }
 
-                }
+                    @Override
+                    public void changed(LocationEvent locationEvent) {
+                        LOGGER.debug("Page changed: " + locationEvent.toString());
+                    }
+                });
 
-                @Override
-                public void changed(LocationEvent locationEvent) {
-                    LOGGER.debug("Page changed: " + locationEvent.toString());
-                }
-            });
-
-            shell.open();
-            shell.setActive();
+                shell.open();
+                shell.setActive();
+            } catch (SWTError e) {
+                authenticator.errorCode = "SWT Error "+e.getMessage();
+            }
 
         });
     }
