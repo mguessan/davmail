@@ -106,12 +106,11 @@
         <mkdir dir="target/classes"/>
     </target>
 
-    <target name="compile-debian" if="is.debian" depends="init">
+    <target name="compile-debian" if="is.debian">
         <mkdir dir="target/classes"/>
         <echo level="info" message="Compile on debian with openjfx"/>
         <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8"
                includeantruntime="false">
-            <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
             <compilerarg value="--add-exports"/>
             <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED"/>
             <compilerarg value="--add-exports"/>
@@ -125,7 +124,7 @@
         </javac>
     </target>
 
-    <target name="compile-java10" if="is.java10" depends="init">
+    <target name="compile-java10" if="is.java10">
         <mkdir dir="target/classes"/>
         <echo level="info" message="Compile java 10 or later"/>
         <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8"
@@ -141,7 +140,7 @@
         </javac>
     </target>
 
-    <target name="compile-java" if="is.java8" depends="init">
+    <target name="compile-java" if="is.java8">
         <mkdir dir="target/classes"/>
         <echo level="info" message="Compile java 8"/>
         <javac srcdir="src/java" destdir="target/classes" source="1.8" target="1.8" debug="on" encoding="UTF-8"
@@ -153,7 +152,7 @@
         </javac>
     </target>
 
-    <target name="compile">
+    <target name="compile" depends="init">
         <antcall target="compile-java"/>
         <antcall target="compile-java10"/>
         <antcall target="compile-debian"/>
