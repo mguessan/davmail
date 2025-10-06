@@ -6,8 +6,9 @@ RUN apt-get update
 FROM base AS builder
 WORKDIR /davmail
 
-RUN apt-get install -y ant git
+RUN apt-get install -y ant git libopenjfx-java
 COPY . .
+ENV ANT_OPTS="--module-path /usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar --add-modules=javafx.base,javafx.controls,javafx.fxml,javafx.graphics,javafx.media,javafx.swing,javafx.web"
 RUN ant -Dfile.encoding=UTF-8 jar
 
 
@@ -27,7 +28,7 @@ RUN sed -i 's/#davmail.oauth.tokenFilePath=/davmail.oauth.tokenFilePath=\/config
 VOLUME [ "/config" ]
 EXPOSE 1110 1025 1143 1080 1389
 
-COPY --from=builder /davmail/src/docker/entrypoint.sh /davmail/entrypoint.sh
+COPY --chmod=0755 --from=builder /davmail/src/docker/entrypoint.sh /davmail/entrypoint.sh
 ENTRYPOINT [ "/davmail/entrypoint.sh" ]
 
 
