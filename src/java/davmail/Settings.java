@@ -326,9 +326,9 @@ public final class Settings {
             ConsoleAppender consoleAppender = (ConsoleAppender) Logger.getRootLogger().getAppender("ConsoleAppender");
             if (consoleAppender != null) {
                 if (Settings.getBooleanProperty("davmail.server")) {
-                    consoleAppender.setThreshold(Level.INFO);
-                } else {
                     consoleAppender.setThreshold(Level.ALL);
+                } else {
+                    consoleAppender.setThreshold(Level.INFO);
                 }
             }
 
