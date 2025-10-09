@@ -2,7 +2,7 @@ name: Build and push the release docker image
 
 on:
   push:
-    branches: [ '*' ]
+    tags: [ '*' ]
 
 jobs:
   build-release-image:
