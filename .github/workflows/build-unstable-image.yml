@@ -2,8 +2,7 @@ name: Build and push the unstable docker image
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "master" ]
 
 jobs:
   build-unstable-image:
