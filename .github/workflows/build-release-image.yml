@@ -1,4 +1,4 @@
-name: Build and push the unstable docker image
+name: Build and push the release docker image
 
 on:
   push:
