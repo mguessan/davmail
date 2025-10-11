@@ -298,28 +298,33 @@ public final class Settings {
             } else {
                 logFilePath = "davmail.log";
             }
-            synchronized (Logger.getRootLogger()) {
-                // Build file appender
-                FileAppender fileAppender = (FileAppender) Logger.getRootLogger().getAppender("FileAppender");
-                if (fileAppender == null) {
-                    String logFileSize = Settings.getProperty("davmail.logFileSize");
-                    if (logFileSize == null || logFileSize.isEmpty()) {
-                        logFileSize = "1MB";
+
+            if (isDocker()) {
+                LOGGER.info("Running in docker container");
+            } else {
+                synchronized (Logger.getRootLogger()) {
+                    // Build file appender
+                    FileAppender fileAppender = (FileAppender) Logger.getRootLogger().getAppender("FileAppender");
+                    if (fileAppender == null) {
+                        String logFileSize = Settings.getProperty("davmail.logFileSize");
+                        if (logFileSize == null || logFileSize.isEmpty()) {
+                            logFileSize = "1MB";
+                        }
+                        // set log file size to 0 to use an external rotation mechanism, e.g. logrotate
+                        if ("0".equals(logFileSize)) {
+                            fileAppender = new FileAppender();
+                        } else {
+                            fileAppender = new RollingFileAppender();
+                            ((RollingFileAppender) fileAppender).setMaxBackupIndex(2);
+                            ((RollingFileAppender) fileAppender).setMaxFileSize(logFileSize);
+                        }
+                        fileAppender.setName("FileAppender");
+                        fileAppender.setEncoding("UTF-8");
+                        fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
                     }
-                    // set log file size to 0 to use an external rotation mechanism, e.g. logrotate
-                    if ("0".equals(logFileSize)) {
-                        fileAppender = new FileAppender();
-                    } else {
-                        fileAppender = new RollingFileAppender();
-                        ((RollingFileAppender) fileAppender).setMaxBackupIndex(2);
-                        ((RollingFileAppender) fileAppender).setMaxFileSize(logFileSize);
-                    }
-                    fileAppender.setName("FileAppender");
-                    fileAppender.setEncoding("UTF-8");
-                    fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
+                    fileAppender.setFile(logFilePath, true, false, 8192);
+                    Logger.getRootLogger().addAppender(fileAppender);
                 }
-                fileAppender.setFile(logFilePath, true, false, 8192);
-                Logger.getRootLogger().addAppender(fileAppender);
             }
 
             // disable ConsoleAppender in gui mode
@@ -837,4 +842,9 @@ public final class Settings {
         }
         return isJFXAvailable;
     }
+
+    public static boolean isDocker() {
+        return new File("/sys/fs/cgroup").exists();
+    }
+
 }
