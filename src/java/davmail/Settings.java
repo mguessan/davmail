@@ -286,22 +286,22 @@ public final class Settings {
         String logFilePath = getLogFilePath();
 
         try {
-            if (logFilePath != null && !logFilePath.isEmpty()) {
-                File logFile = new File(logFilePath);
-                // create parent directory if needed
-                File logFileDir = logFile.getParentFile();
-                if (logFileDir != null && !logFileDir.exists() && (!logFileDir.mkdirs())) {
-                    DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
-                    throw new IOException();
-
-                }
-            } else {
-                logFilePath = "davmail.log";
-            }
-
             if (isDocker()) {
                 LOGGER.info("Running in docker container");
             } else {
+                if (logFilePath != null && !logFilePath.isEmpty()) {
+                    File logFile = new File(logFilePath);
+                    // create parent directory if needed
+                    File logFileDir = logFile.getParentFile();
+                    if (logFileDir != null && !logFileDir.exists() && (!logFileDir.mkdirs())) {
+                        DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
+                        throw new IOException();
+
+                    }
+                } else {
+                    logFilePath = "davmail.log";
+                }
+
                 synchronized (Logger.getRootLogger()) {
                     // Build file appender
                     FileAppender fileAppender = (FileAppender) Logger.getRootLogger().getAppender("FileAppender");
