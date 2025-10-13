@@ -16,19 +16,18 @@ RUN ant -Dfile.encoding=UTF-8 jar
 FROM base AS runner
 WORKDIR /davmail
 
-RUN apt-get install -y openjdk-17-jre libcommons-codec-java libcommons-logging-java libhtmlcleaner-java libhttpclient-java libjackrabbit-java libjcifs-java libjettison-java libjna-java liblog4j1.2-java libmail-java libopenjfx-java  libservlet-api-java libslf4j-java libstax2-api-java libwoodstox-java
+RUN apt-get install -y openjdk-17-jre libcommons-codec-java libcommons-logging-java libhtmlcleaner-java libhttpclient-java libjackrabbit-java libjcifs-java libjettison-java libjna-java liblog4j1.2-java libmail-java libopenjfx-java  libslf4j-java libstax2-api-java libwoodstox-java
 
 # Copy jar file
 COPY --from=builder /davmail/dist/davmail.jar /davmail/davmail.jar
 
-# Copy default davmail.properties and set tokenFilePath
-COPY --from=builder /davmail/src/etc/davmail.properties /config/davmail.properties
-RUN sed -i 's/#davmail.oauth.tokenFilePath=/davmail.oauth.tokenFilePath=\/config\/.env.oauth/' /config/davmail.properties
+# Copy template davmail.properties and set tokenFilePath
+COPY --from=builder /davmail/src/etc/davmail.properties /etc/davmail.properties
+RUN sed -i 's/#davmail.oauth.tokenFilePath=/davmail.oauth.tokenFilePath=\/config\/.env.oauth/' /etc/davmail.properties
+
 
 VOLUME [ "/config" ]
 EXPOSE 1110 1025 1143 1080 1389
 
 COPY --chmod=0755 --from=builder /davmail/src/docker/entrypoint.sh /davmail/entrypoint.sh
 ENTRYPOINT [ "/davmail/entrypoint.sh" ]
-
-
