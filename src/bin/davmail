@@ -1,12 +1,10 @@
 #!/bin/sh
 #
-# Usage: davmail [</path/to/davmail.properties>]
-#
-# In case of SWT crash under JDK 9/11, uninstall SWT or remove SWT cases below
+# Usage: davmail [</path/to/davmail.properties>] [-notray] [-token]
 #
 BASE=$(dirname "$0")
 # set memory and enable DNS expiration
-JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60"
+: "${JAVA_OPTS:=-Xmx512M -Dsun.net.inetaddr.ttl=60}"
 JAVA=java
 
 # Experimental: download Azul JRE FX with command 'davmail azul'
@@ -59,6 +57,7 @@ fi
 
 if [ -e /usr/lib/java/swt.jar ]; then
     # latest SWT on Fedora
+    JAVA_OPTS="$JAVA_OPTS --enable-native-access=ALL-UNNAMED"
     SWT_CLASSPATH=/usr/lib/java/swt.jar
 elif [ -e /usr/share/java/swt.jar ]; then
     # SWT 3 is available, deprecated?

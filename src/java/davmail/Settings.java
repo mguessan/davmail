@@ -843,7 +843,9 @@ public final class Settings {
 
     public static boolean isDocker() {
         boolean isDocker = new File("/.dockerenv").exists();
-        LOGGER.info("Running in docker");
+        if (isDocker) {
+            LOGGER.info("Running in docker");
+        }
         return isDocker;
     }
 
