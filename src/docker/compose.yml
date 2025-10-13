@@ -4,10 +4,12 @@ services:
     davmail:
         container_name: davmail
         hostname: davmail
-        image: ghcr.io/mguessan/davmail:stable
+        image: ghcr.io/mguessan/davmail:latest
         restart: unless-stopped
         ports:
             - 127.0.0.1:1025:1025 # SMTP
             - 127.0.0.1:1143:1143 # IMAP
+            - 127.0.0.1:1080:1080 # Caldav
+            - 127.0.0.1:1389:1389 # LDAP
         volumes:
             - ./config:/config

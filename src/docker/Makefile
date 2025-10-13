@@ -27,7 +27,7 @@ run-gui:
 		-v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" \
 		-v ${HOME}/.davmail:/config:z \
 		-u $UID \
-		davmail -token
+		davmail
 
 run-token:
 	@echo "Running davmail with GUI to get oauth token"
