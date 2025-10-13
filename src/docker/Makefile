@@ -1,3 +1,4 @@
+# call from root with make -t src/docker/Makefile
 IMAGE_NAME = mguessan/davmail
 IMAGE_VERSION ?= ""
 
@@ -9,7 +10,7 @@ endif
 
 image:
 	@echo "Building Docker image ${IMAGE_LABEL}..."
-	docker build . -t $(IMAGE_LABEL)
+	docker build . -t $(IMAGE_LABEL) -f src/docker/Dockerfile
 
 tag-latest-without-build:
 	@echo "Tagging Docker image ${IMAGE_LABEL} with latest..."
@@ -17,26 +18,30 @@ tag-latest-without-build:
 
 run:
 	@echo "Starting davmail"
-	docker compose up -d
+	mkdir -p ${HOME}/.davmail
+	docker run --network=host --ipc=host --rm --name davmail --hostname davmail \
+		-v $${HOME}/.davmail:/config:z \
+		-u "$$UID" \
+		davmail
 
 run-gui:
 	@echo "Running davmail with GUI"
-	mkdir ${HOME}/.davmail
+	mkdir -p ${HOME}/.davmail
 	docker run --network=host --ipc=host --rm --name davmail --hostname davmail \
-		-e DISPLAY=$DISPLAY \
-		-v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" \
-		-v ${HOME}/.davmail:/config:z \
-		-u $UID \
+		-e DISPLAY=$$DISPLAY \
+		-v "$${XAUTHORITY:-$$HOME/.Xauthority}:/.Xauthority:ro" \
+		-v $${HOME}/.davmail:/config:z \
+		-u "$$UID" \
 		davmail
 
 run-token:
 	@echo "Running davmail with GUI to get oauth token"
-	mkdir ${HOME}/.davmail
+	mkdir -p ${HOME}/.davmail
 	docker run --network=host --ipc=host --rm --name davmail --hostname davmail \
-		-e DISPLAY=$DISPLAY \
-		-v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" \
-		-v ${HOME}/.davmail:/config:z \
-		-u $UID \
+		-e DISPLAY=$$DISPLAY \
+		-v "$${XAUTHORITY:-$$HOME/.Xauthority}:/.Xauthority:ro" \
+		-v $${HOME}/.davmail:/config:z \
+		-u "$$UID" \
 		davmail -token
 
 
