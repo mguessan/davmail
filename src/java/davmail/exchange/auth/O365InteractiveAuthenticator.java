@@ -137,15 +137,17 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         });
 
         // Check if SWT is available
-        boolean isSWTAvailable = Settings.isSWTAvailable() && !Settings.isDocker();
-
+        boolean isSWTAvailable = Settings.isSWTAvailable();
+        boolean isDocker = Settings.isDocker();
         boolean isJFXAvailable = Settings.isJFXAvailable();
 
-        if (isSWTAvailable) {
+        if (isSWTAvailable && !isDocker) {
+            LOGGER.debug("Open SWT browser");
             o365InteractiveAuthenticatorSWT = new O365InteractiveAuthenticatorSWT();
             o365InteractiveAuthenticatorSWT.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
             o365InteractiveAuthenticatorSWT.authenticate(initUrl, redirectUri);
         } else if (isJFXAvailable) {
+            LOGGER.debug("Open OpenJFX browser");
             SwingUtilities.invokeLater(() -> {
                 try {
                     o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();

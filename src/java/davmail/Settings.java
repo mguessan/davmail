@@ -836,13 +836,15 @@ public final class Settings {
             Class.forName("javafx.application.Platform");
             isJFXAvailable = true;
         } catch (ClassNotFoundException | NullPointerException e) {
-            LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
+            LOGGER.info("JavaFX (OpenJFX) not available");
         }
         return isJFXAvailable;
     }
 
     public static boolean isDocker() {
-        return new File("/sys/fs/cgroup").exists();
+        boolean isDocker = new File("/.dockerenv").exists();
+        LOGGER.info("Running in docker");
+        return isDocker;
     }
 
 }
