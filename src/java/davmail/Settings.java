@@ -165,7 +165,7 @@ public final class Settings {
      * Ports above 1024 for unix/linux
      */
     public static void setDefaultSettings() {
-        SETTINGS_PROPERTIES.put("davmail.mode", "EWS");
+        SETTINGS_PROPERTIES.put("davmail.mode", O365_INTERACTIVE);
         SETTINGS_PROPERTIES.put("davmail.url", getO365Url());
         SETTINGS_PROPERTIES.put("davmail.popPort", "1110");
         SETTINGS_PROPERTIES.put("davmail.imapPort", "1143");
