@@ -49,7 +49,6 @@ Docker images are available on Github Container Registry:
 Latest working builds are now available on Appveyor:
 
 * Windows 64 bits setup [davmail-6.4.0-trunk-setup64.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.4.0-trunk-setup64.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-* Windows noinstall package [davmail-6.4.0-trunk-windows-noinstall.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.4.0-trunk-windows-noinstall.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 * Windows standalone (with embedded Azul JRE-FX) package [davmail-6.4.0-trunk-windows-standalone.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.4.0-trunk-windows-standalone.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
 * Platform independent package [davmail-6.4.0-trunk.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.4.0-trunk.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
@@ -63,5 +62,3 @@ Contributions are welcome, you can either [submit a patch](https://sourceforge.n
 
 In case you are looking for tasks to work on, please check current
 [Backlog](https://sourceforge.net/p/davmail/feature-requests/milestone/Backlog/).
-
-

@@ -409,17 +409,6 @@
                 <include name="davmail"/>
             </zipfileset>
         </zip>
-        <zip file="dist/davmail-${release-name}-windows-noinstall.zip">
-            <fileset dir="dist">
-                <include name="lib/*.jar"/>
-                <include name="*.jar"/>
-                <include name="davmail*.exe"/>
-                <include name="davmail*.ini"/>
-                <exclude name="lib/swt-*-gtk-*.jar"/>
-                <exclude name="lib/junit-*.jar"/>
-                <exclude name="lib/hamcrest-core-*.jar"/>
-            </fileset>
-        </zip>
         <antcall target="download-jre"/>
         <antcall target="download-build-jre"/>
         <zip file="dist/davmail-${release-name}-windows-standalone.zip">
