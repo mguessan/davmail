@@ -286,9 +286,7 @@ public final class Settings {
         String logFilePath = getLogFilePath();
 
         try {
-            if (isDocker()) {
-                LOGGER.info("Running in docker container");
-            } else {
+            if (!isDocker()) {
                 if (logFilePath != null && !logFilePath.isEmpty()) {
                     File logFile = new File(logFilePath);
                     // create parent directory if needed
