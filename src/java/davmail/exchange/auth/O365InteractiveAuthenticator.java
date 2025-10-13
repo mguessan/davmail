@@ -18,7 +18,6 @@
  */
 package davmail.exchange.auth;
 
-import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
@@ -138,8 +137,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         });
 
         // Check if SWT is available
-        boolean isSWTAvailable = Settings.isSWTAvailable();
-
+        boolean isSWTAvailable = Settings.isSWTAvailable() && !Settings.isDocker();
 
         boolean isJFXAvailable = Settings.isJFXAvailable();
 
