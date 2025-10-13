@@ -22,6 +22,15 @@ install:
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\ant-bin.zip", "C:\ant")
       }
+  - ps: |
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
+      if (!(Test-Path -Path "C:\openjfx\javafx-sdk-25" )) {
+        (new-object System.Net.WebClient).DownloadFile(
+        'https://download2.gluonhq.com/openjfx/25/openjfx-25_windows-x64_bin-sdk.zip',
+          'C:\openjfx-bin.zip'
+        )
+        [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\openjfx-bin.zip", "C:\openjfx")
+      }
   - cmd: SET PATH=C:\ant\apache-ant-1.10.14\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
   - cmd: java -version
@@ -35,6 +44,7 @@ build_script:
 test: false
 cache:
 - C:\ant
+- C:\openjfx
 artifacts:
   - path: dist/*.zip
   - path: dist/*.deb
