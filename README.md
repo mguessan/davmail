@@ -38,6 +38,13 @@ An alternative is COPR on Fedora:
 
 [![Copr build status](https://copr.fedorainfracloud.org/coprs/mguessan/davmail/package/davmail/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/mguessan/davmail)
 
+Docker images are available on Github Container Registry:
+
+[![label=Docker](https://ghcr-badge.egpl.dev/mguessan/davmail/tags?trim=major&label=Docker&ignore=)](https://github.com/mguessan/davmail/pkgs/container/davmail)
+
+[Detailed Docker instructions](https://github.com/mguessan/davmail/tree/master/src/docker/README.md)
+
+
 ## Trunk builds
 Latest working builds are now available on Appveyor:
 
