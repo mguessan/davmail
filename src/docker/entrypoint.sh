@@ -4,7 +4,16 @@
 # /home is home directory
 #
 
+# default davmail.properties location is /config volume
 : "${DAVMAIL_PROPERTIES:=/config/davmail.properties}"
+export DAVMAIL_PROPERTIES
+
+
+if [ ! -f "${DAVMAIL_PROPERTIES}" ]; then
+  cp /etc/davmail.properties "${DAVMAIL_PROPERTIES}"
+  echo "Created settings from template at ${DAVMAIL_PROPERTIES}"
+fi
+
 
 # enable DNS expiration
 : "${JAVA_OPT_BASE:=-Dsun.net.inetaddr.ttl=60}"
