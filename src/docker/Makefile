@@ -20,13 +20,24 @@ run:
 	docker compose up -d
 
 run-gui:
-	@echo "Running davmail with GUI (to get token)"
-	docker run --network=host --rm --name davmail --hostname davmail \
-		-u "$UID" \
-		-e "DISPLAY=${DISPLAY}" \
-		-v /tmp/.X11-unix:/tmp/.X11-unix \
+	@echo "Running davmail with GUI"
+	mkdir ${HOME}/.davmail
+	docker run --network=host --ipc=host --rm --name davmail --hostname davmail \
+		-e DISPLAY=$DISPLAY \
 		-v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" \
-		-v ./config:/config \
-		davmail davmail --token
+		-v ${HOME}/.davmail:/config:z \
+		-u $UID \
+		davmail -token
+
+run-token:
+	@echo "Running davmail with GUI to get oauth token"
+	mkdir ${HOME}/.davmail
+	docker run --network=host --ipc=host --rm --name davmail --hostname davmail \
+		-e DISPLAY=$DISPLAY \
+		-v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" \
+		-v ${HOME}/.davmail:/config:z \
+		-u $UID \
+		davmail -token
+
 
 latest: image tag-latest-without-build
