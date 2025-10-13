@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# davmail.properties is in /davmail.properties
-# /home is home directory
+# davmail.properties is in /config/davmail.properties
+# /davmail is home directory
 #
 
 # default davmail.properties location is /config volume
@@ -27,5 +27,4 @@ export CLASSPATH=/davmail/davmail.jar:/usr/share/java/commons-codec.jar:/usr/sha
 # default option is notray
 if [ -z "$1" ]; then set -- -notray; fi
 
-# shellcheck disable=SC2086
 exec "${JAVA:-java}" $JAVA_OPTS davmail.DavGateway "$@"
