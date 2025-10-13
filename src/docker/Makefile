@@ -22,7 +22,7 @@ run:
 	docker run --network=host --ipc=host --rm --name davmail --hostname davmail \
 		-v $${HOME}/.davmail:/config:z \
 		-u "$$UID" \
-		davmail
+		${IMAGE_LABEL}
 
 run-gui:
 	@echo "Running davmail with GUI"
@@ -32,7 +32,7 @@ run-gui:
 		-v "$${XAUTHORITY:-$$HOME/.Xauthority}:/.Xauthority:ro" \
 		-v $${HOME}/.davmail:/config:z \
 		-u "$$UID" \
-		davmail
+		${IMAGE_LABEL}
 
 run-token:
 	@echo "Running davmail with GUI to get oauth token"
@@ -42,7 +42,7 @@ run-token:
 		-v "$${XAUTHORITY:-$$HOME/.Xauthority}:/.Xauthority:ro" \
 		-v $${HOME}/.davmail:/config:z \
 		-u "$$UID" \
-		davmail -token
+		${IMAGE_LABEL} -token
 
 
 latest: image tag-latest-without-build
