@@ -23,7 +23,6 @@ import davmail.Settings;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.FieldURI;
-import davmail.exchange.ews.IndexedFieldURI;
 import davmail.util.IOUtil;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -80,7 +79,7 @@ public class GraphRequestBuilder {
     private String objectId;
 
     /**
-     * Set property in Json body.
+     * Set property in the JSON body.
      * @param name property name
      * @param value property value
      * @throws JSONException on error
@@ -94,7 +93,7 @@ public class GraphRequestBuilder {
     }
 
     /**
-     * Replace json body;
+     * Replace JSON body;
      * @return this
      */
     public GraphRequestBuilder setJsonBody(JSONObject jsonBody) {
@@ -103,7 +102,7 @@ public class GraphRequestBuilder {
     }
 
     /**
-     * Set epxand fields (returning attributes).
+     * Set expand fields (returning attributes).
      * @param expandFields set of fields to return
      * @return this
      */
@@ -241,12 +240,10 @@ public class GraphRequestBuilder {
             } else if (fieldURI instanceof ExtendedFieldURI) {
                 String graphId = fieldURI.getGraphId();
                 // only expanded properties need a singleValueProperties entry
+                // TODO refactor fields to only use fieldURI for expanded properties
                 if (graphId.contains(" ")) {
                     singleValueProperties.add(fieldURI.getGraphId());
                 }
-            } else if (fieldURI instanceof IndexedFieldURI) {
-                // TODO never happens
-                multiValueProperties.add(fieldURI.getGraphId());
             }
         }
         StringBuilder expand = new StringBuilder();
@@ -263,12 +260,14 @@ public class GraphRequestBuilder {
             appendExpandProperties(expand, multiValueProperties);
             expand.append(")");
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Expand: " + expand);
-        }
         return expand.toString();
     }
 
+    /**
+     * Build expand graph parameter to retrieve mapi properties.
+     * @param buffer expand buffer
+     * @param properties mapi properties list
+     */
     protected void appendExpandProperties(StringBuilder buffer, List<String> properties) {
         boolean first = true;
         for (String id : properties) {
@@ -339,7 +338,7 @@ public class GraphRequestBuilder {
             httpRequest.setHeader("Authorization", "Bearer " + accessToken);
 
             if (timeZone != null) {
-                httpRequest.setHeader("Prefer", "outlook.timezone=\""+timeZone+"\"");
+                httpRequest.setHeader("Prefer", "outlook.timezone=\"" + timeZone + "\"");
             }
 
             if (LOGGER.isDebugEnabled()) {
