@@ -1,5 +1,5 @@
 %define systemd_support 0%{?suse_version} || 0%{?el7} || 0%{?el8} || 0%{?el9} || 0%{?fedora}
-%define systemd_macros 0%{?suse_version}
+%define systemd_macros 0%{?suse_version} || 0%{?fedora} > 42
 
 Summary: A POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
 Name: davmail
@@ -55,8 +55,11 @@ Requires(post): coreutils, filesystem
 Requires(postun): /sbin/service
 %if %systemd_macros
 Requires(preun): /sbin/service, coreutils
-BuildRequires:  sysuser-tools
+%if 0%{?suse_version}
+BuildRequires: sysuser-tools
 %sysusers_requires
+%endif
+
 %else
 Requires(preun): /sbin/service, coreutils, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
@@ -111,7 +114,7 @@ rm lib/swt*
 # we have java 8
 ant -Dant.java.version=1.8 prepare-dist
 
-%if %systemd_macros
+%if %systemd_macros && 0%{?suse_version}
 %sysusers_generate_pre %{name}-user.conf davmail %{name}-user.conf
 %endif
 
@@ -166,8 +169,10 @@ install -m 0644 %{name}-user.conf %{buildroot}%{_sysusersdir}/
 %endif
 
 %if %systemd_macros
+%if 0%{?suse_version}
 %pre -f davmail.pre
 %service_add_pre davmail.service
+%endif
 %else
 %pre
 /usr/sbin/groupadd -f -r davmail > /dev/null 2>&1 || :
@@ -203,7 +208,11 @@ fi
 
 %preun
 %if %systemd_macros
+%if 0%{?suse_version}
 %service_del_preun davmail.service
+%else
+%systemd_preun davmail.service
+%endif
 %endif
 
 if [ "$1" = "0" ]; then
@@ -228,7 +237,11 @@ fi
 
 %postun
 %if %systemd_macros
+%if 0%{?suse_version}
 %service_del_postun davmail.service
+%else
+%systemd_postun davmail.service
+%endif
 %endif
 
 %if %systemd_support
