@@ -7,30 +7,31 @@ URL: http://davmail.sourceforge.net
 Version: 6.4.0
 Release: 1%{?dist}
 License: GPL-2.0+
-Group: Applications/Internet
+Group: Productivity/Networking/Email/Utilities
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: ant, desktop-file-utils
-%{?fedora:BuildRequires: lua}
 # required to define _unitdir macro
-%{?systemd_support:BuildRequires: systemd}
+%if %systemd_support
+BuildRequires: systemd
+%endif
+
 # same on suse
 %if %systemd_macros
 BuildRequires: systemd-rpm-macros
 %endif
 
-%{?fedora:BuildRequires: java-latest-openjdk-devel}
+%if 0%{?fedora}
+BuildRequires: java-latest-openjdk-devel
+%endif
+
 # fedora 42 and later only
 %if 0%{?fedora} > 41
 BuildRequires: ant-unbound
 %endif
 
-%if 0%{?el8} 
+%if 0%{?el8} || 0%{?el9}
 BuildRequires: java-1.8.0-openjdk-devel
-%endif
-
-%if 0%{?is_opensuse} || 0%{?suse_version} || 0%{?el9}
-BuildRequires: java
 %endif
 
 # compile with JavaFX on Fedora and latest Suse
@@ -54,15 +55,16 @@ Requires(preun): /sbin/service, coreutils, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
 %endif
 
-%{?fedora:Requires: java}
-%{?el9:Requires: java}
+%if 0%{?el9} || 0%{?fedora}
+Requires: java
+%endif
 
 %if 0%{?el7} || 0%{?el8}
 Requires: java-1.8.0-openjdk
 %endif
 
 %if 0%{?is_opensuse} || 0%{?suse_version}
-Requires: jre
+Requires: java-21-openjdk
 %endif
 
 Source0: %{name}-src-%{version}.tgz
@@ -102,7 +104,9 @@ ant prepare-dist
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_bindir}
 mkdir -p $RPM_BUILD_ROOT%{_sbindir}
+%if !%systemd_support
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
+%endif
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/pixmaps
