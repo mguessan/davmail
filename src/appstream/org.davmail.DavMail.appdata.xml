@@ -45,6 +45,165 @@
   </developer>
   <content_rating type="oars-1.1" />
   <releases>
+      <release version="6.5.0" date="2025-10-23">
+      <description>
+          <p>
+          Release focused on build and distribution improvements, merged and refactored Docker configuration with automatic
+          image build based on Github Actions and docker compose samples. For Linux cleaned up the RPM spec file and
+          added sysusers configuration for Fedora 43.
+          Also dropped obsolete 32 bits packages on windows and embedded recent JDK version inside remaining packages.
+          In addition a brand new O365 interactive authentication implementation based on SWT and Webview2 is available with
+          native windows authentication support, which means FIDO2 and Windows Hello authentication are now supported. On Linux
+          SWT embedded browser is based on Webkit.
+          </p>
+
+          <p>Linux</p>
+          <ul>
+              <li>RPM spec switch group to Productivity/Networking/Email/Utilities, remove fedora lua dependency, fix
+                  java dependency
+              </li>
+              <li>RPM spec remove old el6 code, review java dependency, let ant compile with current jdk version, do not
+                  package logrotate configuration on systemd based systems
+              </li>
+              <li>RPM spec merge https://github.com/mguessan/davmail/pull/421 Use sysusers.d for Fedora</li>
+              <li>review launcher</li>
+              <li>merge appstream patch to match Flatpak packaging rules</li>
+              <li>Compute SWT_CLASSPATH in various cases</li>
+              <li>fix regression after spec file refactoring, see https://github.com/mguessan/davmail/issues/420</li>
+          </ul>
+
+          <p>Docker</p>
+          <ul>
+              <li>fix missing newline at end of file</li>
+              <li>change isDocker check, cgroup is not reliable just check /.dockerenv</li>
+              <li>use IMAGE_LABEL as target image</li>
+              <li>avoid isDocker duplicate log statements</li>
+              <li>entrypoint cleanup</li>
+              <li>update Makefile to match latest changes, encode $ as required</li>
+              <li>Reference docker images on main README page</li>
+              <li>review and update documentation to match latest changes</li>
+              <li>review makefile to match new Dockerfile</li>
+              <li>set DAVMAIL_PROPERTIES in entrypoint and copy template if not exists</li>
+              <li>fix classpath</li>
+              <li>default option is notray</li>
+              <li>review classpath, separate openjfx modules configuration, introduce DAVMAIL_PROPERTIES env variable
+              </li>
+              <li>create template davmail.properties file in /etc, remove servlet dependency</li>
+              <li>create DAVMAIL_PROPERTIES environment to define settings file path in Docker</li>
+              <li>log to console only when running in docker container</li>
+              <li>need git-svn to build and remove swt package from runtime (use OpenJFX instead)</li>
+              <li>OpenJFX is required to build O365InteractiveAuthenticatorFrame, make sure entrypoint is executable
+              </li>
+              <li>call ant to build jar only, adjust entrypoint.sh location</li>
+              <li>initiate merge of https://github.com/mguessan/davmail/pull/409</li>
+          </ul>
+
+          <p>Enhancements</p>
+          <ul>
+              <li>Merge https://github.com/mguessan/davmail/pull/410: Add Russian translation</li>
+              <li>Make O365Interactive the default mode on first start</li>
+              <li>Adjust default settings template</li>
+              <li>Move SWT and JFX available checks to Settings</li>
+              <li>Add missing translation messages</li>
+              <li>Change user agent on getReleasedVersion as sourceforge blocks default user agent</li>
+          </ul>
+
+          <p>Build</p>
+          <ul>
+              <li>fix jackrabbit dependencies in maven pom</li>
+              <li>remove ini configuration from winrun4j wrappers (no need to update exe for next lib upgrade)</li>
+              <li>update debian package dependencies</li>
+              <li>switch openjfx to 19 in appveyor</li>
+              <li>appveyor copy openjfx libs with JDK 19</li>
+              <li>appveyor download openjfx</li>
+              <li>drop noinstall package in favor of the standalone windows package</li>
+              <li>fix task name in github release workflow</li>
+              <li>release github workflow fix condition</li>
+              <li>release github workflow fix name</li>
+              <li>merge release github workflow from https://github.com/mguessan/davmail/pull/409</li>
+              <li>set github docker workflow file parameter to ./src/docker/Dockerfile</li>
+              <li>create Github workflow to build and push the unstable docker image</li>
+              <li>move init depends to compile target</li>
+              <li>Settings import cleanup and fix isJFXAvailable</li>
+              <li>add is.debian compile target to build on debian with openjfx (including docker)</li>
+              <li>include .ini in windows win4j wrapper and refactor java version detection to match more recent JDK
+                  versions
+              </li>
+              <li>Revert SWT to version 4.20 to build with JDK 8</li>
+              <li>update winrun4J wrappers with SWT and include jar in installer</li>
+              <li>Drop windows 32 bits packages</li>
+              <li>fix uninstaller to properly remove jre</li>
+              <li>Embed Zuu JRE inside NSI installer, update DavMail url</li>
+              <li>Merge https://github.com/mguessan/davmail/pull/417 Fixed 'java.awt.AWTError: Assistive Technology not
+                  found: com.sun.java.accessibility.AccessBridge' in Windows standalone distribution
+              </li>
+          </ul>
+
+          <p>Graph</p>
+          <ul>
+              <li>cleanup builder</li>
+              <li>handle date based conditions and exdate cancelled occurrences</li>
+              <li>set graphid for dtstart and dtend</li>
+              <li>move encodeFolderName/decodeFolderName to StringUtil</li>
+              <li>refactor setFilter to pass condition directly</li>
+              <li>cleanup from audit</li>
+              <li>introduce davmail.oauth.scope setting to override default scopes</li>
+          </ul>
+
+          <p>Documentation</p>
+          <ul>
+              <li>review README.md</li>
+              <li>remove reference to 32 bits package in README.md</li>
+          </ul>
+
+          <p>SWT</p>
+          <ul>
+              <li>SWT browser not available under docker, failover to JavaFX</li>
+              <li>catch errors in O365InteractiveAuthenticatorSWT</li>
+              <li>Remove older SWT workarounds with GTK and cleanup code</li>
+              <li>switch back on linux to SWT 4.20 to build with older JDK</li>
+              <li>implement davmail.trayGrayscale for SWT</li>
+              <li>Review O365InteractiveAuthenticatorSWT to properly dispose browser window in all cases</li>
+              <li>fix regression on tray icon with latest SWT 4.37 on windows</li>
+              <li>introduce davmail.oauth.allowSingleSignOnUsingOSPrimaryAccount property to enable SSO with windows
+                  Webview2 embedded browser implementation
+              </li>
+              <li>upgrade to 4.37 and add windows SWT jar</li>
+              <li>Scale window icon size to 32</li>
+              <li>switch to 128 pixel icons and improve loadSwtImage to scale to 32 pixels tray</li>
+              <li>allow SWT tray on windows</li>
+              <li>reimplement O365InteractiveAuthenticatorFrame using SWT embedded browser instead of OpenJFX, refactor
+                  SwtGatewayTray to separate tray init from thread init
+              </li>
+          </ul>
+
+          <p>O365</p>
+          <ul>
+              <li>set davmail.webview.debug property to dump document in O35InteractiveAuthenticatorFrame</li>
+              <li>by default do not send notifications on modified occurrences updates, only send when user is organizer
+                  of meeting
+              </li>
+              <li>Improve password expiration detection</li>
+              <li>fix regression in O365 interactive authentication</li>
+          </ul>
+
+          <p>NTLM</p>
+          <ul>
+              <li>Restore davmail.enableJcifs=true as default value</li>
+          </ul>
+
+          <p>GUI</p>
+          <ul>
+              <li>switch to ColorConvertOp for davmail.trayGrayscale to keep alpha information</li>
+              <li>implement davmail.trayGrayscale to convert tray icon to grayscale</li>
+          </ul>
+
+          <p>Caldav</p>
+          <ul>
+              <li>Fix ICSCalendarValidator, CR, LF and TAB are allowed in full icalendar event</li>
+          </ul>
+      </description>
+      </release>
       <release version="6.4.0" date="2025-08-31">
       <description>
           <p>
@@ -150,7 +309,7 @@
 
           <p>Documentation</p>
           <ul>
-              <li>point issue management to Github</li>
+              <li>point issue management to GitHub</li>
               <li>review appdata doc</li>
           </ul>
 
@@ -767,7 +926,7 @@
     <release version="5.5.0" date="2019-04-15">
       <description>
         <p>
-          This release contains a lot of bugfixes, enhancements and some user contributions from Github.
+          This release contains a lot of bugfixes, enhancements and some user contributions from GitHub.
           Most activity is related to HttpClient 4 refactoring, this will probably be the latest version based in HttpClient 3.
           Minimum Java version is now 8, also dropped Growl support on MacOS.
           Notable changes for end users are Oauth token persistence to avoid frequent O365 authentications and OIDC support for
