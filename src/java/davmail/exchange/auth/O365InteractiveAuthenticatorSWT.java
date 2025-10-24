@@ -21,6 +21,7 @@ package davmail.exchange.auth;
 
 import davmail.BundleMessage;
 import davmail.Settings;
+import davmail.ui.tray.DavGatewayTray;
 import davmail.ui.tray.SwtGatewayTray;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
@@ -43,6 +44,9 @@ public class O365InteractiveAuthenticatorSWT {
 
     Shell shell;
     Browser browser;
+    private final Object LOCK = new Object();
+    private boolean isReady = false;
+    private SWTError error;
 
     public O365InteractiveAuthenticatorSWT() {
 
@@ -104,16 +108,41 @@ public class O365InteractiveAuthenticatorSWT {
                     }
                 });
 
+                synchronized (LOCK) {
+                    // ready
+                    isReady = true;
+                    LOCK.notifyAll();
+                }
+
                 shell.open();
                 shell.setActive();
             } catch (SWTError e) {
-                authenticator.errorCode = "SWT Error "+e.getMessage();
+                error = e;
             }
 
         });
+
+        while (true) {
+            // wait for SWT browser init
+            try {
+                synchronized (LOCK) {
+                    if (error != null) {
+                        throw error;
+                    }
+                    if (isReady) {
+                        break;
+                    }
+                    LOCK.wait(1000);
+                }
+            } catch (InterruptedException e) {
+                DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
+                Thread.currentThread().interrupt();
+            }
+        }
+
     }
 
-    private void dispose() {
+    protected void dispose() {
         Display.getDefault().asyncExec(() -> {
             if (browser != null) {
                 browser.dispose();
