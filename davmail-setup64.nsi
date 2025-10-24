@@ -96,6 +96,8 @@ Section "MainSection" SEC01
   File "dist\davmail.jar"
   File "dist\davmail64.exe"
   File "dist\davmailservice64.exe"
+  File "dist\davmail64.ini"
+  File "dist\davmailservice64.ini"
   SetOutPath "$INSTDIR\lib"
   File "dist\lib\activation-1.1.1.jar"
   File "dist\lib\commons-codec-1.15.jar"
@@ -196,6 +198,8 @@ no_quest:
 
   Delete "$INSTDIR\davmailservice64.exe"
   Delete "$INSTDIR\davmail64.exe"
+  Delete "$INSTDIR\davmailservice64.ini"
+  Delete "$INSTDIR\davmail64.ini"
   Delete "$INSTDIR\davmail.log"
   Delete "$INSTDIR\davmail.jar"
 
