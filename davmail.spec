@@ -116,11 +116,6 @@ ant -Dant.java.version=1.8 prepare-dist
 %if %systemd_macros
 %if 0%{?suse_version}
 %sysusers_generate_pre %{name}-user.conf davmail %{name}-user.conf
-%else
-cat > %{name}-user.conf << @EOF
-u davmail
-g davmail
-@EOF
 %endif
 %endif
 
