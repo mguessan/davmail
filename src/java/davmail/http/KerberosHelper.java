@@ -40,6 +40,7 @@ import java.security.Security;
 /**
  * Kerberos helper class.
  */
+@SuppressWarnings( {"removal"})
 public class KerberosHelper {
     protected static final Logger LOGGER = Logger.getLogger(KerberosHelper.class);
     protected static final Object LOCK = new Object();
