@@ -28,7 +28,6 @@ import davmail.exchange.ews.GetUserConfigurationMethod;
 import davmail.http.HttpClientAdapter;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.log4j.Logger;
-import org.eclipse.swt.SWTError;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -148,7 +147,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
                 o365InteractiveAuthenticatorSWT = new O365InteractiveAuthenticatorSWT();
                 o365InteractiveAuthenticatorSWT.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
                 o365InteractiveAuthenticatorSWT.authenticate(initUrl, redirectUri);
-            } catch (SWTError e) {
+            } catch (Error e) {
                 LOGGER.warn("Unable to load SWT browser");
                 if (o365InteractiveAuthenticatorSWT != null) {
                     o365InteractiveAuthenticatorSWT.dispose();
