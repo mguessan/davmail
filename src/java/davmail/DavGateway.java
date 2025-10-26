@@ -62,7 +62,7 @@ public final class DavGateway {
         boolean token = false;
 
         // check environment for davmail settings path in Docker
-        String configFilePath = System.getenv("DAVMAIL_PROPERTIES");
+        String configFilePath = Settings.getConfigFilePath();
         for (String arg : args) {
             if (arg.startsWith("-")) {
                 if ("-notray".equals(arg)) {

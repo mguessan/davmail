@@ -228,7 +228,11 @@ public final class Settings {
         SETTINGS_PROPERTIES.put("log4j.logger.davmail", Level.DEBUG.toString());
         SETTINGS_PROPERTIES.put("log4j.logger.httpclient.wire", Level.WARN.toString());
         SETTINGS_PROPERTIES.put("log4j.logger.httpclient", Level.WARN.toString());
-        SETTINGS_PROPERTIES.put("davmail.logFilePath", "");
+        String logFilePath = "";
+        if (isFlatpak()) {
+            logFilePath = System.getenv("XDG_DATA_HOME")+"/davmail.log";
+        }
+        SETTINGS_PROPERTIES.put("davmail.logFilePath", logFilePath);
     }
 
     /**
@@ -849,4 +853,25 @@ public final class Settings {
         return isDocker;
     }
 
+    public static boolean isFlatpak() {
+        boolean isFlatpakDir = new File(System.getenv("XDG_CONFIG_HOME")).exists();
+        boolean isFlatpak = "flatpak".equals(System.getenv("container")) && isFlatpakDir;
+        if (isFlatpak) {
+            LOGGER.info("Running in Flatpak");
+        }
+        return isFlatpak;
+    }
+
+    /**
+     * Set davmail properties path in Docker and Flatpak
+     * @return davmail.properties path
+     */
+    public static String getConfigFilePath() {
+        if (isFlatpak()) {
+            return System.getenv("XDG_CONFIG_HOME")+"/davmail.properties";
+        } else {
+            // Docker
+            return System.getenv("DAVMAIL_PROPERTIES");
+        }
+    }
 }
