@@ -48,14 +48,14 @@
     <condition property="is.debian">
         <and>
             <available file="/usr/share/java/javafx-base.jar"/>
-            <matches string="${ant.java.version}" pattern="[12][0-9]"/>
+            <matches string="${ant.java.version}" pattern="1[1-9]|[2-9][0-9]"/>
         </and>
     </condition>
 
-    <condition property="is.java10">
+    <condition property="is.java11">
         <and>
             <isfalse value="${is.debian}"/>
-            <matches string="${ant.java.version}" pattern="[12][0-9]"/>
+            <matches string="${ant.java.version}" pattern="1[1-9]|[2-9][0-9]"/>
         </and>
     </condition>
 
@@ -124,10 +124,10 @@
         </javac>
     </target>
 
-    <target name="compile-java10" if="is.java10">
+    <target name="compile-java11" if="is.java11">
         <mkdir dir="target/classes"/>
-        <echo level="info" message="Compile java 10 or later"/>
-        <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8"
+        <echo level="info" message="Compile java 11 or later"/>
+        <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8" source="11" target="11"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
             <compilerarg value="--add-exports"/>
@@ -154,7 +154,7 @@
 
     <target name="compile" depends="init">
         <antcall target="compile-java"/>
-        <antcall target="compile-java10"/>
+        <antcall target="compile-java11"/>
         <antcall target="compile-debian"/>
         <copy todir="target/classes">
             <fileset dir="src/java">
