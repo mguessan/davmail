@@ -87,7 +87,7 @@
     <target name="gitsvnrelease" if="is.git">
         <mkdir dir=".git/svn"/>
         <!-- try to get svn revision from git -->
-        <exec executable="git" outputproperty="revision.max" failifexecutionfails="false">
+        <exec executable="git" outputproperty="revision.max" failifexecutionfails="false" discardError="true">
             <arg value="svn" />
             <arg value="find-rev" />
             <arg value="HEAD" />
