@@ -515,6 +515,11 @@
         </scp>
     </target>
 
+    <target name="prepare-release" depends="init">
+        <property name="release-name" value="${release}"/>
+        <antcall target="prepare-dist"/>
+    </target>
+
     <target name="release" depends="init">
         <property name="release-name" value="${release}"/>
         <antcall target="dist"/>
