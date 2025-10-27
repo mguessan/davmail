@@ -866,7 +866,7 @@ public final class Settings {
      * Set davmail properties path in Docker and Flatpak
      * @return davmail.properties path
      */
-    public static String getConfigFilePath() {
+    public static synchronized String getConfigFilePath() {
         if (isFlatpak()) {
             return System.getenv("XDG_CONFIG_HOME")+"/davmail.properties";
         } else {
