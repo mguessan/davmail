@@ -854,8 +854,7 @@ public final class Settings {
     }
 
     public static boolean isFlatpak() {
-        boolean isFlatpakDir = new File(System.getenv("XDG_CONFIG_HOME")).exists();
-        boolean isFlatpak = "flatpak".equals(System.getenv("container")) && isFlatpakDir;
+        boolean isFlatpak = "flatpak".equals(System.getenv("container"));
         if (isFlatpak) {
             LOGGER.info("Running in Flatpak");
         }
