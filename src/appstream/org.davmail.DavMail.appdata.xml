@@ -27,15 +27,28 @@
       (gateway running on a server).
     </p>
   </description>
-  <launchable type="desktop-id">org.davmail.DavMail</launchable>
+  <launchable type="desktop-id">org.davmail.DavMail.desktop</launchable>
   <url type="homepage">https://davmail.sourceforge.net</url>
   <url type="donation">https://sourceforge.net/donate/index.php?group_id=184600</url>
-  <screenshots>
-    <screenshot type="default">
-      <image>https://davmail.sourceforge.net/images/davmailArchitecture.png</image>
-    </screenshot>
-  </screenshots>
-  <branding>
+    <screenshots>
+        <screenshot type="default">
+            <image>https://davmail.sourceforge.net/images/davmailArchitecture.png</image>
+            <caption>DavMail architecture</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://davmail.sourceforge.net/images/fedora/davmailFedoraNotray.png</image>
+            <caption>DavMail main window</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://davmail.sourceforge.net/images/fedora/davmailFedoraSettings.png</image>
+            <caption>DavMail Settings</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://davmail.sourceforge.net/images/fedora/davmailFedoraSignin.png</image>
+            <caption>DavMail O365 Signin</caption>
+        </screenshot>
+    </screenshots>
+    <branding>
     <color type="primary" scheme_preference="light">#f7f7f7</color>
     <color type="primary" scheme_preference="dark">#0f172a</color>
   </branding>
