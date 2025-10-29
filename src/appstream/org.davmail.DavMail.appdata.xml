@@ -78,11 +78,11 @@
               <li>RPM spec remove old el6 code, review java dependency, let ant compile with current jdk version, do not
                   package logrotate configuration on systemd based systems
               </li>
-              <li>RPM spec merge https://GitHub.com/mguessan/davmail/pull/421 Use sysusers.d for Fedora</li>
+              <li>RPM spec merge https://github.com/mguessan/davmail/pull/421 Use sysusers.d for Fedora</li>
               <li>review launcher</li>
               <li>merge appstream patch to match Flatpak packaging rules</li>
               <li>Compute SWT_CLASSPATH in various cases</li>
-              <li>fix regression after spec file refactoring, see https://GitHub.com/mguessan/davmail/issues/420</li>
+              <li>fix regression after spec file refactoring, see https://github.com/mguessan/davmail/issues/420</li>
           </ul>
 
           <p>Docker</p>
@@ -108,12 +108,12 @@
               <li>OpenJFX is required to build O365InteractiveAuthenticatorFrame, make sure entrypoint is executable
               </li>
               <li>call ant to build jar only, adjust entrypoint.sh location</li>
-              <li>initiate merge of https://GitHub.com/mguessan/davmail/pull/409</li>
+              <li>initiate merge of https://github.com/mguessan/davmail/pull/409</li>
           </ul>
 
           <p>Enhancements</p>
           <ul>
-              <li>Merge https://GitHub.com/mguessan/davmail/pull/410: Add Russian translation</li>
+              <li>Merge https://github.com/mguessan/davmail/pull/410: Add Russian translation</li>
               <li>Make O365Interactive the default mode on first start</li>
               <li>Adjust default settings template</li>
               <li>Move SWT and JFX available checks to Settings</li>
@@ -133,7 +133,7 @@
               <li>fix task name in GitHub release workflow</li>
               <li>release GitHub workflow fix condition</li>
               <li>release GitHub workflow fix name</li>
-              <li>merge release GitHub workflow from https://GitHub.com/mguessan/davmail/pull/409</li>
+              <li>merge release GitHub workflow from https://github.com/mguessan/davmail/pull/409</li>
               <li>set GitHub docker workflow file parameter to ./src/docker/Dockerfile</li>
               <li>create GitHub workflow to build and push the unstable docker image</li>
               <li>move init depends to compile target</li>
@@ -147,7 +147,7 @@
               <li>Drop windows 32 bits packages</li>
               <li>fix uninstaller to properly remove jre</li>
               <li>Embed Zuu JRE inside NSI installer, update DavMail url</li>
-              <li>Merge https://GitHub.com/mguessan/davmail/pull/417 Fixed 'java.awt.AWTError: Assistive Technology not
+              <li>Merge https://github.com/mguessan/davmail/pull/417 Fixed 'java.awt.AWTError: Assistive Technology not
                   found: com.sun.java.accessibility.AccessBridge' in Windows standalone distribution
               </li>
           </ul>
@@ -221,7 +221,7 @@
       <description>
           <p>
               Includes an experimental Microsoft Graph backend, to enable it see instructions at:
-              https://GitHub.com/mguessan/davmail/issues/404
+              https://github.com/mguessan/davmail/issues/404
               Fixed a long-standing IMAP issue on shared mailbox synchronization, improved GCC high tenants support,
               reviewed
               OIDC authentication to prepare graph backend implementation, merged contributions from users, replaced
@@ -233,7 +233,7 @@
           <p>Linux</p>
           <ul>
               <li>drop eclipse-swt dependency on Suse, rely on included swt package</li>
-              <li>merge https://GitHub.com/flathub/org.davmail.DavMail/blob/master/davmail-desktop-add-wm-class.patch</li>
+              <li>merge https://github.com/flathub/org.davmail.DavMail/blob/master/davmail-desktop-add-wm-class.patch</li>
               <li>additional rpm spec file fixes for rhel 9</li>
               <li>ant-unbound only exist in Fedora Rawhide</li>
           </ul>
@@ -241,14 +241,14 @@
           <p>O365</p>
           <ul>
               <li>Handle password expiration and return a specifig error message</li>
-              <li>add davmail.tld setting to UI, see https://GitHub.com/mguessan/davmail/issues/284</li>
+              <li>add davmail.tld setting to UI, see https://github.com/mguessan/davmail/issues/284</li>
               <li>authenticator fix regression</li>
               <li>revert authenticator scope change</li>
               <li>improve authenticator error handling</li>
-              <li>drop hostname based fingerprint, allow user to force salt fingerprint with davmail.oauth.fingerprint setting, see https://GitHub.com/mguessan/davmail/issues/403</li>
+              <li>drop hostname based fingerprint, allow user to force salt fingerprint with davmail.oauth.fingerprint setting, see https://github.com/mguessan/davmail/issues/403</li>
               <li>review O365StoredTokenAuthenticator to take into account separate tokenFilePath</li>
               <li>log token scopes</li>
-              <li>Fix for https://GitHub.com/mguessan/davmail/issues/403 Salt generation for refresh token encryption seems unstable (BadPaddingException)</li>
+              <li>Fix for https://github.com/mguessan/davmail/issues/403 Salt generation for refresh token encryption seems unstable (BadPaddingException)</li>
               <li>refactor authentication to handle various cases with Graph API with new OIDC endpoint and the classic endpoint</li>
               <li>cleanup O365Authenticator</li>
               <li>fix token parameters in OIDC mode, resource is not relevant</li>
@@ -267,9 +267,9 @@
           <ul>
               <li>fix IMAP context folder issue, when using userid/username syntax mailbox context is missing on some IMAP commands</li>
               <li>Add log statement in case of progress notifier error</li>
-              <li>merge https://GitHub.com/mguessan/davmail/pull/406 Simpler and more conformant keepalive feature</li>
+              <li>merge https://github.com/mguessan/davmail/pull/406 Simpler and more conformant keepalive feature</li>
               <li>fix audit alert Refactor this repetition that can lead to a stack overflow for large inputs.</li>
-              <li>merge https://GitHub.com/mguessan/davmail/pull/392, add support for iOS 18 comma separated uids in range search</li>
+              <li>merge https://github.com/mguessan/davmail/pull/392, add support for iOS 18 comma separated uids in range search</li>
               <li>SPECIAL-USE test cases</li>
               <li>fix SPECIAL-USE implementation when used as a list-extended selection option, see https://www.rfc-editor.org/rfc/rfc6154 5.2</li>
           </ul>
@@ -290,7 +290,7 @@
               <li>Cleanup test case from audit</li>
               <li>Enhancement from audit: rename folder.count to messageCount</li>
               <li>ExchangeSession: cleanup from audit</li>
-              <li>Fix https://GitHub.com/mguessan/davmail/issues/400 WARN Invalid 'expires' attribute</li>
+              <li>Fix https://github.com/mguessan/davmail/issues/400 WARN Invalid 'expires' attribute</li>
               <li>Cleanup irrevelant dependency on debian package</li>
               <li>Upgrade nsi scripts with reload4j 2.0.16</li>
               <li>Maven: switch slf4j dependency to reload4j</li>
@@ -317,7 +317,7 @@
 
           <p>Docker</p>
           <ul>
-              <li>merge https://GitHub.com/mguessan/davmail/pull/390 Docker entrypoint script refinements</li>
+              <li>merge https://github.com/mguessan/davmail/pull/390 Docker entrypoint script refinements</li>
           </ul>
 
           <p>Documentation</p>
@@ -408,14 +408,14 @@
 
         <p>Caldav</p>
         <ul>
-          <li>handle multiple categories on TODO items, see https://GitHub.com/mguessan/davmail/issues/372</li>
-          <li>Merge https://GitHub.com/mguessan/davmail/pull/386 validate and repair Exchange calendar characters</li>
+          <li>handle multiple categories on TODO items, see https://github.com/mguessan/davmail/issues/372</li>
+          <li>Merge https://github.com/mguessan/davmail/pull/386 validate and repair Exchange calendar characters</li>
         </ul>
 
         <p>LDAP</p>
         <ul>
-          <li>merge https://GitHub.com/mguessan/davmail/pull/353, fix first certificate selection logic</li>
-          <li>merge https://GitHub.com/mguessan/davmail/pull/353 Add support for retrieving user certificates</li>
+          <li>merge https://github.com/mguessan/davmail/pull/353, fix first certificate selection logic</li>
+          <li>merge https://github.com/mguessan/davmail/pull/353 Add support for retrieving user certificates</li>
         </ul>
 
         <p>IMAP</p>
@@ -424,16 +424,16 @@
           <li>fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;, review and switch to ParseException for error handling and chars instead of bytes</li>
           <li>merge unit test for patch fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;</li>
           <li>initial merge of patch fix backslash in password quoted string by: Max-Julian Pogner &lt;max-julian@pogner.at&gt;</li>
-          <li>fix https://GitHub.com/mguessan/davmail/issues/359, handle RFC822.TEXT</li>
+          <li>fix https://github.com/mguessan/davmail/issues/359, handle RFC822.TEXT</li>
         </ul>
 
         <p>O365</p>
         <ul>
           <li>add GCC high example settings in default davmail.properties</li>
-          <li>https://GitHub.com/mguessan/davmail/pull/380 Remove trailing slash from O365_LOGIN_URL</li>
-          <li>merge https://GitHub.com/mguessan/davmail/pull/380 Missed one change</li>
-          <li>merge https://GitHub.com/mguessan/davmail/pull/380 Enhance support for the davmail.outlookUrl property setting and fully support GCC-High endpoints</li>
-          <li>implement OneWaySMS MFA prompt, see https://GitHub.com/mguessan/davmail/pull/134</li>
+          <li>https://github.com/mguessan/davmail/pull/380 Remove trailing slash from O365_LOGIN_URL</li>
+          <li>merge https://github.com/mguessan/davmail/pull/380 Missed one change</li>
+          <li>merge https://github.com/mguessan/davmail/pull/380 Enhance support for the davmail.outlookUrl property setting and fully support GCC-High endpoints</li>
+          <li>implement OneWaySMS MFA prompt, see https://github.com/mguessan/davmail/pull/134</li>
           <li>get O365 Login Url from settings for non standard tenants and add additional error use case</li>
           <li>detect live.com token. Note: may not be enough to make DavMail work with live.com accounts</li>
           <li>dropping all workaroungs for OpenJFX bugs that should be fixed in recent versions</li>
@@ -441,7 +441,7 @@
 
         <p>EWS</p>
         <ul>
-          <li>experimental, try to implement recurrence count with NumberOfOccurrences, see https://GitHub.com/mguessan/davmail/issues/373</li>
+          <li>experimental, try to implement recurrence count with NumberOfOccurrences, see https://github.com/mguessan/davmail/issues/373</li>
           <li>make settings timezoneid higher priority than mailbox configuration, make encode/decode foldername methods public for graph API</li>
         </ul>
 
@@ -465,17 +465,17 @@
           <li>fix ant dependency for fedora</li>
           <li>davmail.spec to not try to link os provided swt.jar when using embedded one</li>
           <li>work on el9 compatibility for RPM build</li>
-          <li>Embed davmail-user.conf in source package, see https://GitHub.com/mguessan/davmail/issues/356</li>
-          <li>Create davmail user/group per new conventions in RPM 4.19, merge changes from https://GitHub.com/mguessan/davmail/issues/356</li>
-          <li>fix https://GitHub.com/mguessan/davmail/issues/346 unable to run jlink on linux</li>
+          <li>Embed davmail-user.conf in source package, see https://github.com/mguessan/davmail/issues/356</li>
+          <li>Create davmail user/group per new conventions in RPM 4.19, merge changes from https://github.com/mguessan/davmail/issues/356</li>
+          <li>fix https://github.com/mguessan/davmail/issues/346 unable to run jlink on linux</li>
           <li>force shutdown with -token option</li>
           <li>Add OpenJFX case for Kubuntu</li>
         </ul>
 
         <p>Documentation</p>
         <ul>
-          <li>update windows build documentation, see https://GitHub.com/mguessan/davmail/issues/384</li>
-          <li>merge https://GitHub.com/mguessan/davmail/pull/174 fix docs typo in property davmail.enableKeepAlive</li>
+          <li>update windows build documentation, see https://github.com/mguessan/davmail/issues/384</li>
+          <li>merge https://github.com/mguessan/davmail/pull/174 fix docs typo in property davmail.enableKeepAlive</li>
           <li>improve documentation on how to run DavMail as a windows service</li>
           <li>update documentation for non default tenants (US, China)</li>
           <li>provide more information in initial consent for O365 authentication</li>
@@ -485,7 +485,7 @@
 
         <p>Docker</p>
         <ul>
-          <li>merge https://GitHub.com/mguessan/davmail/pull/381 by SethRobertson Bug 201: Docker support for building and running</li>
+          <li>merge https://github.com/mguessan/davmail/pull/381 by SethRobertson Bug 201: Docker support for building and running</li>
         </ul>
 
         <p>NTLM</p>
@@ -493,7 +493,7 @@
           <li>remove CIFS dependency</li>
           <li>cleanup code from audit</li>
           <li>use ThreadLocal to manage SecureRandom generators</li>
-          <li>switch to DavMailNTLMSchemeFactory to enable channel binding, see https://GitHub.com/mguessan/davmail/issues/352</li>
+          <li>switch to DavMailNTLMSchemeFactory to enable channel binding, see https://github.com/mguessan/davmail/issues/352</li>
           <li>retrieve certificate from http context</li>
           <li>Duplicate of NTLMScheme from HttpClient to implement channel binding</li>
           <li>adjust NTLMEngineImpl to handle channel binding</li>
@@ -506,12 +506,12 @@
           <li>Drop web component</li>
           <li>Drop servlet-api.jar, no longer required</li>
           <li>Drop deprecated DavGatewayServletContextListener (we no longer provide an embedded war file)</li>
-          <li>Trying to fix custom jre for TLS 1.3, see https://stackoverflow.com/questions/63964939/tls-1-3-handshake-failure-when-using-openjdk-14-java-module-runtime and https://GitHub.com/mguessan/davmail/pull/388</li>
+          <li>Trying to fix custom jre for TLS 1.3, see https://stackoverflow.com/questions/63964939/tls-1-3-handshake-failure-when-using-openjdk-14-java-module-runtime and https://github.com/mguessan/davmail/pull/388</li>
           <li>fix download-jre for embedded JDK on windows, fetch version 21</li>
           <li>switch davmail linux launcher to zulu JDK 21 for better TLS 1.3 support</li>
           <li>switch main package to zulu JDK 21 for better TLS 1.3 support</li>
-          <li>StringUtilTest CRLF => LF, see https://GitHub.com/mguessan/davmail/pull/378</li>
-          <li>StringUtil CRLF => LF, see https://GitHub.com/mguessan/davmail/pull/378</li>
+          <li>StringUtilTest CRLF => LF, see https://github.com/mguessan/davmail/pull/378</li>
+          <li>StringUtil CRLF => LF, see https://github.com/mguessan/davmail/pull/378</li>
           <li>Security: Enable TLSv1.3 between DavMail and Exchange/O365</li>
           <li>PKCS11: review SunPKCS11ProviderHandler</li>
           <li>HttpClient: cleanup from audit</li>
