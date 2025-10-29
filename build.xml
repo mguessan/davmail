@@ -381,6 +381,8 @@
                 <include name="*.jnilib"/>
                 <exclude name="nsisant*.jar"/>
                 <exclude name="ant-deb-*.jar"/>
+                <exclude name="sonarqube-ant-*.jar"/>
+                <exclude name="jacocoant-*.jar"/>
             </fileset>
         </copy>
         <copy file="src/icon/davmail.png" todir="dist"/>
