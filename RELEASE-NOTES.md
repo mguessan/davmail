@@ -1,3 +1,42 @@
+## DavMail 6.5.1 2025-10-29
+Bugfix release to adjust packaging after 6.5.0 major changes, detect Flatpak and adjust settings and log
+location accordingly.
+
+### Enhancements
+- Caldav: cleanup from audit
+- Suppress warning on Subject.doAs in DavMailNTLMScheme
+- GUI: switch to GitHub as recommended issue tracker about dialog
+- GUI: Update link to https in about dialog
+- Settings fix from audit
+- Fix https://github.com/mguessan/davmail/issues/387 suppress warning on Subject.doAs
+
+### Documentation
+- Doc: update spec file changes, add komac winget command to release guide
+- Doc: revert replace on GitHub url
+- Doc: add new Fedora KDE Plasma screenshots
+- Doc: drop 32 bits package from site documentation
+
+### Build
+- Build: exclude jacoco and sonarqube jars from dist/lib
+- Build: set discardError on git svn check
+- Build: change back to java 11 bytecode level for recent java jdks
+- Build: fix missing ini files in windows installer
+
+### Flatpak
+- Adjust background color
+- Icon without shadow
+- Flatpak: change summary according to Flathub rules
+- Flatpak: update README.md
+- Flatpak: Simplify isFlatpak
+- Flatpak: Create an ant target for flatpak release
+- Flatpak: Fix launchable and add additional screenshots to appstream file
+- Flatpak: adjust settings for flatpak containers
+
+### SWT
+- SWT: Remove dependency to SWT in O365InteractiveAuthenticator
+- SWT: Refactor O365InteractiveAuthenticator to switch to OpenJFX in case of SWT error
+
+
 ## DavMail 6.5.0 2025-10-23
 Release focused on build and distribution improvements, merged and refactored Docker configuration with automatic 
 image build based on Github Actions and docker compose samples. For Linux cleaned up the RPM spec file and 

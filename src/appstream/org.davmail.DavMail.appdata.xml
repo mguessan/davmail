@@ -58,6 +58,56 @@
   </developer>
   <content_rating type="oars-1.1" />
   <releases>
+      <release version="6.5.1" date="2025-10-29">
+          <description>
+              <p>Bugfix release to adjust packaging after 6.5.0 major changes, detect Flatpak and adjust settings and
+                  log location accordingly.
+              </p>
+
+              <p>Enhancements</p>
+              <ul>
+                  <li>Caldav: cleanup from audit</li>
+                  <li>Suppress warning on Subject.doAs in DavMailNTLMScheme</li>
+                  <li>GUI: switch to GitHub as recommended issue tracker about dialog</li>
+                  <li>GUI: Update link to https in about dialog</li>
+                  <li>Settings fix from audit</li>
+                  <li>Fix https://github.com/mguessan/davmail/issues/387 suppress warning on Subject.doAs</li>
+              </ul>
+              <p>Documentation</p>
+              <ul>
+                  <li>Doc: update spec file changes, add komac winget command to release guide</li>
+                  <li>Doc: revert replace on GitHub url</li>
+                  <li>Doc: add new Fedora KDE Plasma screenshots</li>
+                  <li>Doc: drop 32 bits package from site documentation</li>
+              </ul>
+
+              <p>Build</p>
+              <ul>
+                  <li>Build: exclude jacoco and sonarqube jars from dist/lib</li>
+                  <li>Build: set discardError on git svn check</li>
+                  <li>Build: change back to java 11 bytecode level for recent java jdks</li>
+                  <li>Build: fix missing ini files in windows installer</li>
+              </ul>
+
+              <p>Flatpak</p>
+              <ul>
+                  <li>Adjust background color</li>
+                  <li>Icon without shadow</li>
+                  <li>Flatpak: change summary according to Flathub rules</li>
+                  <li>Flatpak: update README.md</li>
+                  <li>Flatpak: Simplify isFlatpak</li>
+                  <li>Flatpak: Create an ant target for flatpak release</li>
+                  <li>Flatpak: Fix launchable and add additional screenshots to appstream file</li>
+                  <li>Flatpak: adjust settings for flatpak containers</li>
+              </ul>
+
+              <p>SWT</p>
+              <ul>
+                  <li>SWT: Remove dependency to SWT in O365InteractiveAuthenticator</li>
+                  <li>SWT: Refactor O365InteractiveAuthenticator to switch to OpenJFX in case of SWT error</li>
+              </ul>
+          </description>
+      </release>
       <release version="6.5.0" date="2025-10-23">
       <description>
           <p>
