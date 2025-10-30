@@ -44,7 +44,7 @@ If your distribution supports Flatpak:
 
 Docker images are available on GitHub Container Registry:
 
-[![label=Docker](https://ghcr-badge.egpl.dev/mguessan/davmail/tags?trim=major&label=Docker&ignore=)](https://github.com/mguessan/davmail/tree/master/src/docker/README.md)
+[![label=Docker](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2Fmguessan%2Fdavmail%2Fdavmail&query=downloadCount&logo=docker&label=GitHub%20Docker%20Pulls&color=2496ed)](https://github.com/mguessan/davmail/tree/master/src/docker/README.md)
 
 
 ## Trunk builds
