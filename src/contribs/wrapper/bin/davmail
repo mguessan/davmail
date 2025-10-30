@@ -510,7 +510,7 @@ start() {
         exit 1
     fi
 
-    # Sleep for a few seconds to allow for intialization if required 
+    # Sleep for a few seconds to allow for initialization if required
     #  then test to make sure we're still running.
     #
     i=0
