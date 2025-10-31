@@ -2059,7 +2059,7 @@ public abstract class ExchangeSession {
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, etag, noneMatch);
             this.contentClass = contentClass;
-            fixICS(itemBody.getBytes(StandardCharsets.UTF_8), false);
+            fixICS(itemBody.getBytes(StandardCharsets.UTF_8), getCalendarEmail(folderPath), false);
             // fix task item name
             if (vCalendar.isTodo() && this.itemName.endsWith(".ics")) {
                 this.itemName = itemName.substring(0, itemName.length() - 3) + "EML";
@@ -2077,7 +2077,7 @@ public abstract class ExchangeSession {
         @Override
         public String getBody() throws IOException {
             if (vCalendar == null) {
-                fixICS(getEventContent(), true);
+                fixICS(getEventContent(), getCalendarEmail(folderPath), true);
             }
             return vCalendar.toString();
         }
@@ -2162,7 +2162,7 @@ public abstract class ExchangeSession {
             return result;
         }
 
-        protected void fixICS(byte[] icsContent, boolean fromServer) throws IOException {
+        protected void fixICS(byte[] icsContent, String calendarEmail, boolean fromServer) throws IOException {
             if (LOGGER.isDebugEnabled() && fromServer) {
                 dumpIndex++;
                 String icsBody = new String(icsContent, StandardCharsets.UTF_8);
@@ -2171,7 +2171,7 @@ public abstract class ExchangeSession {
                 LOGGER.debug("Vcalendar body ValidationResult: "+ vr.isValid() +" "+ vr.showReason());
                 LOGGER.debug("Vcalendar body received from server:\n" + icsBody);
             }
-            vCalendar = new VCalendar(icsContent, getEmail(), getVTimezone());
+            vCalendar = new VCalendar(icsContent, calendarEmail, getVTimezone());
             vCalendar.fixVCalendar(fromServer);
             if (LOGGER.isDebugEnabled() && !fromServer) {
                 String resultString = vCalendar.toString();
@@ -2943,6 +2943,13 @@ public abstract class ExchangeSession {
     public String getEmail() {
         return email;
     }
+
+    /**
+     * Get email from current calendar
+     * @param folderPath calendar folder path
+     * @return calendar mailbox
+     */
+    protected abstract String getCalendarEmail(String folderPath) throws IOException;
 
     /**
      * Get current user alias
