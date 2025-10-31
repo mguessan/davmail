@@ -167,7 +167,7 @@ fi
 /bin/chown davmail:davmail ${file}
 /bin/chmod 0640 ${file}
 
-%if %systemd_macros
+%if %systemd_macros && 0%{?suse_version}
 %service_add_post davmail.service
 %endif
 
