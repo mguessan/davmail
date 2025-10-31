@@ -6,6 +6,11 @@
     <key>LSUIElement</key><string>0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>LSArchitecturePriority</key>
+    <array>
+        <string>arm64</string>
+        <string>x86_64</string>
+    </array>
     <key>CFBundleName</key>
     <string>DavMail</string>
     <key>CFBundleShortVersionString</key>
