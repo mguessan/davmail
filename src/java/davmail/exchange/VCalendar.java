@@ -765,6 +765,14 @@ public class VCalendar extends VObject {
     }
 
     /**
+     * Return calendar mailbox address
+     * @return calendar email
+     */
+    public String getCalendarEmail() {
+        return email;
+    }
+
+    /**
      * VCalendar recipients for notifications
      */
     public static class Recipients {
