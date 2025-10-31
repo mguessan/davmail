@@ -189,6 +189,23 @@ public class GraphObject {
         return null;
     }
 
+    public String getRecurrenceId() throws DavMailException {
+        String timeZone = optString("originalStartTimeZone");
+        String dateTime = optString("originalStart");
+        if (timeZone != null && dateTime != null) {
+            try {
+                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                parser.setTimeZone(TimeZone.getTimeZone(timeZone));
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+                return formatter.format(parser.parse(dateTime));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", dateTime);
+            }
+        }
+        return null;
+    }
+
     public static String convertTimezoneFromExchange(String exchangeTimezone) {
         ResourceBundle tzidsBundle = ResourceBundle.getBundle("stdtimezones");
         if (tzidsBundle.containsKey(exchangeTimezone)) {
