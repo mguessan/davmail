@@ -63,6 +63,9 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
     protected static final Logger LOGGER = Logger.getLogger(EWSMethod.class);
     protected static final int CHUNK_LENGTH = 131072;
 
+    // impersonation mailbox
+    protected String mailbox;
+
     protected FolderQueryTraversal traversal;
     protected BaseShape baseShape;
     protected boolean includeMimeContent;
@@ -404,6 +407,15 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
                 writer.write("<t:TimeZoneContext><t:TimeZoneDefinition Id=\"");
                 writer.write(timezoneContext);
                 writer.write("\"/></t:TimeZoneContext>");
+            }
+            if (mailbox != null) {
+                writer.write("<t:ExchangeImpersonation>");
+                writer.write("<t:ConnectingSID>");
+                writer.write("<t:PrimarySmtpAddress>");
+                writer.write(mailbox);
+                writer.write("</t:PrimarySmtpAddress>");
+                writer.write("</t:ConnectingSID>");
+                writer.write("</t:ExchangeImpersonation>");
             }
             writer.write("</soap:Header>");
 

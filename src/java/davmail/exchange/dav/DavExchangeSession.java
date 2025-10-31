@@ -88,8 +88,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.NoRouteToHostException;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLStreamHandler;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -141,7 +143,7 @@ public class DavExchangeSession extends ExchangeSession {
     /**
      * HttpClient 4 adapter to replace httpClient
      */
-    private HttpClientAdapter httpClientAdapter;
+    private final HttpClientAdapter httpClientAdapter;
 
     /**
      * Various standard mail boxes Urls
@@ -285,7 +287,7 @@ public class DavExchangeSession extends ExchangeSession {
                 principal = folderPath.substring(USERS.length());
                 localPath = "";
             }
-            if (principal.length() == 0) {
+            if (principal.isEmpty()) {
                 exchangeFolderPath = rootPath;
             } else if (alias.equalsIgnoreCase(principal) || (email != null && email.equalsIgnoreCase(principal))) {
                 exchangeFolderPath = mailPath + localPath;
@@ -323,6 +325,19 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public boolean isMainCalendar(String folderPath) {
         return getFolderPath(folderPath).equalsIgnoreCase(getFolderPath("calendar"));
+    }
+
+    @Override
+    protected String getCalendarEmail(String folderPath) throws IOException {
+        String calendarPath = getFolderPath(folderPath);
+        String[] folderNames = calendarPath.split("/");
+        if (folderNames.length > 1) {
+            // assume folder email is second path element
+            return folderNames[1];
+        } else {
+            // failover to email
+            return email;
+        }
     }
 
     /**
@@ -608,7 +623,7 @@ public class DavExchangeSession extends ExchangeSession {
                 int start = line.toLowerCase().indexOf(BASE_HREF) + BASE_HREF.length();
                 int end = line.indexOf('\"', start);
                 String mailBoxBaseHref = line.substring(start, end);
-                URL baseURL = new URL(mailBoxBaseHref);
+                URL baseURL = URI.create(mailBoxBaseHref).toURL();
                 welcomePageMailPath = URIUtil.decode(baseURL.getPath());
                 LOGGER.debug("Base href found in body, mailPath is " + welcomePageMailPath);
             }
@@ -2393,7 +2408,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public int sendEvent(String icsBody) throws IOException {
-        String itemName = UUID.randomUUID().toString() + ".EML";
+        String itemName = UUID.randomUUID() + ".EML";
         byte[] mimeContent = (new Event(getFolderPath(DRAFTS), itemName, "urn:content-classes:calendarmessage", icsBody, null, null)).createMimeContent();
         if (mimeContent == null) {
             // no recipients, cancel
@@ -2489,7 +2504,7 @@ public class DavExchangeSession extends ExchangeSession {
                 if (timezoneId != null) {
                     propertyList.add(Field.createDavProperty("timezoneid", timezoneId));
                 }
-                String patchMethodUrl = folderPath + '/' + UUID.randomUUID().toString() + ".EML";
+                String patchMethodUrl = folderPath + '/' + UUID.randomUUID() + ".EML";
                 HttpProppatch patchMethod = new HttpProppatch(URIUtil.encodePath(patchMethodUrl), propertyList);
                 try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)) {
                     int statusCode = response.getStatusLine().getStatusCode();
@@ -2811,7 +2826,7 @@ public class DavExchangeSession extends ExchangeSession {
     public void sendMessage(MimeMessage mimeMessage) throws IOException {
         try {
             // need to create draft first
-            String itemName = UUID.randomUUID().toString() + ".EML";
+            String itemName = UUID.randomUUID() + ".EML";
             HashMap<String, String> properties = new HashMap<>();
             properties.put("draft", "9");
             String contentType = mimeMessage.getContentType();
@@ -3031,7 +3046,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected void moveMessage(String sourceUrl, String targetFolder) throws IOException {
-        String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
+        String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID();
         HttpMove method = new HttpMove(URIUtil.encodePath(sourceUrl), targetPath, false);
         // allow rename if a message with the same name exists
         method.setHeader("Allow-Rename", "t");
@@ -3062,7 +3077,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected void copyMessage(String sourceUrl, String targetFolder) throws IOException {
-        String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
+        String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID();
         HttpCopy httpCopy = new HttpCopy(URIUtil.encodePath(sourceUrl), targetPath, false, false);
         // allow rename if a message with the same name exists
         httpCopy.addHeader("Allow-Rename", "t");
@@ -3078,7 +3093,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     protected void moveToTrash(ExchangeSession.Message message) throws IOException {
-        String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + UUID.randomUUID().toString();
+        String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + UUID.randomUUID();
         LOGGER.debug("Deleting : " + message.permanentUrl + " to " + destination);
         HttpMove method = new HttpMove(encodeAndFixUrl(message.permanentUrl), destination, false);
         method.addHeader("Allow-rename", "t");
@@ -3187,7 +3202,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected String convertTaskDateToZulu(String value) {
         String result = null;
-        if (value != null && value.length() > 0) {
+        if (value != null && !value.isEmpty()) {
             try {
                 SimpleDateFormat parser = ExchangeSession.getExchangeDateFormat(value);
 

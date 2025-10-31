@@ -2618,6 +2618,13 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
+    protected String getCalendarEmail(String folderPath) throws IOException {
+        FolderId folderId = getFolderId(folderPath);
+
+        return folderId.mailbox;
+    }
+
+    @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         // https://learn.microsoft.com/en-us/graph/api/orgcontact-get
         return null;

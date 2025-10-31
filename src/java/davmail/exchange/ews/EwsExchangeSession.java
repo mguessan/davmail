@@ -1587,6 +1587,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar, VObject vEvent, boolean isMozDismiss) throws DavMailException {
+            boolean isShared = !email.equalsIgnoreCase(vCalendar.getCalendarEmail());
 
             List<FieldUpdate> updates = new ArrayList<>();
 
@@ -1615,8 +1616,11 @@ public class EwsExchangeSession extends ExchangeSession {
                     if (vEvent.getProperty("DTEND") != null) {
                         endtimezone = vEvent.getProperty("DTEND").getParamValue("TZID");
                     }
-                    updates.add(Field.createFieldUpdate("starttimezone", starttimezone));
-                    updates.add(Field.createFieldUpdate("endtimezone", endtimezone));
+                    // for some reason we are unable to update timezone on a shared calendar
+                    if (!isShared || Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
+                        updates.add(Field.createFieldUpdate("starttimezone", starttimezone));
+                        updates.add(Field.createFieldUpdate("endtimezone", endtimezone));
+                    }
                 }
 
                 String status = statusToBusyStatusMap.get(vEvent.getPropertyValue("STATUS"));
@@ -1686,15 +1690,18 @@ public class EwsExchangeSession extends ExchangeSession {
                 MultiValuedFieldUpdate requiredAttendees = new MultiValuedFieldUpdate(Field.get("requiredattendees"));
                 MultiValuedFieldUpdate optionalAttendees = new MultiValuedFieldUpdate(Field.get("optionalattendees"));
 
-                updates.add(requiredAttendees);
-                updates.add(optionalAttendees);
+                // for some reason we are unable to update timezone on a shared calendar
+                if (!isShared || Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
+                    updates.add(requiredAttendees);
+                    updates.add(optionalAttendees);
+                }
 
                 List<VProperty> attendees = vEvent.getProperties("ATTENDEE");
                 if (attendees != null) {
                     for (VProperty property : attendees) {
                         String attendeeEmail = vCalendar.getEmailValue(property);
                         if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
-                            if (!email.equals(attendeeEmail)) {
+                            if (!vCalendar.getCalendarEmail().equals(attendeeEmail)) {
                                 String attendeeRole = property.getParamValue("ROLE");
                                 if ("REQ-PARTICIPANT".equals(attendeeRole)) {
                                     requiredAttendees.addValue(attendeeEmail);
@@ -1910,6 +1917,11 @@ public class EwsExchangeSession extends ExchangeSession {
                                 ConflictResolution.AutoResolve,
                                 sendMeetingInvitationsOrCancellations,
                                 currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent(), isMozDismiss));
+
+                        boolean isShared = !email.equalsIgnoreCase(vCalendar.getCalendarEmail());
+                        if (isShared && Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
+                            createOrUpdateItemMethod.mailbox = vCalendar.getCalendarEmail();
+                        }
                         // force context Timezone on Exchange 2010 and 2013
                         if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                             createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
@@ -2644,6 +2656,11 @@ public class EwsExchangeSession extends ExchangeSession {
         FolderId currentFolderId = getFolderId(folderPath);
         FolderId calendarFolderId = getFolderId("calendar");
         return calendarFolderId.name.equals(currentFolderId.name) && calendarFolderId.value.equals(currentFolderId.value);
+    }
+
+    @Override
+    protected String getCalendarEmail(String folderPath) throws IOException {
+        return getFolderId(folderPath).mailbox;
     }
 
     @Override
