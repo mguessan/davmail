@@ -226,7 +226,7 @@ public final class DavGatewayTray {
     /**
      * Create tray icon and register frame listeners.
      */
-    public static void init(boolean notray) {
+    public static void init() {
         String currentDesktop = System.getenv("XDG_CURRENT_DESKTOP");
         String javaVersion = System.getProperty("java.version");
         String arch = System.getProperty("sun.arch.data.model");
@@ -243,7 +243,8 @@ public final class DavGatewayTray {
         }
 
         if (!Settings.getBooleanProperty("davmail.server")) {
-            if (!notray) {
+            // disable tray by default on linux
+            if (Settings.getBooleanProperty("davmail.enableTray", !Settings.isLinux())) {
                 if ("Unity".equals(currentDesktop)) {
                     LOGGER.info("Detected Unity desktop, please follow instructions at " +
                             "https://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +

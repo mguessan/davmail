@@ -196,6 +196,11 @@ public final class Settings {
         SETTINGS_PROPERTIES.put("davmail.caldavAlarmSound", "");
         SETTINGS_PROPERTIES.put("davmail.carddavReadPhoto", Boolean.TRUE.toString());
         SETTINGS_PROPERTIES.put("davmail.forceActiveSyncUpdate", Boolean.FALSE.toString());
+        if (isLinux()) {
+            SETTINGS_PROPERTIES.put("davmail.enableTray", Boolean.FALSE.toString());
+        } else {
+            SETTINGS_PROPERTIES.put("davmail.enableTray", Boolean.TRUE.toString());
+        }
         SETTINGS_PROPERTIES.put("davmail.showStartupBanner", Boolean.TRUE.toString());
         SETTINGS_PROPERTIES.put("davmail.disableGuiNotifications", Boolean.FALSE.toString());
         SETTINGS_PROPERTIES.put("davmail.disableTrayActivitySwitch", Boolean.FALSE.toString());
@@ -335,7 +340,7 @@ public final class Settings {
                 if (Settings.getBooleanProperty("davmail.server")) {
                     consoleAppender.setThreshold(Level.ALL);
                 } else {
-                    consoleAppender.setThreshold(Level.INFO);
+                    consoleAppender.setThreshold(Level.ALL);
                 }
             }
 
