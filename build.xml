@@ -291,8 +291,7 @@
         <deb todir="dist"
              package="davmail"
              section="mail"
-             depends="openjdk-17-jre|default-jre,libopenjfx-java"
-             suggests="libswt-gtk-4-java,libswt-cairo-gtk-4-jni">
+             depends="openjdk-17-jre|default-jre,libopenjfx-java,libswt-gtk-4-java,libswt-cairo-gtk-4-jni">
             <version upstream="${release-name}"/>
             <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
             <description synopsis="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway">
