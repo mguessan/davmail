@@ -26,7 +26,7 @@ import java.util.*;
 public class VProperty {
 
     protected enum State {
-        KEY, PARAM_NAME, PARAM_VALUE, QUOTED_PARAM_VALUE, VALUE, BACKSLASH
+        KEY, PARAM_NAME, PARAM_VALUE, QUOTED_PARAM_VALUE, QUOTED_PARAM_VALUE_BACKSLASH, VALUE, BACKSLASH
     }
 
     protected static final HashSet<String> MULTIVALUED_PROPERTIES = new HashSet<>();
@@ -138,11 +138,15 @@ public class VProperty {
                         startIndex = i + 1;
                     }
                 } else if (state == State.QUOTED_PARAM_VALUE) {
-                    if (currentChar == '"') {
+                    if (currentChar == '\\') {
+                        state = State.QUOTED_PARAM_VALUE_BACKSLASH;
+                    } else if (currentChar == '"') {
                         state = State.PARAM_VALUE;
                         paramValues = addParamValue(paramValues, line.substring(startIndex, i));
                         startIndex = i + 1;
                     }
+                } else if (state == State.QUOTED_PARAM_VALUE_BACKSLASH){
+                    state = State.QUOTED_PARAM_VALUE;
                 } else if (state == State.VALUE) {
                     if (currentChar == '\\') {
                         state = State.BACKSLASH;

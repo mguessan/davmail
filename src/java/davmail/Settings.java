@@ -19,16 +19,34 @@
 package davmail;
 
 import davmail.ui.tray.DavGatewayTray;
-import org.apache.log4j.*;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TreeSet;
 
 import static org.apache.http.util.TextUtils.isEmpty;
 
@@ -42,7 +60,7 @@ public final class Settings {
     private static final Logger LOGGER = Logger.getLogger(Settings.class);
 
     public static final String OUTLOOK_URL = "https://outlook.office365.com";
-    public static final String O365_URL = OUTLOOK_URL+"/EWS/Exchange.asmx";
+    public static final String O365_URL = OUTLOOK_URL + "/EWS/Exchange.asmx";
 
     public static final String GRAPH_URL = "https://graph.microsoft.com";
 
@@ -147,7 +165,7 @@ public final class Settings {
      * Ports above 1024 for unix/linux
      */
     public static void setDefaultSettings() {
-        SETTINGS_PROPERTIES.put("davmail.mode", "EWS");
+        SETTINGS_PROPERTIES.put("davmail.mode", O365_INTERACTIVE);
         SETTINGS_PROPERTIES.put("davmail.url", getO365Url());
         SETTINGS_PROPERTIES.put("davmail.popPort", "1110");
         SETTINGS_PROPERTIES.put("davmail.imapPort", "1143");
@@ -178,6 +196,11 @@ public final class Settings {
         SETTINGS_PROPERTIES.put("davmail.caldavAlarmSound", "");
         SETTINGS_PROPERTIES.put("davmail.carddavReadPhoto", Boolean.TRUE.toString());
         SETTINGS_PROPERTIES.put("davmail.forceActiveSyncUpdate", Boolean.FALSE.toString());
+        if (isLinux()) {
+            SETTINGS_PROPERTIES.put("davmail.enableTray", Boolean.FALSE.toString());
+        } else {
+            SETTINGS_PROPERTIES.put("davmail.enableTray", Boolean.TRUE.toString());
+        }
         SETTINGS_PROPERTIES.put("davmail.showStartupBanner", Boolean.TRUE.toString());
         SETTINGS_PROPERTIES.put("davmail.disableGuiNotifications", Boolean.FALSE.toString());
         SETTINGS_PROPERTIES.put("davmail.disableTrayActivitySwitch", Boolean.FALSE.toString());
@@ -210,7 +233,11 @@ public final class Settings {
         SETTINGS_PROPERTIES.put("log4j.logger.davmail", Level.DEBUG.toString());
         SETTINGS_PROPERTIES.put("log4j.logger.httpclient.wire", Level.WARN.toString());
         SETTINGS_PROPERTIES.put("log4j.logger.httpclient", Level.WARN.toString());
-        SETTINGS_PROPERTIES.put("davmail.logFilePath", "");
+        String logFilePath = "";
+        if (isFlatpak()) {
+            logFilePath = System.getenv("XDG_DATA_HOME")+"/davmail.log";
+        }
+        SETTINGS_PROPERTIES.put("davmail.logFilePath", logFilePath);
     }
 
     /**
@@ -268,40 +295,43 @@ public final class Settings {
         String logFilePath = getLogFilePath();
 
         try {
-            if (logFilePath != null && !logFilePath.isEmpty()) {
-                File logFile = new File(logFilePath);
-                // create parent directory if needed
-                File logFileDir = logFile.getParentFile();
-                if (logFileDir != null && !logFileDir.exists() && (!logFileDir.mkdirs())) {
+            if (!isDocker()) {
+                if (logFilePath != null && !logFilePath.isEmpty()) {
+                    File logFile = new File(logFilePath);
+                    // create parent directory if needed
+                    File logFileDir = logFile.getParentFile();
+                    if (logFileDir != null && !logFileDir.exists() && (!logFileDir.mkdirs())) {
                         DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
                         throw new IOException();
 
-                }
-            } else {
-                logFilePath = "davmail.log";
-            }
-            synchronized (Logger.getRootLogger()) {
-                // Build file appender
-                FileAppender fileAppender = (FileAppender) Logger.getRootLogger().getAppender("FileAppender");
-                if (fileAppender == null) {
-                    String logFileSize = Settings.getProperty("davmail.logFileSize");
-                    if (logFileSize == null || logFileSize.isEmpty()) {
-                        logFileSize = "1MB";
                     }
-                    // set log file size to 0 to use an external rotation mechanism, e.g. logrotate
-                    if ("0".equals(logFileSize)) {
-                        fileAppender = new FileAppender();
-                    } else {
-                        fileAppender = new RollingFileAppender();
-                        ((RollingFileAppender) fileAppender).setMaxBackupIndex(2);
-                        ((RollingFileAppender) fileAppender).setMaxFileSize(logFileSize);
-                    }
-                    fileAppender.setName("FileAppender");
-                    fileAppender.setEncoding("UTF-8");
-                    fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
+                } else {
+                    logFilePath = "davmail.log";
                 }
-                fileAppender.setFile(logFilePath, true, false, 8192);
-                Logger.getRootLogger().addAppender(fileAppender);
+
+                synchronized (Logger.getRootLogger()) {
+                    // Build file appender
+                    FileAppender fileAppender = (FileAppender) Logger.getRootLogger().getAppender("FileAppender");
+                    if (fileAppender == null) {
+                        String logFileSize = Settings.getProperty("davmail.logFileSize");
+                        if (logFileSize == null || logFileSize.isEmpty()) {
+                            logFileSize = "1MB";
+                        }
+                        // set log file size to 0 to use an external rotation mechanism, e.g. logrotate
+                        if ("0".equals(logFileSize)) {
+                            fileAppender = new FileAppender();
+                        } else {
+                            fileAppender = new RollingFileAppender();
+                            ((RollingFileAppender) fileAppender).setMaxBackupIndex(2);
+                            ((RollingFileAppender) fileAppender).setMaxFileSize(logFileSize);
+                        }
+                        fileAppender.setName("FileAppender");
+                        fileAppender.setEncoding("UTF-8");
+                        fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
+                    }
+                    fileAppender.setFile(logFilePath, true, false, 8192);
+                    Logger.getRootLogger().addAppender(fileAppender);
+                }
             }
 
             // disable ConsoleAppender in gui mode
@@ -310,7 +340,7 @@ public final class Settings {
                 if (Settings.getBooleanProperty("davmail.server")) {
                     consoleAppender.setThreshold(Level.ALL);
                 } else {
-                    consoleAppender.setThreshold(Level.OFF);
+                    consoleAppender.setThreshold(Level.ALL);
                 }
             }
 
@@ -617,11 +647,11 @@ public final class Settings {
         File file = new File(tokenFilePath);
         File parentFile = file.getParentFile();
         if (parentFile != null && (parentFile.mkdirs())) {
-                LOGGER.info("Created token file directory "+parentFile.getAbsolutePath());
+            LOGGER.info("Created token file directory " + parentFile.getAbsolutePath());
 
         }
         if (file.createNewFile()) {
-            LOGGER.info("Created token file "+tokenFilePath);
+            LOGGER.info("Created token file " + tokenFilePath);
         }
     }
 
@@ -751,7 +781,7 @@ public final class Settings {
         } else if (tld == null) {
             return OUTLOOK_URL;
         } else {
-            return  "https://outlook.office365."+tld;
+            return "https://outlook.office365." + tld;
         }
     }
 
@@ -759,17 +789,17 @@ public final class Settings {
         String tld = getProperty("davmail.tld");
         String outlookUrl = getProperty("davmail.outlookUrl");
         if (outlookUrl != null) {
-            return outlookUrl+"/EWS/Exchange.asmx";
+            return outlookUrl + "/EWS/Exchange.asmx";
         } else if (tld == null) {
             return O365_URL;
         } else {
-            return  "https://outlook.office365."+tld+"/EWS/Exchange.asmx";
+            return "https://outlook.office365." + tld + "/EWS/Exchange.asmx";
         }
     }
 
     /**
      * Handle custom graph endpoints.
-     * See https://learn.microsoft.com/en-us/graph/deployments
+     * See <a href="https://learn.microsoft.com/en-us/graph/deployments">...</a>
      * @return graph endpoint url
      */
     public static String getGraphUrl() {
@@ -780,7 +810,7 @@ public final class Settings {
         } else if (tld == null) {
             return GRAPH_URL;
         } else {
-            return  "https://graph.microsoft."+tld;
+            return "https://graph.microsoft." + tld;
         }
     }
 
@@ -792,7 +822,60 @@ public final class Settings {
         } else if (tld == null) {
             return O365_LOGIN_URL;
         } else {
-            return  "https://login.microsoftonline."+tld;
+            return "https://login.microsoftonline." + tld;
+        }
+    }
+
+    public static boolean isSWTAvailable() {
+        boolean isSWTAvailable = false;
+        ClassLoader classloader = Settings.class.getClassLoader();
+        try {
+            // trigger ClassNotFoundException
+            classloader.loadClass("org.eclipse.swt.SWT");
+            isSWTAvailable = true;
+        } catch (Throwable e) {
+            LOGGER.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+        }
+        return isSWTAvailable;
+    }
+
+    public static boolean isJFXAvailable() {
+        boolean isJFXAvailable = false;
+        try {
+            Class.forName("javafx.application.Platform");
+            isJFXAvailable = true;
+        } catch (ClassNotFoundException | NullPointerException e) {
+            LOGGER.info("JavaFX (OpenJFX) not available");
+        }
+        return isJFXAvailable;
+    }
+
+    public static boolean isDocker() {
+        boolean isDocker = new File("/.dockerenv").exists();
+        if (isDocker) {
+            LOGGER.info("Running in docker");
+        }
+        return isDocker;
+    }
+
+    public static boolean isFlatpak() {
+        boolean isFlatpak = "flatpak".equals(System.getenv("container"));
+        if (isFlatpak) {
+            LOGGER.info("Running in Flatpak");
+        }
+        return isFlatpak;
+    }
+
+    /**
+     * Set davmail properties path in Docker and Flatpak
+     * @return davmail.properties path
+     */
+    public static synchronized String getConfigFilePath() {
+        if (isFlatpak()) {
+            return System.getenv("XDG_CONFIG_HOME")+"/davmail.properties";
+        } else {
+            // Docker
+            return System.getenv("DAVMAIL_PROPERTIES");
         }
     }
 }

@@ -30,7 +30,6 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exception.InsufficientStorageException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.exchange.FolderLoadThread;
 import davmail.exchange.MessageCreateThread;
 import davmail.exchange.MessageLoadThread;
 import davmail.ui.tray.DavGatewayTray;
@@ -60,7 +59,23 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.NoSuchElementException;
+import java.util.Stack;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Dav Gateway IMAP connection implementation.
@@ -183,9 +198,9 @@ public class ImapConnection extends AbstractConnection {
                                         if (specialOnly && tokens.hasMoreTokens()) {
                                             token = tokens.nextToken();
                                         }
-                                        String folderContext = buildFolderContext(token);
+
                                         if (tokens.hasMoreTokens()) {
-                                            String folderQuery = folderContext + decodeFolderPath(tokens.nextToken());
+                                            String folderQuery = buildFolderPath(token) + decodeFolderPath(tokens.nextToken());
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
                                                 List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false, false);
                                                 for (ExchangeSession.Folder folder : folders) {
@@ -239,24 +254,11 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("select".equalsIgnoreCase(command) || "examine".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         @SuppressWarnings({"NonConstantStringShouldBeStringBuffer"})
-                                        String folderName = decodeFolderPath(tokens.nextToken());
-                                        if (baseMailboxPath != null && !folderName.startsWith("/")) {
-                                            folderName = baseMailboxPath + folderName;
-                                        }
+                                        String folderName = buildFolderPath(tokens.nextToken());
                                         try {
                                             currentFolder = session.getFolder(folderName);
-                                            if (currentFolder.count() <= 500) {
-                                                // simple folder load
-                                                currentFolder.loadMessages();
-                                                sendClient("* " + currentFolder.count() + " EXISTS");
-                                            } else {
-                                                // load folder in a separate thread
-                                                LOGGER.debug("*");
-                                                os.write('*');
-                                                FolderLoadThread.loadFolder(currentFolder, os);
-                                                sendClient(" " + currentFolder.count() + " EXISTS");
-                                            }
-
+                                            loadFolder(currentFolder);
+                                            sendClient("* " + currentFolder.count() + " EXISTS");
                                             sendClient("* " + currentFolder.recent + " RECENT");
                                             sendClient("* OK [UIDVALIDITY 1]");
                                             if (currentFolder.count() == 0) {
@@ -292,14 +294,14 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        session.createMessageFolder(decodeFolderPath(tokens.nextToken()));
+                                        session.createMessageFolder(buildFolderPath(tokens.nextToken()));
                                         sendClient(commandId + " OK folder created");
                                     } else {
                                         sendClient(commandId + " BAD missing create argument");
                                     }
                                 } else if ("rename".equalsIgnoreCase(command)) {
-                                    String folderName = decodeFolderPath(tokens.nextToken());
-                                    String targetName = decodeFolderPath(tokens.nextToken());
+                                    String folderName = buildFolderPath(tokens.nextToken());
+                                    String targetName = buildFolderPath(tokens.nextToken());
                                     try {
                                         session.moveFolder(folderName, targetName);
                                         sendClient(commandId + " OK rename completed");
@@ -307,7 +309,7 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("delete".equalsIgnoreCase(command)) {
-                                    String folderName = decodeFolderPath(tokens.nextToken());
+                                    String folderName = buildFolderPath(tokens.nextToken());
                                     try {
                                         session.deleteFolder(folderName);
                                         sendClient(commandId + " OK folder deleted");
@@ -367,7 +369,7 @@ public class ImapConnection extends AbstractConnection {
                                         } else if ("copy".equalsIgnoreCase(subcommand) || "move".equalsIgnoreCase(subcommand)) {
                                             try {
                                                 UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, tokens.nextToken());
-                                                String targetName = buildFolderContext(tokens.nextToken());
+                                                String targetName = buildFolderPath(tokens.nextToken());
                                                 if (!uidRangeIterator.hasNext()) {
                                                     sendClient(commandId + " NO " + "No message found");
                                                 } else {
@@ -449,7 +451,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("copy".equalsIgnoreCase(command) || "move".equalsIgnoreCase(command)) {
                                     try {
                                         RangeIterator rangeIterator = new RangeIterator(currentFolder.messages, tokens.nextToken());
-                                        String targetName = decodeFolderPath(tokens.nextToken());
+                                        String targetName = buildFolderPath(tokens.nextToken());
                                         if (!rangeIterator.hasNext()) {
                                             sendClient(commandId + " NO " + "No message found");
                                         } else {
@@ -468,7 +470,7 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("append".equalsIgnoreCase(command)) {
-                                    String folderName = decodeFolderPath(tokens.nextToken());
+                                    String folderName = buildFolderPath(tokens.nextToken());
                                     HashMap<String, String> properties = new HashMap<>();
                                     String flags = null;
                                     String date = null;
@@ -549,7 +551,7 @@ public class ImapConnection extends AbstractConnection {
                                     readClient();
                                     MimeMessage mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(buffer));
 
-                                    String messageName = UUID.randomUUID().toString() + ".EML";
+                                    String messageName = UUID.randomUUID() + ".EML";
                                     try {
                                         ExchangeSession.Message createdMessage = MessageCreateThread.createMessage(session, folderName, messageName, properties, mimeMessage, os, capabilities);
                                         if (createdMessage != null) {
@@ -619,20 +621,10 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("status".equalsIgnoreCase(command)) {
                                     try {
                                         String encodedFolderName = tokens.nextToken();
-                                        String folderName = decodeFolderPath(encodedFolderName);
-                                        ExchangeSession.Folder folder = session.getFolder(folderName);
+                                        ExchangeSession.Folder folder = session.getFolder(buildFolderPath(encodedFolderName));
                                         // must retrieve messages
 
-                                        // use folder.loadMessages() for small folders only
-                                        LOGGER.debug("*");
-                                        os.write('*');
-                                        if (folder.count() <= 500) {
-                                            // simple folder load
-                                            folder.loadMessages();
-                                        } else {
-                                            // load folder in a separate thread
-                                            FolderLoadThread.loadFolder(folder, os);
-                                        }
+                                        loadFolder(folder);
 
                                         String parameters = tokens.nextToken();
                                         StringBuilder answer = new StringBuilder();
@@ -664,7 +656,7 @@ public class ImapConnection extends AbstractConnection {
                                                 answer.append("UNSEEN ").append(folder.unreadCount).append(' ');
                                             }
                                         }
-                                        sendClient(" STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
+                                        sendClient("* STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
                                         sendClient(commandId + " OK " + command + " completed");
                                     } catch (HttpResponseException e) {
                                         sendClient(commandId + " NO folder not found");
@@ -774,11 +766,12 @@ public class ImapConnection extends AbstractConnection {
                 .replaceAll("\\\\", "");
     }
 
-    protected String buildFolderContext(String folderToken) {
-        if (baseMailboxPath == null) {
-            return decodeFolderPath(folderToken);
+    protected String buildFolderPath(String encodedFolderPath) {
+        String decodedFolderPath = decodeFolderPath(encodedFolderPath);
+        if (baseMailboxPath == null || decodedFolderPath.startsWith("/")) {
+            return decodedFolderPath;
         } else {
-            return baseMailboxPath + decodeFolderPath(folderToken);
+            return baseMailboxPath + decodedFolderPath;
         }
     }
 
@@ -806,6 +799,45 @@ public class ImapConnection extends AbstractConnection {
 
         sendClient("* " + currentFolder.count() + " EXISTS");
         sendClient("* " + currentFolder.recent + " RECENT");
+    }
+
+    static private class KeepAlive {
+        private ScheduledExecutorService scheduler;
+        private ScheduledFuture<?> task;
+
+        public KeepAlive(Runnable cb) {
+            scheduler = Executors.newScheduledThreadPool(1, r -> new Thread(r, currentThread().getName() + "-KeepAlive"));
+            task = scheduler.scheduleAtFixedRate(cb, 20, 20, TimeUnit.SECONDS);
+        }
+
+        public void cancel() {
+            task.cancel(true);
+            scheduler.shutdown();
+        }
+    }
+
+    private void loadFolder(ExchangeSession.Folder folder) throws IOException {
+        final boolean enable = Settings.getBooleanProperty("davmail.enableKeepAlive", false);
+        KeepAlive keepAlive = null;
+
+        if (enable && (folder.count() > 500)) {
+            Runnable progressNotifier = () -> {
+                try {
+                    sendClient("* OK in progress");
+                } catch (IOException e) {
+                    LOGGER.warn("Error while sending progress notification", e);
+                }
+            };
+            keepAlive = new KeepAlive(progressNotifier);
+        }
+
+        try {
+            folder.loadMessages();
+        } finally {
+            if (keepAlive != null) {
+                keepAlive.cancel();
+            }
+        }
     }
 
     static protected class MessageWrapper {

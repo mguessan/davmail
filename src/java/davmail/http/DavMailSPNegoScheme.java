@@ -70,8 +70,7 @@ public class DavMailSPNegoScheme extends SPNegoScheme {
         synchronized (LOCK) {
             // check cached TGT
             if (clientLoginContext != null) {
-                for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
-                    KerberosTicket kerberosTicket = (KerberosTicket) ticket;
+                for (KerberosTicket kerberosTicket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
                     if (kerberosTicket.getServer().getName().startsWith("krbtgt") && !kerberosTicket.isCurrent()) {
                         LOGGER.debug("KerberosHelper.clientLogin cached TGT expired, try to relogin");
                         clientLoginContext = null;
@@ -91,8 +90,7 @@ public class DavMailSPNegoScheme extends SPNegoScheme {
                 }
             }
             // try to renew almost expired tickets
-            for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
-                KerberosTicket kerberosTicket = (KerberosTicket) ticket;
+            for (KerberosTicket kerberosTicket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
                 LOGGER.debug("KerberosHelper.clientLogin ticket for " + kerberosTicket.getServer().getName() + " expires at " + kerberosTicket.getEndTime());
                 if (kerberosTicket.getEndTime().getTime() < System.currentTimeMillis() + 10000) {
                     if (kerberosTicket.isRenewable()) {
@@ -119,6 +117,7 @@ public class DavMailSPNegoScheme extends SPNegoScheme {
         }
     }
 
+    @SuppressWarnings("removal")
     protected Object internalGenerateGSSToken(final byte[] input, final Oid oid, final String authServer, final Credentials credentials) {
         return Subject.doAs(clientLoginContext.getSubject(), (PrivilegedAction<Object>) () -> {
             Object result;

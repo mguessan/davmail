@@ -32,9 +32,9 @@ import org.apache.log4j.Logger;
 
 public class ICSCalendarValidator {
     protected static final Logger LOGGER = Logger.getLogger(ICSCalendarValidator.class);
-    // Optimized pattern for validation
+    // Optimized pattern for validation, tab, CR and LF are allowed in icalendar content
     private static final Pattern VALID_CHARS_PATTERN =
-            Pattern.compile("^[\\x20-\\x7E\u0080-\uFFFF]*$");
+            Pattern.compile("^[\r\n\t\\x20-\\x7E\u0080-\uFFFF]*$");
 
     // Constants for better readability
     private static final char NULL_BYTE = '\u0000';
@@ -70,7 +70,7 @@ public class ICSCalendarValidator {
         for (char c : content.toCharArray()) {
             if (c == NULL_BYTE) {
                 nullByteCount++;
-            } else if ((c < 32 || c == DELETE || (c >= 128 && c <= 159))) {
+            } else if (((c < 32 && c!='\r' && c!='\n' && c!='\t') || c == DELETE || (c >= 128 && c <= 159))) {
                 invalidChars.append(String.format("\\u%04x,", (int)c));
             }
         }

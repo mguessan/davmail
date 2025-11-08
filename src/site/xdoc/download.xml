@@ -25,14 +25,12 @@
                 <ul>
                     <li>
                         <strong>Windows:</strong>
-                        Download installation package
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-setup.exe
-                        </a>
-                        or
+                        Download installation package:
                         <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-setup64.exe
-                        </a> for 64 bits Java
-                        <br/>
-                        and follow instructions at
+                        </a> or noinstall zip:
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-standalone.zip
+                        </a>
+                        which now both include Azul JDK, and follow instructions at
                         <a href="windowssetup.html">DavMail Setup on windows</a>
                     </li>
                     <li>
@@ -73,8 +71,8 @@
                 <ul>
                     <li>
                         <strong>Standalone:</strong>
-                        Download noinstall package for Windows:
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-noinstall.zip
+                        Download standalone package for Windows:
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-standalone.zip
                         </a>
                         or platform independent package for other operating systems:
                         <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.zip

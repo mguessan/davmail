@@ -123,7 +123,7 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
 
         LOGGER.debug("Authenticated username: " + token.getUsername());
         if (username != null && !username.isEmpty() && !username.equalsIgnoreCase(token.getUsername())) {
-            throw new DavMailAuthenticationException("Authenticated username " + token.getUsername() + " does not match " + username);
+            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_MISMATCH", token.getUsername(), username);
         }
 
     }

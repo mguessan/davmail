@@ -54,6 +54,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     URI ewsUrl = URI.create(Settings.getO365Url());
 
     private O365InteractiveAuthenticatorFrame o365InteractiveAuthenticatorFrame;
+    private O365InteractiveAuthenticatorSWT o365InteractiveAuthenticatorSWT;
     private O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog;
 
     private String username;
@@ -101,7 +102,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         // common DavMail client id
         final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         // standard native app redirectUri
-        final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", Settings.getO365LoginUrl()+"/common/oauth2/nativeclient");
+        final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", Settings.getO365LoginUrl() + "/common/oauth2/nativeclient");
         // company tenantId or common
         String tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
@@ -135,15 +136,28 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             }
         });
 
-        boolean isJFXAvailable = true;
-        try {
-            Class.forName("javafx.application.Platform");
-        } catch (ClassNotFoundException | NullPointerException e) {
-            LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
-            isJFXAvailable = false;
+        // Check if SWT is available
+        boolean isSWTAvailable = Settings.isSWTAvailable();
+        boolean isDocker = Settings.isDocker();
+        boolean isJFXAvailable = Settings.isJFXAvailable();
+
+        if (isSWTAvailable && !isDocker) {
+            LOGGER.debug("Open SWT browser");
+            try {
+                o365InteractiveAuthenticatorSWT = new O365InteractiveAuthenticatorSWT();
+                o365InteractiveAuthenticatorSWT.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
+                o365InteractiveAuthenticatorSWT.authenticate(initUrl, redirectUri);
+            } catch (Error e) {
+                LOGGER.warn("Unable to load SWT browser: "+e.getMessage(), e);
+                if (o365InteractiveAuthenticatorSWT != null) {
+                    o365InteractiveAuthenticatorSWT.dispose();
+                }
+                o365InteractiveAuthenticatorSWT = null;
+            }
         }
 
-        if (isJFXAvailable) {
+        if (o365InteractiveAuthenticatorSWT == null && isJFXAvailable) {
+            LOGGER.info("Open JavaFX (OpenJFX) browser");
             SwingUtilities.invokeLater(() -> {
                 try {
                     o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
@@ -157,7 +171,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
             });
         } else {
-            if (o365InteractiveAuthenticatorFrame == null) {
+            if (o365InteractiveAuthenticatorFrame == null && o365InteractiveAuthenticatorSWT == null) {
                 try {
                     SwingUtilities.invokeAndWait(() -> o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl));
                 } catch (InterruptedException e) {
@@ -191,17 +205,45 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             o365InteractiveAuthenticatorFrame.close();
         }
 
+        if (o365InteractiveAuthenticatorSWT != null) {
+            o365InteractiveAuthenticatorSWT.dispose();
+        }
+
         if (isAuthenticated) {
             token = O365Token.build(tenantId, clientId, redirectUri, code, password);
 
             LOGGER.debug("Authenticated username: " + token.getUsername());
             if (username != null && !username.isEmpty() && !username.equalsIgnoreCase(token.getUsername())) {
-                throw new DavMailAuthenticationException("Authenticated username " + token.getUsername() + " does not match " + username);
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_MISMATCH", token.getUsername(), username);
             }
 
         } else {
             LOGGER.error("Authentication failed " + errorCode);
             throw new DavMailException("EXCEPTION_AUTHENTICATION_FAILED_REASON", errorCode);
+        }
+    }
+
+    /**
+     * Extract code from redirect location matching redirectUri
+     * @param location redirect location
+     */
+    public void handleCode(String location) {
+        isAuthenticated = location.contains("code=");
+        if (!isAuthenticated && location.contains("error=")) {
+            errorCode = location.substring(location.indexOf("error="));
+        }
+
+        if (isAuthenticated) {
+            LOGGER.debug("Authenticated location: " + location);
+            if (location.contains("&session_state=")) {
+                code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+            } else {
+                code = location.substring(location.indexOf("code=") + 5);
+            }
+            String sessionState = location.substring(location.lastIndexOf('=') + 1);
+
+            LOGGER.debug("Authentication Code: " + code);
+            LOGGER.debug("Authentication session state: " + sessionState);
         }
     }
 
@@ -216,7 +258,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             Settings.load();
 
             O365InteractiveAuthenticator authenticator = new O365InteractiveAuthenticator();
-            authenticator.setUsername("");
+            authenticator.setUsername("demo@demo.onmicrosoft.com");
             authenticator.authenticate();
 
             try (

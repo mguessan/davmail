@@ -20,14 +20,15 @@
 package davmail.exchange.graph;
 
 import davmail.Settings;
+import davmail.exchange.ExchangeSession;
 import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.FieldURI;
-import davmail.exchange.ews.IndexedFieldURI;
 import davmail.util.IOUtil;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ByteArrayEntity;
@@ -57,10 +58,16 @@ public class GraphRequestBuilder {
 
     String childType;
     String childId;
+    String childSuffix;
 
     String select;
 
     String filter;
+
+    String startDateTime;
+    String endDateTime;
+
+    String timeZone;
 
     Set<FieldURI> expandFields;
 
@@ -72,7 +79,7 @@ public class GraphRequestBuilder {
     private String objectId;
 
     /**
-     * Set property in Json body.
+     * Set property in the JSON body.
      * @param name property name
      * @param value property value
      * @throws JSONException on error
@@ -86,7 +93,7 @@ public class GraphRequestBuilder {
     }
 
     /**
-     * Replace json body;
+     * Replace JSON body;
      * @return this
      */
     public GraphRequestBuilder setJsonBody(JSONObject jsonBody) {
@@ -95,7 +102,7 @@ public class GraphRequestBuilder {
     }
 
     /**
-     * Set epxand fields (returning attributes).
+     * Set expand fields (returning attributes).
      * @param expandFields set of fields to return
      * @return this
      */
@@ -119,8 +126,38 @@ public class GraphRequestBuilder {
         return this;
     }
 
+    public GraphRequestBuilder setChildSuffix(String childSuffix) {
+        this.childSuffix = childSuffix;
+        return this;
+    }
+
     public GraphRequestBuilder setFilter(String filter) {
         this.filter = filter;
+        return this;
+    }
+
+    public GraphRequestBuilder setFilter(ExchangeSession.Condition condition) {
+        if (condition != null && !condition.isEmpty()) {
+            StringBuilder buffer = new StringBuilder();
+            condition.appendTo(buffer);
+            LOGGER.debug("filter: " + filter);
+            this.filter = buffer.toString();
+        }
+        return this;
+    }
+
+    public GraphRequestBuilder setStartDateTime(String startDateTime) {
+        this.startDateTime = startDateTime;
+        return this;
+    }
+
+    public GraphRequestBuilder setEndDateTime(String endDateTime) {
+        this.endDateTime = endDateTime;
+        return this;
+    }
+
+    public GraphRequestBuilder setTimezone(String timeZone) {
+        this.timeZone = timeZone;
         return this;
     }
 
@@ -183,6 +220,9 @@ public class GraphRequestBuilder {
         if (childId != null) {
             buffer.append("/").append(childId);
         }
+        if (childSuffix != null) {
+            buffer.append("/").append(childSuffix);
+        }
 
         return buffer.toString();
     }
@@ -198,9 +238,12 @@ public class GraphRequestBuilder {
             if (fieldURI.isMultiValued()) {
                 multiValueProperties.add(fieldURI.getGraphId());
             } else if (fieldURI instanceof ExtendedFieldURI) {
-                singleValueProperties.add(fieldURI.getGraphId());
-            } else if (fieldURI instanceof IndexedFieldURI) {
-                multiValueProperties.add(fieldURI.getGraphId());
+                String graphId = fieldURI.getGraphId();
+                // only expanded properties need a singleValueProperties entry
+                // TODO refactor fields to only use fieldURI for expanded properties
+                if (graphId.contains(" ")) {
+                    singleValueProperties.add(fieldURI.getGraphId());
+                }
             }
         }
         StringBuilder expand = new StringBuilder();
@@ -217,12 +260,14 @@ public class GraphRequestBuilder {
             appendExpandProperties(expand, multiValueProperties);
             expand.append(")");
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Expand: " + expand);
-        }
         return expand.toString();
     }
 
+    /**
+     * Build expand graph parameter to retrieve mapi properties.
+     * @param buffer expand buffer
+     * @param properties mapi properties list
+     */
     protected void appendExpandProperties(StringBuilder buffer, List<String> properties) {
         boolean first = true;
         for (String id : properties) {
@@ -256,6 +301,14 @@ public class GraphRequestBuilder {
                 uriBuilder.addParameter("$filter", filter);
             }
 
+            if (startDateTime != null) {
+                uriBuilder.addParameter("startDateTime", startDateTime);
+            }
+
+            if (endDateTime != null) {
+                uriBuilder.addParameter("endDateTime", endDateTime);
+            }
+
             HttpRequestBase httpRequest;
             if ("POST".equals(method)) {
                 httpRequest = new HttpPost(uriBuilder.build());
@@ -263,6 +316,12 @@ public class GraphRequestBuilder {
                     ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(mimeContent));
                 } else if (jsonBody != null) {
                     ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(IOUtil.convertToBytes(jsonBody)));
+                }
+            } else if (HttpPut.METHOD_NAME.equals(method)) {
+                // contact picture
+                httpRequest = new HttpPut(uriBuilder.build());
+                if (mimeContent != null) {
+                    ((HttpPut) httpRequest).setEntity(new ByteArrayEntity(mimeContent));
                 }
             } else if (HttpPatch.METHOD_NAME.equals(method)) {
                 httpRequest = new HttpPatch(uriBuilder.build());
@@ -277,6 +336,10 @@ public class GraphRequestBuilder {
             }
             httpRequest.setHeader("Content-Type", contentType);
             httpRequest.setHeader("Authorization", "Bearer " + accessToken);
+
+            if (timeZone != null) {
+                httpRequest.setHeader("Prefer", "outlook.timezone=\"" + timeZone + "\"");
+            }
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(httpRequest.getMethod() + " " + httpRequest.getURI());

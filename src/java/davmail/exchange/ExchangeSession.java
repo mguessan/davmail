@@ -36,7 +36,6 @@ import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -44,9 +43,28 @@ import java.io.StringReader;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.SimpleTimeZone;
+import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.UUID;
 
 /**
  * Exchange session through Outlook Web Access (DAV)
@@ -188,7 +206,7 @@ public abstract class ExchangeSession {
     /**
      * Test if the session expired.
      *
-     * @return true this session expired
+     * @return true if this session expired
      * @throws NoRouteToHostException on error
      * @throws UnknownHostException   on error
      */
@@ -208,7 +226,7 @@ public abstract class ExchangeSession {
     protected abstract void buildSessionInfo(java.net.URI uri) throws IOException;
 
     /**
-     * Create message in specified folder.
+     * Create a message in specified folder.
      * Will overwrite an existing message with same subject in the same folder
      *
      * @param folderPath  Exchange folder path
@@ -691,7 +709,7 @@ public abstract class ExchangeSession {
         List<Folder> results = getSubFolders(folderName, folderCondition,
                 recursive);
         // need to include base folder in recursive search, except on root
-        if (recursive && folderName.length() > 0) {
+        if (recursive && !folderName.isEmpty()) {
             results.add(getFolder(folderName));
         }
 
@@ -864,12 +882,12 @@ public abstract class ExchangeSession {
         Folder newFolder = getFolder(currentFolder.folderPath);
         if (currentFolder.ctag == null || !currentFolder.ctag.equals(newFolder.ctag)
                 // ctag stamp is limited to second, check message count
-                || !(currentFolder.count == newFolder.count)
+                || !(currentFolder.messageCount == newFolder.messageCount)
         ) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Contenttag or count changed on " + currentFolder.folderPath +
                         " ctag: " + currentFolder.ctag + " => " + newFolder.ctag +
-                        " count: " + currentFolder.count + " => " + newFolder.count
+                        " count: " + currentFolder.messageCount + " => " + newFolder.messageCount
                         + ", reloading messages");
             }
             currentFolder.hasChildren = newFolder.hasChildren;
@@ -1110,7 +1128,7 @@ public abstract class ExchangeSession {
         /**
          * Folder message count.
          */
-        public int count;
+        public int messageCount;
         /**
          * Folder unread message count.
          */
@@ -1244,7 +1262,7 @@ public abstract class ExchangeSession {
          */
         public int count() {
             if (messages == null) {
-                return count;
+                return messageCount;
             } else {
                 return messages.size();
             }
@@ -1676,7 +1694,7 @@ public abstract class ExchangeSession {
          */
         @Override
         public int hashCode() {
-            return (int) (imapUid ^ (imapUid >>> 32));
+            return Long.hashCode(imapUid);
         }
 
         public String removeFlag(String flag) {
@@ -2041,7 +2059,7 @@ public abstract class ExchangeSession {
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, etag, noneMatch);
             this.contentClass = contentClass;
-            fixICS(itemBody.getBytes(StandardCharsets.UTF_8), false);
+            fixICS(itemBody.getBytes(StandardCharsets.UTF_8), getCalendarEmail(folderPath), false);
             // fix task item name
             if (vCalendar.isTodo() && this.itemName.endsWith(".ics")) {
                 this.itemName = itemName.substring(0, itemName.length() - 3) + "EML";
@@ -2059,7 +2077,7 @@ public abstract class ExchangeSession {
         @Override
         public String getBody() throws IOException {
             if (vCalendar == null) {
-                fixICS(getEventContent(), true);
+                fixICS(getEventContent(), getCalendarEmail(folderPath), true);
             }
             return vCalendar.toString();
         }
@@ -2129,21 +2147,22 @@ public abstract class ExchangeSession {
                 bodyPart = mimeMessage;
             }
 
+
             if (bodyPart != null) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bodyPart.getDataHandler().writeTo(baos);
-                baos.close();
-                result = baos.toByteArray();
+                try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                    bodyPart.getDataHandler().writeTo(baos);
+                    result = baos.toByteArray();
+                }
             } else {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                mimeMessage.writeTo(baos);
-                baos.close();
-                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), StandardCharsets.UTF_8));
+                try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                    mimeMessage.writeTo(baos);
+                    throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), StandardCharsets.UTF_8));
+                }
             }
             return result;
         }
 
-        protected void fixICS(byte[] icsContent, boolean fromServer) throws IOException {
+        protected void fixICS(byte[] icsContent, String calendarEmail, boolean fromServer) throws IOException {
             if (LOGGER.isDebugEnabled() && fromServer) {
                 dumpIndex++;
                 String icsBody = new String(icsContent, StandardCharsets.UTF_8);
@@ -2152,7 +2171,7 @@ public abstract class ExchangeSession {
                 LOGGER.debug("Vcalendar body ValidationResult: "+ vr.isValid() +" "+ vr.showReason());
                 LOGGER.debug("Vcalendar body received from server:\n" + icsBody);
             }
-            vCalendar = new VCalendar(icsContent, getEmail(), getVTimezone());
+            vCalendar = new VCalendar(icsContent, calendarEmail, getVTimezone());
             vCalendar.fixVCalendar(fromServer);
             if (LOGGER.isDebugEnabled() && !fromServer) {
                 String resultString = vCalendar.toString();
@@ -2205,21 +2224,12 @@ public abstract class ExchangeSession {
                         .append(after ? "-to" : "-from")
                         .append((after ^ fromServer) ? "-server" : "-client")
                         .append(".ics");
-                if ((icsBody != null) && (icsBody.length() > 0)) {
-                    OutputStreamWriter writer = null;
-                    try {
-                        writer = new OutputStreamWriter(new FileOutputStream(filePath.toString()), StandardCharsets.UTF_8);
+                if ((icsBody != null) && (!icsBody.isEmpty())) {
+                    try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(Paths.get(filePath.toString())), StandardCharsets.UTF_8))
+                    {
                         writer.write(icsBody);
                     } catch (IOException e) {
                         LOGGER.error(e);
-                    } finally {
-                        if (writer != null) {
-                            try {
-                                writer.close();
-                            } catch (IOException e) {
-                                LOGGER.error(e);
-                            }
-                        }
                     }
 
 
@@ -2292,7 +2302,7 @@ public abstract class ExchangeSession {
                 }
 
                 // do not send notification if no recipients found
-                if ((to == null || to.length() == 0) && (cc == null || cc.length() == 0)) {
+                if ((to == null || to.isEmpty()) && (cc == null || cc.isEmpty())) {
                     return null;
                 }
 
@@ -2340,7 +2350,7 @@ public abstract class ExchangeSession {
             writer.writeLn();
             writer.writeLn("------=_NextPart_" + boundary);
 
-            if (description != null && description.length() > 0) {
+            if (description != null && !description.isEmpty()) {
                 writer.writeHeader("Content-Type", "text/plain;\r\n" +
                         "\tcharset=\"utf-8\"");
                 writer.writeHeader("content-transfer-encoding", "8bit");
@@ -2816,8 +2826,8 @@ public abstract class ExchangeSession {
             // reset missing properties to null
             for (String key : CONTACT_ATTRIBUTES) {
                 if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
-                        && !"lastmodified".equals(key) && !"sensitivity".equals(key) &&
-                        !properties.containsKey(key)) {
+                        && !"lastmodified".equals(key) && !"sensitivity".equals(key)
+                        && !properties.containsKey(key)) {
                     properties.put(key, null);
                 }
             }
@@ -2847,7 +2857,7 @@ public abstract class ExchangeSession {
 
     protected String convertZuluDateToBday(String value) {
         String result = null;
-        if (value != null && value.length() > 0) {
+        if (value != null && !value.isEmpty()) {
             try {
                 SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
                 Calendar cal = Calendar.getInstance();
@@ -2863,7 +2873,7 @@ public abstract class ExchangeSession {
 
     protected String convertBDayToZulu(String value) {
         String result = null;
-        if (value != null && value.length() > 0) {
+        if (value != null && !value.isEmpty()) {
             try {
                 SimpleDateFormat parser;
                 if (value.length() == 10) {
@@ -2933,6 +2943,13 @@ public abstract class ExchangeSession {
     public String getEmail() {
         return email;
     }
+
+    /**
+     * Get email from current calendar
+     * @param folderPath calendar folder path
+     * @return calendar mailbox
+     */
+    protected abstract String getCalendarEmail(String folderPath) throws IOException;
 
     /**
      * Get current user alias
@@ -3125,12 +3142,7 @@ public abstract class ExchangeSession {
 
         StringBuilder getBusyBuffer(char type) {
             String fbType = FBTYPES.get(type);
-            StringBuilder buffer = busyMap.get(fbType);
-            if (buffer == null) {
-                buffer = new StringBuilder();
-                busyMap.put(fbType, buffer);
-            }
-            return buffer;
+            return busyMap.computeIfAbsent(fbType, k -> new StringBuilder());
         }
 
         void startBusy(char type, Calendar currentCal) {
@@ -3153,7 +3165,7 @@ public abstract class ExchangeSession {
 
         FreeBusy(SimpleDateFormat icalParser, Date startDate, String fbdata) {
             this.icalParser = icalParser;
-            if (fbdata.length() > 0) {
+            if (!fbdata.isEmpty()) {
                 Calendar currentCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
                 currentCal.setTime(startDate);
 
@@ -3173,7 +3185,7 @@ public abstract class ExchangeSession {
         }
 
         /**
-         * Append freebusy information to buffer.
+         * Append freebusy information to provided buffer.
          *
          * @param buffer String buffer
          */
@@ -3205,5 +3217,96 @@ public abstract class ExchangeSession {
     }
 
     protected abstract void loadVtimezone();
+
+    public static final Map<String, String> vTodoToTaskStatusMap = new HashMap<>();
+    public static final Map<String, String> taskTovTodoStatusMap = new HashMap<>();
+    static {
+        //taskTovTodoStatusMap.put("NotStarted", null);
+        taskTovTodoStatusMap.put("InProgress", "IN-PROCESS");
+        taskTovTodoStatusMap.put("Completed", "COMPLETED");
+        taskTovTodoStatusMap.put("WaitingOnOthers", "NEEDS-ACTION");
+        taskTovTodoStatusMap.put("Deferred", "CANCELLED");
+
+        //vTodoToTaskStatusMap.put(null, "NotStarted");
+        vTodoToTaskStatusMap.put("IN-PROCESS", "InProgress");
+        vTodoToTaskStatusMap.put("COMPLETED", "Completed");
+        vTodoToTaskStatusMap.put("NEEDS-ACTION", "WaitingOnOthers");
+        vTodoToTaskStatusMap.put("CANCELLED", "Deferred");
+
+    }
+
+    protected static final Map<String, String> importanceToPriorityMap = new HashMap<>();
+
+    static {
+        importanceToPriorityMap.put("High", "1");
+        importanceToPriorityMap.put("Normal", "5");
+        importanceToPriorityMap.put("Low", "9");
+    }
+
+    protected static final Map<String, String> priorityToImportanceMap = new HashMap<>();
+
+    static {
+        // 0 means undefined, map it to normal
+        priorityToImportanceMap.put("0", "Normal");
+
+        priorityToImportanceMap.put("1", "High");
+        priorityToImportanceMap.put("2", "High");
+        priorityToImportanceMap.put("3", "High");
+        priorityToImportanceMap.put("4", "Normal");
+        priorityToImportanceMap.put("5", "Normal");
+        priorityToImportanceMap.put("6", "Normal");
+        priorityToImportanceMap.put("7", "Low");
+        priorityToImportanceMap.put("8", "Low");
+        priorityToImportanceMap.put("9", "Low");
+    }
+
+    protected String convertPriorityFromExchange(String exchangeImportanceValue) {
+        String value = null;
+        if (exchangeImportanceValue != null) {
+            value = importanceToPriorityMap.get(exchangeImportanceValue);
+        }
+        return value;
+    }
+
+    protected String convertPriorityToExchange(String vTodoPriorityValue) {
+        String value = null;
+        if (vTodoPriorityValue != null) {
+            value = priorityToImportanceMap.get(vTodoPriorityValue);
+        }
+        return value;
+    }
+
+    /**
+     * Possible values are: normal, personal, private, and confidential.
+     * @param sensitivity Exchange sensivity
+     * @return event class
+     */
+    protected String convertClassFromExchange(String sensitivity) {
+        String eventClass;
+        if ("private".equals(sensitivity)) {
+            eventClass = "PRIVATE";
+        } else if ("confidential".equals(sensitivity)) {
+            eventClass = "CONFIDENTIAL";
+        } else if ("personal".equals(sensitivity)) {
+            eventClass = "PRIVATE";
+        } else {
+            // normal
+            eventClass = "PUBLIC";
+        }
+        return eventClass;
+    }
+
+    protected String convertClassToExchange(String eventClass) {
+        String sensitivity;
+        if ("PRIVATE".equals(eventClass)) {
+            sensitivity = "Private";
+        } else if ("CONFIDENTIAL".equals(eventClass)) {
+            sensitivity = "Confidential";
+        } else {
+            // PUBLIC
+            sensitivity = "Normal";
+        }
+        return sensitivity;
+    }
 
 }

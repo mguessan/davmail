@@ -4,7 +4,7 @@
 !define PRODUCT_NAME "DavMail"
 !define PRODUCT_VERSION "${VERSION}"
 !define PRODUCT_PUBLISHER "Mickaël Guessant"
-!define PRODUCT_WEB_SITE "http://sourceforge.net/projects/davmail"
+!define PRODUCT_WEB_SITE "https://davmail.sourceforge.net"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\davmail64.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
@@ -96,6 +96,8 @@ Section "MainSection" SEC01
   File "dist\davmail.jar"
   File "dist\davmail64.exe"
   File "dist\davmailservice64.exe"
+  File "dist\davmail64.ini"
+  File "dist\davmailservice64.ini"
   SetOutPath "$INSTDIR\lib"
   File "dist\lib\activation-1.1.1.jar"
   File "dist\lib\commons-codec-1.15.jar"
@@ -115,8 +117,11 @@ Section "MainSection" SEC01
   File "dist\lib\slf4j-reload4j-2.0.16.jar"
   File "dist\lib\stax-api-1.0.1.jar"
   File "dist\lib\stax2-api-3.1.1.jar"
+  File "dist\lib\swt-4.37-win32-x86_64.jar"
   File "dist\lib\winrun4j-0.4.5.jar"
   File "dist\lib\woodstox-core-6.4.0.jar"
+  SetOutPath "$InstDir\jre"
+  File /r "dist\jre\*.*"
 SectionEnd
 
 Section -AdditionalIcons
@@ -187,11 +192,14 @@ no_quest:
   Delete "$INSTDIR\lib\slf4j-reload4j-2.0.16.jar"
   Delete "$INSTDIR\lib\stax-api-1.0.1.jar"
   Delete "$INSTDIR\lib\stax2-api-3.1.1.jar"
+  Delete "$INSTDIR\lib\swt-4.37-win32-x86_64.jar"
   Delete "$INSTDIR\lib\winrun4j-0.4.5.jar"
   Delete "$INSTDIR\lib\woodstox-core-6.4.0.jar"
 
   Delete "$INSTDIR\davmailservice64.exe"
   Delete "$INSTDIR\davmail64.exe"
+  Delete "$INSTDIR\davmailservice64.ini"
+  Delete "$INSTDIR\davmail64.ini"
   Delete "$INSTDIR\davmail.log"
   Delete "$INSTDIR\davmail.jar"
 
@@ -203,6 +211,7 @@ no_quest:
 
   RMDir "$SMPROGRAMS\DavMail"
   RMDir "$INSTDIR\lib"
+  RMDir /r "$INSTDIR\jre"
   RMDir "$INSTDIR"
 
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "DavMail"

@@ -33,7 +33,7 @@ public class ExtendedFieldURI implements FieldURI {
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    protected enum DistinguishedPropertySetType {
+    public enum DistinguishedPropertySetType {
         Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task
     }
 
@@ -43,6 +43,8 @@ public class ExtendedFieldURI implements FieldURI {
     protected String propertyName;
     protected int propertyId;
     protected final PropertyType propertyType;
+
+    private String graphId;
 
     /**
      * Create extended field uri.
@@ -72,6 +74,21 @@ public class ExtendedFieldURI implements FieldURI {
      * Create extended field uri.
      *
      * @param distinguishedPropertySetId distinguished property set id
+     * @param propertyId                 property id
+     * @param propertyType               property type
+     * @param graphId                    graphId
+     */
+    public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, int propertyId, PropertyType propertyType, String graphId) {
+        this.distinguishedPropertySetId = distinguishedPropertySetId;
+        this.propertyId = propertyId;
+        this.propertyType = propertyType;
+        this.graphId = graphId;
+    }
+
+    /**
+     * Create extended field uri.
+     *
+     * @param distinguishedPropertySetId distinguished property set id
      * @param propertyName               property name
      */
     public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, String propertyName) {
@@ -91,6 +108,11 @@ public class ExtendedFieldURI implements FieldURI {
         this.distinguishedPropertySetId = distinguishedPropertySetId;
         this.propertyName = propertyName;
         this.propertyType = propertyType;
+    }
+
+    public ExtendedFieldURI(int intPropertyTag, PropertyType propertyType, String graphId) {
+        this(intPropertyTag, propertyType);
+        this.graphId = graphId;
     }
 
     public void appendTo(StringBuilder buffer) {
@@ -166,22 +188,58 @@ public class ExtendedFieldURI implements FieldURI {
 
     @Override
     public String getGraphId() {
+        if (graphId != null) {
+            return graphId;
+        }
+        // PropertyId values may only be in one of the following formats:
+        // 'MapiPropertyType namespaceGuid Name propertyName', 'MapiPropertyType namespaceGuid Id propertyId' or 'MapiPropertyType propertyTag'.
+
+        String namespaceGuid = null;
+
         if (distinguishedPropertySetId == DistinguishedPropertySetType.PublicStrings) {
-            return propertyType.name() + " {00020329-0000-0000-c000-000000000046} Name " + propertyName;
+            namespaceGuid = "{00020329-0000-0000-c000-000000000046}";
         }
         if (distinguishedPropertySetId == DistinguishedPropertySetType.InternetHeaders) {
-            return propertyType.name() + " {00020386-0000-0000-c000-000000000046} Name " + propertyName;
+            namespaceGuid = "{00020386-0000-0000-c000-000000000046}";
         }
         if (distinguishedPropertySetId == DistinguishedPropertySetType.Common) {
-            return propertyType.name() + " {00062008-0000-0000-c000-000000000046} Name " + propertyName;
+            namespaceGuid = "{00062008-0000-0000-c000-000000000046}";
+        }
+        if (distinguishedPropertySetId == DistinguishedPropertySetType.Address) {
+            namespaceGuid = "{00062004-0000-0000-c000-000000000046}";
+        }
+        if (distinguishedPropertySetId == DistinguishedPropertySetType.Task) {
+            namespaceGuid = "{00062003-0000-0000-c000-000000000046}";
         }
 
-        return propertyType.name() + " " + propertyTag;
+        StringBuilder buffer = new StringBuilder();
+        if (namespaceGuid != null) {
+            buffer.append(propertyType.name()).append(" ").append(namespaceGuid);
+            if (propertyName != null) {
+                buffer.append(" Name ").append(propertyName);
+            } else {
+                buffer.append(" Id ").append("0x").append(Integer.toHexString(propertyId));
+            }
+        } else if (propertyTag != null) {
+            buffer.append(propertyType.name()).append(" ").append(propertyTag);
+        } else {
+            throw new IllegalStateException("Unsupported graph property for graph " + getResponseName());
+        }
+        return buffer.toString();
     }
 
     @Override
     public boolean isMultiValued() {
         return propertyType == PropertyType.StringArray;
+    }
+
+    public boolean isNumber() {
+        return propertyType == PropertyType.Short || propertyType == PropertyType.Integer || propertyType == PropertyType.Long || propertyType == PropertyType.Double;
+    }
+
+    @Override
+    public boolean isBoolean() {
+        return propertyType == PropertyType.Boolean;
     }
 
 }

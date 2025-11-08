@@ -52,7 +52,7 @@ import java.io.Writer;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -101,7 +101,7 @@ public class CaldavConnection extends AbstractConnection {
     protected Map<String, String> parseHeaders() throws IOException {
         HashMap<String, String> headers = new HashMap<>();
         String line;
-        while ((line = readClient()) != null && line.length() > 0) {
+        while ((line = readClient()) != null && !line.isEmpty()) {
             int index = line.indexOf(':');
             if (index <= 0) {
                 wireLogger.warn("Invalid header: " + line);
@@ -113,7 +113,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected String getContent(String contentLength) throws IOException {
-        if (contentLength == null || contentLength.length() == 0) {
+        if (contentLength == null || contentLength.isEmpty()) {
             return null;
         } else {
             int size;
@@ -131,7 +131,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected void setSocketTimeout(String keepAliveValue) throws IOException {
-        if (keepAliveValue != null && keepAliveValue.length() > 0) {
+        if (keepAliveValue != null && !keepAliveValue.isEmpty()) {
             int keepAlive;
             try {
                 keepAlive = Integer.parseInt(keepAliveValue);
@@ -369,7 +369,7 @@ public class CaldavConnection extends AbstractConnection {
             sendHttpResponse(status, null);
         } else if (request.isMove()) {
             String destinationUrl = request.getHeader("destination");
-            session.moveItem(request.path, URIUtil.decode(new URL(destinationUrl).getPath()));
+            session.moveItem(request.path, URIUtil.decode(URI.create(destinationUrl).toURL().getPath()));
             sendHttpResponse(HttpStatus.SC_CREATED, null);
         } else {
             sendNotFound(request);
@@ -526,7 +526,7 @@ public class CaldavConnection extends AbstractConnection {
                     IOUtil.encodeBase64AsString(folder.ctag));
         }
         if (request.hasProperty("displayname")) {
-            if (subFolder == null || subFolder.length() == 0) {
+            if (subFolder == null || subFolder.isEmpty()) {
                 // use i18n calendar name as display name
                 String displayname = request.getLastPath();
                 if ("calendar".equals(displayname)) {
@@ -792,7 +792,7 @@ public class CaldavConnection extends AbstractConnection {
                 String eventName = getEventFileNameFromPath(href);
                 try {
                     // ignore cases for Sunbird
-                    if (eventName != null && eventName.length() > 0
+                    if (eventName != null && !eventName.isEmpty()
                             && !"inbox".equals(eventName) && !"calendar".equals(eventName)) {
                         ExchangeSession.Item item;
                         try {
@@ -1368,7 +1368,7 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
-    protected static class CaldavRequest {
+    public static class CaldavRequest {
         protected final String command;
         protected final String path;
         protected final String[] pathElements;
@@ -1467,7 +1467,7 @@ public class CaldavConnection extends AbstractConnection {
 
         public String getPath(String subFolder) {
             String folderPath;
-            if (subFolder == null || subFolder.length() == 0) {
+            if (subFolder == null || subFolder.isEmpty()) {
                 folderPath = path;
             } else if (path.endsWith("/")) {
                 folderPath = path + subFolder;
@@ -1690,11 +1690,11 @@ public class CaldavConnection extends AbstractConnection {
 
             StringBuilder calendarPath = new StringBuilder();
             for (int i = 0; i < endIndex; i++) {
-                if (getPathElement(i).length() > 0) {
+                if (!getPathElement(i).isEmpty()) {
                     calendarPath.append('/').append(getPathElement(i));
                 }
             }
-            if (subFolder != null && subFolder.length() > 0) {
+            if (subFolder != null && !subFolder.isEmpty()) {
                 calendarPath.append('/').append(subFolder);
             }
             if (this.isUserAgent("Address%20Book") || this.isUserAgent("Darwin")) {
@@ -1766,7 +1766,7 @@ public class CaldavConnection extends AbstractConnection {
     /**
      * Caldav response wrapper, content sent in chunked mode to avoid timeout
      */
-    protected class CaldavResponse extends ChunkedResponse {
+    public class CaldavResponse extends ChunkedResponse {
 
         protected CaldavResponse(int status) throws IOException {
             super(status, "text/xml;charset=UTF-8");
@@ -1791,7 +1791,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public void appendCalendarData(String ics) throws IOException {
-            if (ics != null && ics.length() > 0) {
+            if (ics != null && !ics.isEmpty()) {
                 writer.write("<C:calendar-data xmlns:C=\"urn:ietf:params:xml:ns:caldav\"");
                 writer.write(" C:content-type=\"text/calendar\" C:version=\"2.0\">");
                 writer.write(StringUtil.xmlEncode(ics));
@@ -1800,7 +1800,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public void appendContactData(String vcard) throws IOException {
-            if (vcard != null && vcard.length() > 0) {
+            if (vcard != null && !vcard.isEmpty()) {
                 writer.write("<E:address-data>");
                 writer.write(StringUtil.xmlEncode(vcard));
                 writer.write("</E:address-data>");

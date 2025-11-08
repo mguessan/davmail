@@ -11,15 +11,13 @@
     <body>
 
         <section name="DavMail Setup on windows">
-            <p>Prerequisite : OpenJDK 8 or later.
-                On windows,
-                <a href="https://www.azul.com/downloads/zulu-community/?os=windows&amp;architecture=x86-64-bit&amp;package=jre-fx">Zulu JRE FX</a>
-                is a good option to have OpenJFX available for O365Interactive.
+            <p>DavMail installer now includes Azul JRE with OpenJFX support, so you no longer need to install Java
+                separately.
             </p>
 
-            <p>If Java is not available, DavMail Jsmooth launcher will trigger java download and
-                setup.
+            <p>You can follow the instructions below or just use winget.
             </p>
+            <source>winget install davmail</source>
 
             <p>DavMail setup is straightforward, just follow the setup wizard.
             </p>

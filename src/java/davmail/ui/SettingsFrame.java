@@ -94,6 +94,8 @@ public class SettingsFrame extends JFrame {
     protected JTextField caldavAlarmSoundField;
     protected JCheckBox forceActiveSyncUpdateCheckBox;
     protected JTextField defaultDomainField;
+
+    protected JCheckBox enableTrayCheckBox;
     protected JCheckBox showStartupBannerCheckBox;
     protected JCheckBox disableGuiNotificationsCheckBox;
     protected JCheckBox disableTrayActivitySwitchCheckBox;
@@ -110,6 +112,7 @@ public class SettingsFrame extends JFrame {
     protected JTextField oauthTenantIdField;
     protected JTextField oauthClientIdField;
     protected JTextField oauthRedirectUriField;
+    protected JTextField oauthTldField;
 
     JCheckBox osxHideFromDockCheckBox;
 
@@ -410,12 +413,13 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOauthPanel() {
-        JPanel oAuthPanel = new JPanel(new GridLayout(3, 2));
+        JPanel oAuthPanel = new JPanel(new GridLayout(4, 2));
         oAuthPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OAUTH")));
 
         oauthTenantIdField = new JTextField(Settings.getProperty("davmail.oauth.tenantId"), 20);
         oauthClientIdField = new JTextField(Settings.getProperty("davmail.oauth.clientId"), 20);
         oauthRedirectUriField = new JTextField(Settings.getProperty("davmail.oauth.redirectUri"), 20);
+        oauthTldField = new JTextField(Settings.getProperty("davmail.tld"), 20);
 
         addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_TENANTID"), oauthTenantIdField,
                 BundleMessage.format("UI_OAUTH_TENANTID_HELP"));
@@ -423,6 +427,8 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_OAUTH_CLIENTID_HELP"));
         addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_REDIRECTURI"), oauthRedirectUriField,
                 BundleMessage.format("UI_OAUTH_REDIRECTURI_HELP"));
+        addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_TLD"), oauthTldField,
+                BundleMessage.format("UI_OAUTH_TLD_HELP"));
         updateMaximumSize(oAuthPanel);
         return oAuthPanel;
     }
@@ -451,8 +457,34 @@ public class SettingsFrame extends JFrame {
         return networkSettingsPanel;
     }
 
+    protected JPanel getUISettingsPanel() {
+        JPanel uiSettingsPanel = new JPanel(new GridLayout(4, 2));
+        uiSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
+
+        enableTrayCheckBox = new JCheckBox();
+        enableTrayCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableTray", false));
+        showStartupBannerCheckBox = new JCheckBox();
+        showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", !Settings.isLinux()));
+        disableGuiNotificationsCheckBox = new JCheckBox();
+        disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
+        disableTrayActivitySwitchCheckBox =  new JCheckBox();
+        disableTrayActivitySwitchCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableTrayActivitySwitch", false));
+
+        addSettingComponent(uiSettingsPanel, BundleMessage.format("UI_ENABLE_TRAY"), enableTrayCheckBox,
+                BundleMessage.format("UI_ENABLE_TRAY_HELP"));
+        addSettingComponent(uiSettingsPanel, BundleMessage.format("UI_SHOW_STARTUP_BANNER"), showStartupBannerCheckBox,
+                BundleMessage.format("UI_SHOW_STARTUP_BANNER_HELP"));
+        addSettingComponent(uiSettingsPanel, BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS"), disableGuiNotificationsCheckBox,
+                BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS_HELP"));
+        addSettingComponent(uiSettingsPanel, BundleMessage.format("UI_DISABLE_TRAY_ACTIVITY_SWITCH"), disableTrayActivitySwitchCheckBox,
+                BundleMessage.format("UI_DISABLE_TRAY_ACTIVITY_SWITCH_HELP"));
+
+        updateMaximumSize(uiSettingsPanel);
+        return uiSettingsPanel;
+    }
+
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(16, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(13, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
         folderSizeLimitField = new JTextField(Settings.getProperty("davmail.folderSizeLimit"), 6);
@@ -464,12 +496,6 @@ public class SettingsFrame extends JFrame {
         forceActiveSyncUpdateCheckBox = new JCheckBox();
         forceActiveSyncUpdateCheckBox.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
         defaultDomainField = new JTextField(Settings.getProperty("davmail.defaultDomain"), 15);
-        showStartupBannerCheckBox = new JCheckBox();
-        showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
-        disableGuiNotificationsCheckBox = new JCheckBox();
-        disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
-        disableTrayActivitySwitchCheckBox =  new JCheckBox();
-        disableTrayActivitySwitchCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableTrayActivitySwitch", false));
         imapAutoExpungeCheckBox = new JCheckBox();
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
         imapAlwaysApproxMsgSizeCheckBox = new JCheckBox();
@@ -497,12 +523,6 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_FORCE_ACTIVESYNC_UPDATE_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DEFAULT_DOMAIN"), defaultDomainField,
                 BundleMessage.format("UI_DEFAULT_DOMAIN_HELP"));
-        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_SHOW_STARTUP_BANNER"), showStartupBannerCheckBox,
-                BundleMessage.format("UI_SHOW_STARTUP_BANNER_HELP"));
-        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS"), disableGuiNotificationsCheckBox,
-                BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS_HELP"));
-        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DISABLE_TRAY_ACTIVITY_SWITCH"), disableTrayActivitySwitchCheckBox,
-                BundleMessage.format("UI_DISABLE_TRAY_ACTIVITY_SWITCH_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_IMAP_AUTO_EXPUNGE"), imapAutoExpungeCheckBox,
                 BundleMessage.format("UI_IMAP_AUTO_EXPUNGE_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ALWAYS_APPROXIMATE_MSG_SIZE"), imapAlwaysApproxMsgSizeCheckBox,
@@ -642,6 +662,7 @@ public class SettingsFrame extends JFrame {
         caldavAlarmSoundField.setText(Settings.getProperty("davmail.caldavAlarmSound"));
         forceActiveSyncUpdateCheckBox.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
         defaultDomainField.setText(Settings.getProperty("davmail.defaultDomain"));
+        enableTrayCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableTray", !Settings.isLinux()));
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
         disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
         disableTrayActivitySwitchCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableTrayActivitySwitch", false));
@@ -666,6 +687,7 @@ public class SettingsFrame extends JFrame {
         oauthTenantIdField.setText(Settings.getProperty("davmail.oauth.tenantId"));
         oauthClientIdField.setText(Settings.getProperty("davmail.oauth.clientId"));
         oauthRedirectUriField.setText(Settings.getProperty("davmail.oauth.redirectUri"));
+        oauthTldField.setText(Settings.getProperty("davmail.tld"));
 
         rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
@@ -749,6 +771,15 @@ public class SettingsFrame extends JFrame {
 
         tabbedPane.add(BundleMessage.format("UI_TAB_LOGGING"), loggingPanel);
 
+        JPanel uiPanel = new JPanel();
+        uiPanel.setLayout(new BoxLayout(uiPanel, BoxLayout.Y_AXIS));
+
+        uiPanel.add(getUISettingsPanel());
+        // empty panel
+        uiPanel.add(new JPanel());
+
+        tabbedPane.add(BundleMessage.format("UI_TAB_UI"), uiPanel);
+
         JPanel advancedPanel = new JPanel();
         advancedPanel.setLayout(new BoxLayout(advancedPanel, BoxLayout.Y_AXIS));
 
@@ -810,6 +841,7 @@ public class SettingsFrame extends JFrame {
             Settings.setProperty("davmail.caldavAlarmSound", String.valueOf(caldavAlarmSoundField.getText()));
             Settings.setProperty("davmail.forceActiveSyncUpdate", String.valueOf(forceActiveSyncUpdateCheckBox.isSelected()));
             Settings.setProperty("davmail.defaultDomain", String.valueOf(defaultDomainField.getText()));
+            Settings.setProperty("davmail.enableTray", String.valueOf(enableTrayCheckBox.isSelected()));
             Settings.setProperty("davmail.showStartupBanner", String.valueOf(showStartupBannerCheckBox.isSelected()));
             Settings.setProperty("davmail.disableGuiNotifications", String.valueOf(disableGuiNotificationsCheckBox.isSelected()));
             Settings.setProperty("davmail.disableTrayActivitySwitch", String.valueOf(disableTrayActivitySwitchCheckBox.isSelected()));
@@ -837,6 +869,7 @@ public class SettingsFrame extends JFrame {
             Settings.setProperty("davmail.oauth.tenantId", oauthTenantIdField.getText());
             Settings.setProperty("davmail.oauth.clientId", oauthClientIdField.getText());
             Settings.setProperty("davmail.oauth.redirectUri", oauthRedirectUriField.getText());
+            Settings.setProperty("davmail.tld", oauthTldField.getText());
 
             Settings.setLoggingLevel("rootLogger", (Level) rootLoggingLevelField.getSelectedItem());
             Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());

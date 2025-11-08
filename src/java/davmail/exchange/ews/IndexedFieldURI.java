@@ -81,4 +81,15 @@ public class IndexedFieldURI implements FieldURI {
     public boolean isMultiValued() {
         return true;
     }
+
+    @Override
+    public boolean isNumber() {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isBoolean() {
+        throw new UnsupportedOperationException();
+    }
 }

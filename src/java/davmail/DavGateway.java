@@ -58,23 +58,39 @@ public final class DavGateway {
      */
     public static void main(String[] args) {
         boolean notray = false;
+        boolean tray = false;
         boolean server = false;
         boolean token = false;
+
+        // check environment for davmail settings path in Docker
+        String configFilePath = Settings.getConfigFilePath();
         for (String arg : args) {
             if (arg.startsWith("-")) {
                 if ("-notray".equals(arg)) {
                     notray = true;
+                } else if ("-tray".equals(arg)) {
+                    tray = true;
                 } else if ("-server".equals(arg)) {
                     server = true;
                 } else if ("-token".equals(arg)) {
                     token = true;
                 }
             } else {
-                Settings.setConfigFilePath(arg);
+                configFilePath = arg;
             }
         }
 
+        Settings.setConfigFilePath(configFilePath);
         Settings.load();
+
+        // use notray / tray to override davmail.enableTray
+        if (tray) {
+            Settings.setProperty("davmail.enableTray", "true");
+        }
+        if (notray) {
+            Settings.setProperty("davmail.enableTray", "false");
+        }
+
         if (token) {
             try {
                 ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName("davmail.exchange.auth.O365InteractiveAuthenticator")
@@ -105,7 +121,7 @@ public final class DavGateway {
                 LOGGER.debug("Start DavMail in server mode");
             } else {
                 LOGGER.debug("Start DavMail in GUI mode");
-                DavGatewayTray.init(notray);
+                DavGatewayTray.init();
             }
 
             start();
@@ -258,6 +274,7 @@ public final class DavGateway {
         if (!Settings.getBooleanProperty("davmail.disableUpdateCheck")) {
             try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT)) {
                 GetRequest getRequest = new GetRequest(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
+                getRequest.setHeader("User-Agent", "Mozilla/5.0");
                 getRequest = httpClientAdapter.executeFollowRedirect(getRequest);
                 version = getRequest.getResponseBodyAsString();
                 LOGGER.debug("DavMail released version: " + version);

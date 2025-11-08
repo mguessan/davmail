@@ -53,8 +53,8 @@ public final class Field {
         FIELD_MAP.put("instancetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype", ExtendedFieldURI.PropertyType.Integer));
         //FIELD_MAP.put("dtstart", new ExtendedFieldURI(0x10C3, ExtendedFieldURI.PropertyType.SystemTime));
         //FIELD_MAP.put("dtend", new ExtendedFieldURI(0x10C4, ExtendedFieldURI.PropertyType.SystemTime));
-        FIELD_MAP.put("dtstart", new UnindexedFieldURI("calendar:Start"));
-        FIELD_MAP.put("dtend", new UnindexedFieldURI("calendar:End"));
+        FIELD_MAP.put("dtstart", new UnindexedFieldURI("calendar:Start", "start"));
+        FIELD_MAP.put("dtend", new UnindexedFieldURI("calendar:End", "end"));
 
         FIELD_MAP.put("originalstart", new UnindexedFieldURI("calendar:OriginalStart"));
 
@@ -66,7 +66,7 @@ public final class Field {
         FIELD_MAP.put("imapUid", new ExtendedFieldURI(0x0e23, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("flagStatus", new ExtendedFieldURI(0x1090, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("lastVerbExecuted", new ExtendedFieldURI(0x1081, ExtendedFieldURI.PropertyType.Integer));
-        FIELD_MAP.put("read", new UnindexedFieldURI("message:IsRead"));
+        FIELD_MAP.put("read", new UnindexedFieldURI("message:IsRead", "isRead"));
         FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x0e08, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("date", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));
         // always empty on Exchange 2007
@@ -110,7 +110,7 @@ public final class Field {
 
         FIELD_MAP.put("middlename", new ExtendedFieldURI(0x3A44, ExtendedFieldURI.PropertyType.String));
         //FIELD_MAP.put("fileas", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:fileas"));
-        FIELD_MAP.put("fileas", new UnindexedFieldURI("contacts:FileAs"));
+        FIELD_MAP.put("fileas", new UnindexedFieldURI("contacts:FileAs", "fileAs"));
 
         FIELD_MAP.put("members", new UnindexedFieldURI("distributionlist:Members"));
 
@@ -126,8 +126,8 @@ public final class Field {
         FIELD_MAP.put("extensionattribute3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8051, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("extensionattribute4", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8052, ExtendedFieldURI.PropertyType.String));
 
-        FIELD_MAP.put("bday", new ExtendedFieldURI(0x3A42, ExtendedFieldURI.PropertyType.SystemTime));
-        FIELD_MAP.put("anniversary", new ExtendedFieldURI(0x3A41, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("bday", new ExtendedFieldURI(0x3A42, ExtendedFieldURI.PropertyType.SystemTime, "birthday"));
+        FIELD_MAP.put("anniversary", new ExtendedFieldURI(0x3A41, ExtendedFieldURI.PropertyType.SystemTime, "weddingAnniversary"));
         FIELD_MAP.put("businesshomepage", new ExtendedFieldURI(0x3A51, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("personalHomePage", new ExtendedFieldURI(0x3A50, ExtendedFieldURI.PropertyType.String));
 
@@ -182,7 +182,7 @@ public final class Field {
         FIELD_MAP.put("street", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8045, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("telephoneNumber", new ExtendedFieldURI(0x3A08, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("title", new ExtendedFieldURI(0x3A17, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String, "personalNotes"));
         FIELD_MAP.put("im", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8062, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("othermobile", new ExtendedFieldURI(0x3A1E, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("internationalisdnnumber", new ExtendedFieldURI(0x3A2D, ExtendedFieldURI.PropertyType.String));
@@ -259,7 +259,7 @@ public final class Field {
         // task
         FIELD_MAP.put("importance", new UnindexedFieldURI("item:Importance"));
         FIELD_MAP.put("percentcomplete", new UnindexedFieldURI("task:PercentComplete"));
-        FIELD_MAP.put("taskstatus", new UnindexedFieldURI("task:Status"));
+        FIELD_MAP.put("taskstatus", new UnindexedFieldURI("task:Status", "status"));
 
         FIELD_MAP.put("startdate", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Task, 0x8104, ExtendedFieldURI.PropertyType.SystemTime));
         FIELD_MAP.put("duedate", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Task, 0x8105, ExtendedFieldURI.PropertyType.SystemTime));

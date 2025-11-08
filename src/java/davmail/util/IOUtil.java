@@ -23,6 +23,8 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import javax.imageio.ImageIO;
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -109,6 +111,26 @@ public final class IOUtil {
      */
     public static byte[] encodeBase64(byte[] value) {
         return Base64.encodeBase64(value);
+    }
+
+    /**
+     * Encodes the content of the provided MimeMessage into a Base64-encoded byte array.
+     *
+     * @param mimeMessage the MimeMessage object whose content is to be encoded
+     * @return a byte array containing the Base64-encoded content of the MimeMessage
+     * @throws IOException if an I/O error occurs during encoding or if a MessagingException occurs
+     */
+    public static byte[] encodeBase64(MimeMessage mimeMessage) throws IOException {
+        byte[] mimeContent;
+        try (
+                ByteArrayOutputStream baos = new ByteArrayOutputStream()
+        ) {
+            mimeMessage.writeTo(baos);
+            mimeContent = IOUtil.encodeBase64(baos.toByteArray());
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+        return mimeContent;
     }
 
     /**

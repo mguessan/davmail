@@ -94,8 +94,10 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                     // OIDC compliant
                     uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
-                            .addParameter("scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Mail.Send");
-                    //.addParameter("scope", Settings.getGraphUrl()+"/.default");
+                            .addParameter("scope", Settings.getProperty("davmail.oauth.scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Tasks.ReadWrite Mail.Send"));
+                    // return scopes with 00000003-0000-0000-c000-000000000000 scopes
+                    //.addParameter("scope", "openid profile offline_access .default");
+                    //.addParameter("scope", "openid profile offline_access "+Settings.getGraphUrl()+"/.default");
                     //.addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All AuditLog.Read.All Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrintJob.ReadWriteBasic SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read");
                 } else {
                     // Outlook desktop relies on classic authorize endpoint
@@ -106,7 +108,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 // Probably irrelevant except for graph api, see above, switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
             } else if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
-                        .addParameter("scope", "openid profile offline_access " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All");
+                        .addParameter("scope", Settings.getProperty("davmail.oauth.scope", "openid profile offline_access " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All"));
             } else {
                 uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
                         .addParameter("resource", Settings.getOutlookUrl());
@@ -186,6 +188,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
             } else {
                 JSONObject config = extractConfig(responseBodyAsString);
 
+                checkConfigErrors(config);
+
                 String context = config.getString("sCtx"); // csts request
                 String apiCanary = config.getString("apiCanary"); // canary for API calls
                 String clientRequestId = config.getString("correlationId");
@@ -247,7 +251,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     URI location = logonMethod.getRedirectLocation();
 
                     if (responseBodyAsString != null && responseBodyAsString.contains("arrUserProofs")) {
-                        location = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
+                        logonMethod = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
+                        location = logonMethod.getRedirectLocation();
                     }
 
                     if (location == null || !location.toString().startsWith(redirectUri)) {
@@ -257,11 +262,15 @@ public class O365Authenticator implements ExchangeAuthenticator {
                             LOGGER.warn("Authentication successful but user consent or validation needed, please open the following url in a browser");
                             LOGGER.warn(url);
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                        } else if ("ConvergedChangePassword".equals(config.optString("pgid"))) {
+                            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
                         } else if ("50126".equals(config.optString("sErrorCode"))) {
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else if ("50125".equals(config.optString("sErrorCode"))) {
                             throw new DavMailAuthenticationException("LOG_MESSAGE", "Your organization needs more information to keep your account secure, authenticate once in a web browser and try again");
-                        } else if (config.optString("strServiceExceptionMessage") != null) {
+                        } else if ("50128".equals(config.optString("sErrorCode"))) {
+                            throw new DavMailAuthenticationException("LOG_MESSAGE", "Invalid domain name - No tenant-identifying information found in either the request or implied by any provided credentials.");
+                        } else if (config.optString("strServiceExceptionMessage", null) != null) {
                             LOGGER.debug("O365 returned error: " + config.optString("strServiceExceptionMessage"));
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else {
@@ -289,6 +298,12 @@ public class O365Authenticator implements ExchangeAuthenticator {
             throw new IOException(e + " " + e.getMessage());
         }
 
+    }
+
+    private void checkConfigErrors(JSONObject config) throws DavMailAuthenticationException {
+        if (config.optString("strServiceExceptionMessage", null) != null) {
+            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_REASON", config.optString("strServiceExceptionMessage"));
+        }
     }
 
     private String authenticateLive(HttpClientAdapter httpClientAdapter, JSONObject config, String referer) throws JSONException, IOException {
@@ -441,7 +456,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             // MFA triggered after device authentication
             if (result == null && responseBodyAsString != null && responseBodyAsString.contains("arrUserProofs")) {
-                result = handleMfa(httpClient, processMethod, username, null);
+                processMethod = handleMfa(httpClient, processMethod, username, null);
+                result = processMethod.getRedirectLocation();
             }
 
             if (result == null) {
@@ -452,7 +468,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         return result;
     }
 
-    private URI handleMfa(HttpClientAdapter httpClientAdapter, PostRequest logonMethod, String username, String clientRequestId) throws IOException, JSONException {
+    private PostRequest handleMfa(HttpClientAdapter httpClientAdapter, PostRequest logonMethod, String username, String clientRequestId) throws IOException, JSONException {
         JSONObject config = extractConfig(logonMethod.getResponseBodyAsString());
         LOGGER.debug("Config=" + config);
 
@@ -644,7 +660,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             throw new IOException("Authentication failed: " + config);
         }
 
-        String authMethod = "PhoneAppOTP";
+        String authMethod = chosenAuthMethodId;
         String type = "22";
 
         context = config.getString("Ctx");
@@ -662,7 +678,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         processAuthMethod.setParameter("hpgrequestid", hpgrequestid);
 
         httpClientAdapter.executePostRequest(processAuthMethod);
-        return processAuthMethod.getRedirectLocation();
+        return processAuthMethod;
 
     }
 

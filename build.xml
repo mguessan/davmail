@@ -1,6 +1,6 @@
 <project name="DavMail" default="dist" basedir=".">
     <property file="user.properties"/>
-    <property name="version" value="6.3.0"/>
+    <property name="version" value="6.5.1"/>
 
     <path id="classpath">
         <pathelement location="classes"/>
@@ -41,18 +41,27 @@
     </condition>
 
     <condition property="is.java8">
-        <not>
-            <matches string="${ant.java.version}" pattern="1\.[01234567]"/>
-        </not>
+        <matches string="${ant.java.version}" pattern="8"/>
+    </condition>
+
+    <!-- recent debian jdk with openjfx -->
+    <condition property="is.debian">
+        <and>
+            <available file="/usr/share/java/javafx-base.jar"/>
+            <matches string="${ant.java.version}" pattern="1[1-9]|[2-9][0-9]"/>
+        </and>
+    </condition>
+
+    <condition property="is.java11">
+        <and>
+            <isfalse value="${is.debian}"/>
+            <matches string="${ant.java.version}" pattern="1[1-9]|[2-9][0-9]"/>
+        </and>
     </condition>
 
     <condition property="is.utf8">
         <equals arg1="${file.encoding}" arg2="UTF-8"/>
     </condition>
-
-    <target name="check-java8" unless="is.java8">
-        <fail message="Java 8 or later needed to build DavMail, current version is ${ant.java.version}, check JAVA_HOME"/>
-    </target>
 
     <target name="check-encoding" unless="is.utf8">
         <fail message="Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8"/>
@@ -78,7 +87,7 @@
     <target name="gitsvnrelease" if="is.git">
         <mkdir dir=".git/svn"/>
         <!-- try to get svn revision from git -->
-        <exec executable="git" outputproperty="revision.max" failifexecutionfails="false">
+        <exec executable="git" outputproperty="revision.max" failifexecutionfails="false" discardError="true">
             <arg value="svn" />
             <arg value="find-rev" />
             <arg value="HEAD" />
@@ -91,15 +100,34 @@
         <property name="release" value="${version}"/>
     </target>
 
-    <target name="init" depends="check-encoding, check-java8, svnrelease, gitsvnrelease, defaultrelease">
+    <target name="init" depends="check-encoding, svnrelease, gitsvnrelease, defaultrelease">
         <echo message="Creating DavMail ${release} dist package" level="info"/>
         <echo message="Java ${ant.java.version} and JavaFX ${is.javafx.message}" level="info"/>
         <mkdir dir="target/classes"/>
     </target>
 
-    <target name="compile-java9" depends="init">
+    <target name="compile-debian" if="is.debian">
         <mkdir dir="target/classes"/>
-        <javac srcdir="src/java" destdir="target/classes" source="9" debug="on" encoding="UTF-8"
+        <echo level="info" message="Compile on debian with openjfx"/>
+        <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8"
+               includeantruntime="false">
+            <compilerarg value="--add-exports"/>
+            <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED"/>
+            <compilerarg value="--add-exports"/>
+            <compilerarg value="java.base/sun.net.www.protocol.https=ALL-UNNAMED"/>
+            <compilerarg value="--module-path"/>
+            <compilerarg value="/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar"/>
+            <compilerarg value="--add-modules=javafx.base,javafx.controls,javafx.fxml,javafx.graphics,javafx.media,javafx.swing,javafx.web"/>
+            <classpath>
+                <path refid="classpath"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="compile-java11" if="is.java11">
+        <mkdir dir="target/classes"/>
+        <echo level="info" message="Compile java 11 or later"/>
+        <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8" source="11" target="11"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
             <compilerarg value="--add-exports"/>
@@ -112,8 +140,9 @@
         </javac>
     </target>
 
-    <target name="compile-java" depends="init">
+    <target name="compile-java" if="is.java8">
         <mkdir dir="target/classes"/>
+        <echo level="info" message="Compile java 8"/>
         <javac srcdir="src/java" destdir="target/classes" source="1.8" target="1.8" debug="on" encoding="UTF-8"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
@@ -123,7 +152,10 @@
         </javac>
     </target>
 
-    <target name="compile" depends="compile-java">
+    <target name="compile" depends="init">
+        <antcall target="compile-java"/>
+        <antcall target="compile-java11"/>
+        <antcall target="compile-debian"/>
         <copy todir="target/classes">
             <fileset dir="src/java">
                 <include name="**/*"/>
@@ -211,9 +243,6 @@
         <taskdef name="nsis" classname="net.sf.nsisant.Task">
             <classpath location="lib/nsisant-1.2.jar"/>
         </taskdef>
-        <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
-            <define name="VERSION" value="${release-name}"/>
-        </nsis>
         <nsis script="davmail-setup64.nsi" verbosity="4" out="build64.log" noconfig="yes">
             <define name="VERSION" value="${release-name}"/>
         </nsis>
@@ -262,8 +291,7 @@
         <deb todir="dist"
              package="davmail"
              section="mail"
-             depends="openjdk-11-jre|openjdk-8-jre|default-jre,libopenjfx-java,openjfx"
-             suggests="libswt-gtk-4-java,libswt-cairo-gtk-4-jni,libswt-gtk2-4-jni">
+             depends="openjdk-17-jre|default-jre,libopenjfx-java,libswt-gtk-4-java,libswt-cairo-gtk-4-jni">
             <version upstream="${release-name}"/>
             <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
             <description synopsis="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway">
@@ -344,7 +372,7 @@
         </jar>
     </target>
 
-    <target name="prepare-dist" depends="jar">
+    <target name="prepare-dist" depends="init,jar">
         <echo file="dist/version.txt" message="${release}"/>
         <copy todir="dist/lib">
             <fileset dir="lib">
@@ -352,17 +380,18 @@
                 <include name="*.jnilib"/>
                 <exclude name="nsisant*.jar"/>
                 <exclude name="ant-deb-*.jar"/>
+                <exclude name="sonarqube-ant-*.jar"/>
+                <exclude name="jacocoant-*.jar"/>
             </fileset>
         </copy>
         <copy file="src/icon/davmail.png" todir="dist"/>
         <copy file="src/bin/davmail" todir="dist"/>
 
         <!-- use WinRun4J wrappers -->
-        <copy file="src/winrun4j/davmail.exe" todir="dist"/>
-        <copy file="src/winrun4j/davmailconsole.exe" todir="dist"/>
-        <copy file="src/winrun4j/davmailservice.exe" todir="dist"/>
         <copy file="src/winrun4j/davmail64.exe" todir="dist"/>
+        <copy file="src/winrun4j/davmail64.ini" todir="dist"/>
         <copy file="src/winrun4j/davmailservice64.exe" todir="dist"/>
+        <copy file="src/winrun4j/davmailservice64.ini" todir="dist"/>
     </target>
 
     <target name="dist" depends="prepare-dist">
@@ -381,16 +410,6 @@
                 <include name="davmail"/>
             </zipfileset>
         </zip>
-        <zip file="dist/davmail-${release-name}-windows-noinstall.zip">
-            <fileset dir="dist">
-                <include name="lib/*.jar"/>
-                <include name="*.jar"/>
-                <include name="davmail*.exe"/>
-                <exclude name="lib/swt-*-gtk-*.jar"/>
-                <exclude name="lib/junit-*.jar"/>
-                <exclude name="lib/hamcrest-core-*.jar"/>
-            </fileset>
-        </zip>
         <antcall target="download-jre"/>
         <antcall target="download-build-jre"/>
         <zip file="dist/davmail-${release-name}-windows-standalone.zip">
@@ -398,8 +417,8 @@
                 <include name="jre/**"/>
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
-                <include name="davmail64.exe"/>
-                <include name="davmailservice64.exe"/>
+                <include name="davmail*.exe"/>
+                <include name="davmail*.ini"/>
                 <exclude name="lib/swt-*-gtk-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/hamcrest-core-*.jar"/>
@@ -497,6 +516,11 @@
         </scp>
     </target>
 
+    <target name="prepare-release" depends="init">
+        <property name="release-name" value="${release}"/>
+        <antcall target="prepare-dist"/>
+    </target>
+
     <target name="release" depends="init">
         <property name="release-name" value="${release}"/>
         <antcall target="dist"/>
@@ -547,11 +571,11 @@
         </unzip>
         <delete file="dist/jdkfx.zip"/>
 
-        <echo message="Create custom jre"/>
+        <echo message="Create custom jre" level="info"/>
         <delete dir="dist/jre"/>
         <exec dir="." executable="dist/jdk/bin/jlink.exe">
             <arg value="--add-modules"/>
-            <arg value="java.base,java.datatransfer,java.desktop,java.naming,jdk.crypto.ec,java.security.jgss,java.security.sasl,java.xml,javafx.base,javafx.controls,javafx.graphics,javafx.swing,javafx.web"/>
+            <arg value="java.base,java.datatransfer,java.desktop,java.naming,jdk.crypto.ec,java.security.jgss,java.security.sasl,java.xml,javafx.base,javafx.controls,javafx.graphics,javafx.swing,javafx.web,jdk.accessibility"/>
             <arg value="--output"/>
             <arg value="dist/jre"/>
             <arg value="--strip-debug"/>

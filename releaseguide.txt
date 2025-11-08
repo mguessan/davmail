@@ -22,3 +22,4 @@ Release guide :
 - update spec file
 - connect to https://copr.fedorainfracloud.org/coprs/mguessan/davmail
 - launch a build with source rpm from opensuse
+- publish on winget: komac update mguessan.davmail --version version-commit --urls installer_url

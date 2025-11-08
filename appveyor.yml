@@ -22,6 +22,15 @@ install:
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\ant-bin.zip", "C:\ant")
       }
+  - ps: |
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
+      if (!(Test-Path -Path "C:\openjfx\javafx-sdk-19" )) {
+        (new-object System.Net.WebClient).DownloadFile(
+        'https://download2.gluonhq.com/openjfx/19/openjfx-19_windows-x64_bin-sdk.zip',
+          'C:\openjfx-bin.zip'
+        )
+        [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\openjfx-bin.zip", "C:\openjfx")
+      }
   - cmd: SET PATH=C:\ant\apache-ant-1.10.14\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
   - cmd: java -version
@@ -29,12 +38,14 @@ install:
   - cmd: copy /y C:\projects\davmail\nsis\* "C:\Program Files (x86)\NSIS\Plugins\x86-ansi"
   - cmd: copy /y C:\projects\davmail\nsis\* "C:\Program Files (x86)\NSIS\Plugins\x86-unicode"
 build_script:
+  - IF "%JAVA_HOME%" == "C:\Program Files\Java\jdk19" copy /y C:\openjfx\javafx-sdk-19\lib\* lib
   - ant dist
   - IF "%JAVA_HOME%" == "C:\Program Files\Java\jdk19" ant sonar -Dsonar.token=%SONAR_LOGIN%
   - IF not "%JAVA_HOME%" == "C:\Program Files\Java\jdk1.8.0" echo remove artifacts && del /s /q dist
 test: false
 cache:
 - C:\ant
+- C:\openjfx
 artifacts:
   - path: dist/*.zip
   - path: dist/*.deb

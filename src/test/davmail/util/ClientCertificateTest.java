@@ -20,19 +20,12 @@
 package davmail.util;
 
 import davmail.Settings;
-import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import davmail.http.DavGatewayX509TrustManager;
 import davmail.http.DavMailX509KeyManager;
 import davmail.http.SunPKCS11ProviderHandler;
 import davmail.ui.PasswordPromptDialog;
 import junit.framework.TestCase;
-import org.apache.commons.httpclient.HostConfiguration;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.URI;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.protocol.Protocol;
-import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
+import org.apache.http.client.HttpClient;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -46,6 +39,7 @@ import javax.net.ssl.X509KeyManager;
 import javax.security.auth.callback.PasswordCallback;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -75,17 +69,17 @@ public class ClientCertificateTest extends TestCase {
             System.setProperty("javax.net.ssl.trustStoreType", "JKS");
             System.setProperty("javax.net.debug", "ssl,handshake");
 
-            httpClient = new HttpClient();
+            /*httpClient = new HttpClient();
             HostConfiguration hostConfig = httpClient.getHostConfiguration();
             URI httpURI = new URI("https://localhost", true);
             hostConfig.setHost(httpURI);
 
             Protocol.registerProtocol("https",
-                    new Protocol("https", (ProtocolSocketFactory) new DavGatewaySSLProtocolSocketFactory(), 443));
+                    new Protocol("https", (ProtocolSocketFactory) new DavGatewaySSLProtocolSocketFactory(), 443));*/
         }
     }
 
-    public void testGetRoot() throws IOException {
+    /*public void testGetRoot() throws IOException {
         GetMethod getMethod = new GetMethod("/");
         httpClient.executeMethod(getMethod);
     }
@@ -95,7 +89,7 @@ public class ClientCertificateTest extends TestCase {
         httpClient.executeMethod(getMethod);
         assertEquals(HttpStatus.SC_OK, getMethod.getStatusCode());
         System.out.println(getMethod.getResponseBodyAsString());
-    }
+    }*/
 /*
     public void testCardReaders() throws CardException {
         for (CardTerminal terminal : TerminalFactory.getDefault().terminals().list()) {
@@ -130,11 +124,11 @@ public class ClientCertificateTest extends TestCase {
             KeyStore ks = KeyStore.getInstance("Windows-MY");
             ks.load(null, null);
             java.util.Enumeration<String> en = ks.aliases();
-
+            assertTrue(en.hasMoreElements());
             while (en.hasMoreElements()) {
                 String aliasKey = en.nextElement();
                 X509Certificate c = (X509Certificate) ks.getCertificate(aliasKey);
-                System.out.println("---> alias : " + aliasKey + " " + c.getSubjectDN());
+                System.out.println("---> alias : " + aliasKey + " " + c.getSubjectX500Principal());
 
                 //PrivateKey key = (PrivateKey) ks.getKey(aliasKey, "Passw0rd".toCharArray());
                 Certificate[] chain = ks.getCertificateChain(aliasKey);
@@ -146,8 +140,7 @@ public class ClientCertificateTest extends TestCase {
         }
     }
 
-    public void testClientSocket() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, UnrecoverableKeyException, InstantiationException, ClassNotFoundException, IllegalAccessException {
-
+    public void testClientSocket() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, UnrecoverableKeyException, InstantiationException, ClassNotFoundException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
 
 
         //System.setProperty("javax.net.ssl.trustStoreProvider", "SunMSCAPI");
@@ -164,9 +157,9 @@ public class ClientCertificateTest extends TestCase {
         }
 
 
-        Provider sunMSCAPI = (Provider) Class.forName("sun.security.mscapi.SunMSCAPI").newInstance();
+        Provider sunMSCAPI = (Provider) Class.forName("sun.security.mscapi.SunMSCAPI").getConstructor().newInstance();
         //Security.insertProviderAt(sunMSCAPI, 1);
-        KeyStore keyStore = KeyStore.getInstance("Windows-MY",sunMSCAPI);
+        KeyStore keyStore = KeyStore.getInstance("Windows-MY", sunMSCAPI);
         keyStore.load(null, null);
 
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
@@ -185,32 +178,32 @@ public class ClientCertificateTest extends TestCase {
         }
 
 
-
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(keyManagers, null, null);
         SSLSocketFactory sockFactory = sslContext.getSocketFactory();
-        SSLSocket sslSock = (SSLSocket)sockFactory.createSocket("localhost", 443);
-        sslSock.startHandshake();
+        try (SSLSocket sslSock = (SSLSocket) sockFactory.createSocket("localhost", 443)) {
+            sslSock.startHandshake();
+        }
 
     }
 
 
-    private SSLContext createSSLContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, KeyManagementException, KeyStoreException, IOException, CertificateException, InstantiationException, ClassNotFoundException, IllegalAccessException {
+    private SSLContext createSSLContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, KeyManagementException, KeyStoreException, IOException, CertificateException, InstantiationException, ClassNotFoundException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         // PKCS11 client certificate settings
         String pkcs11Library = Settings.getProperty("davmail.ssl.pkcs11Library");
 
         String clientKeystoreType = Settings.getProperty("davmail.ssl.clientKeystoreType");
         // set default keystore type
-        if (clientKeystoreType == null || clientKeystoreType.length() == 0) {
+        if (clientKeystoreType == null || clientKeystoreType.isEmpty()) {
             clientKeystoreType = "PKCS11";
         }
 
-        if (pkcs11Library != null && pkcs11Library.length() > 0 && "PKCS11".equals(clientKeystoreType)) {
+        if (pkcs11Library != null && !pkcs11Library.isEmpty() && "PKCS11".equals(clientKeystoreType)) {
             StringBuilder pkcs11Buffer = new StringBuilder();
             pkcs11Buffer.append("name=DavMail\n");
             pkcs11Buffer.append("library=").append(pkcs11Library).append('\n');
             String pkcs11Config = Settings.getProperty("davmail.ssl.pkcs11Config");
-            if (pkcs11Config != null && pkcs11Config.length() > 0) {
+            if (pkcs11Config != null && !pkcs11Config.isEmpty()) {
                 pkcs11Buffer.append(pkcs11Config).append('\n');
             }
             SunPKCS11ProviderHandler.registerProvider(pkcs11Buffer.toString());
@@ -231,7 +224,7 @@ public class ClientCertificateTest extends TestCase {
 
         String clientKeystoreFile = Settings.getProperty("davmail.ssl.clientKeystoreFile");
         String clientKeystorePass = Settings.getProperty("davmail.ssl.clientKeystorePass");
-        if (clientKeystoreFile != null && clientKeystoreFile.length() > 0
+        if (clientKeystoreFile != null && !clientKeystoreFile.isEmpty()
                 && ("PKCS12".equals(clientKeystoreType) || "JKS".equals(clientKeystoreType))) {
             // PKCS12 file based keystore
             KeyStore.Builder fsBuilder = KeyStore.Builder.newInstance(clientKeystoreType, null,
@@ -240,16 +233,15 @@ public class ClientCertificateTest extends TestCase {
         }
         System.setProperty("javax.net.debug", "ssl,handshake");
         //try {
-            //Provider sunMSCAPI = new sun.security.mscapi.SunMSCAPI();
-            Provider sunMSCAPI = (Provider) Class.forName("sun.security.mscapi.SunMSCAPI").newInstance();
-            //Security.insertProviderAt(sunMSCAPI, 1);
-            KeyStore keyStore = KeyStore.getInstance("Windows-MY", sunMSCAPI);
+        //Provider sunMSCAPI = new sun.security.mscapi.SunMSCAPI();
+        Provider sunMSCAPI = (Provider) Class.forName("sun.security.mscapi.SunMSCAPI").getConstructor().newInstance();
+        //Security.insertProviderAt(sunMSCAPI, 1);
+        KeyStore keyStore = KeyStore.getInstance("Windows-MY", sunMSCAPI);
 
-            keyStore.load(null, null);
+        keyStore.load(null, null);
 
 
-
-            keyStoreBuilders.add(KeyStore.Builder.newInstance(keyStore, new KeyStore.PasswordProtection(null)));
+        keyStoreBuilders.add(KeyStore.Builder.newInstance(keyStore, new KeyStore.PasswordProtection(null)));
 
         /*} catch (IOException e) {
             e.printStackTrace();
@@ -281,7 +273,7 @@ public class ClientCertificateTest extends TestCase {
     }
 
     protected KeyStore.ProtectionParameter getProtectionParameter(String password) {
-        if (password != null && password.length() > 0) {
+        if (password != null && !password.isEmpty()) {
             // password provided: create a PasswordProtection
             return new KeyStore.PasswordProtection(password.toCharArray());
         } else {
@@ -295,8 +287,7 @@ public class ClientCertificateTest extends TestCase {
         }
     }
 
-    public void testClientSocketFactory() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, InvalidAlgorithmParameterException, InstantiationException, ClassNotFoundException, IllegalAccessException {
-
+    public void testClientSocketFactory() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, InvalidAlgorithmParameterException, InstantiationException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 
 
         //System.setProperty("javax.net.ssl.trustStoreProvider", "SunMSCAPI");
@@ -307,8 +298,9 @@ public class ClientCertificateTest extends TestCase {
 
 
         //SSLSocket sslSock = (SSLSocket)new DavGatewaySSLProtocolSocketFactory().createSocket("localhost", 443);
-        SSLSocket sslSock = (SSLSocket) createSSLContext().getSocketFactory().createSocket("localhost", 443);
-        sslSock.startHandshake();
+        try (SSLSocket sslSock = (SSLSocket) createSSLContext().getSocketFactory().createSocket("localhost", 443)) {
+            sslSock.startHandshake();
+        }
 
     }
 }

@@ -102,25 +102,11 @@ public class EwsExchangeSession extends ExchangeSession {
         //AcceptSharingInvitation
     }
 
-    static final Map<String, String> vTodoToTaskStatusMap = new HashMap<>();
-    static final Map<String, String> taskTovTodoStatusMap = new HashMap<>();
     static final Map<String, String> partstatToResponseMap = new HashMap<>();
     static final Map<String, String> responseTypeToPartstatMap = new HashMap<>();
     static final Map<String, String> statusToBusyStatusMap = new HashMap<>();
 
     static {
-        //taskTovTodoStatusMap.put("NotStarted", null);
-        taskTovTodoStatusMap.put("InProgress", "IN-PROCESS");
-        taskTovTodoStatusMap.put("Completed", "COMPLETED");
-        taskTovTodoStatusMap.put("WaitingOnOthers", "NEEDS-ACTION");
-        taskTovTodoStatusMap.put("Deferred", "CANCELLED");
-
-        //vTodoToTaskStatusMap.put(null, "NotStarted");
-        vTodoToTaskStatusMap.put("IN-PROCESS", "InProgress");
-        vTodoToTaskStatusMap.put("COMPLETED", "Completed");
-        vTodoToTaskStatusMap.put("NEEDS-ACTION", "WaitingOnOthers");
-        vTodoToTaskStatusMap.put("CANCELLED", "Deferred");
-
         partstatToResponseMap.put("ACCEPTED", "AcceptItem");
         partstatToResponseMap.put("TENTATIVE", "TentativelyAcceptItem");
         partstatToResponseMap.put("DECLINED", "DeclineItem");
@@ -396,7 +382,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
+    public ExchangeSession.Message createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -566,7 +552,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return mimeContent;
     }
 
-    protected Message buildMessage(EWSMethod.Item response) throws DavMailException {
+    protected ExchangeSession.Message buildMessage(EWSMethod.Item response) throws DavMailException {
         Message message = new Message();
 
         // get item id
@@ -617,7 +603,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         for (EWSMethod.Item response : responses) {
             if (MESSAGE_TYPES.contains(response.type)) {
-                Message message = buildMessage(response);
+                ExchangeSession.Message message = buildMessage(response);
                 message.messageList = messages;
                 messages.add(message);
             }
@@ -1041,7 +1027,7 @@ public class EwsExchangeSession extends ExchangeSession {
         folder.folderClass = item.get(Field.get("folderclass").getResponseName());
         folder.etag = item.get(Field.get("lastmodified").getResponseName());
         folder.ctag = item.get(Field.get("ctag").getResponseName());
-        folder.count = item.getInt(Field.get("count").getResponseName());
+        folder.messageCount = item.getInt(Field.get("count").getResponseName());
         folder.unreadCount = item.getInt(Field.get("unread").getResponseName());
         // fake recent value
         folder.recent = folder.unreadCount;
@@ -1080,7 +1066,7 @@ public class EwsExchangeSession extends ExchangeSession {
             for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
                 resultCount++;
                 Folder folder = buildFolder(item);
-                if (parentFolderPath.length() > 0) {
+                if (!parentFolderPath.isEmpty()) {
                     if (parentFolderPath.endsWith("/")) {
                         folder.folderPath = parentFolderPath + folder.displayName;
                     } else {
@@ -1275,7 +1261,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
-                if (value != null && value.length() > 0) {
+                if (value != null && !value.isEmpty()) {
                     if ("bday".equals(attributeName) || "anniversary".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
                         value = convertDateFromExchange(value);
                     }
@@ -1518,7 +1504,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 executeMethod(getItemMethod);
                                 if (getItemMethod.getResponseItem() != null) {
                                     String itemOriginalStart = getItemMethod.getResponseItem().get(Field.get("originalstart").getResponseName());
-                                    LOGGER.debug("Occurrence " + instanceIndex + " itemOriginalStart " + itemOriginalStart + " looking for " + convertedValue);
+                                        LOGGER.debug("Occurrence " + instanceIndex + " itemOriginalStart " + itemOriginalStart + " looking for " + convertedValue);
                                     if (convertedValue.equals(itemOriginalStart)) {
                                         // found item, delete it
                                         DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(getItemMethod.getResponseItem()),
@@ -1550,7 +1536,7 @@ public class EwsExchangeSession extends ExchangeSession {
          * @param vCalendar     vCalendar object
          * @throws DavMailException on error
          */
-        protected void handleModifiedOccurrences(ItemId currentItemId, VCalendar vCalendar) throws DavMailException {
+        protected void handleModifiedOccurrences(ItemId currentItemId, VCalendar vCalendar, SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations) throws DavMailException {
             for (VObject modifiedOccurrence : vCalendar.getModifiedOccurrences()) {
                 VProperty originalDateProperty = modifiedOccurrence.getProperty("RECURRENCE-ID");
                 String convertedValue;
@@ -1577,7 +1563,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 // found item, update it
                                 UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                         ConflictResolution.AutoResolve,
-                                        SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
+                                        sendMeetingInvitationsOrCancellations,
                                         new ItemId(getItemMethod.getResponseItem()), buildFieldUpdates(vCalendar, modifiedOccurrence, false));
                                 // force context Timezone on Exchange 2010 and 2013
                                 if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
@@ -1601,6 +1587,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar, VObject vEvent, boolean isMozDismiss) throws DavMailException {
+            boolean isShared = !email.equalsIgnoreCase(vCalendar.getCalendarEmail());
 
             List<FieldUpdate> updates = new ArrayList<>();
 
@@ -1629,8 +1616,11 @@ public class EwsExchangeSession extends ExchangeSession {
                     if (vEvent.getProperty("DTEND") != null) {
                         endtimezone = vEvent.getProperty("DTEND").getParamValue("TZID");
                     }
-                    updates.add(Field.createFieldUpdate("starttimezone", starttimezone));
-                    updates.add(Field.createFieldUpdate("endtimezone", endtimezone));
+                    // for some reason we are unable to update timezone on a shared calendar
+                    if (!isShared || Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
+                        updates.add(Field.createFieldUpdate("starttimezone", starttimezone));
+                        updates.add(Field.createFieldUpdate("endtimezone", endtimezone));
+                    }
                 }
 
                 String status = statusToBusyStatusMap.get(vEvent.getPropertyValue("STATUS"));
@@ -1700,15 +1690,18 @@ public class EwsExchangeSession extends ExchangeSession {
                 MultiValuedFieldUpdate requiredAttendees = new MultiValuedFieldUpdate(Field.get("requiredattendees"));
                 MultiValuedFieldUpdate optionalAttendees = new MultiValuedFieldUpdate(Field.get("optionalattendees"));
 
-                updates.add(requiredAttendees);
-                updates.add(optionalAttendees);
+                // for some reason we are unable to update timezone on a shared calendar
+                if (!isShared || Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
+                    updates.add(requiredAttendees);
+                    updates.add(optionalAttendees);
+                }
 
                 List<VProperty> attendees = vEvent.getProperties("ATTENDEE");
                 if (attendees != null) {
                     for (VProperty property : attendees) {
                         String attendeeEmail = vCalendar.getEmailValue(property);
                         if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
-                            if (!email.equals(attendeeEmail)) {
+                            if (!vCalendar.getCalendarEmail().equals(attendeeEmail)) {
                                 String attendeeRole = property.getParamValue("ROLE");
                                 if ("REQ-PARTICIPANT".equals(attendeeRole)) {
                                     requiredAttendees.addValue(attendeeEmail);
@@ -1813,6 +1806,10 @@ public class EwsExchangeSession extends ExchangeSession {
                     return itemResult;
                 }
             }
+
+            // by default no notifications
+            SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
+
             if (vCalendar.isTodo()) {
                 // create or update task method
                 EWSMethod.Item newItem = new EWSMethod.Item();
@@ -1900,7 +1897,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                         item.type = partstatToResponseMap.get(vCalendar.getAttendeeStatus());
                         item.referenceItemId = new ItemId("ReferenceItemId", currentItemId.id, currentItemId.changeKey);
-                        if (body != null && body.length() > 0) {
+                        if (body != null && !body.isEmpty()) {
                             item.put("Body", body);
                         }
                         createOrUpdateItemMethod = new CreateItemMethod(messageDisposition,
@@ -1911,7 +1908,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     } else if (Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                         // other changes with server side managed notifications
                         MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
-                        SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
+
                         if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer() && isMozSendInvitations) {
                             messageDisposition = MessageDisposition.SendAndSaveCopy;
                             sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy;
@@ -1920,6 +1917,11 @@ public class EwsExchangeSession extends ExchangeSession {
                                 ConflictResolution.AutoResolve,
                                 sendMeetingInvitationsOrCancellations,
                                 currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent(), isMozDismiss));
+
+                        boolean isShared = !email.equalsIgnoreCase(vCalendar.getCalendarEmail());
+                        if (isShared && Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
+                            createOrUpdateItemMethod.mailbox = vCalendar.getCalendarEmail();
+                        }
                         // force context Timezone on Exchange 2010 and 2013
                         if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                             createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
@@ -2004,10 +2006,10 @@ public class EwsExchangeSession extends ExchangeSession {
                             }
                         }
 
-                        if (requiredAttendees.size() > 0) {
+                        if (!requiredAttendees.isEmpty()) {
                             updates.add(Field.createFieldUpdate("to", StringUtil.join(requiredAttendees, ", ")));
                         }
-                        if (optionalAttendees.size() > 0) {
+                        if (!optionalAttendees.isEmpty()) {
                             updates.add(Field.createFieldUpdate("cc", StringUtil.join(optionalAttendees, ", ")));
                         }
                     }
@@ -2084,7 +2086,7 @@ public class EwsExchangeSession extends ExchangeSession {
             // handle deleted occurrences
             if (!vCalendar.isTodo() && currentItemId != null && !isMeetingResponse && !isMozDismiss) {
                 handleExcludedDates(currentItemId, vCalendar);
-                handleModifiedOccurrences(currentItemId, vCalendar);
+                handleModifiedOccurrences(currentItemId, vCalendar, sendMeetingInvitationsOrCancellations);
             }
 
 
@@ -2583,7 +2585,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 EWSMethod.Item cancelItem = new EWSMethod.Item();
                 cancelItem.type = "CancelCalendarItem";
                 cancelItem.referenceItemId = new ItemId("ReferenceItemId", item);
-                if (body != null && body.length() > 0) {
+                if (body != null && !body.isEmpty()) {
                     item.put("Body", body);
                 }
                 CreateItemMethod cancelItemMethod = new CreateItemMethod(messageDisposition,
@@ -2657,6 +2659,11 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
+    protected String getCalendarEmail(String folderPath) throws IOException {
+        return getFolderId(folderPath).mailbox;
+    }
+
+    @Override
     protected String getFreeBusyData(String attendee, String start, String end, int interval) {
         String result = null;
         GetUserAvailabilityMethod getUserAvailabilityMethod = new GetUserAvailabilityMethod(attendee, start, end, interval);
@@ -2673,7 +2680,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void loadVtimezone() {
 
         try {
-            String timezoneId = null;
+            String timezoneId;
             timezoneId = Settings.getProperty("davmail.timezoneId");
             if (timezoneId == null && !"Exchange2007_SP1".equals(serverVersion)) {
                 // On Exchange 2010, get user timezone from server
@@ -2840,7 +2847,7 @@ public class EwsExchangeSession extends ExchangeSession {
             folderNames = folderPath.split("/");
         }
         for (String folderName : folderNames) {
-            if (folderName.length() > 0) {
+            if (!folderName.isEmpty()) {
                 currentFolderId = getSubFolderByName(currentFolderId, folderName);
                 if (currentFolderId == null) {
                     break;
@@ -3119,7 +3126,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return zuluDateValue;
     }
 
-    protected String convertDateFromExchangeToTaskDate(String exchangeDateValue) throws DavMailException {
+    public static String convertDateFromExchangeToTaskDate(String exchangeDateValue) throws DavMailException {
         String zuluDateValue = null;
         if (exchangeDateValue != null) {
             try {
@@ -3135,7 +3142,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected String convertTaskDateToZulu(String value) {
         String result = null;
-        if (value != null && value.length() > 0) {
+        if (value != null && !value.isEmpty()) {
             try {
                 SimpleDateFormat parser = ExchangeSession.getExchangeDateFormat(value);
                 Calendar calendarValue = Calendar.getInstance(GMT_TIMEZONE);
@@ -3181,48 +3188,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 // item name is base64url
                 && itemName.matches("^([A-Za-z0-9-_]{4})*([A-Za-z0-9-_]{4}|[A-Za-z0-9-_]{3}=|[A-Za-z0-9-_]{2}==)\\.EML$")
                 && itemName.indexOf(' ') < 0;
-    }
-
-
-    protected static final Map<String, String> importanceToPriorityMap = new HashMap<>();
-
-    static {
-        importanceToPriorityMap.put("High", "1");
-        importanceToPriorityMap.put("Normal", "5");
-        importanceToPriorityMap.put("Low", "9");
-    }
-
-    protected static final Map<String, String> priorityToImportanceMap = new HashMap<>();
-
-    static {
-        // 0 means undefined, map it to normal
-        priorityToImportanceMap.put("0", "Normal");
-
-        priorityToImportanceMap.put("1", "High");
-        priorityToImportanceMap.put("2", "High");
-        priorityToImportanceMap.put("3", "High");
-        priorityToImportanceMap.put("4", "Normal");
-        priorityToImportanceMap.put("5", "Normal");
-        priorityToImportanceMap.put("6", "Normal");
-        priorityToImportanceMap.put("7", "Low");
-        priorityToImportanceMap.put("8", "Low");
-        priorityToImportanceMap.put("9", "Low");
-    }
-
-    protected String convertPriorityFromExchange(String exchangeImportanceValue) {
-        String value = null;
-        if (exchangeImportanceValue != null) {
-            value = importanceToPriorityMap.get(exchangeImportanceValue);
-        }
-        return value;
-    }
-
-    protected String convertPriorityToExchange(String vTodoPriorityValue) {
-        String value = null;
-        if (vTodoPriorityValue != null) {
-            value = priorityToImportanceMap.get(vTodoPriorityValue);
-        }
-        return value;
     }
 
     /**

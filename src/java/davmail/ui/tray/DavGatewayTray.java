@@ -26,7 +26,9 @@ import org.apache.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
 import java.io.IOException;
 import java.net.URL;
 
@@ -224,7 +226,7 @@ public final class DavGatewayTray {
     /**
      * Create tray icon and register frame listeners.
      */
-    public static void init(boolean notray) {
+    public static void init() {
         String currentDesktop = System.getenv("XDG_CURRENT_DESKTOP");
         String javaVersion = System.getProperty("java.version");
         String arch = System.getProperty("sun.arch.data.model");
@@ -241,7 +243,8 @@ public final class DavGatewayTray {
         }
 
         if (!Settings.getBooleanProperty("davmail.server")) {
-            if (!notray) {
+            // disable tray by default on linux
+            if (Settings.getBooleanProperty("davmail.enableTray", !Settings.isLinux())) {
                 if ("Unity".equals(currentDesktop)) {
                     LOGGER.info("Detected Unity desktop, please follow instructions at " +
                             "https://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
@@ -252,21 +255,13 @@ public final class DavGatewayTray {
                             "https://extensions.gnome.org/extension/1503/tray-icons/ " +
                             "to restore normal systray or run DavMail in server mode");
                 }
-                if (Settings.isWindows()) {
-                    LOGGER.info("Do not try to create SWT tray on windows");
-                } else if (Settings.O365_INTERACTIVE.equals(Settings.getProperty("davmail.mode"))) {
-                    LOGGER.info("O365Interactive is not compatible with SWT, do not try to create SWT tray");
-                } else {
-                    // first try to load SWT before with Java AWT
-                    ClassLoader classloader = DavGatewayTray.class.getClassLoader();
+                // first try to load SWT before with Java AWT
+                boolean isSWTAvailable = Settings.isSWTAvailable();
+                if (isSWTAvailable) {
                     try {
-                        // trigger ClassNotFoundException
-                        classloader.loadClass("org.eclipse.swt.SWT");
                         // SWT available, create tray
                         davGatewayTray = new SwtGatewayTray();
                         davGatewayTray.init();
-                    } catch (ClassNotFoundException e) {
-                        DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
                     } catch (Throwable e) {
                         DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
                         davGatewayTray = null;
@@ -349,7 +344,19 @@ public final class DavGatewayTray {
         return result;
     }
 
+    public static BufferedImage convertGrayscale(BufferedImage colorImage) {
+        BufferedImage grayImage = new BufferedImage(colorImage.getWidth(), colorImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        ColorConvertOp op = new ColorConvertOp(ColorSpace.getInstance(ColorSpace.CS_GRAY), null);
+        op.filter(colorImage, grayImage);
+
+        return grayImage;
+    }
+
     public static BufferedImage adjustTrayIcon(BufferedImage image) {
+        if (Settings.getBooleanProperty("davmail.trayGrayscale", false)) {
+            image = convertGrayscale(image);
+        }
         Color backgroundColor = null;
         String backgroundColorString = Settings.getProperty("davmail.trayBackgroundColor");
 
