@@ -4,11 +4,11 @@
 #
 BASE=$(dirname "$0")
 # set memory and enable DNS expiration
-: "${JAVA_OPTS:=-Xmx512M -Dsun.net.inetaddr.ttl=60}"
+: "${BASE_JAVA_OPTS:=-Xmx512M -Dsun.net.inetaddr.ttl=60}"
 JAVA=java
 
 # Experimental: download Azul JRE FX with command 'davmail azul'
-if [ "x$1" = 'xazul' ]; then
+if [ "$1" = 'azul' ]; then
   if [ "$BASE" = '/usr/bin' ]; then
     echo Use platform independent package to run DavMail with Azul JDK
     exit 1
@@ -28,7 +28,7 @@ if [ "x$1" = 'xazul' ]; then
 fi
 
 # use davmail swt to fetch up to date swt library
-if [ "x$1" = 'xswt' ]; then
+if [ "$1" = 'xswt' ]; then
   if [ "$BASE" = '/usr/bin' ]; then
     echo Use platform independent package to fetch and run up to date swt
     exit 1
@@ -41,7 +41,7 @@ if [ "x$1" = 'xswt' ]; then
     echo Unable to download SWT
     exit 1
   fi;
-  unzip swt.zip swt.jar -d $BASE/lib
+  unzip swt.zip swt.jar -d "$BASE/lib"
   rm swt.zip
   echo "Downloaded SWT jar, launch davmail normally"
   exit
@@ -50,7 +50,7 @@ fi
 # check for embedded jre
 if [ -e "$BASE/jre/bin/java" ]; then
   JAVA=$BASE/jre/bin/java
-  JAVA_OPTS="$JAVA_OPTS --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED"
+  : ${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED}
   echo "Using embedded JRE"
   $JAVA -version
 elif  java -version 2>&1 >/dev/null | grep -q "version" ; then
@@ -59,12 +59,11 @@ elif  java -version 2>&1 >/dev/null | grep -q "version" ; then
 
   if [ -e "/usr/lib/jvm/openjfx" ]; then
     echo "Enable OpenJFX"
-    JAVA_OPTS="$JAVA_OPTS --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED"
-    JAVA_OPTS="$JAVA_OPTS -Djava.library.path=/usr/lib/jvm/openjfx --module-path /usr/lib/jvm/openjfx --add-modules javafx.base,javafx.controls,javafx.web,javafx.fxml,javafx.swing"
+    : ${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED -Djava.library.path=/usr/lib/jvm/openjfx --module-path /usr/lib/jvm/openjfx --add-modules javafx.base,javafx.controls,javafx.web,javafx.fxml,javafx.swing}
   elif [ -e "/usr/share/openjfx" ]; then
     # matches Kubuntu
     echo "Enable OpenJFX"
-    JAVA_OPTS="$JAVA_OPTS --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED"
+    : ${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED}
   else
     # add JFX to classpath with OpenJDK 11
     JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
@@ -75,22 +74,21 @@ elif [ -e "$BASE/davmail.jar" ]; then
   exit 1
 fi
 
-if [ -e /usr/lib/java/swt.jar ]; then
+if [ -e $BASE/lib/swt.jar ]; then
+    echo use embedded SWT
+elif [ -e /usr/lib/java/swt.jar ]; then
     # latest SWT on Fedora
-    JAVA_OPTS="$JAVA_OPTS --enable-native-access=ALL-UNNAMED"
+    : ${SWT_JAVA_OPTS:=--enable-native-access=ALL-UNNAMED}
     SWT_CLASSPATH=/usr/lib/java/swt.jar
-elif [ -e /usr/share/java/swt.jar ]; then
-    # SWT 3 is available, deprecated?
-    JAVA_OPTS="$JAVA_OPTS -Djdk.gtk.version=2.2"
-    export LD_LIBRARY_PATH=/usr/lib/jni
-    SWT_CLASSPATH=/usr/share/java/swt.jar
 elif [ -e /usr/share/java/swt4.jar ]; then
-    # SWT 4 is available
+    # SWT 4 is available (debian, ubuntu)
     export LD_LIBRARY_PATH=/usr/lib/jni
     SWT_CLASSPATH=/usr/share/java/swt4.jar
 else
     SWT_CLASSPATH=
 fi
+
+: ${JAVA_OPTS:=$BASE_JAVA_OPTS $JFX_JAVA_OPTS $SWT_JAVA_OPTS}
 
 if [ -e "$BASE/davmail.jar" ]; then
     # this is the platform independent package
