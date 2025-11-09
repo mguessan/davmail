@@ -33,8 +33,6 @@ if [ "$1" = 'swt' ]; then
     echo Use platform independent package to fetch and run up to date swt
     exit 1
   fi
-   curl -L -o swt-4.37-win32-win32-x86_64.zip "https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.37-202509050730/swt-4.37-gtk-linux-$(uname -m).zip&mirror_id=1"
-
   if curl -L --fail -o "$BASE/swt.zip" "https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.37-202509050730/swt-4.37-gtk-linux-$(uname -m).zip&mirror_id=1"; then
     echo Downloaded SWT
   else
