@@ -27,6 +27,26 @@ if [ "x$1" = 'xazul' ]; then
   exit
 fi
 
+# use davmail swt to fetch up to date swt library
+if [ "x$1" = 'xswt' ]; then
+  if [ "$BASE" = '/usr/bin' ]; then
+    echo Use platform independent package to fetch and run up to date swt
+    exit 1
+  fi
+   curl -L -o swt-4.37-win32-win32-x86_64.zip "https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.37-202509050730/swt-4.37-gtk-linux-$(uname -m).zip&mirror_id=1"
+
+  if curl -L --fail -o "$BASE/swt.zip" "https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.37-202509050730/swt-4.37-gtk-linux-$(uname -m).zip&mirror_id=1"; then
+    echo Downloaded SWT
+  else
+    echo Unable to download SWT
+    exit 1
+  fi;
+  unzip swt.zip swt.jar -d $BASE/lib
+  rm swt.zip
+  echo "Downloaded SWT jar, launch davmail normally"
+  exit
+fi
+
 # check for embedded jre
 if [ -e "$BASE/jre/bin/java" ]; then
   JAVA=$BASE/jre/bin/java
