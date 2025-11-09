@@ -39,7 +39,7 @@ if [ "$1" = 'swt' ]; then
     echo Unable to download SWT
     exit 1
   fi;
-  unzip swt.zip swt.jar -d "$BASE/lib"
+  unzip -o swt.zip swt.jar -d "$BASE/lib"
   rm swt.zip
   echo "Downloaded SWT jar, launch davmail normally"
   exit
