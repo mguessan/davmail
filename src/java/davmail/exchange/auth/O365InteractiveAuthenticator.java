@@ -156,7 +156,9 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             }
         }
 
-        if (o365InteractiveAuthenticatorSWT == null && isJFXAvailable) {
+        if (o365InteractiveAuthenticatorSWT == null && isJFXAvailable
+                // do not try failover on linux, SWT gtk browser breaks JFX
+                && (!(isSWTAvailable && Settings.isLinux() && !isDocker))) {
             LOGGER.info("Open JavaFX (OpenJFX) browser");
             SwingUtilities.invokeLater(() -> {
                 try {
