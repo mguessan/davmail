@@ -46,8 +46,8 @@ public class O365Token {
     protected static final Logger LOGGER = Logger.getLogger(O365Token.class);
 
     private String clientId;
-    private String tokenUrl;
-    private String password;
+    private final String tokenUrl;
+    private final String password;
     private String redirectUri;
     private String username;
     private String refreshToken;
@@ -176,7 +176,7 @@ public class O365Token {
 
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
-        // assume unexpired token
+        // assume this token is not expired
         expiresOn = System.currentTimeMillis() + 1000 * 60 * 60;
     }
 
@@ -204,7 +204,7 @@ public class O365Token {
 
         executeRequest(tokenRequest);
 
-        // persist new refresh token
+        // persist provided new refresh token
         persistToken();
     }
 
@@ -242,7 +242,7 @@ public class O365Token {
                     token = localToken;
 
                 } catch (UnknownHostException e) {
-                    // network down, rethrow to avoid invalidating token
+                    // network down, rethrow to avoid invalidating this token
                     throw e;
                 } catch (IOException e) {
                     LOGGER.error("refresh token failed " + e.getMessage());
