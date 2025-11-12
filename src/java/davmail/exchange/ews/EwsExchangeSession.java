@@ -2660,7 +2660,13 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     protected String getCalendarEmail(String folderPath) throws IOException {
-        return getFolderId(folderPath).mailbox;
+        // retrieve mailbox from folder
+        String calendarEmail = getFolderId(folderPath).mailbox;
+        if (calendarEmail == null) {
+            // default is current mailbox
+            calendarEmail = email;
+        }
+        return calendarEmail;
     }
 
     @Override
