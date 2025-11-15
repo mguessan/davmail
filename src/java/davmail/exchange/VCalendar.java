@@ -286,7 +286,7 @@ public class VCalendar extends VObject {
                         }
                         if (toRemoveValues != null) {
                             values.removeAll(toRemoveValues);
-                            if (values.size() == 0) {
+                            if (values.isEmpty()) {
                                 vObject.removeProperty("ATTACH");
                             }
                         }
@@ -584,7 +584,7 @@ public class VCalendar extends VObject {
 
     /**
      * Convert X-CALENDARSERVER-ACCESS to CLASS.
-     * see http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
+     * see <a href="http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt">caldav-privateevents.txt</a>
      *
      * @param calendarServerAccess X-CALENDARSERVER-ACCESS value
      * @return CLASS value
@@ -601,7 +601,7 @@ public class VCalendar extends VObject {
 
     /**
      * Convert CLASS to X-CALENDARSERVER-ACCESS.
-     * see http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt     *
+     * see <a href="http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt">caldav-privateevents.txt</a>
      *
      * @return X-CALENDARSERVER-ACCESS value
      */
@@ -640,7 +640,7 @@ public class VCalendar extends VObject {
 
 
     /**
-     * Get properties by name from first VEVENT.
+     * Get properties by name from the first VEVENT.
      *
      * @param name property name
      * @return properties
