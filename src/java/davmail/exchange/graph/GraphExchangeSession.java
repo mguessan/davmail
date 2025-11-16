@@ -189,36 +189,13 @@ public class GraphExchangeSession extends ExchangeSession {
 
                     VCalendar localVCalendar = new VCalendar();
                     // TODO: set email?
+                    // TODO: set timezone based on start date timezone
                     localVCalendar.setTimezone(getVTimezone());
-                    VObject vEvent = new VObject();
-                    vEvent.type = "VEVENT";
-                    localVCalendar.addVObject(vEvent);
-                    localVCalendar.setFirstVeventPropertyValue("UID", graphObject.optString("iCalUId"));
-                    localVCalendar.setFirstVeventPropertyValue("SUMMARY", graphObject.optString("subject"));
-
-                    localVCalendar.addFirstVeventProperty(convertBodyToVproperty("DESCRIPTION", graphObject));
-
-                    localVCalendar.setFirstVeventPropertyValue("LAST-MODIFIED", convertDateFromExchange(graphObject.optString("lastModifiedDateTime")));
-                    localVCalendar.setFirstVeventPropertyValue("DTSTAMP", convertDateFromExchange(graphObject.optString("lastModifiedDateTime")));
-                    localVCalendar.addFirstVeventProperty(convertDateTimeTimeZoneToVproperty("DTSTART", graphObject.optJSONObject("start")));
-                    localVCalendar.addFirstVeventProperty(convertDateTimeTimeZoneToVproperty("DTEND", graphObject.optJSONObject("end")));
-
-                    localVCalendar.setFirstVeventPropertyValue("CLASS", convertClassFromExchange(graphObject.optString("sensitivity")));
-
-                    // custom microsoft properties
-                    localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", graphObject.optString("showAs").toUpperCase());
-                    localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", graphObject.optString("isAllDay").toUpperCase());
-                    localVCalendar.setFirstVeventPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", graphObject.optString("responseRequested").toUpperCase());
+                    localVCalendar.addVObject(buildVEvent(graphObject));
 
                     handleException(localVCalendar, graphObject);
 
                     handleRecurrence(localVCalendar, graphObject);
-
-                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS", graphObject.optString("xmozsendinvitations"));
-                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-LASTACK", graphObject.optString("xmozlastack"));
-                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME", graphObject.optString("xmozsnoozetime"));
-
-                    setAttendees(localVCalendar.getFirstVevent());
 
                     content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
                 }
@@ -228,7 +205,7 @@ public class GraphExchangeSession extends ExchangeSession {
             return content;
         }
 
-        private void handleException(VCalendar localVCalendar, GraphObject graphObject) throws DavMailException {
+        private void handleException(VCalendar localVCalendar, GraphObject graphObject) throws DavMailException, JSONException {
             JSONArray cancelledOccurrences = graphObject.optJSONArray("cancelledOccurrences");
             if (cancelledOccurrences != null) {
                 HashSet<String> exDateValues = new HashSet<>();
@@ -251,6 +228,45 @@ public class GraphExchangeSession extends ExchangeSession {
                 exDate.setParam("TZID", startDate.getParamValue("TZID"));
                 localVCalendar.addFirstVeventProperty(exDate);
             }
+
+            JSONArray exceptionOccurrences = graphObject.optJSONArray("exceptionOccurrences");
+            if (exceptionOccurrences != null) {
+                for (int i = 0; i < exceptionOccurrences.length(); i++) {
+                    GraphObject jsonEvent = new GraphObject(exceptionOccurrences.optJSONObject(i));
+                    VObject vEvent = buildVEvent(jsonEvent);
+                    vEvent.setPropertyValue("RECCURRENCE-ID", jsonEvent.getRecurrenceId());
+                    localVCalendar.addVObject(vEvent);
+                }
+            }
+        }
+
+        private VObject buildVEvent(GraphObject jsonEvent) throws DavMailException, JSONException {
+            VObject vEvent = new VObject();
+            vEvent.type = "VEVENT";
+            vEvent.setPropertyValue("UID", jsonEvent.optString("iCalUId"));
+            vEvent.setPropertyValue("SUMMARY", jsonEvent.optString("subject"));
+
+            vEvent.addProperty(convertBodyToVproperty("DESCRIPTION", jsonEvent));
+
+            vEvent.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(jsonEvent.optString("lastModifiedDateTime")));
+            vEvent.setPropertyValue("DTSTAMP", convertDateFromExchange(jsonEvent.optString("lastModifiedDateTime")));
+            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start")));
+            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end")));
+
+            vEvent.setPropertyValue("CLASS", convertClassFromExchange(jsonEvent.optString("sensitivity")));
+
+            // custom microsoft properties
+            vEvent.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", jsonEvent.optString("showAs").toUpperCase());
+            vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", jsonEvent.optString("isAllDay").toUpperCase());
+            vEvent.setPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", jsonEvent.optString("responseRequested").toUpperCase());
+
+            vEvent.setPropertyValue("X-MOZ-SEND-INVITATIONS", jsonEvent.optString("xmozsendinvitations"));
+            vEvent.setPropertyValue("X-MOZ-LASTACK", jsonEvent.optString("xmozlastack"));
+            vEvent.setPropertyValue("X-MOZ-SNOOZE-TIME", jsonEvent.optString("xmozsnoozetime"));
+
+            setAttendees(vEvent, jsonEvent);
+
+            return vEvent;
         }
 
         private void handleRecurrence(VCalendar localVCalendar, GraphObject graphObject) throws JSONException, DavMailException {
@@ -356,15 +372,31 @@ public class GraphExchangeSession extends ExchangeSession {
             return result;
         }
 
+        private String convertOriginalStartDate(String originalStart, String originalStartTimeZone) throws DavMailException {
+            String result = null;
+            if (originalStart != null) {
+                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
+                try {
+                    result = formatter.format(parser.parse(originalStart));
+                } catch (ParseException e) {
+                    throw new DavMailException("EXCEPTION_INVALID_DATE", originalStart);
+                }
+            }
+            return result;
+        }
 
-        private void setAttendees(VObject vEvent) throws JSONException {
+
+        private void setAttendees(VObject vEvent, GraphObject jsonEvent) throws JSONException {
             // handle organizer
-            JSONObject organizer = graphObject.optJSONObject("organizer");
+            JSONObject organizer = jsonEvent.optJSONObject("organizer");
             if (organizer != null) {
                 vEvent.addProperty(convertEmailAddressToVproperty("ORGANIZER", organizer.optJSONObject("emailAddress")));
             }
 
-            JSONArray attendees = graphObject.optJSONArray("attendees");
+            JSONArray attendees = jsonEvent.optJSONArray("attendees");
             if (attendees != null) {
                 for (int i = 0; i < attendees.length(); i++) {
                     JSONObject attendee = attendees.getJSONObject(i);
@@ -444,7 +476,6 @@ public class GraphExchangeSession extends ExchangeSession {
                 JSONObject jsonObject = new JSONObject();
                 jsonObject.put("subject", vEvent.getPropertyValue("SUMMARY"));
 
-                // TODO convert date and timezone
                 VProperty dtStart = vEvent.getProperty("DTSTART");
                 String dtStartTzid = dtStart.getParamValue("TZID");
                 jsonObject.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
@@ -466,6 +497,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     jsonObject.put("body", new JSONObject().put("content", description).put("contentType", "text"));
                 }
 
+                handleRrule(jsonObject, vEvent.getProperty("RRULE"));
+
                 if (id != null) {
                     // assume we can delete occurrence only on new event
                     List<VProperty> exdateProperty = vEvent.getProperties("EXDATE");
@@ -478,6 +511,8 @@ public class GraphExchangeSession extends ExchangeSession {
                         }
                         jsonObject.put("cancelledOccurrences", cancelledOccurrences);
                     }
+
+                    handleModifiedOccurrences(vCalendar, existingJsonEvent);
                 }
 
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
@@ -513,18 +548,123 @@ public class GraphExchangeSession extends ExchangeSession {
             return itemResult;
         }
 
+        private void handleRrule(JSONObject jsonEvent, VProperty rrule) throws JSONException, DavMailException {
+            if (rrule != null) {
+                JSONObject start = jsonEvent.getJSONObject("start");
+                String startDate = start.getString("dateTime").substring(0, 10);
+                String dayOfWeek = getDayOfWeek(startDate);
+
+                Map<String, String> rrules = rrule.getValuesAsMap();
+                String frequency = rrules.get("FREQ");
+                if ("WEEKLY".equals(frequency)) {
+                    JSONObject pattern = new JSONObject().put("type", "weekly").put("interval", 1).put("daysOfWeek", new JSONArray().put(dayOfWeek));
+                    JSONObject range = new JSONObject().put("type", "noEnd").put("startDate", startDate).put("endDate", "0001-01-01");
+                    jsonEvent.put("recurrence", new JSONObject().put("pattern", pattern).put("range", range));
+                }
+            }
+        }
+
+        private String getDayOfWeek(String date) throws DavMailException {
+            if (date != null) {
+                try {
+                    SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd");
+                    parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    SimpleDateFormat formatter = new SimpleDateFormat("EEEE", Locale.ENGLISH);
+                    formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    return formatter.format(parser.parse(date));
+                } catch (ParseException e) {
+                    throw new DavMailException("EXCEPTION_INVALID_DATE", date);
+                }
+            }
+            return null;
+        }
+
+        private void handleModifiedOccurrences(VCalendar vCalendar, JSONObject existingJsonEvent) throws IOException, JSONException {
+            for (VObject modifiedOccurrence : vCalendar.getModifiedOccurrences()) {
+                VProperty originalDateProperty = modifiedOccurrence.getProperty("RECURRENCE-ID");
+                String originalDateZulu;
+                try {
+                    originalDateZulu = vCalendar.convertCalendarDateToExchangeZulu(originalDateProperty.getValue(), originalDateProperty.getParamValue("TZID"));
+                } catch (IOException e) {
+                    throw new DavMailException("EXCEPTION_INVALID_DATE", originalDateProperty.getValue());
+                }
+                LOGGER.debug("Looking for occurrence " + originalDateZulu);
+                // try to find modified occurrence in existing event
+                JSONArray exceptionOccurrences = existingJsonEvent.optJSONArray("exceptionOccurrences");
+                boolean occurrenceFound = false;
+                if (exceptionOccurrences != null) {
+                    for (int i = 0; i < exceptionOccurrences.length(); i++) {
+                        JSONObject exceptionOccurrence = exceptionOccurrences.optJSONObject(i);
+                        String exceptionOriginalStart = convertOriginalStartDate(exceptionOccurrence.optString("originalStart"), exceptionOccurrence.optString("originalStartTimeZone"));
+                        LOGGER.debug("Looking at occurrence " + exceptionOriginalStart + " for " + originalDateZulu);
+                        if (originalDateZulu.equals(exceptionOriginalStart.equals(originalDateZulu))) {
+                            updateModifiedOccurrence(modifiedOccurrence, exceptionOccurrence);
+                            occurrenceFound = true;
+                            break;
+                        }
+                    }
+                }
+                if (!occurrenceFound) {
+                    createNewModifiedOccurrence(modifiedOccurrence, existingJsonEvent, originalDateZulu);
+                }
+            }
+        }
+
+        private void createNewModifiedOccurrence(VObject vEvent, JSONObject existingJsonEvent, String originalDateZulu) throws IOException, JSONException {
+            String startDateTime = originalDateZulu.substring(0, 10) + "T00:00:00.0000000";
+            String endDateTime = originalDateZulu.substring(0, 10) + "T23:59:59.9999999";
+            GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("events")
+                    .setObjectId(existingJsonEvent.optString("id"))
+                    .setChildType("instances")
+                    .setStartDateTime(startDateTime)
+                    .setEndDateTime(endDateTime));
+
+            JSONArray occurrences = graphResponse.optJSONArray("value");
+            if (occurrences != null && occurrences.length() > 0) {
+                for (int i = 0; i < occurrences.length(); i++) {
+                    JSONObject occurrence = occurrences.getJSONObject(i);
+                    String occurrenceId = occurrence.optString("id");
+                    if (occurrenceId != null) {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put("subject", vEvent.getPropertyValue("SUMMARY"));
+
+                        // TODO convert date and timezone
+                        VProperty dtStart = vEvent.getProperty("DTSTART");
+                        String dtStartTzid = dtStart.getParamValue("TZID");
+                        jsonObject.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
+
+                        VProperty dtEnd = vEvent.getProperty("DTEND");
+                        String dtEndTzid = dtEnd.getParamValue("TZID");
+                        jsonObject.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
+
+                        graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("events")
+                                .setObjectId(occurrenceId)
+                                .setJsonBody(jsonObject));
+
+                        System.out.println(graphResponse.toString(4));
+                    }
+                }
+            }
+        }
+
+        private void updateModifiedOccurrence(VObject modifiedOccurrence, JSONObject exceptionOccurrence) {
+            LOGGER.debug("Updating occurrence " + modifiedOccurrence.getPropertyValue("SUMMARY") + " " + modifiedOccurrence.getPropertyValue("RECCURRENCE-ID") + " " + exceptionOccurrence.optString("originalStart"));
+        }
+
         private void deleteEventOccurrence(String id, String exDateValue) throws IOException, JSONException {
             String startDateTime = exDateValue.substring(0, 10) + "T00:00:00.0000000";
             String endDateTime = exDateValue.substring(0, 10) + "T23:59:59.9999999";
-            GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
-            graphRequestBuilder.setMethod(HttpGet.METHOD_NAME)
+            GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("events")
                     .setObjectId(id)
                     .setChildType("instances")
                     .setStartDateTime(startDateTime)
-                    .setEndDateTime(endDateTime);
-            GraphObject graphResponse = executeGraphRequest(graphRequestBuilder);
+                    .setEndDateTime(endDateTime));
 
             JSONArray occurrences = graphResponse.optJSONArray("value");
             if (occurrences != null && occurrences.length() > 0) {
@@ -1051,7 +1191,7 @@ public class GraphExchangeSession extends ExchangeSession {
     /**
      * Must set select to retrieve cancelled and exception occurrences so we must specify all properties
      */
-    protected static final String EVENT_SELECT = "allowNewTimeProposals,attendees,body,bodyPreview,cancelledOccurrences,categories,changeKey,createdDateTime,end,exceptionOccurrences,hasAttachments,iCalUId,id,importance,isAllDay,isOnlineMeeting,isOrganizer,isReminderOn,lastModifiedDateTime,location,organizer,originalStart,recurrence,reminderMinutesBeforeStart,responseRequested,sensitivity,showAs,start,subject,type";
+    protected static final String EVENT_SELECT = "allowNewTimeProposals,attendees,body,bodyPreview,cancelledOccurrences,categories,changeKey,createdDateTime,end,exceptionOccurrences,hasAttachments,iCalUId,id,importance,isAllDay,isOnlineMeeting,isOrganizer,isReminderOn,lastModifiedDateTime,location,organizer,originalStart,originalStartTimeZone,recurrence,reminderMinutesBeforeStart,responseRequested,sensitivity,showAs,start,subject,type";
     protected static final HashSet<FieldURI> EVENT_ATTRIBUTES = new HashSet<>();
 
     static {
