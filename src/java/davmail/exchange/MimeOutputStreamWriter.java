@@ -34,7 +34,7 @@ public class MimeOutputStreamWriter extends OutputStreamWriter {
     /**
      * Build MIME outputStreamWriter
      *
-     * @param out outputstream
+     * @param out output stream
      * @throws UnsupportedEncodingException on error
      */
     public MimeOutputStreamWriter(OutputStream out) throws UnsupportedEncodingException {
@@ -50,7 +50,7 @@ public class MimeOutputStreamWriter extends OutputStreamWriter {
      */
     public void writeHeader(String header, String value) throws IOException {
         // do not write empty headers
-        if (value != null && value.length() > 0) {
+        if (value != null && !value.isEmpty()) {
             write(header);
             write(": ");
             write(MimeUtility.encodeText(value, "UTF-8", null));
