@@ -2036,8 +2036,7 @@ public abstract class ExchangeSession {
             }
 
             if (contactPhoto != null) {
-                writer.writeLine("PHOTO;TYPE=" + contactPhoto.contentType + ";ENCODING=BASE64:");
-                writer.writeLine(contactPhoto.content, true);
+                writer.writeLine("PHOTO:data:"+contactPhoto.contentType+";base64," +contactPhoto.content);
             }
 
             writer.appendProperty("KEY1;X509;ENCODING=BASE64", get("msexchangecertificate"));
@@ -2814,7 +2813,14 @@ public abstract class ExchangeSession {
                 } else if ("X-SPOUSE".equals(property.getKey())) {
                     properties.put("spousecn", property.getValue());
                 } else if ("PHOTO".equals(property.getKey())) {
-                    properties.put("photo", property.getValue());
+                    String value = property.getValue();
+                    if ("data:image/jpeg".equals(value) && property.values.size() > 1) {
+                        value = property.getValues().get(1);
+                        if (value.startsWith("base64,")) {
+                            value = value.substring(7);
+                        }
+                    }
+                    properties.put("photo", value);
                     properties.put("haspicture", "true");
                 } else if ("KEY1".equals(property.getKey())) {
                     properties.put("msexchangecertificate", property.getValue());
