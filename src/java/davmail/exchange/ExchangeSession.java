@@ -2833,6 +2833,7 @@ public abstract class ExchangeSession {
             for (String key : CONTACT_ATTRIBUTES) {
                 if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
                         && !"lastmodified".equals(key) && !"sensitivity".equals(key)
+                        && !"private".equals(key)
                         && !properties.containsKey(key)) {
                     properties.put(key, null);
                 }
