@@ -744,8 +744,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     } else if ("anniversary".equals(entry.getKey())) {
                         graphObject.put(entry.getKey(), convertZuluToDate(entry.getValue()));
                     } else if ("photo".equals(entry.getKey())) {
-                        //
-                        graphObject.put("haspicture", (get("photo") != null) ? "true" : "false");
+                        LOGGER.debug("Contact has a photo");
                     } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")
                             && !"usersmimecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"msexchangecertificate".equals(entry.getKey()) // not supported over Graph
@@ -2517,7 +2516,8 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private JSONObject getContactIfExists(FolderId folderId, String itemName) throws IOException {
-        if (isItemId(itemName)) {
+        String urlcompname = convertItemNameToEML(itemName);
+        if (isItemId(urlcompname)) {
             // lookup item directly
             return executeJsonRequest(new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
@@ -2536,7 +2536,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType("contactFolders")
                     .setObjectId(folderId.id)
                     .setChildType("contacts")
-                    .setFilter(isEqualTo("urlcompname", convertItemNameToEML(itemName)))
+                    .setFilter(isEqualTo("urlcompname", urlcompname))
                     .setExpandFields(CONTACT_ATTRIBUTES)
             );
             // need at least one value
@@ -2561,13 +2561,17 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectId(((Contact) contact).folderId.id)
                 .setChildType("contacts")
                 .setChildId(((Contact) contact).id)
-                .setChildSuffix("photo/$value");
+                .setChildSuffix("photo/$value")
+                .setAccessToken(token.getAccessToken());
 
         byte[] contactPhotoBytes;
         try (
                 CloseableHttpResponse response = httpClient.execute(graphRequestBuilder.build());
                 InputStream inputStream = response.getEntity().getContent()
         ) {
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
+                throw new IOException("Unable to fetch photo"+ response.getStatusLine().getReasonPhrase()) ;
+            }
             if (HttpClientAdapter.isGzipEncoded(response)) {
                 contactPhotoBytes = IOUtil.readFully(new GZIPInputStream(inputStream));
             } else {
