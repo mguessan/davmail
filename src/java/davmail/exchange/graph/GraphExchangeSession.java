@@ -121,7 +121,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
         protected GraphObject graphObject;
 
-        public Event(FolderId folderId, GraphObject graphObject) {
+        public Event(String folderPath, FolderId folderId, GraphObject graphObject) {
+            this.folderPath = folderPath;
             this.folderId = folderId;
 
             if ("IPF.Appointment".equals(folderId.folderClass) && graphObject.optString("taskstatus") != null) {
@@ -597,6 +598,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         JSONObject exceptionOccurrence = exceptionOccurrences.optJSONObject(i);
                         String exceptionOriginalStart = convertOriginalStartDate(exceptionOccurrence.optString("originalStart"), exceptionOccurrence.optString("originalStartTimeZone"));
                         LOGGER.debug("Looking at occurrence " + exceptionOriginalStart + " for " + originalDateZulu);
+                        // TODO fix
                         if (originalDateZulu.equals(exceptionOriginalStart.equals(originalDateZulu))) {
                             updateModifiedOccurrence(modifiedOccurrence, exceptionOccurrence);
                             occurrenceFound = true;
@@ -2562,7 +2564,7 @@ public class GraphExchangeSession extends ExchangeSession {
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext()) {
-            Event event = new Event(folderId, new GraphObject(graphIterator.next()));
+            Event event = new Event(folderPath, folderId, new GraphObject(graphIterator.next()));
             eventList.add(event);
         }
 
@@ -2589,7 +2591,7 @@ public class GraphExchangeSession extends ExchangeSession {
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext()) {
-            Event event = new Event(folderId, new GraphObject(graphIterator.next()));
+            Event event = new Event(folderPath, folderId, new GraphObject(graphIterator.next()));
             eventList.add(event);
         }
 
@@ -2613,7 +2615,7 @@ public class GraphExchangeSession extends ExchangeSession {
         } else if ("IPF.Appointment".equals(folderId.folderClass)) {
             JSONObject jsonResponse = getEventIfExists(folderId, itemName);
             if (jsonResponse != null) {
-                return new Event(folderId, new GraphObject(jsonResponse));
+                return new Event(folderPath, folderId, new GraphObject(jsonResponse));
             } else {
                 throw new IOException("Item " + folderPath + " " + itemName + " not found");
             }
@@ -2710,7 +2712,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 InputStream inputStream = response.getEntity().getContent()
         ) {
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
-                throw new IOException("Unable to fetch photo"+ response.getStatusLine().getReasonPhrase()) ;
+                throw new IOException("Unable to fetch photo" + response.getStatusLine().getReasonPhrase());
             }
             if (HttpClientAdapter.isGzipEncoded(response)) {
                 contactPhotoBytes = IOUtil.readFully(new GZIPInputStream(inputStream));
@@ -2727,7 +2729,37 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void deleteItem(String folderPath, String itemName) throws IOException {
+        Item item = getItem(folderPath, itemName);
+        if (item instanceof GraphExchangeSession.Contact) {
+            FolderId folderId = ((Contact) item).folderId;
+            executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpDelete.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("contactFolders")
+                    .setObjectId(folderId.id)
+                    .setChildType("contacts")
+                    .setChildId(((Contact) item).id)
+            );
+        } else if (item instanceof GraphExchangeSession.Event) {
+            FolderId folderId = ((Event) item).folderId;
 
+            if (folderId.folderClass.equals("IPF.Appointment")) {
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpDelete.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("events")
+                        .setObjectId(((Event) item).id));
+            } else {
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpDelete.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("todo/lists")
+                        .setObjectId(folderId.id)
+                        .setChildType("tasks")
+                        .setChildId(((Event) item).id)
+                );
+            }
+        }
     }
 
     @Override
