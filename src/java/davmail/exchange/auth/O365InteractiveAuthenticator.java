@@ -151,9 +151,9 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
                 LOGGER.warn("Unable to load SWT browser: "+e.getMessage());
                 if (o365InteractiveAuthenticatorSWT != null) {
                     try {
-                    o365InteractiveAuthenticatorSWT.dispose();
-                    } catch (Error e2) {
-                        LOGGER.warn("Error disposing SWT frame: "+e2.getMessage());
+                        o365InteractiveAuthenticatorSWT.dispose();
+                    } catch (Throwable t) {
+                        LOGGER.warn("Error disposing SWT frame: "+t.getMessage());
                     }
                 }
                 o365InteractiveAuthenticatorSWT = null;
