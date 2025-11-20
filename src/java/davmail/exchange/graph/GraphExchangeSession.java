@@ -646,7 +646,7 @@ public class GraphExchangeSession extends ExchangeSession {
                                 .setObjectId(occurrenceId)
                                 .setJsonBody(jsonObject));
 
-                        System.out.println(graphResponse.toString(4));
+                        LOGGER.debug("Updated occurrence: "+ graphResponse.toString());
                     }
                 }
             }
