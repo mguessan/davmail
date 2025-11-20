@@ -598,8 +598,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         JSONObject exceptionOccurrence = exceptionOccurrences.optJSONObject(i);
                         String exceptionOriginalStart = convertOriginalStartDate(exceptionOccurrence.optString("originalStart"), exceptionOccurrence.optString("originalStartTimeZone"));
                         LOGGER.debug("Looking at occurrence " + exceptionOriginalStart + " for " + originalDateZulu);
-                        // TODO fix
-                        if (originalDateZulu.equals(exceptionOriginalStart.equals(originalDateZulu))) {
+                        if (originalDateZulu.equals(exceptionOriginalStart)) {
                             updateModifiedOccurrence(modifiedOccurrence, exceptionOccurrence);
                             occurrenceFound = true;
                             break;
