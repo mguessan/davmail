@@ -266,6 +266,17 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", jsonEvent.optString("isAllDay").toUpperCase());
             vEvent.setPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", jsonEvent.optString("responseRequested").toUpperCase());
 
+            if (graphObject.optBoolean("isReminderOn")) {
+                VObject vAlarm = new VObject();
+                vAlarm.type = "VALARM";
+                vAlarm.addPropertyValue("ACTION", "DISPLAY");
+                int reminderMinutesBeforeStart = jsonEvent.optInt("reminderMinutesBeforeStart");
+                if (reminderMinutesBeforeStart > 0) {
+                    vAlarm.addPropertyValue("TRIGGER", "-PT" + reminderMinutesBeforeStart + "M");
+                }
+                vEvent.addVObject(vAlarm);
+            }
+
             vEvent.setPropertyValue("X-MOZ-SEND-INVITATIONS", jsonEvent.optString("xmozsendinvitations"));
             vEvent.setPropertyValue("X-MOZ-LASTACK", jsonEvent.optString("xmozlastack"));
             vEvent.setPropertyValue("X-MOZ-SNOOZE-TIME", jsonEvent.optString("xmozsnoozetime"));
@@ -520,6 +531,10 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                     localGraphObject.setCategories( StringUtil.join(categoryValues, ","));
                 }
+
+                // handle reminder configuration
+                jsonObject.put("isReminderOn", vCalendar.hasVAlarm());
+                jsonObject.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
 
                 handleRrule(jsonObject, vEvent.getProperty("RRULE"));
 

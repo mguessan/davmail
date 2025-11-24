@@ -224,5 +224,13 @@ public class GraphObject {
             return exchangeTimezone;
         }
     }
+
+    public boolean optBoolean(String key) {
+        return jsonObject.optBoolean(key);
+    }
+
+    public int optInt(String key) {
+        return jsonObject.optInt(key);
+    }
 }
 
