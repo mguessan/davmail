@@ -807,7 +807,7 @@ public class CaldavConnection extends AbstractConnection {
 
                         }
                         if (!eventName.equals(item.getName())) {
-                            DavGatewayTray.warn(new BundleMessage("LOG_MESSAGE", "wrong item name requested " + eventName + " received " + item.getName()));
+                            DavGatewayTray.debug(new BundleMessage("LOG_MESSAGE", "wrong item name requested " + eventName + " received " + item.getName()));
                             // force item name to requested value
                             item.setItemName(eventName);
                         }
