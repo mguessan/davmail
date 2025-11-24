@@ -601,7 +601,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         String exceptionOriginalStart = convertOriginalStartDate(exceptionOccurrence.optString("originalStart"), exceptionOccurrence.optString("originalStartTimeZone"));
                         LOGGER.debug("Looking at occurrence " + exceptionOriginalStart + " for " + originalDateZulu);
                         if (originalDateZulu.equals(exceptionOriginalStart)) {
-                            updateModifiedOccurrence(modifiedOccurrence, exceptionOccurrence);
+                            updateExceptionOccurrence(modifiedOccurrence, exceptionOccurrence.getString("id"));
                             occurrenceFound = true;
                             break;
                         }
@@ -630,32 +630,33 @@ public class GraphExchangeSession extends ExchangeSession {
                     JSONObject occurrence = occurrences.getJSONObject(i);
                     String occurrenceId = occurrence.optString("id");
                     if (occurrenceId != null) {
-                        JSONObject jsonObject = new JSONObject();
-                        jsonObject.put("subject", vEvent.getPropertyValue("SUMMARY"));
-
-                        // TODO convert date and timezone
-                        VProperty dtStart = vEvent.getProperty("DTSTART");
-                        String dtStartTzid = dtStart.getParamValue("TZID");
-                        jsonObject.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
-
-                        VProperty dtEnd = vEvent.getProperty("DTEND");
-                        String dtEndTzid = dtEnd.getParamValue("TZID");
-                        jsonObject.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
-
-                        graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
-                                .setMailbox(folderId.mailbox)
-                                .setObjectType("events")
-                                .setObjectId(occurrenceId)
-                                .setJsonBody(jsonObject));
-
-                        LOGGER.debug("Updated occurrence: "+ graphResponse.jsonObject.toString());
+                        updateExceptionOccurrence(vEvent, occurrenceId);
                     }
                 }
             }
         }
 
-        private void updateModifiedOccurrence(VObject modifiedOccurrence, JSONObject exceptionOccurrence) {
-            LOGGER.debug("Updating occurrence " + modifiedOccurrence.getPropertyValue("SUMMARY") + " " + modifiedOccurrence.getPropertyValue("RECCURRENCE-ID") + " " + exceptionOccurrence.optString("originalStart"));
+        private void updateExceptionOccurrence(VObject modifiedOccurrence, String exceptionOccurrenceId) throws IOException, JSONException {
+            LOGGER.debug("Updating occurrence " + modifiedOccurrence.getPropertyValue("SUMMARY") + " " + modifiedOccurrence.getPropertyValue("RECCURRENCE-ID"));
+
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("subject", modifiedOccurrence.getPropertyValue("SUMMARY"));
+
+            VProperty dtStart = modifiedOccurrence.getProperty("DTSTART");
+            String dtStartTzid = dtStart.getParamValue("TZID");
+            jsonObject.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
+
+            VProperty dtEnd = modifiedOccurrence.getProperty("DTEND");
+            String dtEndTzid = dtEnd.getParamValue("TZID");
+            jsonObject.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
+
+            GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("events")
+                    .setObjectId(exceptionOccurrenceId)
+                    .setJsonBody(jsonObject));
+
+            LOGGER.debug("Updated occurrence: "+ graphResponse.jsonObject.toString());
         }
 
         private void deleteEventOccurrence(String id, String exDateValue) throws IOException, JSONException {

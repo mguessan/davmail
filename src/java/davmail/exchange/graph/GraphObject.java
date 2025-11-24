@@ -207,8 +207,8 @@ public class GraphObject {
         String originalStartTimeZone = optString("originalStartTimeZone");
         String originalStart = optString("originalStart");
 
-        if (originalStartTimeZone != null && originalStart != null) {
-            VProperty recurrenceId = new VProperty("RECURRENCE-ID", DateUtil.convertDateFormat(originalStart, GRAPH_DATE_TIME, CALDAV_DATE_TIME));
+        if (originalStartTimeZone != null && originalStart != null && originalStart.length() >= 19) {
+            VProperty recurrenceId = new VProperty("RECURRENCE-ID", DateUtil.convertDateFormat(originalStart.substring(0, 19), GRAPH_DATE_TIME, CALDAV_DATE_TIME));
             recurrenceId.setParam("TZID", originalStartTimeZone);
             return recurrenceId;
         } else {

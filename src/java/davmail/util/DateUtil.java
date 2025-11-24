@@ -32,7 +32,7 @@ import java.time.format.DateTimeParseException;
  */
 public class DateUtil {
     public static final String GRAPH_DATE_TIME = "yyyy-MM-dd'T'HH:mm:ss";
-    public static final String CALDAV_DATE_TIME = "yyyy-MM-dd'T'HH:mm:ss";
+    public static final String CALDAV_DATE_TIME = "yyyyMMdd'T'HHmmss";
 
     public static String convertDateFormat(String sourceDate, String sourceFormat, String targetFormat) throws DavMailException {
         String targetDate = null;
