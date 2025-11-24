@@ -20,9 +20,12 @@
 package davmail.exchange.graph;
 
 import davmail.exception.DavMailException;
+import davmail.exchange.VProperty;
 import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
+import davmail.util.DateUtil;
 import davmail.util.StringUtil;
+import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -34,10 +37,15 @@ import java.util.HashSet;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
 
+import static davmail.util.DateUtil.CALDAV_DATE_TIME;
+import static davmail.util.DateUtil.GRAPH_DATE_TIME;
+
 /**
  * Wrapper for Graph API JsonObject
  */
 public class GraphObject {
+    protected static final Logger LOGGER = Logger.getLogger(GraphObject.class);
+
     protected final JSONObject jsonObject;
     protected int statusCode;
 
@@ -59,7 +67,7 @@ public class GraphObject {
             // tasks don't have an etag field, use @odata.etag
             String odataEtag = optString("@odata.etag");
             if (odataEtag != null && odataEtag.startsWith("W/\"") && odataEtag.endsWith("\"")) {
-                value = odataEtag.substring(3, odataEtag.length()-1);
+                value = odataEtag.substring(3, odataEtag.length() - 1);
             }
             // try to fetch from expanded properties
         } else if (value == null) {
@@ -95,9 +103,9 @@ public class GraphObject {
             if (field.isNumber() && value == null) {
                 value = "0";
             }
-            getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value == null?JSONObject.NULL:value));
+            getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value == null ? JSONObject.NULL : value));
         } else {
-            jsonObject.put(key, value == null?JSONObject.NULL:value);
+            jsonObject.put(key, value == null ? JSONObject.NULL : value);
         }
     }
 
@@ -189,21 +197,23 @@ public class GraphObject {
         return null;
     }
 
-    public String getRecurrenceId() throws DavMailException {
-        String timeZone = optString("originalStartTimeZone");
-        String dateTime = optString("originalStart");
-        if (timeZone != null && dateTime != null) {
-            try {
-                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-                parser.setTimeZone(TimeZone.getTimeZone(timeZone));
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                return formatter.format(parser.parse(dateTime));
-            } catch (ParseException e) {
-                throw new DavMailException("EXCEPTION_INVALID_DATE", dateTime);
-            }
+    /**
+     * Compute recurrenceId property based on original start and timezone.
+     * @return recurrenceId property
+     * @throws DavMailException on error
+     */
+    public VProperty getRecurrenceId() throws DavMailException {
+        // get the unmodified start date and timezone of occurrence
+        String originalStartTimeZone = optString("originalStartTimeZone");
+        String originalStart = optString("originalStart");
+
+        if (originalStartTimeZone != null && originalStart != null) {
+            VProperty recurrenceId = new VProperty("RECURRENCE-ID", DateUtil.convertDateFormat(originalStart, GRAPH_DATE_TIME, CALDAV_DATE_TIME));
+            recurrenceId.setParam("TZID", originalStartTimeZone);
+            return recurrenceId;
+        } else {
+            throw new DavMailException("LOG_MESSAGE", "Missing original start date and timezone");
         }
-        return null;
     }
 
     public static String convertTimezoneFromExchange(String exchangeTimezone) {
