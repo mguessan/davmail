@@ -852,10 +852,11 @@ public final class Settings {
 
     public static boolean isDocker() {
         boolean isDocker = new File("/.dockerenv").exists();
+        boolean isPodman = new File("/run/.containerenv").exists();
         if (isDocker) {
-            LOGGER.info("Running in docker");
+            LOGGER.info("Running in docker or podman");
         }
-        return isDocker;
+        return isDocker || isPodman;
     }
 
     public static boolean isFlatpak() {
