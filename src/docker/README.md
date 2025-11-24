@@ -21,15 +21,19 @@ docker pull ghcr.io/mguessan/davmail:unstable
 Make sure the window manager has X11 available and run the following command:
 
 ```
-mkdir -p ~/.davmail
-docker run --network=host --ipc=host --rm --name davmail --hostname davmail \
+mkdir -p ~/.config/davmail # create configuration directory
+docker run \
+--name davmail --hostname davmail \
+--network=host --ipc=host \
+--rm \
 -e DISPLAY=$DISPLAY \
--v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" \
--v ${HOME}/.davmail:/config:z \
--u $UID \
-ghcr.io/mguessan/davmail:latest
+-v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" -e XAUTHORITY=/.Xauthority \
+-v ${HOME}/.config/davmail:/config:z \
+--userns=keep-id \
+-e HOME=/tmp \
+ghcr.io/mguessan/davmail:unstable
 ```
-On first run the container will store configuration in `~/.davmail`
+On first run the container will store configuration in `~/.config/davmail`
 
 ## Obtain an Oauth2 refresh token to run DavMail on a remote instance
 
@@ -40,13 +44,17 @@ on a workstation compliant with company policies.
 To obtain an OAuth2 refresh token, run the following command on a workstation with a GUI:
 
 ```
-mkdir -p ~/.davmail
-docker run --network=host --ipc=host --rm --name davmail --hostname davmail \
+mkdir -p ~/.config/davmail # create configuration directory
+docker run \
+--name davmail --hostname davmail \
+--network=host --ipc=host \
+--rm \
 -e DISPLAY=$DISPLAY \
--v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" \
--v ${HOME}/.davmail:/config:z \
--u $UID \
-ghcr.io/mguessan/davmail:latest -token
+-v "${XAUTHORITY:-$HOME/.Xauthority}:/.Xauthority:ro" -e XAUTHORITY=/.Xauthority \
+-v ${HOME}/.config/davmail:/config:z \
+--userns=keep-id \
+-e HOME=/tmp \
+ghcr.io/mguessan/davmail:unstable -token
 ```
 
 Alternative on windows: get the latest standalone package from:
