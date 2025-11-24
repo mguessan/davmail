@@ -256,6 +256,9 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start")));
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end")));
 
+            vEvent.setPropertyValue("LOCATION", jsonEvent.optString("location", "displayName"));
+            vEvent.setPropertyValue("CATEGORIES", jsonEvent.optString("categories"));
+
             vEvent.setPropertyValue("CLASS", convertClassFromExchange(jsonEvent.optString("sensitivity")));
 
             // custom microsoft properties
@@ -477,6 +480,10 @@ public class GraphExchangeSession extends ExchangeSession {
             VObject vEvent = vCalendar.getFirstVevent();
             try {
                 JSONObject jsonObject = new JSONObject();
+
+                // urlcompname is an extended property, wrap in GraphObject
+                GraphObject localGraphObject = new GraphObject(jsonObject);
+                localGraphObject.put("urlcompname", itemName);
                 jsonObject.put("subject", vEvent.getPropertyValue("SUMMARY"));
 
                 VProperty dtStart = vEvent.getProperty("DTSTART");
@@ -498,6 +505,20 @@ public class GraphExchangeSession extends ExchangeSession {
                 } else {
                     description = vEvent.getPropertyValue("DESCRIPTION");
                     jsonObject.put("body", new JSONObject().put("content", description).put("contentType", "text"));
+                }
+
+                String location = vEvent.getPropertyValue("LOCATION");
+                jsonObject.put("location", new JSONObject().put("displayName", location));
+
+                localGraphObject.setCategories(vEvent.getPropertyValue("CATEGORIES"));
+                // Collect categories on multiple lines
+                List<VProperty> categories = vEvent.getProperties("CATEGORIES");
+                if (categories != null) {
+                    HashSet<String> categoryValues = new HashSet<>();
+                    for (VProperty category : categories) {
+                        categoryValues.add(category.getValue());
+                    }
+                    localGraphObject.setCategories( StringUtil.join(categoryValues, ","));
                 }
 
                 handleRrule(jsonObject, vEvent.getProperty("RRULE"));
@@ -541,12 +562,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 itemResult.itemName = graphResponse.optString("id") + ".EML";
                 itemResult.etag = graphResponse.optString("changeKey");
 
-
             } catch (JSONException e) {
                 throw new IOException(e);
             }
-
-            // TODO handle exception occurrences
 
             return itemResult;
         }
@@ -2627,36 +2645,71 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private JSONObject getEventIfExists(FolderId folderId, String itemName) throws IOException {
-        String itemId;
-        if (isItemId(itemName)) {
-            itemId = itemName.substring(0, itemName.length() - 4);
+        String urlcompname = convertItemNameToEML(itemName);
+        if (isItemId(urlcompname)) {
+            String itemId = itemName.substring(0, itemName.length() - 4);
+            try {
+                return executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpGet.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("events")
+                        .setObjectId(itemId)
+                        .setSelect(EVENT_SELECT)
+                        .setExpandFields(EVENT_ATTRIBUTES)
+                        .setTimezone(getVTimezone().getPropertyValue("TZID"))
+                );
+            } catch (HttpNotFoundException e) {
+                // this may be a task item
+                FolderId taskFolderId = getFolderId(TASKS);
+                return executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpGet.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("todo/lists")
+                        .setObjectId(taskFolderId.id)
+                        .setChildType("tasks")
+                        .setChildId(itemId)
+                        .setExpandFields(TODO_PROPERTIES)
+                );
+            }
         } else {
-            // we don't store urlcompname for events
+            // try to retrieve by urlcompname
+            JSONObject jsonResponse;
+            try {
+                jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpGet.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("calendars")
+                        .setObjectId(folderId.id)
+                        .setChildType("events")
+                        .setFilter(isEqualTo("urlcompname", urlcompname))
+                        .setSelect(EVENT_SELECT)
+                        .setExpandFields(EVENT_ATTRIBUTES)
+                        .setTimezone(getVTimezone().getPropertyValue("TZID"))
+                );
+            } catch (HttpNotFoundException e) {
+                // this may be a task item
+                FolderId taskFolderId = getFolderId(TASKS);
+                jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpGet.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("todo/lists")
+                        .setObjectId(taskFolderId.id)
+                        .setChildType("tasks")
+                        .setFilter(isEqualTo("urlcompname", urlcompname))
+                        .setExpandFields(TODO_PROPERTIES)
+                );
+            }
+
+            JSONArray values = jsonResponse.optJSONArray("value");
+            if (values != null && values.length() > 0) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Found event " + values.optJSONObject(0));
+                }
+                return values.optJSONObject(0);
+            }
             return null;
         }
-        try {
-            return executeJsonRequest(new GraphRequestBuilder()
-                    .setMethod(HttpGet.METHOD_NAME)
-                    .setMailbox(folderId.mailbox)
-                    .setObjectType("events")
-                    .setObjectId(itemId)
-                    .setSelect(EVENT_SELECT)
-                    .setExpandFields(EVENT_ATTRIBUTES)
-                    .setTimezone(getVTimezone().getPropertyValue("TZID"))
-            );
-        } catch (HttpNotFoundException e) {
-            // this may be a task item
-            FolderId taskFolderId = getFolderId(TASKS);
-            return executeJsonRequest(new GraphRequestBuilder()
-                    .setMethod(HttpGet.METHOD_NAME)
-                    .setMailbox(folderId.mailbox)
-                    .setObjectType("todo/lists")
-                    .setObjectId(taskFolderId.id)
-                    .setChildType("tasks")
-                    .setChildId(itemId)
-                    .setExpandFields(TODO_PROPERTIES)
-            );
-        }
+
     }
 
     private JSONObject getContactIfExists(FolderId folderId, String itemName) throws IOException {
