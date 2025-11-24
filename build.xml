@@ -249,7 +249,7 @@
     </target>
 
     <target name="dist-osx">
-        <!-- move jar files to new location -->
+        <!-- move jar files to target location -->
         <copy todir="dist/DavMail.app/Contents/Java">
             <fileset dir="dist">
                 <include name="*.jar"/>
@@ -291,7 +291,7 @@
         <deb todir="dist"
              package="davmail"
              section="mail"
-             depends="openjdk-17-jre|default-jre,libopenjfx-java,libswt-gtk-4-java,libswt-cairo-gtk-4-jni">
+             depends="openjdk-21-jre|openjdk-17-jre|default-jre,libopenjfx-java,libswt-gtk-4-java,libswt-cairo-gtk-4-jni">
             <version upstream="${release-name}"/>
             <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
             <description synopsis="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway">
