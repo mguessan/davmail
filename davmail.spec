@@ -1,4 +1,4 @@
-%define systemd_support 0%{?suse_version} || 0%{?el7} || 0%{?el8} || 0%{?el9} || 0%{?fedora}
+%define systemd_support 0%{?suse_version} || 0%{?el7} || 0%{?el8} || 0%{?el9} || 0%{?el10} || 0%{?fedora}
 %define systemd_macros 0%{?suse_version} || 0%{?fedora} > 42
 
 Summary: A POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
@@ -23,6 +23,10 @@ BuildRequires: systemd-rpm-macros
 
 %if 0%{?fedora}
 BuildRequires: java-latest-openjdk-devel
+%endif
+
+%if 0%{?el10}
+BuildRequires: java-21-openjdk-devel
 %endif
 
 # fedora 42 and later only
@@ -257,3 +261,5 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Wed Oct 29 2025 Mickael Guessant <mguessan@free.fr>
+- update to 6.5.1
