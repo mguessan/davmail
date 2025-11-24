@@ -233,9 +233,11 @@ public class GraphExchangeSession extends ExchangeSession {
             JSONArray exceptionOccurrences = graphObject.optJSONArray("exceptionOccurrences");
             if (exceptionOccurrences != null) {
                 for (int i = 0; i < exceptionOccurrences.length(); i++) {
-                    GraphObject jsonEvent = new GraphObject(exceptionOccurrences.optJSONObject(i));
-                    VObject vEvent = buildVEvent(jsonEvent);
-                    vEvent.setPropertyValue("RECCURRENCE-ID", jsonEvent.getRecurrenceId());
+                    GraphObject exceptionOccurrence = new GraphObject(exceptionOccurrences.optJSONObject(i)
+                            // need to override uid, iCalUid is different for each occurrence on server
+                            .put("iCalUId", graphObject.optString("iCalUId")));
+                    VObject vEvent = buildVEvent(exceptionOccurrence);
+                    vEvent.addProperty(exceptionOccurrence.getRecurrenceId());
                     localVCalendar.addVObject(vEvent);
                 }
             }
@@ -646,7 +648,7 @@ public class GraphExchangeSession extends ExchangeSession {
                                 .setObjectId(occurrenceId)
                                 .setJsonBody(jsonObject));
 
-                        LOGGER.debug("Updated occurrence: "+ graphResponse.toString());
+                        LOGGER.debug("Updated occurrence: "+ graphResponse.jsonObject.toString());
                     }
                 }
             }
