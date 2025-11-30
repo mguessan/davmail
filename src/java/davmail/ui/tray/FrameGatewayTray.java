@@ -199,7 +199,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     }
 
     protected void createAndShowGUI() {
-        // set cross platform look and feel on Linux, except is swing.defaultlaf is set
+        // set cross-platform look and feel on Linux, except is swing.defaultlaf is set
         if (Settings.isLinux() && System.getProperty("swing.defaultlaf") == null) {
             System.setProperty("swing.defaultlaf", UIManager.getCrossPlatformLookAndFeelClassName());
         } else {
@@ -208,7 +208,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         String imageName = AwtGatewayTray.TRAY_PNG;
         String activeImageName = AwtGatewayTray.TRAY_ACTIVE_PNG;
         String inactiveImageName = AwtGatewayTray.TRAY_INACTIVE_PNG;
-        // use hi res icons on Linux
+        // use hi-res icons on Linux
         if (Settings.isLinux()) {
             imageName = AwtGatewayTray.TRAY128_PNG;
             activeImageName = AwtGatewayTray.TRAY128_ACTIVE_PNG;

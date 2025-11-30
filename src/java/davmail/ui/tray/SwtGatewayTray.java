@@ -270,6 +270,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             } else {
                 bufferedImage = ImageIO.read(imageUrl);
             }
+            if (bufferedImage.getWidth() != targetSize || bufferedImage.getHeight() != targetSize) {
+                bufferedImage = DavGatewayTray.scaleImage(bufferedImage, targetSize);
+            }
             byte[] imageBytes;
             try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
                 ImageIO.write(bufferedImage, "png", os);
@@ -326,9 +329,15 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     frameIcons.add(DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG)));
                     frameIcons.add(DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG)));
 
-                    image = loadSwtImage("tray128.png", 128);
-                    image2 = loadSwtImage("tray128active.png", 128);
-                    inactiveImage = loadSwtImage("tray128inactive.png", 128);
+                    // assume 24 pixels default icon size
+                    int trayIconSize = 24;
+                    if (Settings.isWindows()) {
+                        trayIconSize = 16;
+                    }
+
+                    image = loadSwtImage("tray128.png", trayIconSize);
+                    image2 = loadSwtImage("tray128active.png", trayIconSize);
+                    inactiveImage = loadSwtImage("tray128inactive.png", trayIconSize);
 
                     trayItem.setImage(image);
                     trayItem.addDisposeListener(e -> {
@@ -363,12 +372,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                     // create menu item for the default action
                     trayItem.addListener(SWT.DefaultSelection, event -> SwingUtilities.invokeLater(
-                            () -> openSettingsFrame()));
+                            this::openSettingsFrame));
 
                     MenuItem defaultItem = new MenuItem(popup, SWT.PUSH);
                     defaultItem.setText(BundleMessage.format("UI_SETTINGS"));
                     defaultItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(
-                            () -> openSettingsFrame()));
+                            this::openSettingsFrame));
 
                     MenuItem exitItem = new MenuItem(popup, SWT.PUSH);
                     exitItem.setText(BundleMessage.format("UI_EXIT"));
