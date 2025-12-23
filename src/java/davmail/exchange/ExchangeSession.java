@@ -784,10 +784,10 @@ public abstract class ExchangeSession {
     protected String lastSentMessageId;
 
     /**
-     * Send message in reader to recipients.
-     * Detect visible recipients in message body to determine bcc recipients
+     * Send the provided message to recipients.
+     * Detect visible recipients in the message body to determine bcc recipients
      *
-     * @param rcptToRecipients recipients list
+     * @param rcptToRecipients recipient list
      * @param mimeMessage      mime message
      * @throws IOException        on error
      * @throws MessagingException on error
@@ -795,7 +795,7 @@ public abstract class ExchangeSession {
     public void sendMessage(List<String> rcptToRecipients, MimeMessage mimeMessage) throws IOException, MessagingException {
         // detect duplicate send command
         String messageId = mimeMessage.getMessageID();
-        if (lastSentMessageId != null && lastSentMessageId.equals(messageId)) {
+        if (lastSentMessageId != null && lastSentMessageId.equals(messageId) && Settings.getBooleanProperty("davmail.smtpAllowDuplicateSend", false)) {
             LOGGER.debug("Dropping message id " + messageId + ": already sent");
             return;
         }
