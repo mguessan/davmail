@@ -67,7 +67,7 @@ public class SmtpConnection extends AbstractConnection {
             sendClient("220 DavMail " + DavGateway.getCurrentVersion() + " SMTP ready at " + new Date());
             for (; ; ) {
                 line = readClient();
-                // unable to read line, connection closed ?
+                // unable to read line, connection closed?
                 if (line == null) {
                     break;
                 }
@@ -92,7 +92,7 @@ public class SmtpConnection extends AbstractConnection {
                         sendClient("250 OK");
                     } else if ("EHLO".equalsIgnoreCase(command)) {
                         sendClient("250-davmail");
-                        // inform server that AUTH is supported
+                        // inform the client that AUTH is supported
                         // actually it is mandatory (only way to get credentials)
                         sendClient("250-AUTH LOGIN PLAIN");
                         sendClient("250-8BITMIME");
@@ -203,7 +203,7 @@ public class SmtpConnection extends AbstractConnection {
         } catch (Exception e) {
             DavGatewayTray.log(e);
             try {
-                // append a line feed to avoid thunderbird message drop
+                // append a line feed to avoid thunderbird dropping the error message
                 sendClient("421 " + ((e.getMessage() == null) ? e : e.getMessage()) + "\n");
             } catch (IOException e2) {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
@@ -215,13 +215,13 @@ public class SmtpConnection extends AbstractConnection {
     }
 
     private MimeMessage getMimeMessage() throws IOException, MessagingException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         DoubleDotInputStream doubleDotInputStream = new DoubleDotInputStream(in);
         int b;
         while ((b = doubleDotInputStream.read()) >= 0) {
-            baos.write(b);
+            byteArrayOutputStream.write(b);
         }
-        return new MimeMessage(null, new SharedByteArrayInputStream(baos.toByteArray()));
+        return new MimeMessage(null, new SharedByteArrayInputStream(byteArrayOutputStream.toByteArray()));
     }
 
     /**
