@@ -880,8 +880,8 @@ public class ImapConnection extends AbstractConnection {
             return message.getRawInputStream();
         }
 
-        public Enumeration getMatchingHeaderLines(String[] requestedHeaders) throws IOException, MessagingException {
-            Enumeration result = message.getMatchingHeaderLinesFromHeaders(requestedHeaders);
+        public Enumeration<?> getMatchingHeaderLines(String[] requestedHeaders) throws IOException, MessagingException {
+            Enumeration<?> result = message.getMatchingHeaderLinesFromHeaders(requestedHeaders);
             if (result == null) {
                 loadMessage();
                 result = message.getMatchingHeaderLines(requestedHeaders);
@@ -987,7 +987,7 @@ public class ImapConnection extends AbstractConnection {
                             partOutputStream = new PartOutputStream(baos, true, false, startIndex, maxSize);
                             partInputStream = messageWrapper.getRawInputStream();
                         } else {
-                            Enumeration headerEnumeration = messageWrapper.getMatchingHeaderLines(requestedHeaders);
+                            Enumeration<?> headerEnumeration = messageWrapper.getMatchingHeaderLines(requestedHeaders);
                             while (headerEnumeration.hasMoreElements()) {
                                 baos.write(((String) headerEnumeration.nextElement()).getBytes(StandardCharsets.UTF_8));
                                 baos.write(13);
