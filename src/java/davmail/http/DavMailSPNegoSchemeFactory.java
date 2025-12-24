@@ -20,15 +20,13 @@
 package davmail.http;
 
 import org.apache.http.auth.AuthScheme;
-import org.apache.http.auth.AuthSchemeFactory;
 import org.apache.http.auth.AuthSchemeProvider;
-import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HttpContext;
 
 /**
  * Override native SPNegoSchemeFactory to load DavMail specific Kerberos settings.
  */
-public class DavMailSPNegoSchemeFactory implements AuthSchemeFactory, AuthSchemeProvider {
+public class DavMailSPNegoSchemeFactory implements AuthSchemeProvider {
 
     private final boolean stripPort;
     private final boolean useCanonicalHostname;
@@ -58,11 +56,6 @@ public class DavMailSPNegoSchemeFactory implements AuthSchemeFactory, AuthScheme
 
     public boolean isUseCanonicalHostname() {
         return useCanonicalHostname;
-    }
-
-    @Override
-    public AuthScheme newInstance(final HttpParams params) {
-        return new DavMailSPNegoScheme(this.stripPort, this.useCanonicalHostname);
     }
 
     @Override

@@ -21,14 +21,18 @@ package davmail.http;
 
 import org.apache.http.Header;
 import org.apache.http.HttpRequest;
-import org.apache.http.auth.*;
+import org.apache.http.auth.AUTH;
+import org.apache.http.auth.AuthenticationException;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.InvalidCredentialsException;
+import org.apache.http.auth.MalformedChallengeException;
+import org.apache.http.auth.NTCredentials;
 import org.apache.http.conn.ManagedHttpClientConnection;
 import org.apache.http.impl.auth.AuthSchemeBase;
 import org.apache.http.impl.auth.NTLMEngineException;
 import org.apache.http.message.BufferedHeader;
-import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.Args;
+import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.util.CharArrayBuffer;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -116,8 +120,9 @@ public class DavMailNTLMScheme extends AuthSchemeBase {
 
 
     @Override
+    @SuppressWarnings("deprecation")
     public Header authenticate(Credentials credentials, HttpRequest request) throws AuthenticationException {
-        NTCredentials ntcredentials = null;
+        NTCredentials ntcredentials;
         try {
             ntcredentials = (NTCredentials) credentials;
         } catch (final ClassCastException e) {
@@ -125,7 +130,7 @@ public class DavMailNTLMScheme extends AuthSchemeBase {
                     "Credentials cannot be used for NTLM authentication: "
                             + credentials.getClass().getName());
         }
-        String response = null;
+        String response;
         if (this.state == State.FAILED) {
             throw new AuthenticationException("NTLM authentication failed");
         } else if (this.state == State.CHALLENGE_RECEIVED) {
@@ -135,7 +140,7 @@ public class DavMailNTLMScheme extends AuthSchemeBase {
             this.state = State.MSG_TYPE1_GENERATED;
         } else if (this.state == State.MSG_TYPE2_RECEVIED) {
             // retrieve certificate from connection and pass it to NTLM engine
-            ManagedHttpClientConnection routedConnection = (ManagedHttpClientConnection) httpContext.getAttribute(ExecutionContext.HTTP_CONNECTION);
+            ManagedHttpClientConnection routedConnection = (ManagedHttpClientConnection) httpContext.getAttribute(HttpCoreContext.HTTP_CONNECTION);
             try {
                 Certificate[] certificates = routedConnection.getSSLSession().getPeerCertificates();
                 this.engine.setPeerServerCertificate(certificates[0]);
