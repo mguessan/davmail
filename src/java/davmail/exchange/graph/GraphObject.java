@@ -69,21 +69,25 @@ public class GraphObject {
             if (odataEtag != null && odataEtag.startsWith("W/\"") && odataEtag.endsWith("\"")) {
                 value = odataEtag.substring(3, odataEtag.length() - 1);
             }
-            // try to fetch from expanded properties
         } else if (value == null) {
-            key = Field.get(key).getGraphId();
-            // remapped attributes first
-            value = jsonObject.optString(key, null);
-            // check expanded properties
-            if (value == null) {
-                JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
-                if (singleValueExtendedProperties != null) {
-                    for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
-                        JSONObject singleValueObject = singleValueExtendedProperties.optJSONObject(i);
-                        if (singleValueObject != null && key.equals(singleValueObject.optString("id"))) {
-                            value = singleValueObject.optString("value");
-                        }
+            // use field mapping to get value
+            value = optFieldString(key);
+        }
+        return value;
+    }
 
+    public String optFieldString(String alias) {
+        String key = Field.get(alias).getGraphId();
+        // remapped attributes first
+        String value = jsonObject.optString(key, null);
+        // check expanded properties
+        if (value == null) {
+            JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
+            if (singleValueExtendedProperties != null) {
+                for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
+                    JSONObject singleValueObject = singleValueExtendedProperties.optJSONObject(i);
+                    if (singleValueObject != null && key.equals(singleValueObject.optString("id"))) {
+                        value = singleValueObject.optString("value");
                     }
                 }
             }
@@ -95,11 +99,19 @@ public class GraphObject {
         return jsonObject.optJSONArray(key);
     }
 
+    /**
+     * Set value on field.
+     * First map property alias to a field to determine graph id, then set graph property or singleValueExtendedProperty
+     * @param alias field alias
+     * @param value property value
+     * @throws JSONException on error
+     */
     public void put(String alias, String value) throws JSONException {
         FieldURI field = Field.get(alias);
         String key = field.getGraphId();
         // assume all expanded properties have a space
         if (key.contains(" ")) {
+            // TODO remove this
             if (field.isNumber() && value == null) {
                 value = "0";
             }
@@ -109,6 +121,13 @@ public class GraphObject {
         }
     }
 
+    /**
+     * Set boolean value on field.
+     * First map property alias to a field to determine graph id, then set graph property or singleValueExtendedProperty
+     * @param alias field alias
+     * @param value property value
+     * @throws JSONException on error
+     */
     public void put(String alias, boolean value) throws JSONException {
         FieldURI field = Field.get(alias);
         String key = field.getGraphId();
@@ -124,6 +143,11 @@ public class GraphObject {
         jsonObject.put(key, values);
     }
 
+    /**
+     * Set categories from comma separated values.
+     * @param values comma separated values
+     * @throws JSONException on error
+     */
     public void setCategories(String values) throws JSONException {
         if (values != null) {
             setCategories(values.split(","));
@@ -141,10 +165,13 @@ public class GraphObject {
         jsonObject.put("categories", jsonValues);
     }
 
-    public String toString(int indentFactor) throws JSONException {
-        return jsonObject.toString(indentFactor);
-    }
 
+    /**
+     * Get singleValueExtendedProperties json array.
+     * Create an empty json array on first call.
+     * @return singleValueExtendedProperties array
+     * @throws JSONException on error
+     */
     protected JSONArray getSingleValueExtendedProperties() throws JSONException {
         JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
         if (singleValueExtendedProperties == null) {
@@ -155,6 +182,12 @@ public class GraphObject {
     }
 
 
+    /**
+     * Get mandatory property value.
+     * @param key property name
+     * @return value
+     * @throws JSONException on missing property
+     */
     public String getString(String key) throws JSONException {
         String value = optString(key);
         if (value == null) {
@@ -163,12 +196,14 @@ public class GraphObject {
         return value;
     }
 
+    /**
+     * Get optional parameter from json property.
+     * @param section json property name
+     * @param key internal property name
+     * @return value or null
+     */
     public String optString(String section, String key) {
         JSONObject sectionObject = jsonObject.optJSONObject(section);
-        // do not try to map with field, moving away from field mapping for graph
-        //if (sectionObject == null) {
-        //  sectionObject = jsonObject.optJSONObject(Field.get(section).getGraphId());
-        //}
         if (sectionObject != null) {
             return sectionObject.optString(key, null);
         }
@@ -179,6 +214,14 @@ public class GraphObject {
         return jsonObject.optJSONObject(key);
     }
 
+    /**
+     * Convert datetimetimezone to java date.
+     * Graph return some dates as json object with dateTime and timeZone, see
+     * <a href="https://learn.microsoft.com/en-us/graph/api/resources/datetimetimezone">datetimetimezone</a>
+     * @param key property key, e.g. dueDateTime
+     * @return java date
+     * @throws DavMailException on error
+     */
     public Date optDateTimeTimeZone(String key) throws DavMailException {
         JSONObject sectionObject = jsonObject.optJSONObject(key);
         if (sectionObject != null) {
@@ -187,7 +230,7 @@ public class GraphObject {
             if (timeZone != null && dateTime != null) {
                 try {
                     SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS");
-                    parser.setTimeZone(TimeZone.getTimeZone(timeZone));
+                    parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
                     return parser.parse(dateTime);
                 } catch (ParseException e) {
                     throw new DavMailException("EXCEPTION_INVALID_DATE", dateTime);
@@ -208,6 +251,7 @@ public class GraphObject {
         String originalStart = optString("originalStart");
 
         if (originalStartTimeZone != null && originalStart != null && originalStart.length() >= 19) {
+            // Convert date from graph to caldav format, keep timezone information
             VProperty recurrenceId = new VProperty("RECURRENCE-ID", DateUtil.convertDateFormat(originalStart.substring(0, 19), GRAPH_DATE_TIME, CALDAV_DATE_TIME));
             recurrenceId.setParam("TZID", originalStartTimeZone);
             return recurrenceId;
@@ -216,6 +260,12 @@ public class GraphObject {
         }
     }
 
+    /**
+     * Convert Exchange timezone id to standard timezone id.
+     * Standard timezones use the area/location format.
+     * @param exchangeTimezone Exchange / O365 timezone id
+     * @return standard timezone
+     */
     public static String convertTimezoneFromExchange(String exchangeTimezone) {
         ResourceBundle tzidsBundle = ResourceBundle.getBundle("stdtimezones");
         if (tzidsBundle.containsKey(exchangeTimezone)) {
@@ -231,6 +281,10 @@ public class GraphObject {
 
     public int optInt(String key) {
         return jsonObject.optInt(key);
+    }
+
+    public String toString(int indentFactor) throws JSONException {
+        return jsonObject.toString(indentFactor);
     }
 }
 
