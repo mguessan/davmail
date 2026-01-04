@@ -141,6 +141,10 @@ public final class Settings {
             if (configFilePath == null) {
                 //noinspection AccessOfSystemProperties
                 configFilePath = System.getProperty("user.home") + "/.davmail.properties";
+                if (!new File(configFilePath).exists()) {
+                    // .davmail.properties does not exist, switch to new freedesktop compliant location
+                    configFilePath = getXDGConfigFilePath();
+                }
             }
             File configFile = new File(configFilePath);
             if (configFile.exists()) {
@@ -158,6 +162,32 @@ public final class Settings {
             DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_LOAD_SETTINGS"), e);
         }
         updateLoggingConfig();
+    }
+
+    /**
+     * Build an XDG compliant config file path.
+     *
+     * @return config file path
+     */
+    private static String getXDGConfigFilePath() {
+        String defaultConfigPath = System.getProperty("user.home")+".davmail.properties";
+        String xdgConfigDirectory = System.getenv("XDG_CONFIG_HOME");
+        if (xdgConfigDirectory == null) {
+            xdgConfigDirectory = System.getProperty("user.home")+"/.config";
+        }
+        File xdgConfigDirectoryFile = new File(xdgConfigDirectory);
+        if (!xdgConfigDirectoryFile.exists()) {
+            if (!xdgConfigDirectoryFile.mkdirs()) {
+                return defaultConfigPath;
+            }
+        }
+        File xdgConfigDavMailDirectoryFile = new File(xdgConfigDirectory+"/davmail");
+        if (!xdgConfigDavMailDirectoryFile.exists()) {
+            if (!xdgConfigDavMailDirectoryFile.mkdirs()) {
+                return defaultConfigPath;
+            }
+        }
+        return xdgConfigDirectory+"/davmail/davmail.properties";
     }
 
     /**
@@ -337,11 +367,7 @@ public final class Settings {
             // disable ConsoleAppender in gui mode
             ConsoleAppender consoleAppender = (ConsoleAppender) Logger.getRootLogger().getAppender("ConsoleAppender");
             if (consoleAppender != null) {
-                if (Settings.getBooleanProperty("davmail.server")) {
-                    consoleAppender.setThreshold(Level.ALL);
-                } else {
-                    consoleAppender.setThreshold(Level.ALL);
-                }
+                consoleAppender.setThreshold(Level.ALL);
             }
 
         } catch (IOException e) {
@@ -584,7 +610,7 @@ public final class Settings {
         if (isEmpty(tokenFilePath)) {
             return Settings.getProperty("davmail.oauth." + username.toLowerCase() + ".refreshToken");
         } else {
-            return loadtokenFromFile(tokenFilePath, username.toLowerCase());
+            return loadTokenFromFile(tokenFilePath, username.toLowerCase());
         }
     }
 
@@ -595,7 +621,7 @@ public final class Settings {
             Settings.setProperty("davmail.oauth." + username.toLowerCase() + ".refreshToken", refreshToken);
             Settings.save();
         } else {
-            savetokentoFile(tokenFilePath, username.toLowerCase(), refreshToken);
+            saveTokenToFile(tokenFilePath, username.toLowerCase(), refreshToken);
         }
     }
 
@@ -606,7 +632,7 @@ public final class Settings {
      * @param username      username
      * @param refreshToken  Oauth refresh token
      */
-    private static void savetokentoFile(String tokenFilePath, String username, String refreshToken) {
+    private static void saveTokenToFile(String tokenFilePath, String username, String refreshToken) {
         try {
             checkCreateTokenFilePath(tokenFilePath);
             Properties properties = new Properties();
@@ -629,7 +655,7 @@ public final class Settings {
      * @param username      username
      * @return encrypted token value
      */
-    private static String loadtokenFromFile(String tokenFilePath, String username) {
+    private static String loadTokenFromFile(String tokenFilePath, String username) {
         try {
             checkCreateTokenFilePath(tokenFilePath);
             Properties properties = new Properties();
