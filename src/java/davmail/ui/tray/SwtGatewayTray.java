@@ -304,6 +304,18 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         return result;
     }
 
+    protected static void setDefaultIconImage(Image image) {
+        SwtGatewayTray.image = image;
+    }
+
+    protected static void setActiveIconImage(Image image) {
+        SwtGatewayTray.image2 = image;
+    }
+
+    protected static void setInactiveIconImage(Image image) {
+        SwtGatewayTray.inactiveImage = image;
+    }
+
     /**
      * Create tray icon and register frame listeners.
      */
@@ -335,9 +347,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         trayIconSize = 16;
                     }
 
-                    image = loadSwtImage("tray128.png", trayIconSize);
-                    image2 = loadSwtImage("tray128active.png", trayIconSize);
-                    inactiveImage = loadSwtImage("tray128inactive.png", trayIconSize);
+                    SwtGatewayTray.setDefaultIconImage(loadSwtImage("tray128.png", trayIconSize));
+                    SwtGatewayTray.setActiveIconImage(loadSwtImage("tray128active.png", trayIconSize));
+                    SwtGatewayTray.setInactiveIconImage(loadSwtImage("tray128inactive.png", trayIconSize));
 
                     trayItem.setImage(image);
                     trayItem.addDisposeListener(e -> {

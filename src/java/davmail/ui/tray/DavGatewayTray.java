@@ -354,7 +354,7 @@ public final class DavGatewayTray {
     }
 
     public static BufferedImage scaleImage(BufferedImage sourceImage, int targetSize) {
-        Image scaledImage = sourceImage.getScaledInstance(targetSize, targetSize, BufferedImage.SCALE_AREA_AVERAGING);
+        Image scaledImage = sourceImage.getScaledInstance(targetSize, targetSize, Image.SCALE_AREA_AVERAGING);
 
         BufferedImage targetImage = new BufferedImage(targetSize, targetSize, BufferedImage.TYPE_INT_ARGB);
         targetImage.getGraphics().drawImage(scaledImage, 0, 0, null);
