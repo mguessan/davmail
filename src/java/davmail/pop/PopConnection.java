@@ -254,7 +254,7 @@ public class PopConnection extends AbstractConnection {
                             } catch (IndexOutOfBoundsException e) {
                                 sendERR("invalid message index: " + message);
                             } catch (Exception e) {
-                                sendERR("error retreiving top of messages");
+                                sendERR("error retrieving top of messages");
                                 DavGatewayTray.error(e);
                             }
                         } else if ("RSET".equalsIgnoreCase(command)) {

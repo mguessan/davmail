@@ -13,7 +13,7 @@ usage() {
      restart: stops and starts davmail
      status: tells if davmail is running for the executing user
      start: starts davmail
-     stop: sends SIGHUP to davmail proces of the executing user
+     stop: sends SIGHUP to davmail process of the executing user
 
 USAGE
 }
