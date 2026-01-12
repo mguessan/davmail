@@ -39,10 +39,18 @@ public class TestVProperty  extends TestCase {
     }
 
     public void testBackslash() {
-        String line = "SUMMARY:Electric Meter change 08:30\\";
+        String line = "SUMMARY:Electric Meter \\change 08:30";
         VProperty vProperty = new VProperty(line);
         assertNotNull(vProperty);
-        assertEquals(line, vProperty.toString());
+        assertEquals("SUMMARY:Electric Meter change 08:30", vProperty.toString());
     }
+
+    public void testReplaceIcal4Principal() {
+        String ical4Principal = "/principals/__uuids__/user.name__AT__company.com/";
+        String result = new VCalendar().replaceIcal4Principal(ical4Principal);
+        assertEquals("mailto:user.name@company.com", result);
+
+    }
+
 
 }
