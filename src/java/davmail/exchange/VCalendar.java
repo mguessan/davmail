@@ -538,8 +538,13 @@ public class VCalendar extends VObject {
      * @return fixed value
      */
     protected String replaceIcal4Principal(String value) {
-        if (value.contains("/principals/__uuids__/")) {
-            return value.replaceAll("/principals/__uuids__/([^/]*)__AT__([^/]*)/", "mailto:$1@$2");
+        final String principalPrefix = "/principals/__uuids__/";
+        final String principalAt = "__AT__";
+        if (value.contains(principalPrefix) && value.contains(principalAt)) {
+            return "mailto:" +
+                    value.substring(value.indexOf(principalPrefix) + principalPrefix.length(), value.indexOf(principalAt)) +
+                    "@" +
+                    value.substring(value.indexOf(principalAt) + principalAt.length(), value.length() - 1);
         } else {
             return value;
         }
