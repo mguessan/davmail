@@ -782,6 +782,7 @@ public abstract class ExchangeSession {
     }
 
     protected String lastSentMessageId;
+    protected List<String> lastRcptToRecipients;
 
     /**
      * Send the provided message to recipients.
@@ -795,11 +796,12 @@ public abstract class ExchangeSession {
     public void sendMessage(List<String> rcptToRecipients, MimeMessage mimeMessage) throws IOException, MessagingException {
         // detect duplicate send command
         String messageId = mimeMessage.getMessageID();
-        if (lastSentMessageId != null && lastSentMessageId.equals(messageId) && Settings.getBooleanProperty("davmail.smtpAllowDuplicateSend", false)) {
+        if (lastSentMessageId != null && lastSentMessageId.equals(messageId) && lastRcptToRecipients.equals(rcptToRecipients)) {
             LOGGER.debug("Dropping message id " + messageId + ": already sent");
             return;
         }
         lastSentMessageId = messageId;
+        lastRcptToRecipients = rcptToRecipients;
 
         convertResentHeader(mimeMessage, "From");
         convertResentHeader(mimeMessage, "To");
