@@ -59,10 +59,12 @@ public class GraphObject {
         if ("keywords".equals(key) || "categories".equals(key)) {
             JSONArray categoriesArray = jsonObject.optJSONArray("categories");
             HashSet<String> keywords = new HashSet<>();
-            for (int j = 0; j < categoriesArray.length(); j++) {
-                keywords.add(categoriesArray.optString(j));
+            if (categoriesArray != null) {
+                for (int j = 0; j < categoriesArray.length(); j++) {
+                    keywords.add(categoriesArray.optString(j));
+                }
+                value = StringUtil.join(keywords, ",");
             }
-            value = StringUtil.join(keywords, ",");
         } else if ("changeKey".equals(key) && value == null) {
             // tasks don't have an etag field, use @odata.etag
             String odataEtag = optString("@odata.etag");
@@ -77,7 +79,10 @@ public class GraphObject {
     }
 
     public String optFieldString(String alias) {
-        String key = Field.get(alias).getGraphId();
+        String key = Field.getGraphId(alias);
+        if (key == null) {
+            return null;
+        }
         // remapped attributes first
         String value = jsonObject.optString(key, null);
         // check expanded properties

@@ -140,8 +140,8 @@ public class GraphRequestBuilder {
         if (condition != null && !condition.isEmpty()) {
             StringBuilder buffer = new StringBuilder();
             condition.appendTo(buffer);
-            LOGGER.debug("filter: " + filter);
             this.filter = buffer.toString();
+            LOGGER.debug("filter: " + filter);
         }
         return this;
     }
@@ -203,13 +203,20 @@ public class GraphRequestBuilder {
     protected String buildPath() {
         StringBuilder buffer = new StringBuilder();
         buffer.append("/").append(version);
-        if (mailbox != null) {
-            buffer.append("/users/").append(mailbox);
+        if ("orgcontacts".equals(objectType)) {
+            // global org contact search
+            buffer.append("/contacts");
+        } else if ("users".equals(objectType)) {
+            buffer.append("/users");
         } else {
-            buffer.append("/me");
-        }
-        if (objectType != null) {
-            buffer.append("/").append(objectType);
+            if (mailbox != null) {
+                buffer.append("/users/").append(mailbox);
+            } else {
+                buffer.append("/me");
+            }
+            if (objectType != null) {
+                buffer.append("/").append(objectType);
+            }
         }
         if (objectId != null) {
             buffer.append("/").append(objectId);

@@ -38,6 +38,7 @@ import davmail.http.URIUtil;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
+import org.apache.http.Header;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -1737,6 +1738,10 @@ public class GraphExchangeSession extends ExchangeSession {
             super(attributeName, operator, value);
         }
 
+        protected Operator getOperator() {
+            return operator;
+        }
+
         protected FieldURI getFieldURI() {
             FieldURI fieldURI = Field.get(attributeName);
             // check to detect broken field mapping
@@ -1770,8 +1775,12 @@ public class GraphExchangeSession extends ExchangeSession {
             } else if (Operator.Contains.equals(operator)) {
                 buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (fieldURI instanceof ExtendedFieldURI) {
-                buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
-                        .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
+                if (graphId.contains(" ")) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
+                            .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
+                } else {
+                    buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
+                }
             } else if ("start".equals(graphId) || "end".equals(graphId)) {
                 buffer.append(graphId).append("/dateTime ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
             } else {
@@ -2854,7 +2863,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public boolean isSharedFolder(String folderPath) {
-        return false;
+        return folderPath.startsWith("/") && !folderPath.toLowerCase().startsWith(currentMailboxPath);
     }
 
     @Override
@@ -2870,10 +2879,75 @@ public class GraphExchangeSession extends ExchangeSession {
         return folderId.mailbox;
     }
 
+    public static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<>();
+
+    static {
+        GALFIND_ATTRIBUTE_MAP.put("imapUid", "id");
+        GALFIND_ATTRIBUTE_MAP.put("cn", "displayName");
+        GALFIND_ATTRIBUTE_MAP.put("givenName", "givenName");
+        GALFIND_ATTRIBUTE_MAP.put("sn", "surname");
+        GALFIND_ATTRIBUTE_MAP.put("smtpemail1", "mail");
+
+        GALFIND_ATTRIBUTE_MAP.put("roomnumber", "officeLocation");
+        GALFIND_ATTRIBUTE_MAP.put("street", "streetAddress");
+        GALFIND_ATTRIBUTE_MAP.put("l", "city");
+        GALFIND_ATTRIBUTE_MAP.put("o", "companyName");
+        GALFIND_ATTRIBUTE_MAP.put("postalcode", "postalcode");
+        GALFIND_ATTRIBUTE_MAP.put("st", "state");
+        GALFIND_ATTRIBUTE_MAP.put("co", "country");
+
+        // GALFIND_ATTRIBUTE_MAP.put("manager", ""); // TODO
+        // GALFIND_ATTRIBUTE_MAP.put("middlename", ""); // TODO
+        GALFIND_ATTRIBUTE_MAP.put("title", "jobTitle");
+        GALFIND_ATTRIBUTE_MAP.put("department", "department");
+
+        //GALFIND_ATTRIBUTE_MAP.put("otherTelephone", ""); // rely on businessPhones
+        GALFIND_ATTRIBUTE_MAP.put("telephoneNumber", "businessPhones"); // array
+        GALFIND_ATTRIBUTE_MAP.put("mobile", "mobilePhone");
+        GALFIND_ATTRIBUTE_MAP.put("facsimiletelephonenumber", "faxNumber");
+        //GALFIND_ATTRIBUTE_MAP.put("secretarycn", ""); // TODO
+
+        //GALFIND_ATTRIBUTE_MAP.put("homePhone", "HomePhone"); // TODO
+        //GALFIND_ATTRIBUTE_MAP.put("pager", "Pager"); // TODO
+        //GALFIND_ATTRIBUTE_MAP.put("msexchangecertificate", ""); // TODO
+        //GALFIND_ATTRIBUTE_MAP.put("usersmimecertificate", ""); // TODO
+    }
+
+
+    protected GraphExchangeSession.Contact buildGalfindContact(JSONObject response) {
+        GraphExchangeSession.Contact contact = new GraphExchangeSession.Contact();
+        contact.setName(response.optString("id"));
+        contact.put("imapUid", response.optString("id"));
+        contact.put("uid", response.optString("id"));
+        for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
+            String attributeValue = response.optString(entry.getValue());
+            if (attributeValue != null && !attributeValue.isEmpty()) {
+                contact.put(entry.getKey(), attributeValue);
+            }
+        }
+        return contact;
+    }
+
+
     @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
-        // https://learn.microsoft.com/en-us/graph/api/orgcontact-get
-        return null;
+        Map<String, ExchangeSession.Contact> contacts = new HashMap<>();
+
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setObjectType("users")
+                .setFilter(condition)
+                .setSelect("id,displayName,givenName,surname,mail,officeLocation,streetAddress,city,companyName,postalcode,state,country,jobTitle,department,businessPhones,mobilePhone,facsimiletelephonenumber,faxNumber");
+        LOGGER.debug("search users");
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+
+        while (graphIterator.hasNext() && contacts.size() < sizeLimit) {
+            Contact contact = buildGalfindContact(graphIterator.next());
+            contacts.put(contact.getName().toLowerCase(), contact);
+        }
+
+
+        return contacts;
     }
 
     @Override
@@ -2978,22 +3052,43 @@ public class GraphExchangeSession extends ExchangeSession {
 
     private JSONObject executeJsonRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         // TODO handle throttling https://learn.microsoft.com/en-us/graph/throttling
-        HttpRequestBase request = httpRequestBuilder
-                .setAccessToken(token.getAccessToken())
-                .build();
 
-        // DEBUG only, disable gzip encoding
-        //request.setHeader("Accept-Encoding", "");
-        //request.setHeader("Prefer", "outlook.timezone=\"GMT Standard Time\"");
-        JSONObject jsonResponse;
-        try (
-                CloseableHttpResponse response = httpClient.execute(request)
-        ) {
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
-                LOGGER.warn("Request returned " + response.getStatusLine());
+        long retryDelay = 0;
+
+        JSONObject jsonResponse = null;
+        do {
+            retryDelay = 0;
+            HttpRequestBase request = httpRequestBuilder
+                    .setAccessToken(token.getAccessToken())
+                    .build();
+
+            // DEBUG only, disable gzip encoding
+            //request.setHeader("Accept-Encoding", "");
+            //request.setHeader("Prefer", "outlook.timezone=\"GMT Standard Time\"");
+            try (
+                    CloseableHttpResponse response = httpClient.execute(request)
+            ) {
+                if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
+                    LOGGER.warn("Request returned " + response.getStatusLine());
+                }
+                if (response.getStatusLine().getStatusCode() == HttpStatus.SC_TOO_MANY_REQUESTS) {
+                    LOGGER.warn("Request returned " + response.getStatusLine());
+                    Header retryAfter = response.getFirstHeader("Retry-After");
+                    if (retryAfter != null) {
+                        retryDelay = Long.parseLong(retryAfter.getValue())+1;
+                        LOGGER.debug("Throttled, waiting " + retryDelay + " seconds");
+                        try {
+                            Thread.sleep(retryDelay*1000L);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+                if (retryDelay == 0) {
+                    jsonResponse = new JsonResponseHandler().handleResponse(response);
+                }
             }
-            jsonResponse = new JsonResponseHandler().handleResponse(response);
-        }
+        } while (retryDelay > 0);
         return jsonResponse;
     }
 
