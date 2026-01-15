@@ -87,7 +87,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                     // OIDC compliant
                     uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
-                            .addParameter("scope", Settings.getProperty("davmail.oauth.scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Tasks.ReadWrite Mail.Send"));
+                            .addParameter("scope", Settings.getProperty("davmail.oauth.scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Tasks.ReadWrite Mail.Send Directory.Read.All"));
                     // return scopes with 00000003-0000-0000-c000-000000000000 scopes
                     //.addParameter("scope", "openid profile offline_access .default");
                     //.addParameter("scope", "openid profile offline_access "+Settings.getGraphUrl()+"/.default");
