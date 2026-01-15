@@ -110,6 +110,13 @@ public class ExtendedFieldURI implements FieldURI {
         this.propertyType = propertyType;
     }
 
+    public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, String propertyName, PropertyType propertyType, String graphId) {
+        this.distinguishedPropertySetId = distinguishedPropertySetId;
+        this.propertyName = propertyName;
+        this.propertyType = propertyType;
+        this.graphId = graphId;
+    }
+
     public ExtendedFieldURI(int intPropertyTag, PropertyType propertyType, String graphId) {
         this(intPropertyTag, propertyType);
         this.graphId = graphId;

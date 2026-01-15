@@ -33,7 +33,7 @@ public final class Field {
     static {
         // items
         FIELD_MAP.put("etag", new ExtendedFieldURI(0x3008, ExtendedFieldURI.PropertyType.SystemTime));
-        FIELD_MAP.put("displayname", new ExtendedFieldURI(0x3001, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("displayname", new ExtendedFieldURI(0x3001, ExtendedFieldURI.PropertyType.String, "displayname"));
         FIELD_MAP.put("urlcompname", new ExtendedFieldURI(0x10f3, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("lastmodified", new ExtendedFieldURI(0x3008, ExtendedFieldURI.PropertyType.SystemTime));
         FIELD_MAP.put("created", new ExtendedFieldURI(0x3007, ExtendedFieldURI.PropertyType.SystemTime));
@@ -131,7 +131,7 @@ public final class Field {
         FIELD_MAP.put("businesshomepage", new ExtendedFieldURI(0x3A51, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("personalHomePage", new ExtendedFieldURI(0x3A50, ExtendedFieldURI.PropertyType.String));
 
-        FIELD_MAP.put("cn", new ExtendedFieldURI(0x3001, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("cn", new ExtendedFieldURI(0x3001, ExtendedFieldURI.PropertyType.String, "displayName"));
         FIELD_MAP.put("co", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8049, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("department", new ExtendedFieldURI(0x3A18, ExtendedFieldURI.PropertyType.String));
 
@@ -148,7 +148,7 @@ public final class Field {
         FIELD_MAP.put("displayemail2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8090, ExtendedFieldURI.PropertyType.String)); // Email2DisplayName
         FIELD_MAP.put("displayemail3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A0, ExtendedFieldURI.PropertyType.String)); // Email3DisplayName
         */
-        FIELD_MAP.put("smtpemail1", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress1", "Contact", "EmailAddresses"));
+        FIELD_MAP.put("smtpemail1", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress1", "Contact", "EmailAddresses", "mail"));
         FIELD_MAP.put("smtpemail2", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress2", "Contact", "EmailAddresses"));
         FIELD_MAP.put("smtpemail3", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress3", "Contact", "EmailAddresses"));
 
@@ -290,6 +290,20 @@ public final class Field {
         }
         return field;
     }
+
+    /**
+     * Get graph id for field name, return null if not found.
+     * @param alias field alias
+     * @return field graph id
+     */
+    public static String getGraphId(String alias) {
+        FieldURI field = FIELD_MAP.get(alias);
+        if (field != null) {
+            return field.getGraphId();
+        }
+        return null;
+    }
+
 
     /**
      * Create property update field

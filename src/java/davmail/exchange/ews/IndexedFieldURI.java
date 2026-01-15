@@ -29,6 +29,8 @@ public class IndexedFieldURI implements FieldURI {
     protected final String fieldItemType;
     protected final String collectionName;
 
+    protected String graphId;
+
     /**
      * Create indexed field uri.
      *
@@ -42,6 +44,11 @@ public class IndexedFieldURI implements FieldURI {
         this.fieldIndex = fieldIndex;
         this.fieldItemType = fieldItemType;
         this.collectionName = collectionName;
+    }
+
+    public IndexedFieldURI(String fieldURI, String fieldIndex, String fieldItemType, String collectionName, String graphId) {
+        this(fieldURI, fieldIndex, fieldItemType, collectionName);
+        this.graphId = graphId;
     }
 
     public void appendTo(StringBuilder buffer) {
@@ -74,7 +81,7 @@ public class IndexedFieldURI implements FieldURI {
 
     @Override
     public String getGraphId() {
-        throw new UnsupportedOperationException();
+        return graphId;
     }
 
     @Override
