@@ -422,7 +422,7 @@ public final class StringUtil {
      */
     public static String escapeQuotes(String value) {
         String result = value;
-        if (result.indexOf('\'') >= 0) {
+        if (result != null && result.indexOf('\'') >= 0) {
             result = APOS_PATTERN.matcher(result).replaceAll("''");
         }
         return result;

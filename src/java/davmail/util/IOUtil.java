@@ -38,7 +38,7 @@ public final class IOUtil {
     }
 
     /**
-     * Write all inputstream content to outputstream.
+     * Write all input stream content to output stream.
      *
      * @param inputStream  input stream
      * @param outputStream output stream
