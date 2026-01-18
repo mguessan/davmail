@@ -530,7 +530,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     for (VProperty category : categories) {
                         categoryValues.add(category.getValue());
                     }
-                    localGraphObject.setCategories( StringUtil.join(categoryValues, ","));
+                    localGraphObject.setCategories(StringUtil.join(categoryValues, ","));
                 }
 
                 // handle reminder configuration
@@ -690,7 +690,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectId(exceptionOccurrenceId)
                     .setJsonBody(jsonObject));
 
-            LOGGER.debug("Updated occurrence: "+ graphResponse.jsonObject.toString());
+            LOGGER.debug("Updated occurrence: " + graphResponse.jsonObject.toString());
         }
 
         private void deleteEventOccurrence(String id, String exDateValue) throws IOException, JSONException {
@@ -3051,13 +3051,9 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private JSONObject executeJsonRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
-        // TODO handle throttling https://learn.microsoft.com/en-us/graph/throttling
-
-        long retryDelay = 0;
-
         JSONObject jsonResponse = null;
+        boolean isThrottled;
         do {
-            retryDelay = 0;
             HttpRequestBase request = httpRequestBuilder
                     .setAccessToken(token.getAccessToken())
                     .build();
@@ -3069,28 +3065,17 @@ public class GraphExchangeSession extends ExchangeSession {
                     CloseableHttpResponse response = httpClient.execute(request)
             ) {
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
-                    LOGGER.warn("Request returned " + response.getStatusLine());
+                    LOGGER.warn(response.getStatusLine());
                 }
-                if (response.getStatusLine().getStatusCode() == HttpStatus.SC_TOO_MANY_REQUESTS) {
-                    LOGGER.warn("Request returned " + response.getStatusLine());
-                    Header retryAfter = response.getFirstHeader("Retry-After");
-                    if (retryAfter != null) {
-                        retryDelay = Long.parseLong(retryAfter.getValue())+1;
-                        LOGGER.debug("Throttled, waiting " + retryDelay + " seconds");
-                        try {
-                            Thread.sleep(retryDelay*1000L);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-                if (retryDelay == 0) {
+                isThrottled = handleThrottling(response);
+                if (!isThrottled) {
                     jsonResponse = new JsonResponseHandler().handleResponse(response);
                 }
             }
-        } while (retryDelay > 0);
+        } while (isThrottled);
         return jsonResponse;
     }
+
 
     /**
      * Execute graph request and wrap response in a graph object
@@ -3099,24 +3084,54 @@ public class GraphExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     private GraphObject executeGraphRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
-        // TODO handle throttling https://learn.microsoft.com/en-us/graph/throttling
         HttpRequestBase request = httpRequestBuilder
                 .setAccessToken(token.getAccessToken())
                 .build();
 
-        // DEBUG only, disable gzip encoding
-        //request.setHeader("Accept-Encoding", "");
-        GraphObject graphObject;
-        try (
-                CloseableHttpResponse response = httpClient.execute(request)
-        ) {
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
-                LOGGER.warn("Request returned " + response.getStatusLine());
+        GraphObject graphObject = null;
+        boolean isThrottled;
+        do {
+            // DEBUG only, disable gzip encoding
+            //request.setHeader("Accept-Encoding", "");
+            try (
+                    CloseableHttpResponse response = httpClient.execute(request)
+            ) {
+                if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
+                    LOGGER.warn("Request returned " + response.getStatusLine());
+                }
+                isThrottled = handleThrottling(response);
+                if (!isThrottled) {
+                    graphObject = new GraphObject(new JsonResponseHandler().handleResponse(response));
+                    graphObject.statusCode = response.getStatusLine().getStatusCode();
+                }
             }
-            graphObject = new GraphObject(new JsonResponseHandler().handleResponse(response));
-            graphObject.statusCode = response.getStatusLine().getStatusCode();
-        }
+        } while (isThrottled);
         return graphObject;
+    }
+
+    /**
+     * Detect throttling and wait according to Retry-After header.
+     * See <a href="https://learn.microsoft.com/en-us/graph/throttling">https://learn.microsoft.com/en-us/graph/throttling</a>
+     * @param response HTTP response
+     * @return true if throttled, false otherwise
+     * @throws IOException on error
+     */
+    private boolean handleThrottling(CloseableHttpResponse response) throws IOException {
+        long retryDelay = 0;
+        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_TOO_MANY_REQUESTS) {
+            LOGGER.info("Detected throttling " + response.getStatusLine());
+            Header retryAfter = response.getFirstHeader("Retry-After");
+            if (retryAfter != null) {
+                retryDelay = Long.parseLong(retryAfter.getValue()) + 1;
+                LOGGER.debug("Waiting " + retryDelay + " seconds to retry request");
+                try {
+                    Thread.sleep(retryDelay * 1000L);
+                } catch (InterruptedException e) {
+                    throw new IOException(e);
+                }
+            }
+        }
+        return retryDelay > 0;
     }
 
     /**
