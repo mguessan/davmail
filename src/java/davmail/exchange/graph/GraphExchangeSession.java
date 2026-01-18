@@ -3127,7 +3127,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 try {
                     Thread.sleep(retryDelay * 1000L);
                 } catch (InterruptedException e) {
-                    throw new IOException(e);
+                    Thread.currentThread().interrupt();
                 }
             }
         }
