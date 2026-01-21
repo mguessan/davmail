@@ -795,10 +795,16 @@ public abstract class ExchangeSession {
     public void sendMessage(List<String> rcptToRecipients, MimeMessage mimeMessage) throws IOException, MessagingException {
         // detect duplicate send command
         String messageId = mimeMessage.getMessageID();
-        if (lastSentMessageId != null && lastSentMessageId.equals(messageId) && Settings.getBooleanProperty("davmail.smtpAllowDuplicateSend", false)) {
-            LOGGER.debug("Dropping message id " + messageId + ": already sent");
-            return;
+        if (lastSentMessageId != null && lastSentMessageId.equals(messageId)) {
+            if (Settings.getBooleanProperty("davmail.smtpAllowDuplicateSend", false)) {
+                LOGGER.debug("Detected duplicate message id " + messageId + " but smtpAllowDuplicateSend is enabled, resending message");
+            } else {
+                LOGGER.debug("Dropping message id " + messageId + ": already sent");
+                return;
+            }
         }
+        LOGGER.debug("Sending message id " + messageId);
+
         lastSentMessageId = messageId;
 
         convertResentHeader(mimeMessage, "From");
@@ -3050,6 +3056,21 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("fburl");
         CONTACT_ATTRIBUTES.add("msexchangecertificate");
         CONTACT_ATTRIBUTES.add("usersmimecertificate");
+    }
+
+    public static final Set<String> ORG_CONTACT_ATTRIBUTES = new HashSet<>();
+    static {
+        // org contact attributes
+        ORG_CONTACT_ATTRIBUTES.add("birthday");
+        ORG_CONTACT_ATTRIBUTES.add("fileAs");
+        ORG_CONTACT_ATTRIBUTES.add("displayName");
+        ORG_CONTACT_ATTRIBUTES.add("initials");
+        ORG_CONTACT_ATTRIBUTES.add("middleName");
+        ORG_CONTACT_ATTRIBUTES.add("surname");
+        ORG_CONTACT_ATTRIBUTES.add("jobTitle");
+        ORG_CONTACT_ATTRIBUTES.add("companyName");
+        ORG_CONTACT_ATTRIBUTES.add("officeLocation");
+        ORG_CONTACT_ATTRIBUTES.add("personalNotes");
     }
 
     protected static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<>();
