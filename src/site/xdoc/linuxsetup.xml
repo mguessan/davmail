@@ -20,8 +20,8 @@
 
                 <p>Download the the platform independent package from Sourceforge and uncompress it with
                     your favorite tool. If you want improved SWT tray icon add the appropriate SWT library in lib
-                    folder from <a href="http://www.eclipse.org/swt/">http://www.eclipse.org/swt/</a>, e.g.
-                    swt-4.9-gtk-linux-x86_64.jar
+                    folder from <a href="https://eclipse.dev/eclipse/swt/">https://eclipse.dev/eclipse/swt/</a>, e.g.
+                    swt-4.37-gtk-linux-x86_64.jar
                 </p>
                 <code>unzip davmail-<em>version</em>.zip</code>
 

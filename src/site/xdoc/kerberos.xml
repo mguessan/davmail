@@ -44,7 +44,7 @@ REG_DWORD name: allowtgtsessionkey
 Value: 1
 ]]></source>
                 <p>More details at:
-                    <a href="http://docs.oracle.com/javase/7/docs/technotes/guides/security/jgss/tutorials/Troubleshooting.html">JGSS Troubleshooting</a>
+                    <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/security/jgss/tutorials/Troubleshooting.html">JGSS Troubleshooting</a>
                 </p>
             </subsection>
 

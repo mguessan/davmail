@@ -238,7 +238,6 @@ davmail server2.properties
                     <a href="https://sourceforge.net/tracker/?func=detail&amp;atid=909904&amp;aid=3138023&amp;group_id=184600">
                         On Ubuntu, notify text conflicts with default theme.
                     </a>
-                    http://users.ox.ac.uk/~richardc/guides/LinuxNexus.html
                 </p>
                 <p>
                     <strong>DavMail hangs on 64-bit Linux</strong>
@@ -321,7 +320,7 @@ calendar.debug.log.verbose=true]]></source>
                 <p>
                     <strong>Timeout errors during IMAP sync (broken pipe)</strong>
                 </p>
-                <p>If you Exchange server is too slow or you don't have enough network bandwidth or too many messages in
+                <p>If your Exchange server is too slow, or you don't have enough network bandwidth or too many messages in
                     a single folder, you may get timeout errors during message fetch.
                 </p>
                 <p>A workaround on DavMail side is to limit folder message count retrieval by setting
@@ -350,8 +349,8 @@ calendar.debug.log.verbose=true]]></source>
                 <p>Delete action is not immediate with IMAP: you need to EXPUNGE the folder to actually
                     delete a message.
                 </p>
-                <p>A workaround is to set <code>davmail.imapAutoExpunge=true</code> in DavMail to force immediate
-                    message expunge. Note that this makes DavMail non compliant to IMAP RFC.
+                <p>A workaround is to set <code>davmail.imapAutoExpunge=true</code> in DavMail to force an immediate
+                    message expunge. Note that this makes DavMail non-compliant to IMAP RFC.
                 </p>
                 <p>A workaround with Thunderbird is to set the property
                     <code>mail.imap.expunge_after_delete=true</code>
