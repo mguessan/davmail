@@ -111,6 +111,11 @@ public class GraphRequestBuilder {
         return this;
     }
 
+    public GraphRequestBuilder setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
     public GraphRequestBuilder setObjectType(String objectType) {
         this.objectType = objectType;
         return this;
