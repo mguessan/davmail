@@ -26,18 +26,18 @@
                     <li>
                         <strong>Windows:</strong>
                         Download installation package:
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-setup64.exe
+                        <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-setup64.exe
                         </a> or noinstall zip:
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-standalone.zip
+                        <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-standalone.zip
                         </a>
                         which now both include Azul JDK, and follow instructions at
                         <a href="windowssetup.html">DavMail Setup on windows</a>
                     </li>
                     <li>
                         <strong>Mac OS X:</strong>
-                        Either setup Java 7/8 from <a href="http://www.java.com">Oracle Java page</a> or use Apple provided Java 6 at
-                        <a href="http://support.apple.com/kb/DL1572">Java for OS X 2014-001</a>, then download
-                        <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
+                        Either setup Java 7/8 from <a href="https://www.java.com">Oracle Java page</a> or use Apple provided Java 6 at
+                        <a href="https://support.apple.com/kb/DL1572">Java for OS X 2014-001</a>, then download
+                        <a href="https://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
                         </a>
                         <br/>
                         and follow instructions at
@@ -48,7 +48,7 @@
                     <li>
                         <strong>Debian Linux (Ubuntu):</strong>
                         Download debian package
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail_<em>version</em>-1_all.deb
+                        <a href="https://sourceforge.net/projects/davmail/files/">davmail_<em>version</em>-1_all.deb
                         </a>
                         <br/>
                         and follow instructions at
@@ -57,7 +57,7 @@
                     <li>
                         <strong>Other:</strong>
                         Download platform independent package
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.zip
+                        <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.zip
                         </a>
                         <br/>
                         and follow instructions at
@@ -72,10 +72,10 @@
                     <li>
                         <strong>Standalone:</strong>
                         Download standalone package for Windows:
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-standalone.zip
+                        <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-standalone.zip
                         </a>
                         or platform independent package for other operating systems:
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.zip
+                        <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.zip
                         </a>
                         <br/>
                         and follow instructions at
@@ -85,7 +85,7 @@
                     <li>
                         <strong>Webapp:</strong>
                         If you intend to run DavMail inside an application server, download webapp package
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.war
+                        <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.war
                         </a>
                         <br/>
                         and follow instructions at
@@ -99,7 +99,7 @@
             <subsection name="Build from source">
                 <p>
                     Download source tarball
-                    <a href="http://sourceforge.net/projects/davmail/files/">davmail-src-<em>version</em>.tgz
+                    <a href="https://sourceforge.net/projects/davmail/files/">davmail-src-<em>version</em>.tgz
                     </a>
                     <br/>
                     and follow instructions at
