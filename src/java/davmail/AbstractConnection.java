@@ -50,7 +50,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
         }
 
         public String readLine() throws IOException {
-            ByteArrayOutputStream baos = null;
+            ByteArrayOutputStream byteArrayOutputStream = null;
             int b;
             while ((b = read()) > -1) {
                 if (b == '\r') {
@@ -62,13 +62,13 @@ public abstract class AbstractConnection extends Thread implements Closeable {
                 } else if (b == '\n') {
                     break;
                 }
-                if (baos == null) {
-                    baos = new ByteArrayOutputStream();
+                if (byteArrayOutputStream == null) {
+                    byteArrayOutputStream = new ByteArrayOutputStream();
                 }
-                baos.write(b);
+                byteArrayOutputStream.write(b);
             }
-            if (baos != null) {
-                return baos.toString(encoding);
+            if (byteArrayOutputStream != null) {
+                return byteArrayOutputStream.toString(encoding);
             } else {
                 return null;
             }
@@ -86,7 +86,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
         }
 
         /**
-         * Read byteSize bytes from inputStream, return content as byte array.
+         * Read byteSize bytes from inputStream, return content as a byte array.
          *
          * @param byteSize content size
          * @return content
@@ -112,7 +112,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
 
     protected LineReaderInputStream in;
     protected OutputStream os;
-    // user name and password initialized through connection
+    // username and password initialized through connection
     protected String userName;
     protected String password;
     // connection state
@@ -133,7 +133,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
     }
 
     /**
-     * Initialize the streams and set thread name.
+     * Initialize the streams and set a thread name.
      *
      * @param name         thread type name
      * @param clientSocket client socket
@@ -157,7 +157,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
     }
 
     /**
-     * Send message to client followed by CRLF.
+     * Send the provided message to the client followed by CRLF.
      *
      * @param message message
      * @throws IOException on error
@@ -167,7 +167,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
     }
 
     /**
-     * Send prefix and message to client followed by CRLF.
+     * Send prefix and message to the client followed by CRLF.
      *
      * @param prefix  prefix
      * @param message message
@@ -187,7 +187,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
     }
 
     /**
-     * Send only bytes to client.
+     * Send all bytes to the client.
      *
      * @param messageBytes content
      * @throws IOException on error
@@ -197,7 +197,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
     }
 
     /**
-     * Send only bytes to client.
+     * Send only bytes to the client.
      *
      * @param messageBytes content
      * @param offset       the start offset in the data.
@@ -205,9 +205,6 @@ public abstract class AbstractConnection extends Thread implements Closeable {
      * @throws IOException on error
      */
     public void sendClient(byte[] messageBytes, int offset, int length) throws IOException {
-        //StringBuffer logBuffer = new StringBuffer("> ");
-        //logBuffer.append(new String(messageBytes, offset, length));
-        //DavGatewayTray.debug(logBuffer.toString());
         os.write(messageBytes, offset, length);
         os.flush();
     }
@@ -217,7 +214,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
      * Log message to logger
      *
      * @return command line or null
-     * @throws IOException when unable to read line
+     * @throws IOException when unable to read the next line
      */
     public String readClient() throws IOException {
         String line = in.readLine();
@@ -247,7 +244,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
     }
 
     /**
-     * Close client connection, streams and Exchange session .
+     * Close client connection, streams and Exchange session.
      */
     public void close() {
         logConnection("DISCONNECT", "");
