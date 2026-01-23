@@ -117,7 +117,7 @@ public abstract class ExchangeSession {
     protected String email;
     protected String alias;
     /**
-     * Lower case Caldav path to current user mailbox.
+     * Lower case Caldav path to the current user mailbox.
      * /users/<i>email</i>
      */
     protected String currentMailboxPath;
@@ -226,8 +226,8 @@ public abstract class ExchangeSession {
     protected abstract void buildSessionInfo(java.net.URI uri) throws IOException;
 
     /**
-     * Create a message in specified folder.
-     * Will overwrite an existing message with same subject in the same folder
+     * Create a message in the specified folder.
+     * Will overwrite an existing message with the same subject in the same folder
      *
      * @param folderPath  Exchange folder path
      * @param messageName message name
@@ -770,6 +770,9 @@ public abstract class ExchangeSession {
         }
     }
 
+    /**
+     * Moves Resent headers to standard headers
+     */
     protected void convertResentHeader(MimeMessage mimeMessage, String headerName) throws MessagingException {
         String[] resentHeader = mimeMessage.getHeader("Resent-" + headerName);
         if (resentHeader != null) {
@@ -782,6 +785,7 @@ public abstract class ExchangeSession {
     }
 
     protected String lastSentMessageId;
+    protected List<String> lastRcptToRecipients;
 
     /**
      * Send the provided message to recipients.
@@ -796,8 +800,11 @@ public abstract class ExchangeSession {
         // detect duplicate send command
         String messageId = mimeMessage.getMessageID();
         if (lastSentMessageId != null && lastSentMessageId.equals(messageId)) {
+            // Resends duplicate message if allowed or recipients differ
             if (Settings.getBooleanProperty("davmail.smtpAllowDuplicateSend", false)) {
                 LOGGER.debug("Detected duplicate message id " + messageId + " but smtpAllowDuplicateSend is enabled, resending message");
+            } else if (lastRcptToRecipients != null && !lastRcptToRecipients.equals(rcptToRecipients)) {
+                LOGGER.debug("Detected duplicate message id " + messageId + " but recipients differ, resending message");
             } else {
                 LOGGER.debug("Dropping message id " + messageId + ": already sent");
                 return;
@@ -806,6 +813,7 @@ public abstract class ExchangeSession {
         LOGGER.debug("Sending message id " + messageId);
 
         lastSentMessageId = messageId;
+        lastRcptToRecipients = rcptToRecipients;
 
         convertResentHeader(mimeMessage, "From");
         convertResentHeader(mimeMessage, "To");
@@ -3322,19 +3330,6 @@ public abstract class ExchangeSession {
             eventClass = "PUBLIC";
         }
         return eventClass;
-    }
-
-    protected String convertClassToExchange(String eventClass) {
-        String sensitivity;
-        if ("PRIVATE".equals(eventClass)) {
-            sensitivity = "Private";
-        } else if ("CONFIDENTIAL".equals(eventClass)) {
-            sensitivity = "Confidential";
-        } else {
-            // PUBLIC
-            sensitivity = "Normal";
-        }
-        return sensitivity;
     }
 
 }
