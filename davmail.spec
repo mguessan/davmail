@@ -71,7 +71,7 @@ Requires: java-1.8.0-openjdk
 Requires: java-21-openjdk
 %endif
 
-Source0: %{name}-src-%{version}.tgz
+Source0: https://downloads.sourceforge.net/project/%{name}/%{name}/%{version}/%{name}-src-%{version}-3627.tgz
 
 %description
 A POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
