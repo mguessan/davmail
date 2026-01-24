@@ -58,7 +58,7 @@
                         alternative is to get actual url from davmail log file with O365Modern<br/>
                         Example url, adjust client_id and redirect_uri to your configuration:
                         <source>
-https://login.microsoftonline.com/common/oauth2/authorize?client_id=facd6cff-a294-4415-b59f-c5b01937d7bd&amp;response_type=code&amp;redirect_uri=https://login.microsoftonline.com/common/oauth2/nativeclient&amp;response_mode=query&amp;resource=https%3A%2F%2Foutlook.office365.com&amp;prompt=consent
+https://login.microsoftonline.com/common/oauth2/authorize?client_id=facd6cff-a294-4415-b59f-c5b01937d7bd&amp;response_type=code&amp;redirect_uri=https://localhost/common/oauth2/nativeclient&amp;response_mode=query&amp;resource=https%3A%2F%2Foutlook.office365.com&amp;prompt=consent
                         </source>
                     </li>
                     <li>You can use your own application client id instead of DavMail provided value,
@@ -67,7 +67,7 @@ https://login.microsoftonline.com/common/oauth2/authorize?client_id=facd6cff-a29
                         or directly on Azure AD if you have the rights, and add in davmail.properties:<br/>
                         <source>
 davmail.oauth.clientId=<i>yourappid</i>
-davmail.oauth.redirectUri=https://login.microsoftonline.com/common/oauth2/nativeclient
+davmail.oauth.redirectUri=https://localhost/common/oauth2/nativeclient
                         </source>
                     </li>
                     <li>Default tenant id is common, set tenantId to force company tenant:<br/>
@@ -77,7 +77,10 @@ davmail.oauth.redirectUri=https://login.microsoftonline.com/common/oauth2/native
                     </li>
                 </ul>
                 <p>In Azure you have to open Entra ID section then app registration, use <code>https://login.microsoftonline.com/common/oauth2/nativeclient</code>
-                as redirect uri value. It is no longer possible to add EWS scope under API permissions but a simple workaround is to do it through manifest
+                as redirect uri value. Update as of january 2026: Microsoft changed nativeclient endpoint to redirect users to <code>https://login.microsoftonline.com/common/wrongplace</code>,
+                please use <code>https://localhost/common/oauth2/nativeclient</code> instead
+                </p>
+                <p>It is no longer possible to add EWS scope under API permissions but a simple workaround is to do it through manifest
                 editor:</p>
                 <p>The required scopes are:</p>
                 <source>

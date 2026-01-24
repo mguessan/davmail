@@ -63,7 +63,7 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
         // common DavMail client id
         final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         // standard native app redirectUri
-        final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", Settings.getO365LoginUrl()+"/common/oauth2/nativeclient");
+        final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", Settings.getO365LoginUrl()+"https://localhost/common/oauth2/nativeclient");
         // company tenantId or common
         String tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
