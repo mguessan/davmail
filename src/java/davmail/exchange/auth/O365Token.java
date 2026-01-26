@@ -76,6 +76,11 @@ public class O365Token {
 
         RestRequest tokenRequest = new RestRequest(tokenUrl, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
 
+        String origin = Settings.getProperty("davmail.oauth.refreshTokenOrigin");
+        if (origin != null && !origin.isEmpty()) {
+	        tokenRequest.setRequestHeader("Origin", origin);
+	}
+
         executeRequest(tokenRequest);
     }
 
@@ -221,6 +226,11 @@ public class O365Token {
         }
 
         RestRequest tokenRequest = new RestRequest(tokenUrl, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
+
+        String origin = Settings.getProperty("davmail.oauth.refreshTokenOrigin");
+        if (origin != null && !origin.isEmpty()) {
+	        tokenRequest.setRequestHeader("Origin", origin);
+	}
 
         executeRequest(tokenRequest);
 
