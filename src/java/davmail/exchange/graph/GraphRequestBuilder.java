@@ -51,8 +51,8 @@ public class GraphRequestBuilder {
     String method = "POST";
 
     String contentType = "application/json";
-    String baseUrl = Settings.GRAPH_URL;
-    String version = "beta";
+    String baseUrl = Settings.getGraphUrl();
+    String version = Settings.getProperty("davmail.graphPrefix", "beta");
     String mailbox;
     String objectType;
 
