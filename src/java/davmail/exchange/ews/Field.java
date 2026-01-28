@@ -148,9 +148,9 @@ public final class Field {
         FIELD_MAP.put("displayemail2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8090, ExtendedFieldURI.PropertyType.String)); // Email2DisplayName
         FIELD_MAP.put("displayemail3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A0, ExtendedFieldURI.PropertyType.String)); // Email3DisplayName
         */
-        FIELD_MAP.put("smtpemail1", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress1", "Contact", "EmailAddresses", "mail"));
-        FIELD_MAP.put("smtpemail2", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress2", "Contact", "EmailAddresses"));
-        FIELD_MAP.put("smtpemail3", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress3", "Contact", "EmailAddresses"));
+        FIELD_MAP.put("smtpemail1", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress1", "Contact", "EmailAddresses", "String {00062004-0000-0000-c000-000000000046} Id 0x8083"));
+        FIELD_MAP.put("smtpemail2", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress2", "Contact", "EmailAddresses", "String {00062004-0000-0000-c000-000000000046} Id 0x8093"));
+        FIELD_MAP.put("smtpemail3", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress3", "Contact", "EmailAddresses", "String {00062004-0000-0000-c000-000000000046} Id 0x80A3"));
 
         FIELD_MAP.put("facsimiletelephonenumber", new ExtendedFieldURI(0x3A24, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("givenName", new ExtendedFieldURI(0x3A06, ExtendedFieldURI.PropertyType.String));
@@ -182,7 +182,7 @@ public final class Field {
         FIELD_MAP.put("street", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8045, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("telephoneNumber", new ExtendedFieldURI(0x3A08, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("title", new ExtendedFieldURI(0x3A17, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String, "personalNotes"));
+        FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("im", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8062, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("othermobile", new ExtendedFieldURI(0x3A1E, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("internationalisdnnumber", new ExtendedFieldURI(0x3A2D, ExtendedFieldURI.PropertyType.String));

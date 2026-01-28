@@ -244,6 +244,10 @@ public class ExtendedFieldURI implements FieldURI {
         return propertyType == PropertyType.Short || propertyType == PropertyType.Integer || propertyType == PropertyType.Long || propertyType == PropertyType.Double;
     }
 
+    public boolean isBinary() {
+        return propertyType == PropertyType.Binary;
+    }
+
     @Override
     public boolean isBoolean() {
         return propertyType == PropertyType.Boolean;
