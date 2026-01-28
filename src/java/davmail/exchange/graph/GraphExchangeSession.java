@@ -823,6 +823,23 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                 }
             }
+
+            // fetch values from singleValueExtendedProperties
+            JSONArray singleValueExtendedProperties = response.optJSONArray("singleValueExtendedProperties");
+            if (singleValueExtendedProperties != null) {
+                for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
+                    try {
+                        JSONObject responseValue = singleValueExtendedProperties.getJSONObject(i);
+                        String responseId = responseValue.optString("id");
+                        // TODO generic reverse mapping of extended properties
+                        if ("Binary 0xff9".equals(responseId)) {
+                            put("uid", responseValue.optString("value"));
+                        }
+                    } catch (JSONException e) {
+                        LOGGER.warn("Error parsing json response value");
+                    }
+                }
+            }
             // TODO refactor
             //String keywords = response.optString("categories");
             //if (keywords != null) {
@@ -1138,6 +1155,8 @@ public class GraphExchangeSession extends ExchangeSession {
     protected static final HashSet<FieldURI> CONTACT_ATTRIBUTES = new HashSet<>();
 
     static {
+        CONTACT_ATTRIBUTES.add(Field.get("uid"));
+
         CONTACT_ATTRIBUTES.add(Field.get("imapUid"));
         CONTACT_ATTRIBUTES.add(Field.get("etag"));
         CONTACT_ATTRIBUTES.add(Field.get("urlcompname"));
@@ -1771,11 +1790,33 @@ public class GraphExchangeSession extends ExchangeSession {
                 buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq 'String {00020386-0000-0000-c000-000000000046} Name to' and contains(ep/value,'")
                         .append(StringUtil.escapeQuotes(value)).append("'))");
             } else if (Operator.StartsWith.equals(operator)) {
-                buffer.append("startswith(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
+                if (graphId == null) {
+                    LOGGER.error("Unknown field: " + attributeName);
+                } else if (graphId.contains(" ")) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
+                            .append("' and startswith(ep/value,'").append(StringUtil.escapeQuotes(value)).append("'))");
+                } else {
+                    buffer.append("startswith(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
+                }
             } else if (Operator.Contains.equals(operator)) {
-                buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
+                if (graphId == null) {
+                    LOGGER.error("Unknown field: " + attributeName);
+                } else if (graphId.contains(" ")) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
+                            .append("' and contains(ep/value,'").append(StringUtil.escapeQuotes(value)).append("'))");
+                } else if ("smtpemail1".equals(attributeName)) {
+                    buffer.append("singleValueExtendedProperties/any(ep: ep/id eq 'String {00062004-0000-0000-c000-000000000046} Id 0x8083' and contains(ep/value, '"+StringUtil.escapeQuotes(value)+"'))");
+                } else if (attributeName.startsWith("smtpemail")) {
+                    // TODO decide best approach for mail search
+                    buffer.append("emailAddresses/any(").append(attributeName).append(":").append(attributeName).append("/address eq '").append(StringUtil.escapeQuotes(value)).append("')");
+                } else {
+                    buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
+                }
             } else if (fieldURI instanceof ExtendedFieldURI) {
-                if (graphId.contains(" ")) {
+                if (graphId.contains(" ") && ((ExtendedFieldURI)fieldURI).isBinary()) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
+                            .append("' and cast(ep/value,Edm.Binary) ").append(convertOperator(operator)).append(" binary'").append(StringUtil.escapeQuotes(value)).append("')");
+                } else if (graphId.contains(" ")) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
                 } else {
@@ -1803,6 +1844,15 @@ public class GraphExchangeSession extends ExchangeSession {
         @Override
         protected FieldURI getFieldURI() {
             return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, attributeName);
+        }
+
+        /**
+         * Graph field internetMessageHeader is not searchable, use MAPI property PR_TRANSPORT_MESSAGE_HEADERS directly instead.
+         * @param buffer search filter buffer
+         */
+        public void appendTo(StringBuilder buffer) {
+            buffer.append("singleValueExtendedProperties/any(ep:ep/id eq 'String 0x007D' and contains(ep/value, '")
+                    .append(attributeName).append(": ").append(StringUtil.escapeQuotes(value)).append("'))");
         }
     }
 
@@ -2933,7 +2983,8 @@ public class GraphExchangeSession extends ExchangeSession {
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<>();
 
-        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+        // need to refactor LDAP search as users backend now supports complex queries
+        /*GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
                 .setObjectType("users")
                 .setFilter(condition)
@@ -2944,8 +2995,7 @@ public class GraphExchangeSession extends ExchangeSession {
         while (graphIterator.hasNext() && contacts.size() < sizeLimit) {
             Contact contact = buildGalfindContact(graphIterator.next());
             contacts.put(contact.getName().toLowerCase(), contact);
-        }
-
+        }*/
 
         return contacts;
     }
