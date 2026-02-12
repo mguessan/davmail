@@ -22,6 +22,7 @@ package davmail.exchange.graph;
 import davmail.Settings;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ews.ExtendedFieldURI;
+import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
 import davmail.util.IOUtil;
 import org.apache.http.client.methods.HttpDelete;
@@ -39,6 +40,7 @@ import org.codehaus.jettison.json.JSONObject;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -51,8 +53,8 @@ public class GraphRequestBuilder {
     String method = "POST";
 
     String contentType = "application/json";
-    String baseUrl = Settings.GRAPH_URL;
-    String version = "beta";
+    String baseUrl = Settings.getGraphUrl();
+    String version = Settings.getProperty("davmail.graphVersion", "beta");
     String mailbox;
     String objectType;
 
@@ -108,6 +110,14 @@ public class GraphRequestBuilder {
      */
     public GraphRequestBuilder setExpandFields(Set<FieldURI> expandFields) {
         this.expandFields = expandFields;
+        return this;
+    }
+
+    public GraphRequestBuilder setExpandAttributes(Set<String> expandAttributes) {
+        expandFields = new HashSet<>();
+        for (String attribute : expandAttributes) {
+            expandFields.add(Field.get(attribute));
+        }
         return this;
     }
 
