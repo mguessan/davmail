@@ -35,11 +35,9 @@ public class StringEncryptorTest extends TestCase {
         assertEquals(value, decrypted);
     }
 
-    public void testDecrypt() throws IOException {
+    public void testDecrypt() {
         String password = "P@ssw0rd";
-        String value = "MyVeryLongToken";
         StringEncryptor encryptor = new StringEncryptor(password);
-        String encrypted = encryptor.encryptString(value);
 
         try {
             encryptor.decryptString("{AES}invalid");
