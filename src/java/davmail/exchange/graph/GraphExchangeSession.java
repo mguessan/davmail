@@ -32,6 +32,7 @@ import davmail.exchange.auth.O365Token;
 import davmail.exchange.ews.ExtendedFieldURI;
 import davmail.exchange.ews.Field;
 import davmail.exchange.ews.FieldURI;
+import davmail.exchange.ews.IndexedFieldURI;
 import davmail.exchange.ews.SearchExpression;
 import davmail.http.HttpClientAdapter;
 import davmail.http.URIUtil;
@@ -1285,6 +1286,14 @@ public class GraphExchangeSession extends ExchangeSession {
             this.id = wellKnownFolderName.name();
             this.folderClass = folderClass;
         }
+
+        public String getMailboxName() {
+            if (mailbox == null) {
+                return "me";
+            } else {
+                return mailbox;
+            }
+        }
     }
 
     HttpClientAdapter httpClient;
@@ -1802,14 +1811,11 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (graphId == null) {
                     LOGGER.error("Unknown field: " + attributeName);
                 } else if (graphId.contains(" ")) {
+                    // search MAPI property as singleValueExtendedProperty
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and contains(ep/value,'").append(StringUtil.escapeQuotes(value)).append("'))");
-                } else if ("smtpemail1".equals(attributeName)) {
-                    buffer.append("singleValueExtendedProperties/any(ep: ep/id eq 'String {00062004-0000-0000-c000-000000000046} Id 0x8083' and contains(ep/value, '"+StringUtil.escapeQuotes(value)+"'))");
-                } else if (attributeName.startsWith("smtpemail")) {
-                    // TODO decide best approach for mail search
-                    buffer.append("emailAddresses/any(").append(attributeName).append(":").append(attributeName).append("/address eq '").append(StringUtil.escapeQuotes(value)).append("')");
                 } else {
+                    // search graph property
                     buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
                 }
             } else if (fieldURI instanceof ExtendedFieldURI) {
@@ -1817,6 +1823,13 @@ public class GraphExchangeSession extends ExchangeSession {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value,Edm.Binary) ").append(convertOperator(operator)).append(" binary'").append(StringUtil.escapeQuotes(value)).append("')");
                 } else if (graphId.contains(" ")) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
+                            .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
+                } else {
+                    buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
+                }
+            } else if (fieldURI instanceof IndexedFieldURI) {
+                if (graphId.contains(" ")) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
                 } else {
@@ -2610,7 +2623,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setChildType("contacts")
                 .setExpandFields(CONTACT_ATTRIBUTES)
                 .setFilter(condition);
-        LOGGER.debug("searchContacts " + folderId.mailbox + " " + folderPath);
+        LOGGER.debug("searchContacts " + folderId.getMailboxName() + "/" + folderPath);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
