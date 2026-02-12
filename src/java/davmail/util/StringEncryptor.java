@@ -47,6 +47,12 @@ public class StringEncryptor {
     }
 
     public String encryptString(String value) throws IOException {
+        if (value == null) {
+            return null;
+        }
+        if (value.isEmpty()) {
+            return "";
+        }
         try {
             byte[] plaintext = value.getBytes(StandardCharsets.UTF_8);
 

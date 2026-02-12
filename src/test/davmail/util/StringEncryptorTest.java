@@ -29,10 +29,36 @@ public class StringEncryptorTest extends TestCase {
         String value = "MyVeryLongToken";
         StringEncryptor encryptor = new StringEncryptor(password);
         String encrypted = encryptor.encryptString(value);
-        System.out.println("Encrypted: "+encrypted);
 
         encryptor = new StringEncryptor(password);
         String decrypted = encryptor.decryptString(encrypted);
-        assertEquals(decrypted, value);
+        assertEquals(value, decrypted);
+    }
+
+    public void testDecrypt() throws IOException {
+        String password = "P@ssw0rd";
+        String value = "MyVeryLongToken";
+        StringEncryptor encryptor = new StringEncryptor(password);
+        String encrypted = encryptor.encryptString(value);
+
+        try {
+            encryptor.decryptString("{AES}invalid");
+            fail("Expected IOException");
+        } catch (IOException e) {
+            // Expected
+        }
+    }
+
+    public void testNullInput() throws IOException {
+        String password = "P@ssw0rd";
+        StringEncryptor encryptor = new StringEncryptor(password);
+        assertNull(encryptor.encryptString(null));
+        assertNull(encryptor.decryptString(null));
+    }
+
+    public void testEmptyInput() throws IOException {
+        String password = "P@ssw0rd";
+        StringEncryptor encryptor = new StringEncryptor(password);
+        assertEquals("", encryptor.encryptString(""));
     }
 }
