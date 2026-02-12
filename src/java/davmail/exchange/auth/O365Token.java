@@ -21,6 +21,7 @@ package davmail.exchange.auth;
 
 import davmail.Settings;
 import davmail.http.HttpClientAdapter;
+import davmail.http.request.PostRequest;
 import davmail.http.request.RestRequest;
 import davmail.util.IOUtil;
 import davmail.util.StringEncryptor;
@@ -34,7 +35,9 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -78,6 +81,21 @@ public class O365Token {
         executeRequest(tokenRequest);
     }
 
+    public O365Token(String tenantId, String clientId, DeviceCode code, String password) throws IOException, AuthorizationPending {
+        this.clientId = clientId;
+        this.tokenUrl = buildTokenUrl(tenantId);
+        this.password = password;
+
+        PostRequest tokenRequest = new PostRequest(Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/token");
+        tokenRequest.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        tokenRequest.setParameter("grant_type", "urn:ietf:params:oauth:grant-type:device_code");
+        tokenRequest.setParameter("client_id", clientId);
+        tokenRequest.setParameter("code", code.getDeviceCode());
+        tokenRequest.setParameter("resource", "https://graph.microsoft.com");
+
+        executeRequest(tokenRequest);
+    }
+
     protected String buildTokenUrl(String tenantId) {
         if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
             // OIDC configuration visible at https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
@@ -92,9 +110,13 @@ public class O365Token {
         return username;
     }
 
-    public void setJsonToken(JSONObject jsonToken) throws IOException {
+    public void setJsonToken(JSONObject jsonToken) throws IOException, AuthorizationPending {
         try {
-            if (jsonToken.opt("error") != null) {
+            final Object error = jsonToken.opt("error");
+            if (error != null) {
+                if (error.equals("authorization_pending"))
+                    throw new AuthorizationPending();
+
                 throw new IOException(jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
             }
             LOGGER.debug("Obtained token for scopes: " + jsonToken.optString("scope"));
@@ -215,11 +237,34 @@ public class O365Token {
                 CloseableHttpResponse response = httpClientAdapter.execute(tokenMethod)
         ) {
             setJsonToken(tokenMethod.handleResponse(response));
+        } catch (AuthorizationPending e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void executeRequest(PostRequest tokenMethod) throws IOException, AuthorizationPending {
+        // do not keep login connections open (no pooling)
+        try (
+                HttpClientAdapter httpClientAdapter = new HttpClientAdapter(tokenUrl);
+                CloseableHttpResponse response = httpClientAdapter.execute(tokenMethod)
+        ) {
+            try (InputStream inputStream = response.getEntity().getContent()){
+                setJsonToken(new JSONObject(new String(IOUtil.readFully(inputStream), StandardCharsets.UTF_8)));
+            } catch (JSONException e) {
+                LOGGER.error("Error while parsing json response: " + e, e);
+                throw new IOException(e.getMessage(), e);
+            }
         }
     }
 
     static O365Token build(String tenantId, String clientId, String redirectUri, String code, String password) throws IOException {
         O365Token token = new O365Token(tenantId, clientId, redirectUri, code, password);
+        token.persistToken();
+        return token;
+    }
+
+    static O365Token build(String tenantId, String clientId, DeviceCode code, String password) throws IOException, AuthorizationPending {
+        O365Token token = new O365Token(tenantId, clientId, code, password);
         token.persistToken();
         return token;
     }

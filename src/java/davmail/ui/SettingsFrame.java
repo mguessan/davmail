@@ -168,6 +168,7 @@ public class SettingsFrame extends JFrame {
         modeComboBox.addItem(Settings.O365_MODERN);
         modeComboBox.addItem(Settings.O365_INTERACTIVE);
         modeComboBox.addItem(Settings.O365_MANUAL);
+        modeComboBox.addItem(Settings.O365_DEVICECODE);
         modeComboBox.addItem(Settings.WEBDAV);
         modeComboBox.addItem(Settings.AUTO);
         modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.EWS));
