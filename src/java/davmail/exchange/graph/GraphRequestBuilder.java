@@ -71,7 +71,7 @@ public class GraphRequestBuilder {
 
     String timeZone;
 
-    Set<FieldURI> expandFields;
+    Set<GraphField> expandFields;
 
     String accessToken;
 
@@ -108,7 +108,7 @@ public class GraphRequestBuilder {
      * @param expandFields set of fields to return
      * @return this
      */
-    public GraphRequestBuilder setExpandFields(Set<FieldURI> expandFields) {
+    public GraphRequestBuilder setExpandFields(Set<GraphField> expandFields) {
         this.expandFields = expandFields;
         return this;
     }
@@ -116,7 +116,7 @@ public class GraphRequestBuilder {
     public GraphRequestBuilder setExpandAttributes(Set<String> expandAttributes) {
         expandFields = new HashSet<>();
         for (String attribute : expandAttributes) {
-            expandFields.add(Field.get(attribute));
+            expandFields.add(GraphField.get(attribute));
         }
         return this;
     }
@@ -256,16 +256,11 @@ public class GraphRequestBuilder {
     private String buildExpand() {
         ArrayList<String> singleValueProperties = new ArrayList<>();
         ArrayList<String> multiValueProperties = new ArrayList<>();
-        for (FieldURI fieldURI : expandFields) {
-            if (fieldURI.isMultiValued()) {
-                multiValueProperties.add(fieldURI.getGraphId());
-            } else if (fieldURI instanceof ExtendedFieldURI) {
-                String graphId = fieldURI.getGraphId();
-                // only expanded properties need a singleValueProperties entry
-                // TODO refactor fields to only use fieldURI for expanded properties
-                if (graphId.contains(" ")) {
-                    singleValueProperties.add(fieldURI.getGraphId());
-                }
+        for (GraphField field : expandFields) {
+            if (field.isMultiValued()) {
+                multiValueProperties.add(field.getGraphId());
+            } else if (field.isExtended()) {
+                singleValueProperties.add(field.getGraphId());
             }
         }
         StringBuilder expand = new StringBuilder();

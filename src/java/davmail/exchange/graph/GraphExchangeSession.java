@@ -29,11 +29,6 @@ import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.exchange.auth.O365Token;
-import davmail.exchange.ews.ExtendedFieldURI;
-import davmail.exchange.ews.Field;
-import davmail.exchange.ews.FieldURI;
-import davmail.exchange.ews.IndexedFieldURI;
-import davmail.exchange.ews.SearchExpression;
 import davmail.http.HttpClientAdapter;
 import davmail.http.URIUtil;
 import davmail.ui.tray.DavGatewayTray;
@@ -1127,106 +1122,106 @@ public class GraphExchangeSession extends ExchangeSession {
         wellKnownFolderMap.put(WellKnownFolderName.deleteditems.name(), ExchangeSession.TRASH);
     }
 
-    protected static final HashSet<FieldURI> IMAP_MESSAGE_ATTRIBUTES = new HashSet<>();
+    protected static final HashSet<GraphField> IMAP_MESSAGE_ATTRIBUTES = new HashSet<>();
 
     static {
-        // TODO: review, permanenturl is no lonver relevant
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("permanenturl"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("urlcompname"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("uid"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("messageSize"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("imapUid"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("junk"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("flagStatus"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("messageFlags"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("lastVerbExecuted"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("read"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("deleted"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("date"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("lastmodified"));
+        // TODO: review, permanenturl is no longer relevant
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("permanenturl"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("urlcompname"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("uid"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("messageSize"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("imapUid"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("junk"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("flagStatus"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("messageFlags"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("lastVerbExecuted"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("read"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("deleted"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("date"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("lastmodified"));
         // OSX IMAP requests content-class
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("contentclass"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("keywords"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("contentclass"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("keywords"));
 
         // experimental, retrieve message headers (TODO remove)
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("to"));
-        IMAP_MESSAGE_ATTRIBUTES.add(Field.get("messageheaders"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("to"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("messageheaders"));
     }
 
-    protected static final HashSet<FieldURI> CONTACT_ATTRIBUTES = new HashSet<>();
+    protected static final HashSet<GraphField> CONTACT_ATTRIBUTES = new HashSet<>();
 
     static {
-        CONTACT_ATTRIBUTES.add(Field.get("uid"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("uid"));
 
-        CONTACT_ATTRIBUTES.add(Field.get("imapUid"));
-        CONTACT_ATTRIBUTES.add(Field.get("etag"));
-        CONTACT_ATTRIBUTES.add(Field.get("urlcompname"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("imapUid"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("etag"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("urlcompname"));
 
-        CONTACT_ATTRIBUTES.add(Field.get("extensionattribute1"));
-        CONTACT_ATTRIBUTES.add(Field.get("extensionattribute2"));
-        CONTACT_ATTRIBUTES.add(Field.get("extensionattribute3"));
-        CONTACT_ATTRIBUTES.add(Field.get("extensionattribute4"));
-        CONTACT_ATTRIBUTES.add(Field.get("bday"));
-        CONTACT_ATTRIBUTES.add(Field.get("anniversary"));
-        CONTACT_ATTRIBUTES.add(Field.get("businesshomepage"));
-        CONTACT_ATTRIBUTES.add(Field.get("personalHomePage"));
-        CONTACT_ATTRIBUTES.add(Field.get("cn"));
-        CONTACT_ATTRIBUTES.add(Field.get("co"));
-        CONTACT_ATTRIBUTES.add(Field.get("department"));
-        //CONTACT_ATTRIBUTES.add(Field.get("smtpemail1"));
-        //CONTACT_ATTRIBUTES.add(Field.get("smtpemail2"));
-        //CONTACT_ATTRIBUTES.add(Field.get("smtpemail3"));
-        CONTACT_ATTRIBUTES.add(Field.get("facsimiletelephonenumber"));
-        CONTACT_ATTRIBUTES.add(Field.get("givenName"));
-        CONTACT_ATTRIBUTES.add(Field.get("homeCity"));
-        CONTACT_ATTRIBUTES.add(Field.get("homeCountry"));
-        CONTACT_ATTRIBUTES.add(Field.get("homePhone"));
-        CONTACT_ATTRIBUTES.add(Field.get("homePostalCode"));
-        CONTACT_ATTRIBUTES.add(Field.get("homeState"));
-        CONTACT_ATTRIBUTES.add(Field.get("homeStreet"));
-        CONTACT_ATTRIBUTES.add(Field.get("homepostofficebox"));
-        CONTACT_ATTRIBUTES.add(Field.get("l"));
-        CONTACT_ATTRIBUTES.add(Field.get("manager"));
-        CONTACT_ATTRIBUTES.add(Field.get("mobile"));
-        CONTACT_ATTRIBUTES.add(Field.get("namesuffix"));
-        CONTACT_ATTRIBUTES.add(Field.get("nickname"));
-        CONTACT_ATTRIBUTES.add(Field.get("o"));
-        CONTACT_ATTRIBUTES.add(Field.get("pager"));
-        CONTACT_ATTRIBUTES.add(Field.get("personaltitle"));
-        CONTACT_ATTRIBUTES.add(Field.get("postalcode"));
-        CONTACT_ATTRIBUTES.add(Field.get("postofficebox"));
-        CONTACT_ATTRIBUTES.add(Field.get("profession"));
-        CONTACT_ATTRIBUTES.add(Field.get("roomnumber"));
-        CONTACT_ATTRIBUTES.add(Field.get("secretarycn"));
-        CONTACT_ATTRIBUTES.add(Field.get("sn"));
-        CONTACT_ATTRIBUTES.add(Field.get("spousecn"));
-        CONTACT_ATTRIBUTES.add(Field.get("st"));
-        CONTACT_ATTRIBUTES.add(Field.get("street"));
-        CONTACT_ATTRIBUTES.add(Field.get("telephoneNumber"));
-        CONTACT_ATTRIBUTES.add(Field.get("title"));
-        CONTACT_ATTRIBUTES.add(Field.get("description"));
-        CONTACT_ATTRIBUTES.add(Field.get("im"));
-        CONTACT_ATTRIBUTES.add(Field.get("middlename"));
-        CONTACT_ATTRIBUTES.add(Field.get("lastmodified"));
-        CONTACT_ATTRIBUTES.add(Field.get("otherstreet"));
-        CONTACT_ATTRIBUTES.add(Field.get("otherstate"));
-        CONTACT_ATTRIBUTES.add(Field.get("otherpostofficebox"));
-        CONTACT_ATTRIBUTES.add(Field.get("otherpostalcode"));
-        CONTACT_ATTRIBUTES.add(Field.get("othercountry"));
-        CONTACT_ATTRIBUTES.add(Field.get("othercity"));
-        CONTACT_ATTRIBUTES.add(Field.get("haspicture"));
-        CONTACT_ATTRIBUTES.add(Field.get("keywords"));
-        CONTACT_ATTRIBUTES.add(Field.get("othermobile"));
-        CONTACT_ATTRIBUTES.add(Field.get("otherTelephone"));
-        CONTACT_ATTRIBUTES.add(Field.get("gender"));
-        CONTACT_ATTRIBUTES.add(Field.get("private"));
-        CONTACT_ATTRIBUTES.add(Field.get("sensitivity"));
-        CONTACT_ATTRIBUTES.add(Field.get("fburl"));
-        //CONTACT_ATTRIBUTES.add(Field.get("msexchangecertificate"));
-        //CONTACT_ATTRIBUTES.add(Field.get("usersmimecertificate"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("extensionattribute1"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("extensionattribute2"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("extensionattribute3"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("extensionattribute4"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("bday"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("anniversary"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("businesshomepage"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("personalHomePage"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("cn"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("co"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("department"));
+        //CONTACT_ATTRIBUTES.add(GraphField.get("smtpemail1"));
+        //CONTACT_ATTRIBUTES.add(GraphField.get("smtpemail2"));
+        //CONTACT_ATTRIBUTES.add(GraphField.get("smtpemail3"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("facsimiletelephonenumber"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("givenName"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("homeCity"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("homeCountry"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("homePhone"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("homePostalCode"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("homeState"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("homeStreet"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("homepostofficebox"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("l"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("manager"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("mobile"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("namesuffix"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("nickname"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("o"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("pager"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("personaltitle"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("postalcode"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("postofficebox"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("profession"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("roomnumber"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("secretarycn"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("sn"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("spousecn"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("st"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("street"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("telephoneNumber"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("title"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("description"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("im"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("middlename"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("lastmodified"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("otherstreet"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("otherstate"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("otherpostofficebox"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("otherpostalcode"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("othercountry"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("othercity"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("haspicture"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("keywords"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("othermobile"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("otherTelephone"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("gender"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("private"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("sensitivity"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("fburl"));
+        //CONTACT_ATTRIBUTES.add(GraphField.get("msexchangecertificate"));
+        //CONTACT_ATTRIBUTES.add(GraphField.get("usersmimecertificate"));
     }
 
-    private static final Set<FieldURI> TODO_PROPERTIES = new HashSet<>();
+    private static final Set<GraphField> TODO_PROPERTIES = new HashSet<>();
 
     static {
         // TODO review new todo properties https://learn.microsoft.com/en-us/graph/api/resources/todotask
@@ -1250,7 +1245,7 @@ public class GraphExchangeSession extends ExchangeSession {
      * Must set select to retrieve cancelled and exception occurrences so we must specify all properties
      */
     protected static final String EVENT_SELECT = "allowNewTimeProposals,attendees,body,bodyPreview,cancelledOccurrences,categories,changeKey,createdDateTime,end,exceptionOccurrences,hasAttachments,iCalUId,id,importance,isAllDay,isOnlineMeeting,isOrganizer,isReminderOn,lastModifiedDateTime,location,organizer,originalStart,originalStartTimeZone,recurrence,reminderMinutesBeforeStart,responseRequested,sensitivity,showAs,start,subject,type";
-    protected static final HashSet<FieldURI> EVENT_ATTRIBUTES = new HashSet<>();
+    protected static final HashSet<GraphField> EVENT_ATTRIBUTES = new HashSet<>();
 
     static {
         //EVENT_ATTRIBUTES.add(Field.get("calendaruid"));
@@ -1302,14 +1297,14 @@ public class GraphExchangeSession extends ExchangeSession {
     /**
      * Default folder properties list
      */
-    protected static final HashSet<FieldURI> FOLDER_PROPERTIES = new HashSet<>();
+    protected static final HashSet<GraphField> FOLDER_PROPERTIES = new HashSet<>();
 
     static {
         // reference at https://learn.microsoft.com/en-us/graph/api/resources/mailfolder
-        FOLDER_PROPERTIES.add(Field.get("lastmodified"));
-        FOLDER_PROPERTIES.add(Field.get("folderclass"));
-        FOLDER_PROPERTIES.add(Field.get("ctag"));
-        FOLDER_PROPERTIES.add(Field.get("uidNext"));
+        FOLDER_PROPERTIES.add(GraphField.get("lastmodified"));
+        FOLDER_PROPERTIES.add(GraphField.get("folderclass"));
+        FOLDER_PROPERTIES.add(GraphField.get("ctag"));
+        FOLDER_PROPERTIES.add(GraphField.get("uidNext"));
     }
 
     public GraphExchangeSession(HttpClientAdapter httpClient, O365Token token, String userName) throws IOException {
@@ -1398,7 +1393,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 // TODO handle other message flags
                 graphResponse.put("singleValueExtendedProperties",
                         new JSONArray().put(new JSONObject()
-                                .put("id", Field.get("messageFlags").getGraphId())
+                                .put("id", GraphField.get("messageFlags").getGraphId())
                                 .put("value", "4")));
                 applyMessageProperties(graphResponse, properties);
 
@@ -1477,10 +1472,10 @@ public class GraphExchangeSession extends ExchangeSession {
         protected InputStream getMimeHeaders() {
             InputStream result = null;
             try {
-                HashSet<FieldURI> expandFields = new HashSet<>();
+                HashSet<GraphField> expandFields = new HashSet<>();
                 // TODO: review from header (always empty?)
-                expandFields.add(Field.get("from"));
-                expandFields.add(Field.get("messageheaders"));
+                expandFields.add(GraphField.get("from"));
+                expandFields.add(GraphField.get("messageheaders"));
 
                 JSONObject response = executeJsonRequest(new GraphRequestBuilder()
                         .setMethod(HttpGet.METHOD_NAME)
@@ -1497,7 +1492,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         try {
                             JSONObject responseValue = singleValueExtendedProperties.getJSONObject(i);
                             String responseId = responseValue.optString("id");
-                            if (Field.get("messageheaders").getGraphId().equals(responseId)) {
+                            if (GraphField.getGraphId("messageheaders").equals(responseId)) {
                                 messageHeaders = responseValue.optString("value");
                             }
                         } catch (JSONException e) {
@@ -1554,35 +1549,28 @@ public class GraphExchangeSession extends ExchangeSession {
                 try {
                     JSONObject responseValue = singleValueExtendedProperties.getJSONObject(i);
                     String responseId = responseValue.optString("id");
-                    if (Field.get("imapUid").getGraphId().equals(responseId)) {
+                    if (GraphField.getGraphId("imapUid").equals(responseId)) {
                         message.imapUid = responseValue.getLong("value");
-                        //}
-                        // message flag does not exactly match field, replace with isDraft
-                        //else if ("Integer 0xe07".equals(responseId)) {
-                        //message.draft = (responseValue.getLong("value") & 8) != 0;
-                        //} else if ("SystemTime 0xe06".equals(responseId)) {
-                        // use receivedDateTime instead
-                        //message.date = convertDateFromExchange(responseValue.getString("value"));
-                    } else if ("Integer 0xe08".equals(responseId)) {
+                    } else if (GraphField.getGraphId("messageSize").equals(responseId)) {
                         message.size = responseValue.getInt("value");
-                    } else if ("Binary 0xff9".equals(responseId)) {
+                    } else if (GraphField.getGraphId("uid").equals(responseId)) {
                         message.uid = responseValue.getString("value");
 
-                    } else if ("String 0x670E".equals(responseId)) {
+                    // TODO: test following extended fields
+                    } else if (GraphField.getGraphId("permanenturl").equals(responseId)) {
                         // probably not available over graph
                         message.permanentUrl = responseValue.getString("value");
-                    } else if ("Integer 0x1081".equals(responseId)) {
+                    } else if (GraphField.getGraphId("lastVerbExecuted").equals(responseId)) {
                         String lastVerbExecuted = responseValue.getString("value");
                         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
                         message.forwarded = "104".equals(lastVerbExecuted);
-                    } else if ("String {00020386-0000-0000-C000-000000000046} Name content-class".equals(responseId)) {
-                        // TODO: test this
+                    } else if (GraphField.getGraphId("contentclass").equals(responseId)) {
                         message.contentClass = responseValue.getString("value");
-                    } else if ("Integer 0x1083".equals(responseId)) {
+                    } else if (GraphField.getGraphId("junk").equals(responseId)) {
                         message.junk = "1".equals(responseValue.getString("value"));
-                    } else if ("Integer 0x1090".equals(responseId)) {
+                    } else if (GraphField.getGraphId("flagStatus").equals(responseId)) {
                         message.flagged = "2".equals(responseValue.getString("value"));
-                    } else if ("Integer {00062008-0000-0000-c000-000000000046} Name 0x8570".equals(responseId)) {
+                    } else if (GraphField.getGraphId("deleted").equals(responseId)) {
                         message.deleted = "1".equals(responseValue.getString("value"));
                     }
 
@@ -1598,7 +1586,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 try {
                     JSONObject responseValue = multiValueExtendedProperties.getJSONObject(i);
                     String responseId = responseValue.optString("id");
-                    if (Field.get("keywords").getGraphId().equals(responseId)) {
+                    if (GraphField.get("keywords").getGraphId().equals(responseId)) {
                         JSONArray keywordsJsonArray = responseValue.getJSONArray("value");
                         HashSet<String> keywords = new HashSet<>();
                         for (int j = 0; j < keywordsJsonArray.length(); j++) {
@@ -1770,8 +1758,8 @@ public class GraphExchangeSession extends ExchangeSession {
             return operator;
         }
 
-        protected FieldURI getFieldURI() {
-            FieldURI fieldURI = Field.get(attributeName);
+        protected GraphField getField() {
+            GraphField fieldURI = GraphField.get(attributeName);
             // check to detect broken field mapping
             //noinspection ConstantConditions
             if (fieldURI == null) {
@@ -1792,8 +1780,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
         @Override
         public void appendTo(StringBuilder buffer) {
-            FieldURI fieldURI = getFieldURI();
-            String graphId = fieldURI.getGraphId();
+            GraphField field = getField();
+            String graphId = field.getGraphId();
             if ("String {00020386-0000-0000-c000-000000000046} Name to".equals(graphId)) {
                 // TODO: does not work need to switch to search instead of filter
                 buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq 'String {00020386-0000-0000-c000-000000000046} Name to' and contains(ep/value,'")
@@ -1818,8 +1806,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     // search graph property
                     buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
                 }
-            } else if (fieldURI instanceof ExtendedFieldURI) {
-                if (graphId.contains(" ") && ((ExtendedFieldURI)fieldURI).isBinary()) {
+            } else if (field.isExtended()) {
+                if (graphId.contains(" ") && field.isBinary()) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value,Edm.Binary) ").append(convertOperator(operator)).append(" binary'").append(StringUtil.escapeQuotes(value)).append("')");
                 } else if (graphId.contains(" ")) {
@@ -1828,7 +1816,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 } else {
                     buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
                 }
-            } else if (fieldURI instanceof IndexedFieldURI) {
+            } else if (field.isIndexed()) {
                 if (graphId.contains(" ")) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
@@ -1855,8 +1843,8 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         @Override
-        protected FieldURI getFieldURI() {
-            return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, attributeName);
+        protected GraphField getField() {
+            return new GraphField(attributeName, GraphField.DistinguishedPropertySetType.InternetHeaders, attributeName);
         }
 
         /**
@@ -1877,8 +1865,8 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         public void appendTo(StringBuilder buffer) {
-            FieldURI fieldURI = Field.get(attributeName);
-            if (fieldURI instanceof ExtendedFieldURI) {
+            GraphField fieldURI = GraphField.get(attributeName);
+            if (fieldURI.isExtended()) {
                 buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(fieldURI.getGraphId())
                         .append("' and ep/value eq null)");
             } else {
@@ -1905,7 +1893,7 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         public void appendTo(StringBuilder buffer) {
-            buffer.append(Field.get(attributeName).getGraphId()).append(" ne null");
+            buffer.append(GraphField.get(attributeName).getGraphId()).append(" ne null");
         }
 
         public boolean isEmpty() {
@@ -2181,14 +2169,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     JSONObject singleValueProperty = singleValueExtendedProperties.getJSONObject(i);
                     String singleValueId = singleValueProperty.getString("id");
                     String singleValue = singleValueProperty.getString("value");
-                    if (Field.get("lastmodified").getGraphId().equals(singleValueId)) {
+                    if (GraphField.get("lastmodified").getGraphId().equals(singleValueId)) {
                         folder.etag = singleValue;
-                    } else if (Field.get("folderclass").getGraphId().equals(singleValueId)) {
+                    } else if (GraphField.get("folderclass").getGraphId().equals(singleValueId)) {
                         folder.folderClass = singleValue;
                         folder.folderId.folderClass = folder.folderClass;
-                    } else if (Field.get("uidNext").getGraphId().equals(singleValueId)) {
+                    } else if (GraphField.get("uidNext").getGraphId().equals(singleValueId)) {
                         folder.uidNext = Long.parseLong(singleValue);
-                    } else if (Field.get("ctag").getGraphId().equals(singleValueId)) {
+                    } else if (GraphField.get("ctag").getGraphId().equals(singleValueId)) {
                         folder.ctag = singleValue;
                     }
 
