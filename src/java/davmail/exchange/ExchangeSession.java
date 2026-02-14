@@ -2897,7 +2897,10 @@ public abstract class ExchangeSession {
         if (value != null && !value.isEmpty()) {
             try {
                 SimpleDateFormat parser;
-                if (value.length() == 10) {
+                if (value.length() == 8) {
+                    parser = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+                    parser.setTimeZone(GMT_TIMEZONE);
+                } else if (value.length() == 10) {
                     parser = ExchangeSession.getVcardBdayFormat();
                 } else if (value.length() == 15) {
                     parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
