@@ -54,7 +54,8 @@ public class GraphObject {
     }
 
     public String optString(String key) {
-        String value = jsonObject.optString(key, null);
+        // force field mapping
+        String value = null;//jsonObject.optString(key, null);
         // special case for keywords/categories
         if ("keywords".equals(key) || "categories".equals(key)) {
             JSONArray categoriesArray = jsonObject.optJSONArray("categories");
@@ -65,13 +66,13 @@ public class GraphObject {
                 }
                 value = StringUtil.join(keywords, ",");
             }
-        } else if ("changeKey".equals(key) && value == null) {
+        } else if ("changeKey".equals(key)) {
             // tasks don't have an etag field, use @odata.etag
             String odataEtag = optString("@odata.etag");
             if (odataEtag != null && odataEtag.startsWith("W/\"") && odataEtag.endsWith("\"")) {
                 value = odataEtag.substring(3, odataEtag.length() - 1);
             }
-        } else if (value == null) {
+        } else {
             // use field mapping to get value
             value = optFieldString(key);
         }
@@ -79,7 +80,7 @@ public class GraphObject {
     }
 
     public String optFieldString(String alias) {
-        String key = Field.getGraphId(alias);
+        String key = GraphField.getGraphId(alias);
         if (key == null) {
             return null;
         }
@@ -105,7 +106,7 @@ public class GraphObject {
     }
 
     /**
-     * Set value on field.
+     * Set value for alias.
      * First map property alias to a field to determine graph id, then set graph property or singleValueExtendedProperty
      * @param alias field alias
      * @param value property value
@@ -116,10 +117,6 @@ public class GraphObject {
         String key = field.getGraphId();
         // assume all expanded properties have a space
         if (key.contains(" ")) {
-            // TODO remove this
-            if (field.isNumber() && value == null) {
-                value = "0";
-            }
             getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value == null ? JSONObject.NULL : value));
         } else {
             jsonObject.put(key, value == null ? JSONObject.NULL : value);
@@ -127,7 +124,7 @@ public class GraphObject {
     }
 
     /**
-     * Set boolean value on field.
+     * Set the boolean value on the field defined by alias.
      * First map property alias to a field to determine graph id, then set graph property or singleValueExtendedProperty
      * @param alias field alias
      * @param value property value
@@ -172,8 +169,8 @@ public class GraphObject {
 
 
     /**
-     * Get singleValueExtendedProperties json array.
-     * Create an empty json array on first call.
+     * Get a singleValueExtendedProperties JSON array.
+     * Create an empty JSON array on the first call.
      * @return singleValueExtendedProperties array
      * @throws JSONException on error
      */
@@ -202,8 +199,8 @@ public class GraphObject {
     }
 
     /**
-     * Get optional parameter from json property.
-     * @param section json property name
+     * Get optional parameter from JSON property.
+     * @param section JSON property name
      * @param key internal property name
      * @return value or null
      */
@@ -221,7 +218,7 @@ public class GraphObject {
 
     /**
      * Convert datetimetimezone to java date.
-     * Graph return some dates as json object with dateTime and timeZone, see
+     * Graph API returns some dates as json object with dateTime and timeZone, see
      * <a href="https://learn.microsoft.com/en-us/graph/api/resources/datetimetimezone">datetimetimezone</a>
      * @param key property key, e.g. dueDateTime
      * @return java date
@@ -246,7 +243,7 @@ public class GraphObject {
     }
 
     /**
-     * Compute recurrenceId property based on original start and timezone.
+     * Compute recurrenceId property based on the original start and timezone.
      * @return recurrenceId property
      * @throws DavMailException on error
      */

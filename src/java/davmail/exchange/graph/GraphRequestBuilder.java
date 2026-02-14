@@ -21,9 +21,6 @@ package davmail.exchange.graph;
 
 import davmail.Settings;
 import davmail.exchange.ExchangeSession;
-import davmail.exchange.ews.ExtendedFieldURI;
-import davmail.exchange.ews.Field;
-import davmail.exchange.ews.FieldURI;
 import davmail.util.IOUtil;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -40,7 +37,6 @@ import org.codehaus.jettison.json.JSONObject;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -110,14 +106,6 @@ public class GraphRequestBuilder {
      */
     public GraphRequestBuilder setExpandFields(Set<GraphField> expandFields) {
         this.expandFields = expandFields;
-        return this;
-    }
-
-    public GraphRequestBuilder setExpandAttributes(Set<String> expandAttributes) {
-        expandFields = new HashSet<>();
-        for (String attribute : expandAttributes) {
-            expandFields.add(GraphField.get(attribute));
-        }
         return this;
     }
 
@@ -283,7 +271,7 @@ public class GraphRequestBuilder {
     /**
      * Build expand graph parameter to retrieve mapi properties.
      * @param buffer expand buffer
-     * @param properties mapi properties list
+     * @param properties MAPI properties list
      */
     protected void appendExpandProperties(StringBuilder buffer, List<String> properties) {
         boolean first = true;

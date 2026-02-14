@@ -807,6 +807,7 @@ public class GraphExchangeSession extends ExchangeSession {
             if (itemName == null) {
                 itemName = StringUtil.base64ToUrl(id) + ".EML";
             }
+            put("uid", response.optString("uid"));
 
             for (String attributeName : ExchangeSession.CONTACT_ATTRIBUTES) {
                 if (!attributeName.startsWith("smtpemail")) {
@@ -819,28 +820,6 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                 }
             }
-
-            // fetch values from singleValueExtendedProperties
-            JSONArray singleValueExtendedProperties = response.optJSONArray("singleValueExtendedProperties");
-            if (singleValueExtendedProperties != null) {
-                for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
-                    try {
-                        JSONObject responseValue = singleValueExtendedProperties.getJSONObject(i);
-                        String responseId = responseValue.optString("id");
-                        // TODO generic reverse mapping of extended properties
-                        if ("Binary 0xff9".equals(responseId)) {
-                            put("uid", responseValue.optString("value"));
-                        }
-                    } catch (JSONException e) {
-                        LOGGER.warn("Error parsing json response value");
-                    }
-                }
-            }
-            // TODO refactor
-            //String keywords = response.optString("categories");
-            //if (keywords != null) {
-            //    put("keywords", keywords);
-            //}
 
             JSONArray emailAddresses = response.optJSONArray("emailAddresses");
             for (int i = 0; i < emailAddresses.length(); i++) {
