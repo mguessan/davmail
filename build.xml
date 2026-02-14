@@ -36,6 +36,10 @@
         <available classname="javafx.embed.swing.JFXPanel" classpathref="classpath"/>
     </condition>
 
+    <condition property="is.jna">
+        <available classname="com.sun.jna.Native" classpathref="classpath"/>
+    </condition>
+
     <condition property="is.javafx.message" value="available" else="missing">
         <available classname="javafx.embed.swing.JFXPanel" property="is.javafx" classpathref="classpath"/>
     </condition>
@@ -146,6 +150,7 @@
         <javac srcdir="src/java" destdir="target/classes" source="1.8" target="1.8" debug="on" encoding="UTF-8"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
+            <exclude name="davmail/util/SystemdNotify.java" unless="is.jna"/>
             <classpath>
                 <path refid="classpath"/>
             </classpath>
