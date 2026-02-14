@@ -117,6 +117,10 @@ public class GraphObject {
         String key = field.getGraphId();
         // assume all expanded properties have a space
         if (key.contains(" ")) {
+            // force number attributes value
+            if (field.isNumber() && value == null) {
+                value = "0";
+            }
             getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value == null ? JSONObject.NULL : value));
         } else {
             jsonObject.put(key, value == null ? JSONObject.NULL : value);
