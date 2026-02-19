@@ -809,14 +809,12 @@ public class GraphExchangeSession extends ExchangeSession {
             }
             put("uid", response.optString("uid"));
 
-            for (String attributeName : ExchangeSession.CONTACT_ATTRIBUTES) {
-                if (!attributeName.startsWith("smtpemail")) {
-                    String value = response.optString(attributeName);
+            for (GraphField attribute : CONTACT_ATTRIBUTES) {
+                String alias = attribute.getAlias();
+                if (!alias.startsWith("smtpemail")) {
+                    String value = response.optString(attribute);
                     if (value != null && !value.isEmpty()) {
-                        if ("bday".equals(attributeName) || "anniversary".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
-                            value = convertDateFromExchange(value);
-                        }
-                        put(attributeName, value);
+                        put(alias, value);
                     }
                 }
             }
@@ -1135,6 +1133,7 @@ public class GraphExchangeSession extends ExchangeSession {
         CONTACT_ATTRIBUTES.add(GraphField.get("imapUid"));
         CONTACT_ATTRIBUTES.add(GraphField.get("etag"));
         CONTACT_ATTRIBUTES.add(GraphField.get("urlcompname"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("keywords"));
 
         CONTACT_ATTRIBUTES.add(GraphField.get("extensionattribute1"));
         CONTACT_ATTRIBUTES.add(GraphField.get("extensionattribute2"));
@@ -1147,9 +1146,9 @@ public class GraphExchangeSession extends ExchangeSession {
         CONTACT_ATTRIBUTES.add(GraphField.get("cn"));
         CONTACT_ATTRIBUTES.add(GraphField.get("co"));
         CONTACT_ATTRIBUTES.add(GraphField.get("department"));
-        //CONTACT_ATTRIBUTES.add(GraphField.get("smtpemail1"));
-        //CONTACT_ATTRIBUTES.add(GraphField.get("smtpemail2"));
-        //CONTACT_ATTRIBUTES.add(GraphField.get("smtpemail3"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("smtpemail1"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("smtpemail2"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("smtpemail3"));
         CONTACT_ATTRIBUTES.add(GraphField.get("facsimiletelephonenumber"));
         CONTACT_ATTRIBUTES.add(GraphField.get("givenName"));
         CONTACT_ATTRIBUTES.add(GraphField.get("homeCity"));
@@ -1196,8 +1195,8 @@ public class GraphExchangeSession extends ExchangeSession {
         CONTACT_ATTRIBUTES.add(GraphField.get("private"));
         CONTACT_ATTRIBUTES.add(GraphField.get("sensitivity"));
         CONTACT_ATTRIBUTES.add(GraphField.get("fburl"));
-        //CONTACT_ATTRIBUTES.add(GraphField.get("msexchangecertificate"));
-        //CONTACT_ATTRIBUTES.add(GraphField.get("usersmimecertificate"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("msexchangecertificate"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("usersmimecertificate"));
     }
 
     private static final Set<GraphField> TODO_PROPERTIES = new HashSet<>();
@@ -1605,7 +1604,7 @@ public class GraphExchangeSession extends ExchangeSession {
      * @return converted date
      * @throws DavMailException on error
      */
-    protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
+    protected static String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
         // yyyy-MM-dd'T'HH:mm:ss'Z' to yyyyMMdd'T'HHmmss'Z'
         if (exchangeDateValue == null) {
             return null;

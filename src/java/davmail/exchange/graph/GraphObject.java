@@ -55,18 +55,9 @@ public class GraphObject {
 
     public String optString(String key) {
         // force field mapping
-        String value = null;//jsonObject.optString(key, null);
-        // special case for keywords/categories
-        if ("keywords".equals(key) || "categories".equals(key)) {
-            JSONArray categoriesArray = jsonObject.optJSONArray("categories");
-            HashSet<String> keywords = new HashSet<>();
-            if (categoriesArray != null) {
-                for (int j = 0; j < categoriesArray.length(); j++) {
-                    keywords.add(categoriesArray.optString(j));
-                }
-                value = StringUtil.join(keywords, ",");
-            }
-        } else if ("changeKey".equals(key)) {
+        String value = null;
+        // TODO review this, move to GraphField
+        if ("changeKey".equals(key)) {
             // tasks don't have an etag field, use @odata.etag
             String odataEtag = optString("@odata.etag");
             if (odataEtag != null && odataEtag.startsWith("W/\"") && odataEtag.endsWith("\"")) {
@@ -74,28 +65,48 @@ public class GraphObject {
             }
         } else {
             // use field mapping to get value
-            value = optFieldString(key);
+            value = optString(GraphField.get(key));
         }
         return value;
     }
 
-    public String optFieldString(String alias) {
-        String key = GraphField.getGraphId(alias);
+    public String optString(GraphField field) {
+        String key = field.getGraphId();
         if (key == null) {
             return null;
         }
-        // remapped attributes first
-        String value = jsonObject.optString(key, null);
-        // check expanded properties
-        if (value == null) {
+        String value = null;
+        // special case for keywords/categories
+        if ("keywords".equals(key) || "categories".equals(key)) {
+            JSONArray categoriesArray = jsonObject.optJSONArray("categories");
+            HashSet<String> keywords = new HashSet<>();
+            // Collects keywords from the categories array, joins into comma‑separated string
+            if (categoriesArray != null) {
+                for (int j = 0; j < categoriesArray.length(); j++) {
+                    keywords.add(categoriesArray.optString(j));
+                }
+                value = StringUtil.join(keywords, ",");
+            }
+        } else if (!field.isExtended()) {
+            // grab value by key
+             value = jsonObject.optString(key, null);
+        } else {
             JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
             if (singleValueExtendedProperties != null) {
+                // Iterates extended properties to find a matching value
                 for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
                     JSONObject singleValueObject = singleValueExtendedProperties.optJSONObject(i);
                     if (singleValueObject != null && key.equals(singleValueObject.optString("id"))) {
                         value = singleValueObject.optString("value");
                     }
                 }
+            }
+        }
+        if (field.isDate()) {
+            try {
+                value = GraphExchangeSession.convertDateFromExchange(value);
+            } catch (DavMailException e) {
+                LOGGER.warn("Invalid date "+value+ " on field "+key);
             }
         }
         return value;

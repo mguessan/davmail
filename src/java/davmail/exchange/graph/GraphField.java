@@ -124,6 +124,10 @@ public class GraphField {
 
         addFieldMap("department", "department");// MAPI addFieldMap("department",  0x3A18, PropertyType.String);
 
+        addFieldMap("smtpemail1", DistinguishedPropertySetType.Address, 0x8083, PropertyType.String); // Email1EmailAddress
+        addFieldMap("smtpemail2", DistinguishedPropertySetType.Address, 0x8093, PropertyType.String); // Email2EmailAddress
+        addFieldMap("smtpemail3", DistinguishedPropertySetType.Address, 0x80A3, PropertyType.String); // Email3EmailAddress
+
         addFieldMap("businesshomepage", 0x3A51, PropertyType.String);
         addFieldMap("personalHomePage", 0x3A50, PropertyType.String);
 
@@ -133,8 +137,8 @@ public class GraphField {
         addFieldMap("extensionattribute3", DistinguishedPropertySetType.Address, 0x8051, PropertyType.String);
         addFieldMap("extensionattribute4", DistinguishedPropertySetType.Address, 0x8052, PropertyType.String);
 
-        addFieldMap("bday", "birthday"); // MAPI addFieldMap("bday", DistinguishedPropertySetType.Address, 0x3A42, PropertyType.SystemTime);
-        addFieldMap("anniversary", "weddingAnniversary");  // MAPI addFieldMap("anniversary", DistinguishedPropertySetType.Address, 0x3A41, PropertyType.SystemTime);
+        addFieldMap("bday", "birthday", PropertyType.SystemTime); // MAPI addFieldMap("bday", DistinguishedPropertySetType.Address, 0x3A42, PropertyType.SystemTime);
+        addFieldMap("anniversary", "weddingAnniversary", PropertyType.SystemTime);  // MAPI addFieldMap("anniversary", DistinguishedPropertySetType.Address, 0x3A41, PropertyType.SystemTime);
 
         addFieldMap("otherstreet", 0x3A63, PropertyType.String);
         addFieldMap("otherstate", 0x3A62, PropertyType.String);
@@ -186,6 +190,10 @@ public class GraphField {
         addFieldMap(alias, new GraphField(alias, graphId));
     }
 
+    protected static void addFieldMap(String alias, String graphId, PropertyType propertyType) {
+        addFieldMap(alias, new GraphField(alias, graphId, propertyType));
+    }
+
     protected static void addFieldMap(String alias, int intPropertyTag, PropertyType propertyType) {
         addFieldMap(alias, new GraphField(alias, intPropertyTag, propertyType));
     }
@@ -226,6 +234,12 @@ public class GraphField {
         this.graphId = graphId;
     }
 
+
+    protected GraphField(String alias, String graphId, PropertyType propertyType) {
+        this.alias = alias;
+        this.graphId = graphId;
+        this.propertyType = propertyType;
+    }
 
     /**
      * Header field or categories field.
@@ -326,6 +340,10 @@ public class GraphField {
         this.indexed = indexed;
     }
 
+    public String getAlias() {
+        return alias;
+    }
+
     public String getGraphId() {
         if (graphId != null) {
             return graphId;
@@ -350,6 +368,9 @@ public class GraphField {
         return propertyType == PropertyType.Boolean;
     }
 
+    public boolean isDate() {
+        return propertyType == PropertyType.SystemTime;
+    }
 
     /**
      * Get field by alias.
