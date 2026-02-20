@@ -21,8 +21,6 @@ package davmail.exchange.graph;
 
 import davmail.exception.DavMailException;
 import davmail.exchange.VProperty;
-import davmail.exchange.ews.Field;
-import davmail.exchange.ews.FieldURI;
 import davmail.util.DateUtil;
 import davmail.util.StringUtil;
 import org.apache.log4j.Logger;
@@ -124,10 +122,10 @@ public class GraphObject {
      * @throws JSONException on error
      */
     public void put(String alias, String value) throws JSONException {
-        FieldURI field = Field.get(alias);
+        GraphField field = GraphField.get(alias);
         String key = field.getGraphId();
         // assume all expanded properties have a space
-        if (key.contains(" ")) {
+        if (field.isExtended()) {
             // force number attributes value
             if (field.isNumber() && value == null) {
                 value = "0";
@@ -146,7 +144,7 @@ public class GraphObject {
      * @throws JSONException on error
      */
     public void put(String alias, boolean value) throws JSONException {
-        FieldURI field = Field.get(alias);
+        GraphField field = GraphField.get(alias);
         String key = field.getGraphId();
         // assume all expanded properties have a space
         if (key.contains(" ")) {

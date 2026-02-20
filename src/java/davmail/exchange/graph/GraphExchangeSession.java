@@ -803,7 +803,7 @@ public class GraphExchangeSession extends ExchangeSession {
             displayName = response.optString("displayname");
             // prefer urlcompname (client provided item name) for contacts
             itemName = StringUtil.decodeUrlcompname(response.optString("urlcompname"));
-            // if urlcompname is empty, this is a server created item
+            // if urlcompname is empty, contact was created on the server side
             if (itemName == null) {
                 itemName = StringUtil.base64ToUrl(id) + ".EML";
             }
@@ -917,8 +917,9 @@ public class GraphExchangeSession extends ExchangeSession {
                             && !"usersmimecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"msexchangecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"pager".equals(entry.getKey()) && !"otherTelephone".equals(entry.getKey()) // see below
+                            && !"fileas".equals(entry.getKey()) && !"outlookmessageclass".equals(entry.getKey())
+                            && !"subject".equals(entry.getKey())
                     ) {
-                        //getSingleValueExtendedProperties(jsonObject).put(getSingleValue(entry.getKey(), entry.getValue()));
                         graphObject.put(entry.getKey(), entry.getValue());
                     }
                 }
@@ -928,11 +929,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (pager == null) {
                     pager = get("otherTelephone");
                 }
-                //getSingleValueExtendedProperties(jsonObject).put(getSingleValue("pager", pager));
                 graphObject.put("pager", pager);
 
                 // force urlcompname
-                //getSingleValueExtendedProperties(jsonObject).put(getSingleValue("urlcompname", convertItemNameToEML(itemName)));
                 graphObject.put("urlcompname", convertItemNameToEML(itemName));
 
                 // handle emails
@@ -960,7 +959,6 @@ public class GraphExchangeSession extends ExchangeSession {
                     emailAddress.put("type", "other");
                     emailAddresses.put(emailAddress);
                 }
-                //jsonObject.put("emailAddresses", emailAddresses);
                 graphObject.put("emailAddresses", emailAddresses);
 
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
@@ -1015,6 +1013,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 // convert image to jpeg
                 byte[] resizedImageBytes = IOUtil.resizeImage(IOUtil.decodeBase64(photo), 90);
 
+                // Upload resized image to contact photo endpoint
                 JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
                         .setMethod(HttpPut.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
@@ -1030,6 +1029,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     LOGGER.debug(jsonResponse);
                 }
             } else {
+                // Delete the contact photo
                 executeJsonRequest(new GraphRequestBuilder()
                         .setMethod(HttpDelete.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
@@ -2803,7 +2803,10 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
-        // /me/contacts/{id}/photo/$value
+        // don't fetch if haspicture flag is false
+        if ("false".equals(contact.get("haspicture"))) {
+            return null;
+        }
         GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(((Contact) contact).folderId.mailbox)

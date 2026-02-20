@@ -19,7 +19,6 @@
 
 package davmail.exchange.graph;
 
-import davmail.exchange.ews.ExtendedFieldURI;
 import org.apache.log4j.Logger;
 
 import java.util.HashMap;
@@ -84,6 +83,9 @@ public class GraphField {
 
         // contacts https://learn.microsoft.com/en-us/graph/api/resources/contact
         addFieldMap("displayname", "displayName"); // MAPI addFieldMap("displayname", 0x3001, PropertyType.String);
+
+        addFieldMap("outlookmessageclass", 0x001A, PropertyType.String);
+        addFieldMap("fileas", "fileAs");
 
         addFieldMap("cn", "displayName");
         addFieldMap("sn", "surname");
@@ -209,12 +211,13 @@ public class GraphField {
     protected String alias;
     protected String graphId;
 
+    protected DistinguishedPropertySetType distinguishedPropertySetId;
+
     protected String propertyName;
     protected int propertyId;
     protected String propertyTag;
     protected PropertyType propertyType;
 
-    protected DistinguishedPropertySetType distinguishedPropertySetId;
 
     private boolean extended = false;
 
@@ -247,11 +250,12 @@ public class GraphField {
      * @param distinguishedPropertySetId property type
      */
     public GraphField(String alias, DistinguishedPropertySetType distinguishedPropertySetId, String propertyName) {
+        this.extended = true;
+
         this.alias = alias;
         this.propertyType = PropertyType.String;
         this.distinguishedPropertySetId = distinguishedPropertySetId;
         this.propertyName = propertyName;
-        this.extended = true;
         this.graphId = buildGraphId();
     }
 
@@ -263,31 +267,42 @@ public class GraphField {
      * @param propertyType   property type
      */
     protected GraphField(String alias, int intPropertyTag, PropertyType propertyType) {
-        this.alias = alias;
         this.extended = true;
+
+        this.alias = alias;
         this.propertyTag = "0x" + Integer.toHexString(intPropertyTag);
         this.propertyType = propertyType;
         this.graphId = buildGraphId();
     }
 
     protected GraphField(String alias, DistinguishedPropertySetType distinguishedPropertySetId, int propertyId, PropertyType propertyType) {
+        this.extended = true;
+
         this.alias = alias;
         this.distinguishedPropertySetId = distinguishedPropertySetId;
         this.propertyType = propertyType;
         this.propertyId = propertyId;
-        this.extended = true;
         this.graphId = buildGraphId();
     }
 
     protected GraphField(String alias, DistinguishedPropertySetType distinguishedPropertySetId, String propertyName, PropertyType propertyType) {
+        this.extended = true;
+
         this.alias = alias;
         this.distinguishedPropertySetId = distinguishedPropertySetId;
-        this.propertyType = propertyType;
         this.propertyName = propertyName;
-        this.extended = true;
+        this.propertyType = propertyType;
         this.graphId = buildGraphId();
     }
 
+    /**
+     * Builds a graph identifier based on the property type, namespace, and associated property details.
+     * The resulting identifier is formatted based on specific rules that include the property type,
+     * namespace GUID (if available), and either the property name or property ID, or in certain cases, the property tag.
+     * See <a href="https://learn.microsoft.com/en-us/graph/api/resources/extended-properties-overview">Outlook extended properties overview</a>
+     *
+     * @return the constructed graph identifier as a String
+     */
     private String buildGraphId() {
         // PropertyId values may only be in one of the following formats:
         // 'MapiPropertyType namespaceGuid Name propertyName', 'MapiPropertyType namespaceGuid Id propertyId' or 'MapiPropertyType propertyTag'.
