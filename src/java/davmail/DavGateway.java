@@ -199,7 +199,16 @@ public final class DavGateway {
         if (showStartupBanner) {
             DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING", currentVersion, messages));
         }
-        if (!errorMessages.isEmpty()) {
+        if (errorMessages.isEmpty()) {
+            if (System.getenv("INVOCATION_ID") != null) {
+                // we are run by systemd
+                try {
+                    Class.forName("davmail.util.SystemdNotify").getMethod("ready").invoke(null);
+                } catch (Exception e) {
+                    LOGGER.warn("Running on a host with systemd but could not notify readiness.");
+                }
+            }
+        } else {
             DavGatewayTray.error(new BundleMessage("LOG_MESSAGE", errorMessages));
         }
 
