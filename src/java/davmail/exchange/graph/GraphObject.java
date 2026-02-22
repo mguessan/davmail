@@ -53,14 +53,11 @@ public class GraphObject {
 
     public String optString(String key) {
         // force field mapping
-        String value = null;
-        // TODO review this, move to GraphField
+        String value;
+        // TODO simplify this
         if ("changeKey".equals(key)) {
             // tasks don't have an etag field, use @odata.etag
-            String odataEtag = optString("@odata.etag");
-            if (odataEtag != null && odataEtag.startsWith("W/\"") && odataEtag.endsWith("\"")) {
-                value = odataEtag.substring(3, odataEtag.length() - 1);
-            }
+            value = optString(GraphField.get("@odata.etag"));
         } else {
             // use field mapping to get value
             value = optString(GraphField.get(key));
@@ -84,6 +81,12 @@ public class GraphObject {
                     keywords.add(categoriesArray.optString(j));
                 }
                 value = StringUtil.join(keywords, ",");
+            }
+        } else if ("@odata.etag".equals(key)) {
+            // tasks don't have an etag field, use @odata.etag
+            String odataEtag = jsonObject.optString("@odata.etag");
+            if (odataEtag != null && odataEtag.startsWith("W/\"") && odataEtag.endsWith("\"")) {
+                value = odataEtag.substring(3, odataEtag.length() - 1);
             }
         } else if (!field.isExtended()) {
             // grab value by key
@@ -129,6 +132,9 @@ public class GraphObject {
             // force number attributes value
             if (field.isNumber() && value == null) {
                 value = "0";
+            }
+            if (field.isBoolean() && value == null) {
+                value = "false";
             }
             getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value == null ? JSONObject.NULL : value));
         } else {
