@@ -798,7 +798,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         protected Contact(GraphObject response) throws DavMailException {
             id = response.optString("id");
-            etag = response.optString("changeKey");
+            etag = response.optString("@odata.etag");
 
             displayName = response.optString("displayname");
             // prefer urlcompname (client provided item name) for contacts
@@ -1131,7 +1131,7 @@ public class GraphExchangeSession extends ExchangeSession {
         CONTACT_ATTRIBUTES.add(GraphField.get("uid"));
 
         CONTACT_ATTRIBUTES.add(GraphField.get("imapUid"));
-        CONTACT_ATTRIBUTES.add(GraphField.get("etag"));
+        // CONTACT_ATTRIBUTES.add(GraphField.get("etag")); replace with @odata.etag
         CONTACT_ATTRIBUTES.add(GraphField.get("urlcompname"));
         CONTACT_ATTRIBUTES.add(GraphField.get("keywords"));
 
@@ -2593,7 +2593,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
-        while (graphIterator.hasNext()) {
+        while (graphIterator.hasNext() && (maxCount == 0 || contactList.size() < maxCount)) {
             Contact contact = new Contact(new GraphObject(graphIterator.next()));
             contact.folderId = folderId;
             contactList.add(contact);
