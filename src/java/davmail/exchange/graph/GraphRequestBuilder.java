@@ -59,6 +59,7 @@ public class GraphRequestBuilder {
     String childSuffix;
 
     String select;
+    String expand;
 
     String filter;
 
@@ -67,7 +68,7 @@ public class GraphRequestBuilder {
 
     String timeZone;
 
-    Set<GraphField> expandFields;
+    Set<GraphField> selectFields;
 
     String accessToken;
 
@@ -101,11 +102,12 @@ public class GraphRequestBuilder {
 
     /**
      * Set expand fields (returning attributes).
-     * @param expandFields set of fields to return
+     * @param selectFields set of fields to return
      * @return this
      */
-    public GraphRequestBuilder setExpandFields(Set<GraphField> expandFields) {
-        this.expandFields = expandFields;
+    public GraphRequestBuilder setSelectFields(Set<GraphField> selectFields) {
+        this.selectFields = selectFields;
+        buildExpand();
         return this;
     }
 
@@ -239,33 +241,42 @@ public class GraphRequestBuilder {
 
     /**
      * Compute expand parameters from properties.
-     * @return $expand value
      */
-    private String buildExpand() {
+    private void buildExpand() {
         ArrayList<String> singleValueProperties = new ArrayList<>();
         ArrayList<String> multiValueProperties = new ArrayList<>();
-        for (GraphField field : expandFields) {
+        ArrayList<String> selectProperties = new ArrayList<>();
+        for (GraphField field : selectFields) {
             if (field.isMultiValued()) {
                 multiValueProperties.add(field.getGraphId());
             } else if (field.isExtended()) {
                 singleValueProperties.add(field.getGraphId());
+                if (field.getAlias().startsWith("smtpemail")) {
+                    // email fetched, load emailAddresses array
+                    selectProperties.add("emailAddresses");
+                }
+            } else {
+                selectProperties.add(field.getGraphId());
             }
         }
-        StringBuilder expand = new StringBuilder();
+        StringBuilder expandBuffer = new StringBuilder();
         if (!singleValueProperties.isEmpty()) {
-            expand.append("singleValueExtendedProperties($filter=");
-            appendExpandProperties(expand, singleValueProperties);
-            expand.append(")");
+            expandBuffer.append("singleValueExtendedProperties($filter=");
+            appendExpandProperties(expandBuffer, singleValueProperties);
+            expandBuffer.append(")");
         }
         if (!multiValueProperties.isEmpty()) {
             if (!singleValueProperties.isEmpty()) {
-                expand.append(",");
+                expandBuffer.append(",");
             }
-            expand.append("multiValueExtendedProperties($filter=");
-            appendExpandProperties(expand, multiValueProperties);
-            expand.append(")");
+            expandBuffer.append("multiValueExtendedProperties($filter=");
+            appendExpandProperties(expandBuffer, multiValueProperties);
+            expandBuffer.append(")");
         }
-        return expand.toString();
+        expand = expandBuffer.toString();
+        if (!selectProperties.isEmpty()) {
+            select = String.join(",", selectProperties);
+        }
     }
 
     /**
@@ -298,8 +309,8 @@ public class GraphRequestBuilder {
                 uriBuilder.addParameter("$select", select);
             }
 
-            if (expandFields != null) {
-                uriBuilder.addParameter("$expand", buildExpand());
+            if (selectFields != null) {
+                uriBuilder.addParameter("$expand", expand);
             }
 
             if (filter != null) {

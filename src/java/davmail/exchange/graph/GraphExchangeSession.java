@@ -820,36 +820,38 @@ public class GraphExchangeSession extends ExchangeSession {
             }
 
             JSONArray emailAddresses = response.optJSONArray("emailAddresses");
-            for (int i = 0; i < emailAddresses.length(); i++) {
-                JSONObject emailAddress = emailAddresses.optJSONObject(i);
-                if (emailAddress != null) {
-                    String email = emailAddress.optString("address");
-                    String type = emailAddress.optString("type");
-                    if (email != null && !email.isEmpty()) {
-                        if ("other".equals(type)) {
-                            put("smtpemail3", email);
-                        } else if ("personal".equals(type)) {
-                            put("smtpemail2", email);
-                        } else if ("work".equals(type)) {
-                            put("smtpemail1", email);
+            if (emailAddresses != null) {
+                for (int i = 0; i < emailAddresses.length(); i++) {
+                    JSONObject emailAddress = emailAddresses.optJSONObject(i);
+                    if (emailAddress != null) {
+                        String email = emailAddress.optString("address");
+                        String type = emailAddress.optString("type");
+                        if (email != null && !email.isEmpty()) {
+                            if ("other".equals(type)) {
+                                put("smtpemail3", email);
+                            } else if ("personal".equals(type)) {
+                                put("smtpemail2", email);
+                            } else if ("work".equals(type)) {
+                                put("smtpemail1", email);
+                            }
                         }
                     }
                 }
-            }
-            // iterate a second time to fill unknown email types
-            for (int i = 0; i < emailAddresses.length(); i++) {
-                JSONObject emailAddress = emailAddresses.optJSONObject(i);
-                if (emailAddress != null) {
-                    String email = emailAddress.optString("address");
-                    String type = emailAddress.optString("type");
-                    if (email != null && !email.isEmpty()) {
-                        if ("unknown".equals(type)) {
-                            if (get("smtpemail1") == null) {
-                                put("smtpemail1", email);
-                            } else if (get("smtpemail2") == null) {
-                                put("smtpemail2", email);
-                            } else if (get("smtpemail3") == null) {
-                                put("smtpemail3", email);
+                // iterate a second time to fill unknown email types
+                for (int i = 0; i < emailAddresses.length(); i++) {
+                    JSONObject emailAddress = emailAddresses.optJSONObject(i);
+                    if (emailAddress != null) {
+                        String email = emailAddress.optString("address");
+                        String type = emailAddress.optString("type");
+                        if (email != null && !email.isEmpty()) {
+                            if ("unknown".equals(type)) {
+                                if (get("smtpemail1") == null) {
+                                    put("smtpemail1", email);
+                                } else if (get("smtpemail2") == null) {
+                                    put("smtpemail2", email);
+                                } else if (get("smtpemail3") == null) {
+                                    put("smtpemail3", email);
+                                }
                             }
                         }
                     }
@@ -1195,8 +1197,9 @@ public class GraphExchangeSession extends ExchangeSession {
         CONTACT_ATTRIBUTES.add(GraphField.get("private"));
         CONTACT_ATTRIBUTES.add(GraphField.get("sensitivity"));
         CONTACT_ATTRIBUTES.add(GraphField.get("fburl"));
-        CONTACT_ATTRIBUTES.add(GraphField.get("msexchangecertificate"));
-        CONTACT_ATTRIBUTES.add(GraphField.get("usersmimecertificate"));
+        // certificates not supported over graph
+        // CONTACT_ATTRIBUTES.add(GraphField.get("msexchangecertificate"));
+        // CONTACT_ATTRIBUTES.add(GraphField.get("usersmimecertificate"));
     }
 
     private static final Set<GraphField> TODO_PROPERTIES = new HashSet<>();
@@ -1220,7 +1223,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Must set select to retrieve cancelled and exception occurrences so we must specify all properties
+     * Must set select to retrieve cancelled and exception occurrences, so we must specify all properties
      */
     protected static final String EVENT_SELECT = "allowNewTimeProposals,attendees,body,bodyPreview,cancelledOccurrences,categories,changeKey,createdDateTime,end,exceptionOccurrences,hasAttachments,iCalUId,id,importance,isAllDay,isOnlineMeeting,isOrganizer,isReminderOn,lastModifiedDateTime,location,organizer,originalStart,originalStartTimeZone,recurrence,reminderMinutesBeforeStart,responseRequested,sensitivity,showAs,start,subject,type";
     protected static final HashSet<GraphField> EVENT_ATTRIBUTES = new HashSet<>();
@@ -1402,7 +1405,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("messages")
                 .setMailbox(folderId.mailbox)
                 .setObjectId(graphResponse.optString("id"))
-                .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)));
+                .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)));
     }
 
     private void applyMessageProperties(GraphObject graphResponse, Map<String, String> properties) throws JSONException {
@@ -1460,7 +1463,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setMailbox(folderId.mailbox)
                         .setObjectType("messages")
                         .setObjectId(id)
-                        .setExpandFields(expandFields));
+                        .setSelectFields(expandFields));
 
                 String messageHeaders = null;
 
@@ -1711,7 +1714,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("mailFolders")
                 .setObjectId(folderId.id)
                 .setChildType("messages")
-                .setExpandFields(IMAP_MESSAGE_ATTRIBUTES)
+                .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)
                 .setFilter(condition);
         LOGGER.debug("searchMessages " + folderId.mailbox + " " + folderName);
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
@@ -2033,7 +2036,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setMailbox(parentFolderId.mailbox)
                 .setObjectId(parentFolderId.id)
                 .setChildType("childFolders")
-                .setExpandFields(FOLDER_PROPERTIES)
+                .setSelectFields(FOLDER_PROPERTIES)
                 .setFilter(condition);
         LOGGER.debug("appendSubFolders " + (parentFolderId.mailbox != null ? parentFolderId.mailbox : "me") + " " + parentFolderPath);
 
@@ -2088,17 +2091,17 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectId(folderId.id);
         if ("IPF.Appointment".equals(folderId.folderClass)) {
             httpRequestBuilder
-                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setSelectFields(FOLDER_PROPERTIES)
                     .setObjectType("calendars");
         } else if ("IPF.Task".equals(folderId.folderClass)) {
             httpRequestBuilder.setObjectType("todo/lists");
         } else if ("IPF.Contact".equals(folderId.folderClass)) {
             httpRequestBuilder
-                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setSelectFields(FOLDER_PROPERTIES)
                     .setObjectType("contactFolders");
         } else {
             httpRequestBuilder
-                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setSelectFields(FOLDER_PROPERTIES)
                     .setObjectType("mailFolders");
         }
 
@@ -2299,7 +2302,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMailbox(mailbox)
                     .setObjectType("mailFolders")
                     .setObjectId(wellKnownFolderName.name())
-                    .setExpandFields(FOLDER_PROPERTIES));
+                    .setSelectFields(FOLDER_PROPERTIES));
             // TODO retrieve folderClass
             return new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Note");
         }
@@ -2319,14 +2322,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType("calendars")
-                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setSelectFields(FOLDER_PROPERTIES)
                     .setFilter("name eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         } else if ("IPF.Task".equals(currentFolderId.folderClass)) {
             httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType("todo/lists")
-                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setSelectFields(FOLDER_PROPERTIES)
                     .setFilter("displayName eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         } else {
             String objectType = "mailFolders";
@@ -2339,7 +2342,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType(objectType)
                     .setObjectId(currentFolderId.id)
                     .setChildType("childFolders")
-                    .setExpandFields(FOLDER_PROPERTIES)
+                    .setSelectFields(FOLDER_PROPERTIES)
                     .setFilter("displayName eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         }
 
@@ -2587,9 +2590,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("contactFolders")
                 .setObjectId(folderId.id)
                 .setChildType("contacts")
-                .setExpandFields(CONTACT_ATTRIBUTES)
+                .setSelectFields(CONTACT_ATTRIBUTES)
                 .setFilter(condition);
-        LOGGER.debug("searchContacts " + folderId.getMailboxName() + "/" + folderPath);
+        LOGGER.debug("searchContacts " + folderId.getMailboxName() + "/" + folderPath+" "+httpRequestBuilder.select);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
@@ -2631,7 +2634,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("todo/lists")
                 .setObjectId(folderId.id)
                 .setChildType("tasks")
-                .setExpandFields(TODO_PROPERTIES);
+                .setSelectFields(TODO_PROPERTIES);
         LOGGER.debug("searchTasksOnly " + folderId.mailbox + " " + folderPath);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
@@ -2656,7 +2659,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("calendars")
                 .setObjectId(folderId.id)
                 .setChildType("events")
-                .setExpandFields(EVENT_ATTRIBUTES)
+                .setSelectFields(EVENT_ATTRIBUTES)
                 .setTimezone(getVTimezone().getPropertyValue("TZID"))
                 .setFilter(condition);
         LOGGER.debug("searchEvents " + folderId.mailbox + " " + folderPath);
@@ -2708,7 +2711,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectType("events")
                         .setObjectId(itemId)
                         .setSelect(EVENT_SELECT)
-                        .setExpandFields(EVENT_ATTRIBUTES)
+                        .setSelectFields(EVENT_ATTRIBUTES)
                         .setTimezone(getVTimezone().getPropertyValue("TZID"))
                 );
             } catch (HttpNotFoundException e) {
@@ -2721,7 +2724,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectId(taskFolderId.id)
                         .setChildType("tasks")
                         .setChildId(itemId)
-                        .setExpandFields(TODO_PROPERTIES)
+                        .setSelectFields(TODO_PROPERTIES)
                 );
             }
         } else {
@@ -2736,7 +2739,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setChildType("events")
                         .setFilter(isEqualTo("urlcompname", urlcompname))
                         .setSelect(EVENT_SELECT)
-                        .setExpandFields(EVENT_ATTRIBUTES)
+                        .setSelectFields(EVENT_ATTRIBUTES)
                         .setTimezone(getVTimezone().getPropertyValue("TZID"))
                 );
             } catch (HttpNotFoundException e) {
@@ -2749,7 +2752,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectId(taskFolderId.id)
                         .setChildType("tasks")
                         .setFilter(isEqualTo("urlcompname", urlcompname))
-                        .setExpandFields(TODO_PROPERTIES)
+                        .setSelectFields(TODO_PROPERTIES)
                 );
             }
 
@@ -2776,7 +2779,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectId(folderId.id)
                     .setChildType("contacts")
                     .setChildId(itemName.substring(0, itemName.length() - ".EML".length()))
-                    .setExpandFields(CONTACT_ATTRIBUTES)
+                    .setSelectFields(CONTACT_ATTRIBUTES)
             );
 
         } else {
@@ -2787,7 +2790,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectId(folderId.id)
                     .setChildType("contacts")
                     .setFilter(isEqualTo("urlcompname", urlcompname))
-                    .setExpandFields(CONTACT_ATTRIBUTES)
+                    .setSelectFields(CONTACT_ATTRIBUTES)
             );
             // need at least one value
             JSONArray values = jsonResponse.optJSONArray("value");

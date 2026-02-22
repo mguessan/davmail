@@ -52,17 +52,8 @@ public class GraphObject {
     }
 
     public String optString(String key) {
-        // force field mapping
-        String value;
-        // TODO simplify this
-        if ("changeKey".equals(key)) {
-            // tasks don't have an etag field, use @odata.etag
-            value = optString(GraphField.get("@odata.etag"));
-        } else {
-            // use field mapping to get value
-            value = optString(GraphField.get(key));
-        }
-        return value;
+        // use field mapping to get value
+        return optString(GraphField.get(key));
     }
 
     public String optString(GraphField field) {
@@ -90,7 +81,7 @@ public class GraphObject {
             }
         } else if (!field.isExtended()) {
             // grab value by key
-             value = jsonObject.optString(key, null);
+            value = jsonObject.optString(key, null);
         } else {
             JSONArray singleValueExtendedProperties = jsonObject.optJSONArray("singleValueExtendedProperties");
             if (singleValueExtendedProperties != null) {
@@ -107,7 +98,7 @@ public class GraphObject {
             try {
                 value = GraphExchangeSession.convertDateFromExchange(value);
             } catch (DavMailException e) {
-                LOGGER.warn("Invalid date "+value+ " on field "+key);
+                LOGGER.warn("Invalid date " + value + " on field " + key);
             }
         }
         return value;
@@ -152,8 +143,8 @@ public class GraphObject {
     public void put(String alias, boolean value) throws JSONException {
         GraphField field = GraphField.get(alias);
         String key = field.getGraphId();
-        // assume all expanded properties have a space
-        if (key.contains(" ")) {
+        // extended field values go under singleValueExtendedProperties
+        if (field.isExtended()) {
             getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value));
         } else {
             jsonObject.put(key, value);

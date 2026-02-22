@@ -63,10 +63,10 @@ public class GraphField {
         addFieldMap("etag", 0x3008, PropertyType.SystemTime);
         addFieldMap("contentclass", DistinguishedPropertySetType.InternetHeaders, "content-class");
 
-        addFieldMap("keywords", "keywords"); // special case, mapped to categories array
+        addFieldMap("keywords", "categories"); // special case, mapped to categories array
 
-        // TODO test this
         addFieldMap("@odata.etag");
+        addFieldMap("changeKey", "@odata.etag");
 
         addFieldMap("read", "isRead");
         addFieldMap("messageheaders", 0x007D, PropertyType.String);
