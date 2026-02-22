@@ -23,6 +23,8 @@ import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,26 +33,41 @@ import java.util.UUID;
  */
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase {
-    static String itemName;
+    
+    final static String FOLDER_PATH = "contacts/testcontactfolder";
+    static String itemName = null;
 
     protected ExchangeSession.Contact getCurrentContact() throws IOException {
         if (itemName != null) {
-            return (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+            return (ExchangeSession.Contact) session.getItem(FOLDER_PATH, itemName);
         } else {
-            List<ExchangeSession.Contact> contacts = session.searchContacts("testcontactfolder", ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
+            List<ExchangeSession.Contact> contacts = session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
             itemName = contacts.get(0).itemName;
             return contacts.get(0);
         }
     }
 
     public void testCreateFolder() throws IOException {
-        // recreate empty folder
-        session.deleteFolder("testcontactfolder");
-        session.createContactFolder("testcontactfolder", null);
+        // recreate an empty folder, does not work over graph
+        //session.deleteFolder(FOLDER_PATH);
+        try {
+            session.createContactFolder(FOLDER_PATH, null);
+        } catch (IOException e) {
+            if (e.getMessage() == null || !e.getMessage().startsWith("ErrorFolderExists")) {
+                throw e;
+            }
+        }
+        // empty folder instead
+        List<ExchangeSession.Contact> contacts = session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
+        if (contacts != null) {
+            for (ExchangeSession.Contact contact : contacts) {
+                session.deleteItem(FOLDER_PATH, contact.itemName);
+            }
+        }
     }
 
     public void testCreateContact() throws IOException {
-        itemName = UUID.randomUUID().toString() + ".vcf";
+        itemName = UUID.randomUUID() + ".vcf";
         VCardWriter vCardWriter = new VCardWriter();
         vCardWriter.startCard();
         vCardWriter.appendProperty("N", "sn", "givenName", "middlename", "personaltitle", "namesuffix");
@@ -84,7 +101,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         vCardWriter.appendProperty("ROLE", "profession");
         vCardWriter.appendProperty("X-AIM", "im");
-        vCardWriter.appendProperty("BDAY", "2000-01-02T00:00:00Z");
+        vCardWriter.appendProperty("BDAY", "20000102");
+        vCardWriter.appendProperty("X-ANNIVERSARY", "20000102");
         vCardWriter.appendProperty("CATEGORIES", "keyword1,keyword2");
 
         vCardWriter.appendProperty("FBURL", "http://fburl");
@@ -97,19 +115,24 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         // add photo
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InputStream fileInputStream = new FileInputStream("src/data/anonymous.jpg");
+        InputStream fileInputStream = Files.newInputStream(Paths.get("src/data/anonymous.jpg"));
         IOUtil.write(fileInputStream, baos);
         vCardWriter.appendProperty("PHOTO;ENCODING=b;TYPE=JPEG", new String(Base64.encodeBase64(baos.toByteArray())));
 
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), null, null);
         assertEquals(201, result.status);
 
     }
 
+    /**
+     * Asserts contact properties match expected values
+     */
     public void testGetContact() throws IOException {
-        ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        testCreateContact();
+        ExchangeSession.Contact contact = getCurrentContact();
+
         assertEquals("common name", contact.get("cn"));
         assertEquals("sn", contact.get("sn"));
         assertEquals("givenName", contact.get("givenName"));
@@ -158,7 +181,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("profession", contact.get("profession"));
         assertEquals("im", contact.get("im"));
-        assertEquals("20000102T000000Z", contact.get("bday"));
+        // this is VCARD 3, VCARD4 is different, see https://datatracker.ietf.org/doc/html/rfc6350#section-6.2.5
+        assertEquals("2000-01-02", session.convertZuluDateToBday(contact.get("bday")));
 
         assertEquals("otherpostofficebox", contact.get("otherpostofficebox"));
         assertEquals("otherstreet", contact.get("otherstreet"));
@@ -177,11 +201,12 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("http://fburl", contact.get("fburl"));
 
         assertEquals("true", contact.get("haspicture"));
-        if (!Settings.getBooleanProperty("davmail.enableEws") || "Exchange2010".equals(session.getServerVersion())) {
-            assertNotNull(session.getContactPhoto(contact));
-        }
+        assertNotNull(session.getContactPhoto(contact));
     }
 
+    /**
+     * Tests contact update, verifying attribute clearing
+     */
     public void testUpdateContact() throws IOException {
         ExchangeSession.Contact contact = getCurrentContact();
 
@@ -190,7 +215,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
         contact = getCurrentContact();
@@ -256,7 +281,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertNull(contact.get("spousecn"));
         assertNull(contact.get("keywords"));
 
-        assertNull(contact.get("private"));
+        assertEquals("false", contact.get("private"));
 
         assertTrue(contact.get("haspicture") == null || "false".equals(contact.get("haspicture")));
 
@@ -272,7 +297,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("EMAIL;TYPE=work", "email1.test@local.net");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
         contact = getCurrentContact();
@@ -289,7 +314,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("TEL;TYPE=CELL", "mobile");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
         contact = getCurrentContact();
@@ -299,68 +324,68 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
     }
 
     public void testMultipleTypesParamName() throws IOException {
-        ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        ExchangeSession.Contact contact = getCurrentContact();
 
         VCardWriter vCardWriter = new VCardWriter();
         vCardWriter.startCard();
         vCardWriter.appendProperty("TEL;TYPE=CELL;TYPE=pref", "another mobile");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
-        contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        contact = (ExchangeSession.Contact) session.getItem(FOLDER_PATH, itemName);
 
         assertEquals("another mobile", contact.get("mobile"));
 
     }
 
     public void testLowerCaseTypesParamName() throws IOException {
-        ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        ExchangeSession.Contact contact = getCurrentContact();
 
         VCardWriter vCardWriter = new VCardWriter();
         vCardWriter.startCard();
         vCardWriter.appendProperty("TEL;type=HOME;type=pref", "5 68 99 3");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
-        contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        contact = (ExchangeSession.Contact) session.getItem(FOLDER_PATH, itemName);
 
         assertEquals("5 68 99 3", contact.get("homePhone"));
 
     }
 
     public void testKeyPrefix() throws IOException {
-        ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        ExchangeSession.Contact contact = getCurrentContact();
 
         VCardWriter vCardWriter = new VCardWriter();
         vCardWriter.startCard();
         vCardWriter.appendProperty("ITEM1.TEL;TYPE=CELL;TYPE=pref", "mobile with prefix");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
-        contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        contact = (ExchangeSession.Contact) session.getItem(FOLDER_PATH, itemName);
 
         assertEquals("mobile with prefix", contact.get("mobile"));
 
     }
 
     public void testIphonePersonalHomePage() throws IOException {
-        ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        ExchangeSession.Contact contact = getCurrentContact();
 
         VCardWriter vCardWriter = new VCardWriter();
         vCardWriter.startCard();
         vCardWriter.appendProperty("ITEM1.URL", "http://www.myhomepage.org");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
-        contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        contact = (ExchangeSession.Contact) session.getItem(FOLDER_PATH, itemName);
 
         assertEquals("http://www.myhomepage.org", contact.get("personalHomePage"));
 
@@ -375,12 +400,12 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("CATEGORIES", "rouge,vert");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
         contact = getCurrentContact();
 
-        assertEquals("rouge,vert", contact.get("keywords"));
+        assertEquals("vert,rouge", contact.get("keywords"));
 
     }
 
@@ -391,7 +416,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
                 "item1.ADR;type=WORK;type=pref:;;line1\\nline 2 \\; with semicolon;;;;\n" +
                 "END:VCARD";
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, itemBody, contact.etag, null);
         assertEquals(200, result.status);
     }
 
@@ -403,7 +428,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("ITEM1.TEL;TYPE=CELL;TYPE=pref", "mobile\\, with comma");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
         contact = getCurrentContact();
@@ -420,7 +445,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("FN", "common & name");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
         contact = getCurrentContact();
@@ -437,12 +462,12 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("BDAY", "2000-01-02");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
         contact = getCurrentContact();
 
-        assertEquals("20000102T000000Z", contact.get("bday"));
+        assertEquals("2000-01-02", session.convertZuluDateToBday(contact.get("bday")));
         System.out.println(contact.getBody());
     }
 
@@ -454,7 +479,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("X-ANNIVERSARY", "2000-01-02");
         vCardWriter.endCard();
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
         assertEquals(200, result.status);
 
         contact = getCurrentContact();
@@ -474,7 +499,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         itemName = "test {<:&'>} \"accentué.vcf";
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), null, null);
         assertEquals(201, result.status);
 
         ExchangeSession.Contact contact = getCurrentContact();
@@ -493,7 +518,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         itemName = "test ?.vcf";
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), null, null);
         assertEquals(201, result.status);
 
         ExchangeSession.Contact contact = getCurrentContact();
@@ -505,7 +530,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         int maxCount = 0;
         List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, maxCount);
         int folderSize = contacts.size();
-        assertEquals(50, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, 50).size());
+        assertEquals(20, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, 20).size());
         assertEquals(folderSize, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, folderSize+1).size());
     }
 
@@ -520,7 +545,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         itemName = "Capital 7654#.vcf";
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), null, null);
         assertEquals(201, result.status);
 
         ExchangeSession.Contact contact = getCurrentContact();
@@ -540,17 +565,17 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
                 "EMAIL;TYPE=WORK:\n" +
                 "EMAIL;TYPE=HOME:email@company.com\n" +
                 "END:VCARD";
-        itemName = UUID.randomUUID().toString() + ".vcf";
+        itemName = UUID.randomUUID() + ".vcf";
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, itemBody, null, null);
         assertEquals(201, result.status);
 
         ExchangeSession.Contact contact = getCurrentContact();
 
         assertNull(contact.get("smtpemail1"));
 
-        result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
-        assertEquals(201, result.status);
+        result = session.createOrUpdateContact(FOLDER_PATH, itemName, itemBody, null, null);
+        assertEquals(200, result.status);
 
         contact = getCurrentContact();
         assertNull(contact.get("smtpemail1"));
@@ -571,8 +596,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
                 "FN:common name\n" +
                 "END:VCARD";
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
-        assertEquals(201, result.status);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, itemBody, null, null);
+        assertEquals(200, result.status);
 
         contact = getCurrentContact();
 
@@ -585,7 +610,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
                 "ADR;TYPE=WORK:;;via 25 aprile\\, 25;Lallio;BG;24048;Italia\n" +
                 "END:VCARD";
         VObject vcard = new VObject(new ICSBufferedReader(new StringReader(itemBody)));
-        System.out.println(vcard.toString());
+        System.out.println(vcard);
         VProperty property = new VProperty("ADR;TYPE=WORK:;;via 25 aprile\\, 25;Lallio;BG;24048;Italia");
         assertEquals("via 25 aprile, 25", property.getValues().get(2));
     }
@@ -605,10 +630,10 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
                     "END:VCARD";
             itemName = UUID.randomUUID().toString() + ".vcf";
 
-            ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+            ExchangeSession.ItemResult result = session.createOrUpdateContact(folderPath, itemName, itemBody, null, null);
             assertEquals(201, result.status);
         }
-        //result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+        //result = session.createOrUpdateContact(folderPath, itemName, itemBody, null, null);
         //assertEquals(201, result.status);
     }*/
 
@@ -625,9 +650,9 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
                 "REV:20161222T092209Z\n" +
                 "TEL;TYPE=cell:+47 00000000\n" +
                 "END:VCARD";
-        itemName = UUID.randomUUID().toString() + ".vcf";
+        itemName = UUID.randomUUID() + ".vcf";
 
-        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, itemBody, null, null);
         assertEquals(201, result.status);
     }
 
