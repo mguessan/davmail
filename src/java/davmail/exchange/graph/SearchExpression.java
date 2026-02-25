@@ -24,7 +24,7 @@ package davmail.exchange.graph;
  */
 public interface SearchExpression {
     /**
-     * Append search expression to buffer.
+     * Append the search expression to the buffer.
      *
      * @param buffer search buffer
      */

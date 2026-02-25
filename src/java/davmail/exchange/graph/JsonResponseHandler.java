@@ -37,7 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Generic Json response handler for graph API calls
+ * Generic JSON response handler for graph API calls
  */
 public class JsonResponseHandler implements ResponseHandler<JSONObject> {
     @Override

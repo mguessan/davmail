@@ -107,7 +107,7 @@ public class GraphRequestBuilder {
      */
     public GraphRequestBuilder setSelectFields(Set<GraphField> selectFields) {
         this.selectFields = selectFields;
-        buildExpand();
+        computeSelectAndExpand();
         return this;
     }
 
@@ -242,7 +242,7 @@ public class GraphRequestBuilder {
     /**
      * Compute expand parameters from properties.
      */
-    private void buildExpand() {
+    private void computeSelectAndExpand() {
         ArrayList<String> singleValueProperties = new ArrayList<>();
         ArrayList<String> multiValueProperties = new ArrayList<>();
         ArrayList<String> selectProperties = new ArrayList<>();

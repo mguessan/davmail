@@ -64,6 +64,7 @@ public class GraphField {
         addFieldMap("contentclass", DistinguishedPropertySetType.InternetHeaders, "content-class");
 
         addFieldMap("keywords", "categories"); // special case, mapped to categories array
+        addFieldMap( "categories");
 
         addFieldMap("@odata.etag");
         addFieldMap("changeKey", "@odata.etag");
@@ -80,6 +81,17 @@ public class GraphField {
         addFieldMap("deleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.Integer); // PidLidImapDeleted
 
         addFieldMap("urlcompname", 0x10f3, PropertyType.String);
+
+        // events and tasks https://learn.microsoft.com/en-us/graph/api/resources/event?view=graph-rest-beta
+
+        addFieldMap("dtstart", "start");
+        addFieldMap("dtend", "end");
+        addFieldMap("subject");
+        addFieldMap("status");
+        addFieldMap("importance");
+        addFieldMap("createdDateTime", "createdDateTime", PropertyType.SystemTime);
+        addFieldMap("lastModifiedDateTime", "lastModifiedDateTime", PropertyType.SystemTime);
+
 
         // contacts https://learn.microsoft.com/en-us/graph/api/resources/contact
         addFieldMap("displayname", "displayName"); // MAPI addFieldMap("displayname", 0x3001, PropertyType.String);

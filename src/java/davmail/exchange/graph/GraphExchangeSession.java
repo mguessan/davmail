@@ -159,8 +159,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     VObject vTodo = new VObject();
                     vTodo.type = "VTODO";
                     localVCalendar.setTimezone(getVTimezone());
-                    vTodo.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(graphObject.optString("lastModifiedDateTime")));
-                    vTodo.setPropertyValue("CREATED", convertDateFromExchange(graphObject.optString("createdDateTime")));
+                    vTodo.setPropertyValue("LAST-MODIFIED", graphObject.optString("lastModifiedDateTime"));
+                    vTodo.setPropertyValue("CREATED", graphObject.optString("createdDateTime"));
                     // use item id as uid
                     vTodo.setPropertyValue("UID", graphObject.optString("id"));
                     vTodo.setPropertyValue("TITLE", graphObject.optString("title"));
@@ -1716,7 +1716,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setChildType("messages")
                 .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)
                 .setFilter(condition);
-        LOGGER.debug("searchMessages " + folderId.mailbox + " " + folderName);
+        LOGGER.debug("searchMessages " + folderId.getMailboxName() + " " + folderName);
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext()) {
@@ -2635,7 +2635,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectId(folderId.id)
                 .setChildType("tasks")
                 .setSelectFields(TODO_PROPERTIES);
-        LOGGER.debug("searchTasksOnly " + folderId.mailbox + " " + folderPath);
+        LOGGER.debug("searchTasksOnly " + folderId.getMailboxName() + " " + folderPath);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
@@ -2662,7 +2662,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setSelectFields(EVENT_ATTRIBUTES)
                 .setTimezone(getVTimezone().getPropertyValue("TZID"))
                 .setFilter(condition);
-        LOGGER.debug("searchEvents " + folderId.mailbox + " " + folderPath);
+        LOGGER.debug("searchEvents " + folderId.getMailboxName() + " " + folderPath);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
