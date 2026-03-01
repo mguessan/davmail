@@ -853,6 +853,10 @@ public final class Settings {
         }
     }
 
+    public static String getOauthScope() {
+        return Settings.getProperty("davmail.oauth.scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Tasks.ReadWrite Mail.Send People.Read");
+    }
+
     public static boolean isSWTAvailable() {
         boolean isSWTAvailable = false;
         ClassLoader classloader = Settings.class.getClassLoader();

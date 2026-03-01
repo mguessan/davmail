@@ -41,10 +41,12 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
     protected static class DeviceCode {
         final private String deviceCode;
         final private String message;
+
         DeviceCode(String deviceCode, String message) {
             this.deviceCode = deviceCode;
             this.message = message;
         }
+
         public String getDeviceCode() {
             return deviceCode;
         }
@@ -83,19 +85,26 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
         // company tenantId or common
         String tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
-        // first try to load a stored token, redirectUri is empty with devicecode
+        // first try to load a stored token, redirectUri is empty with device code
         token = O365Token.load(tenantId, clientId, "", username, password);
         if (token != null) {
             return;
-        }
+         }
 
-        // build devicecode authorize url;
-        String url = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/devicecode?api-version=1.0";
+        // build device code authorize url;
+        String url;
 
         DeviceCode deviceCode;
         ArrayList<NameValuePair> parameters = new ArrayList<>();
         parameters.add(new BasicNameValuePair("client_id", clientId));
-        parameters.add(new BasicNameValuePair("resource", resource));
+        if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
+            url = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/v2.0/devicecode?api-version=1.0";
+            parameters.add(new BasicNameValuePair("scope", Settings.getOauthScope()));
+        } else {
+            url = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/devicecode?api-version=1.0";
+            parameters.add(new BasicNameValuePair("resource", resource));
+        }
+
         RestRequest logonMethod = new RestRequest(url, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
         // Executes device code request; parses response into DeviceCode object
         try (
@@ -104,6 +113,10 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
         ) {
 
             JSONObject deviceCodeResponse = logonMethod.handleResponse(response);
+            final String error = deviceCodeResponse.optString("error_description", deviceCodeResponse.optString("error", null));
+            if (error != null) {
+                throw new IOException("Exception getting device code: " + error);
+            }
             deviceCode = new DeviceCode(deviceCodeResponse.getString("device_code"), deviceCodeResponse.getString("message"));
         } catch (JSONException e) {
             throw new IOException("Exception parsing device code", e);
@@ -148,6 +161,7 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
     public static void main(String[] argv) throws IOException {
         Settings.setDefaultSettings();
         Settings.setProperty("davmail.server", "false");
+        //Settings.setProperty("davmail.enableOidc", "true");
 
         O365DeviceCodeAuthenticator authenticator = new O365DeviceCodeAuthenticator();
         authenticator.setUsername("");
