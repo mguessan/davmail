@@ -20,6 +20,7 @@
 package davmail.exchange.auth;
 
 import davmail.Settings;
+import davmail.exception.DavMailAuthenticationException;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.RestRequest;
 import davmail.util.IOUtil;
@@ -78,6 +79,21 @@ public class O365Token {
         executeRequest(tokenRequest);
     }
 
+    protected O365Token(String tenantId, String clientId, O365DeviceCodeAuthenticator.DeviceCode code, String password) throws IOException {
+        this.clientId = clientId;
+        this.tokenUrl = buildTokenUrl(tenantId);
+        this.password = password;
+
+        ArrayList<NameValuePair> parameters = new ArrayList<>();
+        parameters.add(new BasicNameValuePair("grant_type", "urn:ietf:params:oauth:grant-type:device_code"));
+        parameters.add(new BasicNameValuePair("code", code.getDeviceCode()));
+        parameters.add(new BasicNameValuePair("redirect_uri", redirectUri));
+        parameters.add(new BasicNameValuePair("client_id", clientId));
+        RestRequest tokenRequest = new RestRequest(tokenUrl, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
+
+        executeRequest(tokenRequest);
+    }
+
     protected String buildTokenUrl(String tenantId) {
         if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
             // OIDC configuration visible at https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
@@ -94,8 +110,12 @@ public class O365Token {
 
     public void setJsonToken(JSONObject jsonToken) throws IOException {
         try {
-            if (jsonToken.opt("error") != null) {
-                throw new IOException(jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
+            final Object error = jsonToken.opt("error");
+            if (error != null) {
+                if (error.equals("authorization_pending"))
+                    throw new O365AuthorizationPending();
+
+                throw new DavMailAuthenticationException(jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
             }
             LOGGER.debug("Obtained token for scopes: " + jsonToken.optString("scope"));
             // access token expires after one hour
@@ -224,6 +244,11 @@ public class O365Token {
         return token;
     }
 
+    static O365Token build(String tenantId, String clientId, O365DeviceCodeAuthenticator.DeviceCode code, String password) throws IOException {
+        O365Token token = new O365Token(tenantId, clientId, code, password);
+        token.persistToken();
+        return token;
+    }
 
     static O365Token load(String tenantId, String clientId, String redirectUri, String username, String password) throws UnknownHostException {
         O365Token token = null;
