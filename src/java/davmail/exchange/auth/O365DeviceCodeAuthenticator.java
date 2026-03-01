@@ -21,18 +21,24 @@ package davmail.exchange.auth;
 
 import davmail.Settings;
 import davmail.http.HttpClientAdapter;
-import davmail.http.request.PostRequest;
+import davmail.http.request.RestRequest;
+import org.apache.http.Consts;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 
 public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
-    protected static final Logger LOGGER = Logger.getLogger(O365Token.class);
+    protected static final Logger LOGGER = Logger.getLogger(O365DeviceCodeAuthenticator.class);
 
-    protected class DeviceCode {
+    protected static class DeviceCode {
         final private String deviceCode;
         final private String message;
         DeviceCode(String deviceCode, String message) {
@@ -77,7 +83,7 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
         // company tenantId or common
         String tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
-        // first try to load stored token, redirectUri is empty with devicecode
+        // first try to load a stored token, redirectUri is empty with devicecode
         token = O365Token.load(tenantId, clientId, "", username, password);
         if (token != null) {
             return;
@@ -87,27 +93,23 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
         String url = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/devicecode?api-version=1.0";
 
         DeviceCode deviceCode;
+        ArrayList<NameValuePair> parameters = new ArrayList<>();
+        parameters.add(new BasicNameValuePair("client_id", clientId));
+        parameters.add(new BasicNameValuePair("resource", resource));
+        RestRequest logonMethod = new RestRequest(url, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
+        // Executes device code request; parses response into DeviceCode object
         try (
                 HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url);
+                CloseableHttpResponse response = httpClientAdapter.execute(logonMethod)
         ) {
 
-            PostRequest logonMethod = new PostRequest(url);
-            logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-
-            logonMethod.setParameter("client_id", clientId);
-            logonMethod.setParameter("resource", resource);
-
-            String responseBodyAsString = httpClientAdapter.executePostRequest(logonMethod);
-
-            JSONObject responseBodyAsJSON;
-            try {
-                responseBodyAsJSON = new JSONObject(responseBodyAsString);
-                deviceCode = new DeviceCode(responseBodyAsJSON.getString("device_code"), responseBodyAsJSON.getString("message"));
-            } catch (JSONException e) {
-                throw new IOException(e);
-            }
+            JSONObject deviceCodeResponse = logonMethod.handleResponse(response);
+            deviceCode = new DeviceCode(deviceCodeResponse.getString("device_code"), deviceCodeResponse.getString("message"));
+        } catch (JSONException e) {
+            throw new IOException("Exception parsing device code", e);
         }
 
+        // Polls for authorization completion; builds token on success
         try {
             while (token == null) {
                 System.out.println(deviceCode.getMessage());
