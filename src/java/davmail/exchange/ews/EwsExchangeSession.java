@@ -1493,7 +1493,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                         int instanceIndex = 0;
 
-                        // let's try to find occurence
+                        // let's try to find occurrence
                         while (true) {
                             instanceIndex++;
                             try {
@@ -1548,7 +1548,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 LOGGER.debug("Looking for occurrence " + convertedValue);
                 int instanceIndex = 0;
 
-                // let's try to find occurence
+                // let's try to find occurrence
                 while (true) {
                     instanceIndex++;
                     try {
@@ -2204,10 +2204,10 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
                     fixAttendees(getItemMethod, localVCalendar.getFirstVevent());
                     // fix UID and RECURRENCE-ID, broken at least on Exchange 2007
-                    List<EWSMethod.Occurrence> occurences = getItemMethod.getResponseItem().getOccurrences();
-                    if (occurences != null) {
+                    List<EWSMethod.Occurrence> occurrences = getItemMethod.getResponseItem().getOccurrences();
+                    if (occurrences != null) {
                         Iterator<VObject> modifiedOccurrencesIterator = localVCalendar.getModifiedOccurrences().iterator();
-                        for (EWSMethod.Occurrence occurrence : occurences) {
+                        for (EWSMethod.Occurrence occurrence : occurrences) {
                             if (modifiedOccurrencesIterator.hasNext()) {
                                 VObject modifiedOccurrence = modifiedOccurrencesIterator.next();
                                 // fix modified occurrences attendees
