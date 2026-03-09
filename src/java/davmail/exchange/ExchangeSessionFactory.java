@@ -172,6 +172,9 @@ public final class ExchangeSessionFactory {
                         case Settings.O365_MANUAL:
                             authenticatorClass = "davmail.exchange.auth.O365ManualAuthenticator";
                             break;
+                        case Settings.O365_DEVICECODE:
+                            authenticatorClass = "davmail.exchange.auth.O365DeviceCodeAuthenticator";
+                            break;
                     }
                 }
 
