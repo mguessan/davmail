@@ -1288,18 +1288,17 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
+    /**
+     * Append envelope header value.
+     * @param buffer envelope buffer
+     * @param value header value
+     * @throws UnsupportedEncodingException on error
+     */
     protected void appendEnvelopeHeaderValue(StringBuilder buffer, String value) throws UnsupportedEncodingException {
-        if (value.indexOf('"') >= 0 || value.indexOf('\\') >= 0) {
-            buffer.append('{');
-            buffer.append(value.length());
-            buffer.append("}\r\n");
-            buffer.append(value);
-        } else {
+        String encoded = MimeUtility.encodeText(value, "UTF-8", null);
             buffer.append('"');
-            buffer.append(MimeUtility.encodeText(value, "UTF-8", null));
+            buffer.append(encoded.replace("\\", "\\\\").replace("\"", "\\\""));
             buffer.append('"');
-        }
-
     }
 
     protected void appendBodyStructure(StringBuilder buffer, MessageWrapper message) throws IOException {
