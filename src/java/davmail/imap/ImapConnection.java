@@ -1434,6 +1434,7 @@ public class ImapConnection extends AbstractConnection {
         } else if ("MESSAGE".equals(type)) {
             Object bodyPartContent = bodyPart.getContent();
             if (bodyPartContent instanceof MimeMessage) {
+                buffer.append(' '); // RFC 3501: space required before envelope in MESSAGE/RFC822 bodystructure
                 MimeMessage innerMessage = (MimeMessage) bodyPartContent;
                 appendEnvelope(buffer, innerMessage);
                 appendBodyStructure(buffer, innerMessage);
