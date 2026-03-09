@@ -222,6 +222,30 @@ public class GraphObject {
         return null;
     }
 
+    public boolean getBoolean(String key) throws JSONException {
+        return getBoolean(GraphField.get(key));
+    }
+
+    public boolean optBoolean(String key) {
+        return optBoolean(GraphField.get(key));
+    }
+
+    public boolean getBoolean(GraphField field) throws JSONException {
+        String key = field.getGraphId();
+        if (key == null) {
+            return false;
+        }
+        return jsonObject.getBoolean(key);
+    }
+
+    public boolean optBoolean(GraphField field) {
+        String key = field.getGraphId();
+        if (key == null) {
+            return false;
+        }
+        return jsonObject.optBoolean(key);
+    }
+
     public JSONObject optJSONObject(String key) {
         return jsonObject.optJSONObject(key);
     }
@@ -287,9 +311,6 @@ public class GraphObject {
         }
     }
 
-    public boolean optBoolean(String key) {
-        return jsonObject.optBoolean(key);
-    }
 
     public int optInt(String key) {
         return jsonObject.optInt(key);

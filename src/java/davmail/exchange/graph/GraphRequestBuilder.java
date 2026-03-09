@@ -255,7 +255,8 @@ public class GraphRequestBuilder {
                     // email fetched, load emailAddresses array
                     selectProperties.add("emailAddresses");
                 }
-            } else {
+            // etag is always returned, no a select field
+            } else if (!GraphField.getGraphId("@odata.etag").equals(field.getGraphId())){
                 selectProperties.add(field.getGraphId());
             }
         }

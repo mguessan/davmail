@@ -55,6 +55,11 @@ public class GraphField {
         addFieldMap("ctag", 0x670a, PropertyType.SystemTime); // PR_LOCAL_COMMIT_TIME_MAX
         addFieldMap("uidNext", 0x6751, PropertyType.Integer); // PR_ARTICLE_NUM_NEXT
 
+        // message properties
+        addFieldMap("isRead");
+        addFieldMap("isDraft");
+        addFieldMap("receivedDateTime", "receivedDateTime", PropertyType.SystemTime);
+
         // message extended properties
         addFieldMap("uid", 0x0FF9, PropertyType.Binary); // PR_RECORD_KEY
         addFieldMap("messageFlags", 0x0e07, PropertyType.Integer); // PR_MESSAGE_FLAGS

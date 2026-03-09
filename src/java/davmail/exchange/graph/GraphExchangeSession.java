@@ -1106,6 +1106,12 @@ public class GraphExchangeSession extends ExchangeSession {
     static {
         // TODO: review, permanenturl is no longer relevant
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("permanenturl"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("changeKey"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("isDraft"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("isRead"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("receivedDateTime"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("lastModifiedDateTime"));
+
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("urlcompname"));
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("uid"));
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("messageSize"));
@@ -1507,20 +1513,21 @@ public class GraphExchangeSession extends ExchangeSession {
 
     private Message buildMessage(JSONObject response) {
         Message message = new Message();
+        GraphObject graphResponse = new GraphObject(response);
 
         try {
             // get item id
-            message.id = response.getString("id");
-            message.changeKey = response.getString("changeKey");
+            message.id = graphResponse.getString("id");
+            message.changeKey = graphResponse.getString("changeKey");
 
-            message.read = response.getBoolean("isRead");
-            message.draft = response.getBoolean("isDraft");
-            message.date = convertDateFromExchange(response.getString("receivedDateTime"));
+            message.read = graphResponse.getBoolean("isRead");
+            message.draft = graphResponse.getBoolean("isDraft");
+            message.date = graphResponse.getString("receivedDateTime");
 
-            String lastmodified = convertDateFromExchange(response.optString("lastModifiedDateTime"));
+            String lastmodified = graphResponse.optString("lastModifiedDateTime");
             message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
 
-        } catch (JSONException | DavMailException e) {
+        } catch (JSONException e) {
             LOGGER.warn("Error parsing message " + e.getMessage(), e);
         }
 
@@ -1601,7 +1608,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Lightweigt conversion method to avoid full string to date and back conversions.
+     * Lightweight conversion method to avoid full string to date and back conversions.
      * Note: Duplicate from EWSEchangeSession, added nanosecond handling
      * @param exchangeDateValue date returned from O365
      * @return converted date
