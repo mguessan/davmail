@@ -40,6 +40,7 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeUtility;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -329,7 +330,9 @@ public class EwsExchangeSession extends ExchangeSession {
                     // workaround for messages in Sent folder
                     if (!messageHeaders.contains("From:")) {
                         String from = item.get(Field.get("from").getResponseName());
-                        messageHeaders = "From: " + from + '\n' + messageHeaders;
+                        if (from != null) {
+                            messageHeaders = "From: " + MimeUtility.encodeText(from, "UTF-8", null) + '\r' + '\n' + messageHeaders;
+                        }
                     }
 
                     result = new ByteArrayInputStream(messageHeaders.getBytes(StandardCharsets.UTF_8));
