@@ -76,7 +76,10 @@ public class GraphField {
 
         addFieldMap("read", "isRead");
         addFieldMap("messageheaders", 0x007D, PropertyType.String);
+        addFieldMap("internetMessageHeaders");
+
         addFieldMap("to", DistinguishedPropertySetType.InternetHeaders, "to");
+        addFieldMap("from");
         addFieldMap("date", 0x0e06, PropertyType.SystemTime);
 
         addFieldMap("permanenturl", 0x670E, PropertyType.String); //PR_FLAT_URL_NAME

@@ -51,6 +51,7 @@ import org.htmlcleaner.TagNode;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeUtility;
 import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -1459,35 +1460,18 @@ public class GraphExchangeSession extends ExchangeSession {
         protected InputStream getMimeHeaders() {
             InputStream result = null;
             try {
-                HashSet<GraphField> expandFields = new HashSet<>();
-                // TODO: review from header (always empty?)
-                expandFields.add(GraphField.get("from"));
-                expandFields.add(GraphField.get("messageheaders"));
+                HashSet<GraphField> selectFields = new HashSet<>();
+                selectFields.add(GraphField.get("from"));
+                selectFields.add(GraphField.get("messageheaders"));
 
-                JSONObject response = executeJsonRequest(new GraphRequestBuilder()
+                GraphObject graphResponse = new GraphObject(executeJsonRequest(new GraphRequestBuilder()
                         .setMethod(HttpGet.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("messages")
                         .setObjectId(id)
-                        .setSelectFields(expandFields));
+                        .setSelectFields(selectFields)));
 
-                String messageHeaders = null;
-
-                JSONArray singleValueExtendedProperties = response.optJSONArray("singleValueExtendedProperties");
-                if (singleValueExtendedProperties != null) {
-                    for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
-                        try {
-                            JSONObject responseValue = singleValueExtendedProperties.getJSONObject(i);
-                            String responseId = responseValue.optString("id");
-                            if (GraphField.getGraphId("messageheaders").equals(responseId)) {
-                                messageHeaders = responseValue.optString("value");
-                            }
-                        } catch (JSONException e) {
-                            LOGGER.warn("Error parsing json response value");
-                        }
-                    }
-                }
-
+                String messageHeaders = graphResponse.optString("messageheaders");
 
                 // alternative: use parsed headers response.optJSONArray("internetMessageHeaders");
                 if (messageHeaders != null
@@ -1495,9 +1479,8 @@ public class GraphExchangeSession extends ExchangeSession {
                         && messageHeaders.toLowerCase().contains("message-id:")) {
                     // workaround for messages in Sent folder
                     if (!messageHeaders.contains("From:")) {
-                        // TODO revie
-                        String from = response.optString("from");
-                        messageHeaders = "From: " + from + '\n' + messageHeaders;
+                        String from = graphResponse.optString("from");
+                        messageHeaders = "From: " + MimeUtility.encodeText(from, "UTF-8", null) + '\r' + '\n' + messageHeaders;
                     }
 
                     result = new ByteArrayInputStream(messageHeaders.getBytes(StandardCharsets.UTF_8));
