@@ -73,6 +73,8 @@ public class GraphObject {
                 }
                 value = StringUtil.join(keywords, ",");
             }
+        } else if ("from".equals(key)) {
+            value = formatEmailAddress(jsonObject.optJSONObject(key));
         } else if ("@odata.etag".equals(key)) {
             // tasks don't have an etag field, use @odata.etag
             String odataEtag = jsonObject.optString("@odata.etag");
@@ -99,6 +101,17 @@ public class GraphObject {
                 value = GraphExchangeSession.convertDateFromExchange(value);
             } catch (DavMailException e) {
                 LOGGER.warn("Invalid date " + value + " on field " + key);
+            }
+        }
+        return value;
+    }
+
+    protected String formatEmailAddress(JSONObject jsonObject) {
+        String value = null;
+        if (jsonObject != null) {
+            JSONObject jsonEmailAddress = jsonObject.optJSONObject("emailAddress");
+            if (jsonEmailAddress != null) {
+                value = jsonEmailAddress.optString("name", "") + " <" + jsonEmailAddress.optString("address", "") + ">";
             }
         }
         return value;
