@@ -28,6 +28,7 @@ import davmail.http.request.PostRequest;
 import davmail.http.request.ResponseWrapper;
 import davmail.http.request.RestRequest;
 import davmail.ui.NumberMatchingFrame;
+import davmail.util.StringEncryptor;
 import davmail.ui.PasswordPromptDialog;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.utils.URIBuilder;
@@ -35,6 +36,8 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedReader;
@@ -42,6 +45,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -478,6 +484,14 @@ public class O365Authenticator implements ExchangeAuthenticator {
             JSONObject authMethod = (JSONObject) config.getJSONArray("arrUserProofs").get(i);
             String authMethodId = authMethod.getString("authMethodId");
             LOGGER.debug("Authentication method: " + authMethodId);
+            if ("PhoneAppOTP".equals(authMethodId)) {
+                LOGGER.debug("Found PhoneAppOTP (TOTP) auth method " + authMethod.getString("display"));
+                isMFAMethodSupported = true;
+                chosenAuthMethodId = authMethodId;
+                chosenAuthMethodPrompt = authMethod.getString("display");
+                // prefer TOTP over all other methods
+                break;
+            }
             if ("PhoneAppNotification".equals(authMethodId)) {
                 LOGGER.debug("Found phone app auth method " + authMethod.getString("display"));
                 isMFAMethodSupported = true;
@@ -598,6 +612,10 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 if ("SMSAuthFailedWrongCodeEntered".equals(resultValue)) {
                     smsCode = retrieveSmsCode(chosenAuthMethodId, chosenAuthMethodPrompt);
                 }
+                if ("PhoneAppOtpAuthFailedDuplicateCodeEntered".equals(resultValue)) {
+                    // TOTP code already used, prompt for a new one
+                    smsCode = retrieveSmsCode(chosenAuthMethodId, chosenAuthMethodPrompt);
+                }
                 if (config.getBoolean("Success")) {
                     success = true;
                 }
@@ -639,9 +657,82 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     }
 
+    private static byte[] base32Decode(String base32) {
+        String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        base32 = base32.toUpperCase().replaceAll("[\\s=-]", "");
+        int bits = 0;
+        int value = 0;
+        int index = 0;
+        byte[] output = new byte[base32.length() * 5 / 8];
+        for (int i = 0; i < base32.length(); i++) {
+            int digit = alphabet.indexOf(base32.charAt(i));
+            if (digit < 0) continue;
+            value = (value << 5) | digit;
+            bits += 5;
+            if (bits >= 8) {
+                output[index++] = (byte) ((value >> (bits - 8)) & 0xFF);
+                bits -= 8;
+            }
+        }
+        byte[] result = new byte[index];
+        System.arraycopy(output, 0, result, 0, index);
+        return result;
+    }
+
+    private static String generateTotpCode(String base32Secret) throws IOException {
+        try {
+            byte[] key = base32Decode(base32Secret);
+            long timeStep = System.currentTimeMillis() / 1000L / 30L;
+            byte[] timeBytes = ByteBuffer.allocate(8).putLong(timeStep).array();
+
+            Mac mac = Mac.getInstance("HmacSHA1");
+            mac.init(new SecretKeySpec(key, "HmacSHA1"));
+            byte[] hash = mac.doFinal(timeBytes);
+
+            int offset = hash[hash.length - 1] & 0x0F;
+            int code = ((hash[offset] & 0x7F) << 24)
+                     | ((hash[offset + 1] & 0xFF) << 16)
+                     | ((hash[offset + 2] & 0xFF) << 8)
+                     | (hash[offset + 3] & 0xFF);
+            code = code % 1000000;
+
+            return String.format("%06d", code);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new IOException("Failed to generate TOTP code: " + e.getMessage(), e);
+        }
+    }
+
     private String retrieveSmsCode(String chosenAuthMethodId, String chosenAuthMethodPrompt) throws IOException {
         String smsCode = null;
-        if ("OneWaySMS".equals(chosenAuthMethodId)) {
+        if ("PhoneAppOTP".equals(chosenAuthMethodId)) {
+            String totpSecretProperty = "davmail.oauth.totpSecret." + username;
+            String totpSecret = Settings.getProperty(totpSecretProperty);
+            if (totpSecret == null || totpSecret.isEmpty()) {
+                totpSecretProperty = "davmail.oauth.totpSecret";
+                totpSecret = Settings.getProperty(totpSecretProperty);
+            }
+            if (totpSecret != null && !totpSecret.isEmpty()) {
+                // decrypt if encrypted, encrypt and save if plaintext
+                if (totpSecret.startsWith("{AES}")) {
+                    totpSecret = new StringEncryptor(password).decryptString(totpSecret);
+                } else {
+                    // encrypt on first use
+                    String encrypted = new StringEncryptor(password).encryptString(totpSecret);
+                    Settings.saveProperty(totpSecretProperty, encrypted);
+                    LOGGER.info("Encrypted TOTP secret for " + username);
+                }
+                smsCode = generateTotpCode(totpSecret);
+                LOGGER.info("Auto-generated TOTP code for " + username);
+            } else if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
+                LOGGER.info("Need to retrieve TOTP verification code for " + username);
+                System.out.print("Enter TOTP code: ");
+                BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
+                smsCode = inReader.readLine();
+            } else {
+                PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog("Enter TOTP code");
+                smsCode = String.valueOf(passwordPromptDialog.getPassword());
+            }
+        } else if ("OneWaySMS".equals(chosenAuthMethodId)) {
             LOGGER.info("Need to retrieve SMS verification code for " + username);
             if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
                 // headless or server mode
