@@ -237,7 +237,7 @@ public final class ExchangeSessionFactory {
             }
             // session opened, future failure will mean network down
             configChecked = true;
-            // Reset so next time an problem occurs message will be sent once
+            // Reset so next time a problem occurs message will be sent once
             errorSent = false;
         } catch (DavMailException | IllegalStateException | NullPointerException exc) {
             throw exc;
@@ -257,10 +257,10 @@ public final class ExchangeSessionFactory {
     private static void checkWhiteList(String email) throws DavMailAuthenticationException {
         String whiteListString = Settings.getProperty("davmail.userWhiteList");
         if (whiteListString != null && !whiteListString.isEmpty()) {
-            for (String whiteListvalue : whiteListString.split(",")) {
-                if (whiteListvalue.startsWith("@") && email.endsWith(whiteListvalue)) {
+            for (String whiteListValue : whiteListString.split(",")) {
+                if (whiteListValue.startsWith("@") && email.endsWith(whiteListValue)) {
                     return;
-                } else if (email.equalsIgnoreCase(whiteListvalue)) {
+                } else if (email.equalsIgnoreCase(whiteListValue)) {
                     return;
                 }
             }
@@ -327,7 +327,7 @@ public final class ExchangeSessionFactory {
             }
             // session opened, future failure will mean network down
             configChecked = true;
-            // Reset so next time an problem occurs message will be sent once
+            // Reset so next time a problem occurs message will be sent once
             errorSent = false;
         } catch (Exception exc) {
             handleNetworkDown(exc);
@@ -384,12 +384,10 @@ public final class ExchangeSessionFactory {
         Enumeration<NetworkInterface> enumeration;
         try {
             enumeration = NetworkInterface.getNetworkInterfaces();
-            if (enumeration != null) {
-                while (!up && enumeration.hasMoreElements()) {
-                    NetworkInterface networkInterface = enumeration.nextElement();
-                    up = networkInterface.isUp() && !networkInterface.isLoopback()
-                            && networkInterface.getInetAddresses().hasMoreElements();
-                }
+            while (!up && enumeration.hasMoreElements()) {
+                NetworkInterface networkInterface = enumeration.nextElement();
+                up = networkInterface.isUp() && !networkInterface.isLoopback()
+                        && networkInterface.getInetAddresses().hasMoreElements();
             }
         } catch (NoSuchMethodError error) {
             ExchangeSession.LOGGER.debug("Unable to test network interfaces (not available under Java 1.5)");
