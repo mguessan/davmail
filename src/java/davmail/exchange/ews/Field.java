@@ -292,20 +292,6 @@ public final class Field {
     }
 
     /**
-     * Get graph id for field name, return null if not found.
-     * @param alias field alias
-     * @return field graph id
-     */
-    public static String getGraphId(String alias) {
-        FieldURI field = FIELD_MAP.get(alias);
-        if (field != null) {
-            return field.getGraphId();
-        }
-        return null;
-    }
-
-
-    /**
      * Create property update field
      *
      * @param alias property alias
