@@ -249,8 +249,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
             vEvent.addProperty(convertBodyToVproperty("DESCRIPTION", jsonEvent));
 
-            vEvent.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(jsonEvent.optString("lastModifiedDateTime")));
-            vEvent.setPropertyValue("DTSTAMP", convertDateFromExchange(jsonEvent.optString("lastModifiedDateTime")));
+            vEvent.setPropertyValue("LAST-MODIFIED", jsonEvent.optString("lastModifiedDateTime"));
+            vEvent.setPropertyValue("DTSTAMP", jsonEvent.optString("lastModifiedDateTime"));
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start")));
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end")));
 
@@ -2700,8 +2700,8 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setMailbox(folderId.mailbox)
                         .setObjectType("events")
                         .setObjectId(itemId)
-                        .setSelect(EVENT_SELECT)
                         .setSelectFields(EVENT_ATTRIBUTES)
+                        .setSelect(EVENT_SELECT) // Override select, TODO: provide EVENT_ATTRIBUTES
                         .setTimezone(getVTimezone().getPropertyValue("TZID"))
                 );
             } catch (HttpNotFoundException e) {
@@ -2714,7 +2714,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectId(taskFolderId.id)
                         .setChildType("tasks")
                         .setChildId(itemId)
-                        .setSelectFields(TODO_PROPERTIES)
+                        //.setSelectFields(TODO_PROPERTIES) // TODO set fields for todo items
                 );
             }
         } else {
@@ -2728,8 +2728,8 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectId(folderId.id)
                         .setChildType("events")
                         .setFilter(isEqualTo("urlcompname", urlcompname))
-                        .setSelect(EVENT_SELECT)
                         .setSelectFields(EVENT_ATTRIBUTES)
+                        .setSelect(EVENT_SELECT) // Override select, TODO: provide EVENT_ATTRIBUTES
                         .setTimezone(getVTimezone().getPropertyValue("TZID"))
                 );
             } catch (HttpNotFoundException e) {
@@ -2742,7 +2742,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectId(taskFolderId.id)
                         .setChildType("tasks")
                         .setFilter(isEqualTo("urlcompname", urlcompname))
-                        .setSelectFields(TODO_PROPERTIES)
+                        //.setSelectFields(TODO_PROPERTIES) // TODO set actual properties
                 );
             }
 

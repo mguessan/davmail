@@ -96,10 +96,20 @@ public class GraphField {
         addFieldMap("dtend", "end");
         addFieldMap("subject");
         addFieldMap("status");
+        addFieldMap("taskstatus");
         addFieldMap("importance");
         addFieldMap("createdDateTime", "createdDateTime", PropertyType.SystemTime);
         addFieldMap("lastModifiedDateTime", "lastModifiedDateTime", PropertyType.SystemTime);
 
+        addFieldMap("iCalUId");
+        addFieldMap("showAs");
+        addFieldMap("isAllDay", "isAllDay", PropertyType.Boolean);
+        addFieldMap("responseRequested");
+        addFieldMap("isReminderOn", "isReminderOn", PropertyType.Boolean);
+
+        addFieldMap("xmozsendinvitations", DistinguishedPropertySetType.PublicStrings, "xmozsendinvitations");
+        addFieldMap("xmozlastack", DistinguishedPropertySetType.PublicStrings, "xmozlastack");
+        addFieldMap("xmozsnoozetime", DistinguishedPropertySetType.PublicStrings, "xmozsnoozetime");
 
         // contacts https://learn.microsoft.com/en-us/graph/api/resources/contact
         addFieldMap("displayname", "displayName"); // MAPI addFieldMap("displayname", 0x3001, PropertyType.String);
