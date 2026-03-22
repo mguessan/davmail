@@ -58,7 +58,7 @@ public class GraphField {
         // message properties
         addFieldMap("isRead");
         addFieldMap("isDraft");
-        addFieldMap("receivedDateTime", "receivedDateTime", PropertyType.SystemTime);
+        addFieldMap("receivedDateTime", PropertyType.SystemTime);
 
         // message extended properties
         addFieldMap("uid", 0x0FF9, PropertyType.Binary); // PR_RECORD_KEY
@@ -67,8 +67,9 @@ public class GraphField {
         addFieldMap("messageSize", 0x0e08, PropertyType.Integer);
         addFieldMap("etag", 0x3008, PropertyType.SystemTime);
         addFieldMap("contentclass", DistinguishedPropertySetType.InternetHeaders, "content-class");
+        addFieldMap("iconIndex", 0x1080, PropertyType.Integer); // PR_ICON_INDEX
 
-        addFieldMap("keywords", "categories"); // special case, mapped to categories array
+        addFieldMap("keywords", "categories"); // special case, mapped to message categories
         addFieldMap( "categories");
 
         addFieldMap("@odata.etag");
@@ -83,9 +84,9 @@ public class GraphField {
         addFieldMap("date", 0x0e06, PropertyType.SystemTime);
 
         addFieldMap("permanenturl", 0x670E, PropertyType.String); //PR_FLAT_URL_NAME
-        addFieldMap("lastVerbExecuted", 0x1081, PropertyType.Integer);
+        addFieldMap("lastVerbExecuted", 0x1081, PropertyType.Integer); // PR_ACTION_FLAG
         addFieldMap("junk", 0x1083, PropertyType.Integer);
-        addFieldMap("flagStatus", 0x1090, PropertyType.Integer);
+        addFieldMap("flagStatus", 0x1090, PropertyType.Integer); // PidTagFlagStatus
         addFieldMap("deleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.Integer); // PidLidImapDeleted
 
         addFieldMap("urlcompname", 0x10f3, PropertyType.String);
@@ -220,6 +221,10 @@ public class GraphField {
 
     protected static void addFieldMap(String alias, String graphId) {
         addFieldMap(alias, new GraphField(alias, graphId));
+    }
+
+    protected static void addFieldMap(String alias, PropertyType propertyType) {
+        addFieldMap(alias, new GraphField(alias, alias, propertyType));
     }
 
     protected static void addFieldMap(String alias, String graphId, PropertyType propertyType) {

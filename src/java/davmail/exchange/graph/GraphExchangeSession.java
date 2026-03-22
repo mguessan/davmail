@@ -260,9 +260,18 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.setPropertyValue("CLASS", convertClassFromExchange(jsonEvent.optString("sensitivity")));
 
             // custom microsoft properties
-            vEvent.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", jsonEvent.optString("showAs").toUpperCase());
-            vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", jsonEvent.optString("isAllDay").toUpperCase());
-            vEvent.setPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", jsonEvent.optString("responseRequested").toUpperCase());
+            String showAs = jsonEvent.optString("showAs");
+            if (showAs != null) {
+                vEvent.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", showAs.toUpperCase());
+            }
+            String isAllDay = jsonEvent.optString("isAllDay");
+            if (isAllDay != null) {
+                vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", isAllDay.toUpperCase());
+            }
+            String responseRequested =  jsonEvent.optString("responseRequested");
+            if (responseRequested != null) {
+                vEvent.setPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", responseRequested.toUpperCase());
+            }
 
             if (graphObject.optBoolean("isReminderOn")) {
                 VObject vAlarm = new VObject();
@@ -1057,7 +1066,7 @@ public class GraphExchangeSession extends ExchangeSession {
         if (value != null) {
             return value.replace(".000Z", "Z");
         } else {
-            return value;
+            return null;
         }
     }
 
@@ -1338,7 +1347,7 @@ public class GraphExchangeSession extends ExchangeSession {
         byte[] mimeContent = IOUtil.encodeBase64(mimeMessage);
 
         // do we want created message to have draft flag?
-        // draft is set for mapi PR_MESSAGE_FLAGS property combined with read flag by IMAPConnection
+        // draft is set for mapi PR_MESSAGE_FLAGS property combined with read flag by IMAPConnection, 8 means draft and 1 means read
         boolean isDraft = properties != null && ("8".equals(properties.get("draft")) || "9".equals(properties.get("draft")));
 
         // https://learn.microsoft.com/en-us/graph/api/user-post-messages
@@ -1378,11 +1387,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 draftMessageId = graphResponse.getString("id");
 
                 // unset draft flag on returned draft message properties
-                // TODO handle other message flags
-                graphResponse.put("singleValueExtendedProperties",
-                        new JSONArray().put(new JSONObject()
-                                .put("id", GraphField.get("messageFlags").getGraphId())
-                                .put("value", "4")));
+                graphResponse.put("messageFlags", "4");
                 applyMessageProperties(graphResponse, properties);
 
                 // now use this to recreate message in the right folder
@@ -1510,6 +1515,10 @@ public class GraphExchangeSession extends ExchangeSession {
             String lastmodified = graphResponse.optString("lastModifiedDateTime");
             message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
 
+            message.keywords = graphResponse.optString("keywords");
+
+            graphResponse.optString("messageheaders");
+
         } catch (JSONException e) {
             LOGGER.warn("Error parsing message " + e.getMessage(), e);
         }
@@ -1526,11 +1535,8 @@ public class GraphExchangeSession extends ExchangeSession {
                         message.size = responseValue.getInt("value");
                     } else if (GraphField.getGraphId("uid").equals(responseId)) {
                         message.uid = responseValue.getString("value");
-
-                    // TODO: test following extended fields
                     } else if (GraphField.getGraphId("permanenturl").equals(responseId)) {
-                        // probably not available over graph
-                        message.permanentUrl = responseValue.getString("value");
+                        message.permanentUrl = responseValue.getString("value"); // always null
                     } else if (GraphField.getGraphId("lastVerbExecuted").equals(responseId)) {
                         String lastVerbExecuted = responseValue.getString("value");
                         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
@@ -2245,7 +2251,6 @@ public class GraphExchangeSession extends ExchangeSession {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.outbox);
             folderNames = folderPath.substring(UNSENT.length()).split("/");
         } else {
-            // TODO refactor
             currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.msgfolderroot);
             folderNames = folderPath.split("/");
         }
@@ -2293,7 +2298,6 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType("mailFolders")
                     .setObjectId(wellKnownFolderName.name())
                     .setSelectFields(FOLDER_PROPERTIES));
-            // TODO retrieve folderClass
             return new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Note");
         }
     }
@@ -3139,9 +3143,8 @@ public class GraphExchangeSession extends ExchangeSession {
      * See <a href="https://learn.microsoft.com/en-us/graph/throttling">https://learn.microsoft.com/en-us/graph/throttling</a>
      * @param response HTTP response
      * @return true if throttled, false otherwise
-     * @throws IOException on error
      */
-    private boolean handleThrottling(CloseableHttpResponse response) throws IOException {
+    private boolean handleThrottling(CloseableHttpResponse response) {
         long retryDelay = 0;
         if (response.getStatusLine().getStatusCode() == HttpStatus.SC_TOO_MANY_REQUESTS) {
             LOGGER.info("Detected throttling " + response.getStatusLine());
