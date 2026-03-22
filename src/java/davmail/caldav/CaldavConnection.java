@@ -633,7 +633,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     /**
-     * Send simple html response to GET /.
+     * Send simple HTML response to GET /.
      *
      * @throws IOException on error
      */
