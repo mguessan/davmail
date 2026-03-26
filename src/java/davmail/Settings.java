@@ -244,7 +244,7 @@ public final class Settings {
         SETTINGS_PROPERTIES.put("davmail.ssl.keystorePass", "");
         SETTINGS_PROPERTIES.put("davmail.ssl.keyPass", "");
         if (isWindows()) {
-            // default to MSCAPI on windows for native client certificate access
+            // default to MSCAPI on Windows for native client certificate access
             SETTINGS_PROPERTIES.put("davmail.ssl.clientKeystoreType", "MSCAPI");
         } else {
             SETTINGS_PROPERTIES.put("davmail.ssl.clientKeystoreType", "");
@@ -854,7 +854,11 @@ public final class Settings {
     }
 
     public static String getOauthScope() {
-        return Settings.getProperty("davmail.oauth.scope", "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Tasks.ReadWrite Mail.Send People.Read");
+        String defaultOauthScope = "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Tasks.ReadWrite Mail.Send People.Read";
+        if (Settings.getProperty("davmail.oauth.redirectUri","").startsWith("urn:")) {
+            defaultOauthScope = "openid profile offline_access";
+        }
+        return Settings.getProperty("davmail.oauth.scope", defaultOauthScope);
     }
 
     public static boolean isSWTAvailable() {
