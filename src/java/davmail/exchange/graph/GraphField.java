@@ -93,6 +93,8 @@ public class GraphField {
 
         // events and tasks https://learn.microsoft.com/en-us/graph/api/resources/event?view=graph-rest-beta
 
+        addFieldMap("instancetype", DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype", PropertyType.Integer);
+
         addFieldMap("dtstart", "start");
         addFieldMap("dtend", "end");
         addFieldMap("subject");
@@ -101,6 +103,26 @@ public class GraphField {
         addFieldMap("importance");
         addFieldMap("createdDateTime", "createdDateTime", PropertyType.SystemTime);
         addFieldMap("lastModifiedDateTime", "lastModifiedDateTime", PropertyType.SystemTime);
+
+        addFieldMap("originalStartTimeZone");
+
+        addFieldMap("allowNewTimeProposals");
+        addFieldMap("attendees");
+        addFieldMap("bodyPreview");
+        addFieldMap("body");
+        addFieldMap("end");
+        addFieldMap("exceptionOccurrences");
+        addFieldMap("cancelledOccurrences");
+        addFieldMap("hasAttachments");
+        addFieldMap("isOnlineMeeting");
+        addFieldMap("isOrganizer");
+        addFieldMap("location");
+        addFieldMap("organizer");
+        addFieldMap("originalStart");
+        addFieldMap("recurrence");
+        addFieldMap("reminderMinutesBeforeStart");
+        addFieldMap("start");
+        addFieldMap("type");
 
         addFieldMap("iCalUId");
         addFieldMap("showAs");
@@ -237,6 +259,10 @@ public class GraphField {
 
     protected static void addFieldMap(String alias, DistinguishedPropertySetType distinguishedPropertySetId, int intPropertyTag, PropertyType propertyType) {
         addFieldMap(alias, new GraphField(alias, distinguishedPropertySetId, intPropertyTag, propertyType));
+    }
+
+    protected static void addFieldMap(String alias, DistinguishedPropertySetType distinguishedPropertySetId, String propertyName, PropertyType propertyType) {
+        addFieldMap(alias, new GraphField(alias, distinguishedPropertySetId, propertyName, propertyType));
     }
 
     protected static void addFieldMap(String alias, DistinguishedPropertySetType distinguishedPropertySetId, String propertyName) {

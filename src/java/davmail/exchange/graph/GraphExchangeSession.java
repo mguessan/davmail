@@ -1245,7 +1245,37 @@ public class GraphExchangeSession extends ExchangeSession {
     protected static final HashSet<GraphField> EVENT_ATTRIBUTES = new HashSet<>();
 
     static {
-        //EVENT_ATTRIBUTES.add(Field.get("calendaruid"));
+        EVENT_ATTRIBUTES.add(GraphField.get("allowNewTimeProposals"));
+        EVENT_ATTRIBUTES.add(GraphField.get("attendees"));
+        EVENT_ATTRIBUTES.add(GraphField.get("bodyPreview"));
+        EVENT_ATTRIBUTES.add(GraphField.get("body"));
+        EVENT_ATTRIBUTES.add(GraphField.get("cancelledOccurrences"));
+        EVENT_ATTRIBUTES.add(GraphField.get("categories"));
+        EVENT_ATTRIBUTES.add(GraphField.get("changeKey"));
+        EVENT_ATTRIBUTES.add(GraphField.get("createdDateTime"));
+        EVENT_ATTRIBUTES.add(GraphField.get("end"));
+        EVENT_ATTRIBUTES.add(GraphField.get("exceptionOccurrences"));
+        EVENT_ATTRIBUTES.add(GraphField.get("hasAttachments"));
+        EVENT_ATTRIBUTES.add(GraphField.get("iCalUId"));
+        EVENT_ATTRIBUTES.add(GraphField.get("id"));
+        EVENT_ATTRIBUTES.add(GraphField.get("importance"));
+        EVENT_ATTRIBUTES.add(GraphField.get("isAllDay"));
+        EVENT_ATTRIBUTES.add(GraphField.get("isOnlineMeeting"));
+        EVENT_ATTRIBUTES.add(GraphField.get("isOrganizer"));
+        EVENT_ATTRIBUTES.add(GraphField.get("isReminderOn"));
+        EVENT_ATTRIBUTES.add(GraphField.get("lastModifiedDateTime"));
+        EVENT_ATTRIBUTES.add(GraphField.get("location"));
+        EVENT_ATTRIBUTES.add(GraphField.get("organizer"));
+        EVENT_ATTRIBUTES.add(GraphField.get("originalStartTimeZone"));
+        EVENT_ATTRIBUTES.add(GraphField.get("originalStart"));
+        EVENT_ATTRIBUTES.add(GraphField.get("recurrence"));
+        EVENT_ATTRIBUTES.add(GraphField.get("reminderMinutesBeforeStart"));
+        EVENT_ATTRIBUTES.add(GraphField.get("responseRequested"));
+        EVENT_ATTRIBUTES.add(GraphField.get("sensitivity"));
+        EVENT_ATTRIBUTES.add(GraphField.get("showAs"));
+        EVENT_ATTRIBUTES.add(GraphField.get("start"));
+        EVENT_ATTRIBUTES.add(GraphField.get("subject"));
+        EVENT_ATTRIBUTES.add(GraphField.get("type"));
     }
 
     protected static class FolderId {
@@ -1784,17 +1814,18 @@ public class GraphExchangeSession extends ExchangeSession {
                     buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
                 }
             } else if (field.isExtended()) {
-                if (graphId.contains(" ") && field.isBinary()) {
+                if (field.isBinary()) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value,Edm.Binary) ").append(convertOperator(operator)).append(" binary'").append(StringUtil.escapeQuotes(value)).append("')");
-                } else if (graphId.contains(" ")) {
+                } else if (field.isNumber()) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
+                            .append("' and cast(ep/value, Edm.Int32) ").append(convertOperator(operator)).append(" ").append(StringUtil.escapeQuotes(value)).append(")");
+                } else {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
-                } else {
-                    buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
                 }
             } else if (field.isIndexed()) {
-                if (graphId.contains(" ")) {
+                if (field.isExtended()) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
                 } else {
@@ -1842,12 +1873,17 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         public void appendTo(StringBuilder buffer) {
-            GraphField fieldURI = GraphField.get(attributeName);
-            if (fieldURI.isExtended()) {
-                buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(fieldURI.getGraphId())
-                        .append("' and ep/value eq null)");
+            GraphField graphField = GraphField.get(attributeName);
+            if (graphField.isExtended()) {
+                if (graphField.isNumber()) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphField.getGraphId())
+                            .append("' and cast(ep/value, Edm.Int32) eq 0)");
+                } else {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphField.getGraphId())
+                            .append("' and ep/value eq null)");
+                }
             } else {
-                buffer.append(fieldURI.getGraphId()).append(" eq null");
+                buffer.append(graphField.getGraphId()).append(" eq null");
             }
         }
 
@@ -2705,7 +2741,6 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectType("events")
                         .setObjectId(itemId)
                         .setSelectFields(EVENT_ATTRIBUTES)
-                        .setSelect(EVENT_SELECT) // Override select, TODO: provide EVENT_ATTRIBUTES
                         .setTimezone(getVTimezone().getPropertyValue("TZID"))
                 );
             } catch (HttpNotFoundException e) {
@@ -2733,7 +2768,6 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setChildType("events")
                         .setFilter(isEqualTo("urlcompname", urlcompname))
                         .setSelectFields(EVENT_ATTRIBUTES)
-                        .setSelect(EVENT_SELECT) // Override select, TODO: provide EVENT_ATTRIBUTES
                         .setTimezone(getVTimezone().getPropertyValue("TZID"))
                 );
             } catch (HttpNotFoundException e) {
