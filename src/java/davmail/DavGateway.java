@@ -57,7 +57,7 @@ public final class DavGateway {
      * @param args command line parameter config file path
      */
     public static void main(String[] args) {
-        boolean notray = false;
+        boolean noTray = false;
         boolean tray = false;
         boolean server = false;
         boolean token = false;
@@ -66,14 +66,19 @@ public final class DavGateway {
         String configFilePath = Settings.getConfigFilePath();
         for (String arg : args) {
             if (arg.startsWith("-")) {
-                if ("-notray".equals(arg)) {
-                    notray = true;
-                } else if ("-tray".equals(arg)) {
-                    tray = true;
-                } else if ("-server".equals(arg)) {
-                    server = true;
-                } else if ("-token".equals(arg)) {
-                    token = true;
+                switch (arg) {
+                    case "-notray":
+                        noTray = true;
+                        break;
+                    case "-tray":
+                        tray = true;
+                        break;
+                    case "-server":
+                        server = true;
+                        break;
+                    case "-token":
+                        token = true;
+                        break;
                 }
             } else {
                 configFilePath = arg;
@@ -87,7 +92,7 @@ public final class DavGateway {
         if (tray) {
             Settings.setProperty("davmail.enableTray", "true");
         }
-        if (notray) {
+        if (noTray) {
             Settings.setProperty("davmail.enableTray", "false");
         }
 

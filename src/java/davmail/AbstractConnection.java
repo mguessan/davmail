@@ -53,6 +53,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
             ByteArrayOutputStream byteArrayOutputStream = null;
             int b;
             while ((b = read()) > -1) {
+                // Handles line ending variations
                 if (b == '\r') {
                     int next = read();
                     if (next != '\n') {
@@ -244,7 +245,7 @@ public abstract class AbstractConnection extends Thread implements Closeable {
     }
 
     /**
-     * Close client connection, streams and Exchange session.
+     * Close client connection, streams, and Exchange session.
      */
     public void close() {
         logConnection("DISCONNECT", "");

@@ -31,7 +31,7 @@ import java.util.ResourceBundle;
  */
 public class BundleMessage implements Serializable {
     /**
-     * Root locale to get english messages for logging.
+     * Root locale to get English messages for logging.
      */
     public static final Locale ROOT_LOCALE = Locale.ROOT;
     protected static final String MESSAGE_BUNDLE_NAME = "davmailmessages";
@@ -71,7 +71,7 @@ public class BundleMessage implements Serializable {
 
     /**
      * Format message for logging (with the root locale).
-     * Log file should remain in english
+     * Log file should remain in English
      *
      * @return log formatted message
      */
@@ -81,7 +81,7 @@ public class BundleMessage implements Serializable {
 
     /**
      * Format message for logging (with the root locale).
-     * Log file should remain in english
+     * Log file should remain in English
      *
      * @return log formatted message
      */
