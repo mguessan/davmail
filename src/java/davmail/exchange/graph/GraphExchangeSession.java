@@ -1954,8 +1954,9 @@ public class GraphExchangeSession extends ExchangeSession {
 
         @Override
         public void appendTo(StringBuilder buffer) {
-            buffer.append("not ");
+            buffer.append("not (");
             condition.appendTo(buffer);
+            buffer.append(")");
         }
     }
 
@@ -3019,7 +3020,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMethod(HttpGet.METHOD_NAME)
                     .setObjectType("people")
                     .setSearch(search)
-                    .setSelect(PEOPLE_ATTRIBUTES);
+                    .setSelect(PEOPLE_ATTRIBUTES)
+                    .setSizeLimit(sizeLimit);
             LOGGER.debug("search users");
             GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 

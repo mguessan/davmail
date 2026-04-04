@@ -63,6 +63,7 @@ public class GraphRequestBuilder {
 
     String filter;
     String search;
+    int sizeLimit;
 
     String startDateTime;
     String endDateTime;
@@ -207,6 +208,11 @@ public class GraphRequestBuilder {
         return this;
     }
 
+    public GraphRequestBuilder setSizeLimit(int sizeLimit) {
+        this.sizeLimit = sizeLimit;
+        return this;
+    }
+
     /**
      * Build request path based on version, username, object type and object id.
      * @return request path
@@ -334,6 +340,10 @@ public class GraphRequestBuilder {
 
             if (endDateTime != null) {
                 uriBuilder.addParameter("endDateTime", endDateTime);
+            }
+
+            if (sizeLimit != 0) {
+                uriBuilder.addParameter("$top", String.valueOf(sizeLimit));
             }
 
             HttpRequestBase httpRequest;
