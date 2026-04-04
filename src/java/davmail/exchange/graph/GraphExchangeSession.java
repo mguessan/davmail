@@ -268,7 +268,7 @@ public class GraphExchangeSession extends ExchangeSession {
             if (isAllDay != null) {
                 vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", isAllDay.toUpperCase());
             }
-            String responseRequested =  jsonEvent.optString("responseRequested");
+            String responseRequested = jsonEvent.optString("responseRequested");
             if (responseRequested != null) {
                 vEvent.setPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", responseRequested.toUpperCase());
             }
@@ -1780,46 +1780,36 @@ public class GraphExchangeSession extends ExchangeSession {
                 return "eq";
             } else if (Operator.IsGreaterThan.equals(operator)) {
                 return "gt";
+            } else {
+                LOGGER.warn("Unsupported operator: " + operator + ", switch to equals");
+                return "eq";
             }
-            // TODO other operators
-            return operator.toString();
         }
 
         @Override
         public void appendTo(StringBuilder buffer) {
             GraphField field = getField();
             String graphId = field.getGraphId();
-            if ("String {00020386-0000-0000-c000-000000000046} Name to".equals(graphId)) {
-                // TODO: does not work need to switch to search instead of filter
-                buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq 'String {00020386-0000-0000-c000-000000000046} Name to' and contains(ep/value,'")
-                        .append(StringUtil.escapeQuotes(value)).append("'))");
-            } else if (Operator.StartsWith.equals(operator)) {
-                if (graphId == null) {
-                    LOGGER.error("Unknown field: " + attributeName);
-                } else if (graphId.contains(" ")) {
+            if (field.isExtended()) {
+                if (field.isNumber()) {
+                    // check value
+                    int intValue = 0;
+                    try {
+                        intValue = Integer.parseInt(value);
+                    } catch (NumberFormatException e) {
+                        // invalid value, replace with 0
+                    }
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
-                            .append("' and startswith(ep/value,'").append(StringUtil.escapeQuotes(value)).append("'))");
-                } else {
-                    buffer.append("startswith(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
-                }
-            } else if (Operator.Contains.equals(operator)) {
-                if (graphId == null) {
-                    LOGGER.error("Unknown field: " + attributeName);
-                } else if (graphId.contains(" ")) {
-                    // search MAPI property as singleValueExtendedProperty
+                            .append("' and cast(ep/value, Edm.Int32) ").append(convertOperator(operator)).append(" ").append(intValue).append(")");
+                } else if (Operator.Contains.equals(operator)) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and contains(ep/value,'").append(StringUtil.escapeQuotes(value)).append("'))");
-                } else {
-                    // search graph property
-                    buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
-                }
-            } else if (field.isExtended()) {
-                if (field.isBinary()) {
+                } else if (Operator.StartsWith.equals(operator)) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
+                            .append("' and startswith(ep/value,'").append(StringUtil.escapeQuotes(value)).append("'))");
+                } else if (field.isBinary()) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value,Edm.Binary) ").append(convertOperator(operator)).append(" binary'").append(StringUtil.escapeQuotes(value)).append("')");
-                } else if (field.isNumber()) {
-                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
-                            .append("' and cast(ep/value, Edm.Int32) ").append(convertOperator(operator)).append(" ").append(StringUtil.escapeQuotes(value)).append(")");
                 } else {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
@@ -1831,7 +1821,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 } else {
                     buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
                 }
-            } else if ("start".equals(graphId) || "end".equals(graphId)) {
+            } else if (Operator.Contains.equals(operator)) {
+                // search graph property
+                buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
+            } else if (Operator.StartsWith.equals(operator)) {
+                buffer.append("startswith(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
+            } else if ("start".equals(graphId) || "end".equals(graphId)) { // TODO check date value
                 buffer.append(graphId).append("/dateTime ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
             } else {
                 buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
@@ -2437,7 +2432,6 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
                 executeJsonRequest(new GraphRequestBuilder()
                         .setMethod(HttpPost.METHOD_NAME)
-                        // TODO mailbox?
                         .setMailbox(parentFolderId.mailbox)
                         .setObjectType(objectType)
                         .setObjectId(parentFolderId.id)
@@ -2622,12 +2616,13 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setChildType("contacts")
                 .setSelectFields(CONTACT_ATTRIBUTES)
                 .setFilter(condition);
-        LOGGER.debug("searchContacts " + folderId.getMailboxName() + "/" + folderPath+" "+httpRequestBuilder.select);
+        LOGGER.debug("searchContacts " + folderId.getMailboxName() + "/" + folderPath + " " + httpRequestBuilder.select);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext() && (maxCount == 0 || contactList.size() < maxCount)) {
             Contact contact = new Contact(new GraphObject(graphIterator.next()));
+            contact.folderPath = folderPath;
             contact.folderId = folderId;
             contactList.add(contact);
         }
@@ -2713,6 +2708,7 @@ public class GraphExchangeSession extends ExchangeSession {
             JSONObject jsonResponse = getContactIfExists(folderId, itemName);
             if (jsonResponse != null) {
                 Contact contact = new Contact(new GraphObject(jsonResponse));
+                contact.folderPath = folderPath;
                 contact.folderId = folderId;
                 return contact;
             } else {
@@ -2747,12 +2743,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 // this may be a task item
                 FolderId taskFolderId = getFolderId(TASKS);
                 return executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod(HttpGet.METHOD_NAME)
-                        .setMailbox(folderId.mailbox)
-                        .setObjectType("todo/lists")
-                        .setObjectId(taskFolderId.id)
-                        .setChildType("tasks")
-                        .setChildId(itemId)
+                                .setMethod(HttpGet.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("todo/lists")
+                                .setObjectId(taskFolderId.id)
+                                .setChildType("tasks")
+                                .setChildId(itemId)
                         //.setSelectFields(TODO_PROPERTIES) // TODO set fields for todo items
                 );
             }
@@ -2774,12 +2770,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 // this may be a task item
                 FolderId taskFolderId = getFolderId(TASKS);
                 jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod(HttpGet.METHOD_NAME)
-                        .setMailbox(folderId.mailbox)
-                        .setObjectType("todo/lists")
-                        .setObjectId(taskFolderId.id)
-                        .setChildType("tasks")
-                        .setFilter(isEqualTo("urlcompname", urlcompname))
+                                .setMethod(HttpGet.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("todo/lists")
+                                .setObjectId(taskFolderId.id)
+                                .setChildType("tasks")
+                                .setFilter(isEqualTo("urlcompname", urlcompname))
                         //.setSelectFields(TODO_PROPERTIES) // TODO set actual properties
                 );
             }
@@ -2997,18 +2993,18 @@ public class GraphExchangeSession extends ExchangeSession {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<>();
 
         // need to refactor LDAP search as users backend now supports complex queries
-        /*GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
-                .setObjectType("users")
+                .setObjectType("people")
                 .setFilter(condition)
-                .setSelect("id,displayName,givenName,surname,mail,officeLocation,streetAddress,city,companyName,postalcode,state,country,jobTitle,department,businessPhones,mobilePhone,facsimiletelephonenumber,faxNumber");
+                .setSelect("id,displayName,givenName,surname,birthday,personNotes,isFavorite,title,companyName,department,officeLocation,profession,mailboxType,personType,userPrincipalName,emailAddresses,phones");
         LOGGER.debug("search users");
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext() && contacts.size() < sizeLimit) {
             Contact contact = buildGalfindContact(graphIterator.next());
             contacts.put(contact.getName().toLowerCase(), contact);
-        }*/
+        }
 
         return contacts;
     }

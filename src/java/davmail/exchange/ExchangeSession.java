@@ -1776,7 +1776,7 @@ public abstract class ExchangeSession {
      * Generic folder item.
      */
     public abstract static class Item extends HashMap<String, String> {
-        protected String folderPath;
+        public String folderPath;
         protected String itemName;
         protected String permanentUrl;
         /**
