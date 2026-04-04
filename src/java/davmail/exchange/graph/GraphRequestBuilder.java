@@ -62,6 +62,7 @@ public class GraphRequestBuilder {
     String expand;
 
     String filter;
+    String search;
 
     String startDateTime;
     String endDateTime;
@@ -148,6 +149,11 @@ public class GraphRequestBuilder {
             this.filter = buffer.toString();
             LOGGER.debug("filter: " + filter);
         }
+        return this;
+    }
+
+    public GraphRequestBuilder setSearch(String search) {
+        this.search = search;
         return this;
     }
 
@@ -316,6 +322,10 @@ public class GraphRequestBuilder {
 
             if (filter != null) {
                 uriBuilder.addParameter("$filter", filter);
+            }
+
+            if (search != null) {
+                uriBuilder.addParameter("$search", search);
             }
 
             if (startDateTime != null) {

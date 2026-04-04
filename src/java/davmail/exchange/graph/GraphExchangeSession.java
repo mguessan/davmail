@@ -2987,23 +2987,47 @@ public class GraphExchangeSession extends ExchangeSession {
         return contact;
     }
 
+    String PEOPLE_ATTRIBUTES = "id,displayName,givenName,surname,birthday,personNotes,isFavorite,title,companyName,department,officeLocation,profession,mailboxType,personType,userPrincipalName,emailAddresses,phones";
 
     @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<>();
 
-        // need to refactor LDAP search as users backend now supports complex queries
-        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
-                .setMethod(HttpGet.METHOD_NAME)
-                .setObjectType("people")
-                .setFilter(condition)
-                .setSelect("id,displayName,givenName,surname,birthday,personNotes,isFavorite,title,companyName,department,officeLocation,profession,mailboxType,personType,userPrincipalName,emailAddresses,phones");
-        LOGGER.debug("search users");
-        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+        // poor implementation of search filter based on people endpoint limitations
+        String search = null;
+        String id = null;
+        if (condition != null && condition instanceof AttributeCondition) {
+            if ("imapUid".equals(((AttributeCondition) condition).getAttributeName())) {
+                id = ((AttributeCondition) condition).getValue();
+            } else {
+                search = ((AttributeCondition) condition).getValue();
+            }
+        }
 
-        while (graphIterator.hasNext() && contacts.size() < sizeLimit) {
-            Contact contact = buildGalfindContact(graphIterator.next());
+        if (id != null) {
+            GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setObjectType("people")
+                    .setObjectId(id)
+                    .setSelect(PEOPLE_ATTRIBUTES);
+            Contact contact = buildGalfindContact(executeJsonRequest(httpRequestBuilder));
             contacts.put(contact.getName().toLowerCase(), contact);
+            LOGGER.debug("found user "+contact.getName());
+
+        } else {
+            GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setObjectType("people")
+                    .setSearch(search)
+                    .setSelect(PEOPLE_ATTRIBUTES);
+            LOGGER.debug("search users");
+            GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+
+            while (graphIterator.hasNext() && contacts.size() < sizeLimit) {
+                Contact contact = buildGalfindContact(graphIterator.next());
+                contacts.put(contact.getName().toLowerCase(), contact);
+                LOGGER.debug("found user " + contact.getName());
+            }
         }
 
         return contacts;
@@ -3093,6 +3117,10 @@ public class GraphExchangeSession extends ExchangeSession {
             ) {
                 jsonObject = new JsonResponseHandler().handleResponse(response);
                 nextLink = jsonObject.optString("@odata.nextLink", null);
+                // workaround for people search bug
+                if (nextLink != null && nextLink.endsWith("skip=0")) {
+                    nextLink = null;
+                }
                 values = jsonObject.getJSONArray("value");
                 index = 0;
             } catch (JSONException e) {
@@ -3120,6 +3148,9 @@ public class GraphExchangeSession extends ExchangeSession {
             // DEBUG only, disable gzip encoding
             //request.setHeader("Accept-Encoding", "");
             //request.setHeader("Prefer", "outlook.timezone=\"GMT Standard Time\"");
+            if (request.getURI().getPath().endsWith("/people")) {
+                request.setHeader("X-PeopleQuery-QuerySources", "Mailbox,Directory");
+            }
             try (
                     CloseableHttpResponse response = httpClient.execute(request)
             ) {
