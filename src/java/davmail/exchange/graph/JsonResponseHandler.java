@@ -19,6 +19,7 @@
 
 package davmail.exchange.graph;
 
+import davmail.exception.HttpConflictException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.http.HttpClientAdapter;
@@ -79,6 +80,9 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
             }
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 throw new HttpNotFoundException(errorMessage);
+            }
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_CONFLICT) {
+                throw new HttpConflictException(errorMessage);
             }
             throw new IOException(errorMessage);
         }
