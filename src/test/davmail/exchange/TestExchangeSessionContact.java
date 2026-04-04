@@ -18,11 +18,15 @@
  */
 package davmail.exchange;
 
-import davmail.Settings;
+import davmail.exception.HttpConflictException;
+import davmail.exception.HttpForbiddenException;
 import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -33,7 +37,7 @@ import java.util.UUID;
  */
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase {
-    
+
     final static String FOLDER_PATH = "contacts/testcontactfolder";
     static String itemName = null;
 
@@ -49,19 +53,24 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
     public void testCreateFolder() throws IOException {
         // recreate an empty folder, does not work over graph
-        //session.deleteFolder(FOLDER_PATH);
+        try {
+            session.deleteFolder(FOLDER_PATH);
+        } catch (HttpForbiddenException e) {
+            // empty folder over graph
+            List<ExchangeSession.Contact> contacts = session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
+            if (contacts != null) {
+                for (ExchangeSession.Contact contact : contacts) {
+                    session.deleteItem(FOLDER_PATH, contact.itemName);
+                }
+            }
+        }
         try {
             session.createContactFolder(FOLDER_PATH, null);
+        } catch (HttpConflictException e) {
+            // folder already exists on graph
         } catch (IOException e) {
             if (e.getMessage() == null || !e.getMessage().startsWith("ErrorFolderExists")) {
                 throw e;
-            }
-        }
-        // empty folder instead
-        List<ExchangeSession.Contact> contacts = session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
-        if (contacts != null) {
-            for (ExchangeSession.Contact contact : contacts) {
-                session.deleteItem(FOLDER_PATH, contact.itemName);
             }
         }
     }
@@ -90,7 +99,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         vCardWriter.appendProperty("ORG", "o", "department");
 
-        vCardWriter.appendProperty("URL;TYPE=work", "http://local.net");
+        vCardWriter.appendProperty("URL;TYPE=work", "https://local.net");
         vCardWriter.appendProperty("TITLE", "title");
         vCardWriter.appendProperty("NOTE", "description");
 
@@ -113,7 +122,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         vCardWriter.appendProperty("CLASS", "PRIVATE");
 
-        // add photo
+        // add a contact photo
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         InputStream fileInputStream = Files.newInputStream(Paths.get("src/data/anonymous.jpg"));
         IOUtil.write(fileInputStream, baos);
@@ -170,7 +179,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("o", contact.get("o"));
         assertEquals("department", contact.get("department"));
 
-        assertEquals("http://local.net", contact.get("businesshomepage"));
+        assertEquals("https://local.net", contact.get("businesshomepage"));
         assertEquals("title", contact.get("title"));
         assertEquals("description", contact.get("description"));
 
@@ -379,7 +388,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         VCardWriter vCardWriter = new VCardWriter();
         vCardWriter.startCard();
-        vCardWriter.appendProperty("ITEM1.URL", "http://www.myhomepage.org");
+        vCardWriter.appendProperty("ITEM1.URL", "https://www.myhomepage.org");
         vCardWriter.endCard();
 
         ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), contact.etag, null);
@@ -387,7 +396,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         contact = (ExchangeSession.Contact) session.getItem(FOLDER_PATH, itemName);
 
-        assertEquals("http://www.myhomepage.org", contact.get("personalHomePage"));
+        assertEquals("https://www.myhomepage.org", contact.get("personalHomePage"));
 
     }
 
@@ -531,7 +540,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, maxCount);
         int folderSize = contacts.size();
         assertEquals(20, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, 20).size());
-        assertEquals(folderSize, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, folderSize+1).size());
+        assertEquals(folderSize, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, folderSize + 1).size());
     }
 
     public void testHashInName() throws IOException {
@@ -660,7 +669,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         //session.getAllContacts("contacts");
         List<ExchangeSession.Contact> contacts = session.searchContacts("contacts", ExchangeSession.CONTACT_ATTRIBUTES, session.isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
         //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-        for (ExchangeSession.Contact contact: contacts) {
+        for (ExchangeSession.Contact contact : contacts) {
             ExchangeSession.Item item = session.getItem("contacts", contact.getName());
             System.out.println((item).getBody());
         }
@@ -669,7 +678,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
     public void testGetAllDistributionLists() throws IOException {
         List<ExchangeSession.Contact> contacts = session.searchContacts("contacts", ExchangeSession.CONTACT_ATTRIBUTES, session.isEqualTo("outlookmessageclass", "IPM.DistList"), 0);
         //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-        for (ExchangeSession.Contact contact: contacts) {
+        for (ExchangeSession.Contact contact : contacts) {
             ExchangeSession.Item item = session.getItem("contacts", contact.getName());
             System.out.println((item).getBody());
         }
@@ -684,8 +693,31 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
     public void testMultiValueMultilineProperty() {
         VCardWriter vCardWriter = new VCardWriter();
-        vCardWriter.appendProperty("ADR", "value","multi line \r\n with crlf");
+        vCardWriter.appendProperty("ADR", "value", "multi line \r\n with crlf");
         // should drop CR and convert LF to \\n
         assertEquals("ADR:value;multi line \\n with crlf\r\n", vCardWriter.toString());
     }
+
+    public void testSearchContact() throws IOException {
+        // reset folder and create full contact
+        testCreateFolder();
+        testCreateContact();
+
+        ExchangeSession.Contact contact = getCurrentContact();
+        System.out.println("Name: "+contact.getName()); // name is id + ".vcf"
+        System.out.println("Uid: "+contact.getUid()); // getUid() returns id, id is not searchable
+        System.out.println("Href: "+contact.getHref()); // full path followed by name
+        System.out.println("Actual uid: "+contact.get("uid")); // binary field PR_RECORD_KEY, searchable
+
+        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.isEqualTo("uid", contact.get("uid")), 0).size());
+
+        //search by email
+        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.contains("smtpemail1", "email1"), 0).size());
+        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.contains("smtpemail2", "email2"), 0).size());
+        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.contains("smtpemail3", "email3"), 0).size());
+
+        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.contains("smtpemail1", "@local.net"), 0).size());
+        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.startsWith("smtpemail1", "email1"), 0).size());
+    }
+
 }
