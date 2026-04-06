@@ -37,7 +37,9 @@ import org.codehaus.jettison.json.JSONObject;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -76,6 +78,11 @@ public class GraphRequestBuilder {
 
     JSONObject jsonBody = null;
 
+    /**
+     * Custom request headers
+     */
+    HashMap<String, String> headerMap;
+
     byte[] mimeContent;
     private String objectId;
 
@@ -99,6 +106,14 @@ public class GraphRequestBuilder {
      */
     public GraphRequestBuilder setJsonBody(JSONObject jsonBody) {
         this.jsonBody = jsonBody;
+        return this;
+    }
+
+    public GraphRequestBuilder addHeader(String name, String value) {
+        if (headerMap == null) {
+            headerMap = new HashMap<String, String>();
+        }
+        headerMap.put(name, value);
         return this;
     }
 
@@ -347,6 +362,7 @@ public class GraphRequestBuilder {
             }
 
             HttpRequestBase httpRequest;
+
             if ("POST".equals(method)) {
                 httpRequest = new HttpPost(uriBuilder.build());
                 if (mimeContent != null) {
@@ -373,6 +389,13 @@ public class GraphRequestBuilder {
             }
             httpRequest.setHeader("Content-Type", contentType);
             httpRequest.setHeader("Authorization", "Bearer " + accessToken);
+
+            // set custom headers
+            if (headerMap != null) {
+                for (Map.Entry<String, String> header : headerMap.entrySet()) {
+                    httpRequest.addHeader(header.getKey(), header.getValue());
+                }
+            }
 
             if (timeZone != null) {
                 httpRequest.setHeader("Prefer", "outlook.timezone=\"" + timeZone + "\"");
