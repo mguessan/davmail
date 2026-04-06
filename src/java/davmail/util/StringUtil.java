@@ -276,7 +276,7 @@ public final class StringUtil {
     }
 
     /**
-     * Need to decode xml for iCal
+     * Need to decode XML for iCal
      *
      * @param name encoded name
      * @return name decoded name
@@ -429,10 +429,24 @@ public final class StringUtil {
     }
 
     /**
-     * Get allday date value from zulu timestamp.
+     * Backslash escape double guotes in provided string.
      *
-     * @param value zulu datetime
-     * @return yyyyMMdd allday date value
+     * @param value input string
+     * @return escaped string
+     */
+    public static String escapeDoubleQuotes(String value) {
+        String result = value;
+        if (result != null && result.indexOf('"') >= 0) {
+            result = QUOTE_PATTERN.matcher(result).replaceAll("\\\\\"");
+        }
+        return result;
+    }
+
+    /**
+     * Get allDay date value from Zulu timestamp.
+     *
+     * @param value Zulu datetime
+     * @return yyyyMMdd allDay date value
      */
     public static String convertZuluDateTimeToAllDay(String value) {
         String result = value;
@@ -487,8 +501,8 @@ public final class StringUtil {
         // double quotes are removed.
         char[] resultChars = new char[quotedChars.length - 2];
 
-        // 0 is the index of the first char in resultChars that is the actual result
-        // resultPos is the index of the last byte in resultChars that is the actual result
+        // 0 is the index of the first char in resultChars that is the actual result.
+        // resultPos is the index of the last byte in resultChars that is the actual result.
         // resultChars MAY have additional bytes (when resultPos + 1 < resultChars.length), that are not part of the result.
         int resultPos = 0;
         // a very mechanical approach, looking at one character at a time
