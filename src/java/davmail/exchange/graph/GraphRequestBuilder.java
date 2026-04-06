@@ -22,6 +22,7 @@ package davmail.exchange.graph;
 import davmail.Settings;
 import davmail.exchange.ExchangeSession;
 import davmail.util.IOUtil;
+import davmail.util.StringUtil;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
@@ -346,7 +347,7 @@ public class GraphRequestBuilder {
             }
 
             if (search != null) {
-                uriBuilder.addParameter("$search", search);
+                uriBuilder.addParameter("$search", "\""+ StringUtil.escapeDoubleQuotes(search)+"\"");
             }
 
             if (startDateTime != null) {
