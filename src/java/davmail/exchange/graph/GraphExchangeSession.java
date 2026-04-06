@@ -66,6 +66,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -2939,38 +2940,34 @@ public class GraphExchangeSession extends ExchangeSession {
         return folderId.mailbox;
     }
 
+    /**
+     * Map people attributes to LDAP
+     */
     public static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<>();
 
     static {
-        GALFIND_ATTRIBUTE_MAP.put("imapUid", "id");
-        GALFIND_ATTRIBUTE_MAP.put("cn", "displayName");
+        GALFIND_ATTRIBUTE_MAP.put("id", "uid"); // use id as uid
+
+        GALFIND_ATTRIBUTE_MAP.put("displayName", "cn"); // common name
+        GALFIND_ATTRIBUTE_MAP.put("surname", "sn");
         GALFIND_ATTRIBUTE_MAP.put("givenName", "givenName");
-        GALFIND_ATTRIBUTE_MAP.put("sn", "surname");
-        GALFIND_ATTRIBUTE_MAP.put("smtpemail1", "mail");
+        GALFIND_ATTRIBUTE_MAP.put("personNotes", "description"); // map personNotes to description
 
-        GALFIND_ATTRIBUTE_MAP.put("roomnumber", "officeLocation");
-        GALFIND_ATTRIBUTE_MAP.put("street", "streetAddress");
-        GALFIND_ATTRIBUTE_MAP.put("l", "city");
-        GALFIND_ATTRIBUTE_MAP.put("o", "companyName");
-        GALFIND_ATTRIBUTE_MAP.put("postalcode", "postalcode");
-        GALFIND_ATTRIBUTE_MAP.put("st", "state");
-        GALFIND_ATTRIBUTE_MAP.put("co", "country");
-
-        // GALFIND_ATTRIBUTE_MAP.put("manager", ""); // TODO
-        // GALFIND_ATTRIBUTE_MAP.put("middlename", ""); // TODO
-        GALFIND_ATTRIBUTE_MAP.put("title", "jobTitle");
+        GALFIND_ATTRIBUTE_MAP.put("companyName", "company"); // company or o
+        GALFIND_ATTRIBUTE_MAP.put("profession", "profession");
+        GALFIND_ATTRIBUTE_MAP.put("title", "title");
         GALFIND_ATTRIBUTE_MAP.put("department", "department");
+        GALFIND_ATTRIBUTE_MAP.put("officeLocation", "location");
 
-        //GALFIND_ATTRIBUTE_MAP.put("otherTelephone", ""); // rely on businessPhones
-        GALFIND_ATTRIBUTE_MAP.put("telephoneNumber", "businessPhones"); // array
-        GALFIND_ATTRIBUTE_MAP.put("mobile", "mobilePhone");
-        GALFIND_ATTRIBUTE_MAP.put("facsimiletelephonenumber", "faxNumber");
-        //GALFIND_ATTRIBUTE_MAP.put("secretarycn", ""); // TODO
+        GALFIND_ATTRIBUTE_MAP.put("birthday", "birthday"); // TODO may have to convert value
 
-        //GALFIND_ATTRIBUTE_MAP.put("homePhone", "HomePhone"); // TODO
-        //GALFIND_ATTRIBUTE_MAP.put("pager", "Pager"); // TODO
-        //GALFIND_ATTRIBUTE_MAP.put("msexchangecertificate", ""); // TODO
-        //GALFIND_ATTRIBUTE_MAP.put("usersmimecertificate", ""); // TODO
+        GALFIND_ATTRIBUTE_MAP.put("isFavorite", "isFavorite");
+
+        GALFIND_ATTRIBUTE_MAP.put("yomiCompany", "yomiCompany");
+
+        GALFIND_ATTRIBUTE_MAP.put("mailboxType", "mailboxType");
+        GALFIND_ATTRIBUTE_MAP.put("personType", "personType");
+        GALFIND_ATTRIBUTE_MAP.put("userPrincipalName", "userPrincipalName"); // for Active Directory / EntraID entries
     }
 
 
@@ -2979,16 +2976,60 @@ public class GraphExchangeSession extends ExchangeSession {
         contact.setName(response.optString("id"));
         contact.put("imapUid", response.optString("id"));
         contact.put("uid", response.optString("id"));
-        for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
-            String attributeValue = response.optString(entry.getValue());
-            if (attributeValue != null && !attributeValue.isEmpty()) {
-                contact.put(entry.getKey(), attributeValue);
+        Iterator keysIterator = response.keys();
+        while (keysIterator.hasNext()) {
+            String key = (String) keysIterator.next();
+            String attributeName = key;
+            // special handling for email addresses
+            if ("emailAddresses".equals(key)) {
+                JSONArray emailAddresses = response.optJSONArray("emailAddresses");
+                if (emailAddresses != null) {
+                    for (int i = 0; i < 3; i++) {
+                        if (emailAddresses.length() > i) {
+                            contact.put("smtpemail" + (i + 1), emailAddresses.optJSONObject(i).optString("address"));
+                        }
+                    }
+                }
+            // map phone numbers
+            } else if ("phones".equals(key)) {
+                JSONArray phones = response.optJSONArray("phones");
+                if (phones != null) {
+                    for (int i=0;i<phones.length();i++) {
+                        String phoneType = phones.optJSONObject(i).optString("type");
+                        String phoneNumber = phones.optJSONObject(i).optString("number");
+                        if ("business".equals(phoneType)) {
+                            contact.put("telephoneNumber", phoneNumber);
+                        } else if ("mobile".equals(phoneType)) {
+                            contact.put("mobile", phoneNumber);
+                        } else if ("home".equals(phoneType)) {
+                            contact.put("homePhone", phoneNumber);
+                        } else {
+                            LOGGER.debug("Unknown phoneType "+phoneType);
+                            contact.put(phoneType+"Phone", phoneNumber);
+                        }
+                    }
+                }
+            } else if ("sources".equals(key)) {
+                JSONArray sources = response.optJSONArray("sources");
+                if (sources != null && sources.length() > 0) {
+                    String sourceType = sources.optJSONObject(0).optString("type");
+                    contact.put("sourceType", sourceType);
+                }
+            } else {
+                if (GALFIND_ATTRIBUTE_MAP.get(key) != null) {
+                    attributeName = GALFIND_ATTRIBUTE_MAP.get(key);
+                } else {
+                    LOGGER.debug("Unknown attribute " + attributeName);
+                }
+
+                String attributeValue = response.optString(key);
+                if (attributeValue != null) {
+                    contact.put(attributeName, attributeValue);
+                }
             }
         }
         return contact;
     }
-
-    String PEOPLE_ATTRIBUTES = "id,displayName,givenName,surname,birthday,personNotes,isFavorite,title,companyName,department,officeLocation,profession,mailboxType,personType,userPrincipalName,emailAddresses,phones";
 
     @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
@@ -2997,7 +3038,7 @@ public class GraphExchangeSession extends ExchangeSession {
         // poor implementation of search filter based on people endpoint limitations
         String search = null;
         String id = null;
-        if (condition != null && condition instanceof AttributeCondition) {
+        if (condition instanceof AttributeCondition) {
             if ("imapUid".equals(((AttributeCondition) condition).getAttributeName())) {
                 id = ((AttributeCondition) condition).getValue();
             } else {
@@ -3006,21 +3047,37 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         if (id != null) {
-            GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
-                    .setMethod(HttpGet.METHOD_NAME)
-                    .setObjectType("people")
-                    .setObjectId(id)
-                    .setSelect(PEOPLE_ATTRIBUTES);
-            Contact contact = buildGalfindContact(executeJsonRequest(httpRequestBuilder));
-            contacts.put(contact.getName().toLowerCase(), contact);
-            LOGGER.debug("found user "+contact.getName());
+
+            // lookup by id only if this is actually an id
+            if (id.length() == 36) {
+                GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                        .setMethod(HttpGet.METHOD_NAME)
+                        .addHeader("X-PeopleQuery-QuerySources", "Mailbox,Directory")
+                        .setObjectType("people")
+                        .setObjectId(id)
+                        ;
+                JSONObject peopleObject = null;
+
+                try {
+                    peopleObject = executeJsonRequest(httpRequestBuilder);
+                } catch (HttpNotFoundException e) {
+                    LOGGER.warn("No person found for id "+id);
+                }
+
+                if (peopleObject != null) {
+                    Contact contact = buildGalfindContact(peopleObject);
+
+                    contacts.put(contact.getName().toLowerCase(), contact);
+                    LOGGER.debug("found user " + contact.getName());
+                }
+            }
 
         } else {
             GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
+                    .addHeader("X-PeopleQuery-QuerySources", "Mailbox,Directory")
                     .setObjectType("people")
                     .setSearch(search)
-                    .setSelect(PEOPLE_ATTRIBUTES)
                     .setSizeLimit(sizeLimit);
             LOGGER.debug("search users");
             GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
@@ -3149,10 +3206,6 @@ public class GraphExchangeSession extends ExchangeSession {
 
             // DEBUG only, disable gzip encoding
             //request.setHeader("Accept-Encoding", "");
-            //request.setHeader("Prefer", "outlook.timezone=\"GMT Standard Time\"");
-            if (request.getURI().getPath().endsWith("/people")) {
-                request.setHeader("X-PeopleQuery-QuerySources", "Mailbox,Directory");
-            }
             try (
                     CloseableHttpResponse response = httpClient.execute(request)
             ) {
