@@ -2950,7 +2950,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         GALFIND_ATTRIBUTE_MAP.put("displayName", "cn"); // common name
         GALFIND_ATTRIBUTE_MAP.put("surname", "sn");
-        GALFIND_ATTRIBUTE_MAP.put("givenName", "givenName");
+        GALFIND_ATTRIBUTE_MAP.put("givenName", "givenname");
         GALFIND_ATTRIBUTE_MAP.put("personNotes", "description"); // map personNotes to description
 
         GALFIND_ATTRIBUTE_MAP.put("companyName", "company"); // company or o
@@ -2961,13 +2961,12 @@ public class GraphExchangeSession extends ExchangeSession {
 
         GALFIND_ATTRIBUTE_MAP.put("birthday", "birthday"); // TODO may have to convert value
 
-        GALFIND_ATTRIBUTE_MAP.put("isFavorite", "isFavorite");
+        GALFIND_ATTRIBUTE_MAP.put("yomiCompany", "yomicompany");
 
-        GALFIND_ATTRIBUTE_MAP.put("yomiCompany", "yomiCompany");
-
-        GALFIND_ATTRIBUTE_MAP.put("mailboxType", "mailboxType");
-        GALFIND_ATTRIBUTE_MAP.put("personType", "personType");
-        GALFIND_ATTRIBUTE_MAP.put("userPrincipalName", "userPrincipalName"); // for Active Directory / EntraID entries
+        GALFIND_ATTRIBUTE_MAP.put("mailboxType", "mailboxtype");
+        GALFIND_ATTRIBUTE_MAP.put("personType", "persontype");
+        GALFIND_ATTRIBUTE_MAP.put("userPrincipalName", "userprincipalname"); // for Active Directory / EntraID entries
+        GALFIND_ATTRIBUTE_MAP.put("isFavorite", "isfavorite");
     }
 
 
