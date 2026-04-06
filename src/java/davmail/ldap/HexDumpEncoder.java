@@ -42,7 +42,7 @@ import java.nio.ByteBuffer;
  * xxxx: 00 11 22 33 44 55 66 77   88 99 aa bb cc dd ee ff ................
  * </pre>
  * Where xxxx is the offset into the buffer in 16 byte chunks, followed
- * by ascii coded hexadecimal bytes followed by the ASCII representation of
+ * by ASCII coded hexadecimal bytes followed by the ASCII representation of
  * the bytes or '.' if they are not valid bytes.
  *
  * @author      Chuck McManis
@@ -53,7 +53,7 @@ public class HexDumpEncoder {
     private int offset;
     private int thisLineLength;
     private int currentByte;
-    private byte[] thisLine = new byte[16];
+    private final byte[] thisLine = new byte[16];
 
     static void hexDigit(PrintStream p, byte x) {
         char c;
@@ -151,18 +151,18 @@ public class HexDumpEncoder {
     {
         int     j;
         int     numBytes;
-        byte[] tmpbuffer = new byte[bytesPerLine()];
+        byte[] buffer = new byte[bytesPerLine()];
 
         encodeBufferPrefix(outStream);
 
         while (true) {
-            numBytes = readFully(inStream, tmpbuffer);
+            numBytes = readFully(inStream, buffer);
             if (numBytes == 0) {
                 break;
             }
             encodeLinePrefix(numBytes);
             for (j = 0; j < numBytes; j += bytesPerAtom()) {
-                encodeAtom(tmpbuffer, j);
+                encodeAtom(buffer, j);
             }
             if (numBytes < bytesPerLine()) {
                 break;
@@ -259,18 +259,18 @@ public class HexDumpEncoder {
     {
         int     j;
         int     numBytes;
-        byte[] tmpbuffer = new byte[bytesPerLine()];
+        byte[] buffer = new byte[bytesPerLine()];
 
         encodeBufferPrefix(outStream);
 
         while (true) {
-            numBytes = readFully(inStream, tmpbuffer);
+            numBytes = readFully(inStream, buffer);
             if (numBytes == 0) {
                 break;
             }
             encodeLinePrefix(numBytes);
             for (j = 0; j < numBytes; j += bytesPerAtom()) {
-                encodeAtom(tmpbuffer, j);
+                encodeAtom(buffer, j);
             }
             encodeLineSuffix();
             if (numBytes < bytesPerLine()) {

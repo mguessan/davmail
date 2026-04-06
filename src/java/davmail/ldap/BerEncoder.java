@@ -25,7 +25,6 @@
 
 package davmail.ldap;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -200,13 +199,6 @@ public final class BerEncoder extends Ber {
         buf[offset++] = (byte) b;
     }
 
-/*
-    private void deleteByte() {
-        offset--;
-    }
-*/
-
-
     /*
      * Encodes an int.
      *<blockquote><pre>
@@ -320,12 +312,8 @@ public final class BerEncoder extends Ber {
             bytes = str.getBytes(StandardCharsets.UTF_8);
             count = bytes.length;
         } else {
-            try {
-                bytes = str.getBytes("8859_1");
-                count = bytes.length;
-            } catch (UnsupportedEncodingException e) {
-                throw new EncodeException("8859_1 not available on platform");
-            }
+            bytes = str.getBytes(StandardCharsets.ISO_8859_1);
+            count = bytes.length;
         }
 
         encodeLength(count);
@@ -393,16 +381,6 @@ public final class BerEncoder extends Ber {
             encodeString(str, encodeUTF8);
         }
     }
-/*
-    private void encodeNull() {
-
-        //
-        // NULL ::= 0x05 0x00
-        //
-        encodeByte(0x05);
-        encodeByte(0x00);
-    }
-*/
 
     /**
      * Ensures that there are at least "len" unused bytes in "buf".

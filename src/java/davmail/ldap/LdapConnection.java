@@ -609,7 +609,7 @@ public class LdapConnection extends AbstractConnection {
                 } else {
                     password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, isLdapV3(), null);
 
-                    if (userName.length() > 0 && password.length() > 0) {
+                    if (!userName.isEmpty() && !password.isEmpty()) {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
                         try {
                             session = ExchangeSessionFactory.getInstance(userName, password);
@@ -1020,7 +1020,7 @@ public class LdapConnection extends AbstractConnection {
         os.flush();
     }
 
-    interface LdapFilter {
+    public interface LdapFilter {
         ExchangeSession.Condition getContactSearchFilter();
 
         Map<String, ExchangeSession.Contact> findInGAL(ExchangeSession session, Set<String> returningAttributes, int sizeLimit) throws IOException;
@@ -1443,7 +1443,7 @@ public class LdapConnection extends AbstractConnection {
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH", currentMessageId, dn, scope, sizeLimit, timelimit, ldapFilter.toString(), returningAttributes));
 
                 if (scope == SCOPE_BASE_OBJECT) {
-                    if (dn != null && dn.length() == 0) {
+                    if (dn != null && dn.isEmpty()) {
                         size = 1;
                         sendRootDSE(currentMessageId);
                     } else if (BASE_CONTEXT.equals(dn)) {
@@ -1550,7 +1550,7 @@ public class LdapConnection extends AbstractConnection {
                     } else {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
                     }
-                } else if (dn != null && dn.length() > 0 && !OD_CONFIG_CONTEXT.equals(dn) && !OD_GROUP_CONTEXT.equals(dn)) {
+                } else if (dn != null && !dn.isEmpty() && !OD_CONFIG_CONTEXT.equals(dn) && !OD_GROUP_CONTEXT.equals(dn)) {
                     DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
                 }
 
@@ -1587,7 +1587,7 @@ public class LdapConnection extends AbstractConnection {
          * @param condition           search filter
          * @param returningAttributes requested attributes
          * @param maxCount            maximum item count
-         * @return List of users
+         * @return Contact map
          * @throws IOException on error
          */
         public Map<String, ExchangeSession.Contact> contactFind(ExchangeSession.Condition condition, Set<String> returningAttributes, int maxCount) throws IOException {
