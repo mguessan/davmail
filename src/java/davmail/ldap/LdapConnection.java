@@ -295,6 +295,11 @@ public class LdapConnection extends AbstractConnection {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("msexchangecertificate;binary", "msexchangecertificate");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("usersmimecertificate;binary", "usersmimecertificate");
 
+        // Graph specific attributes
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("userprincipalname", "userprincipalname");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mailboxtype", "mailboxtype");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("persontype", "persontype");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("isfavorite", "isfavorite");
     }
 
     /**
