@@ -438,6 +438,10 @@ public class GraphField {
         return propertyType == PropertyType.SystemTime;
     }
 
+    public boolean isInternetHeaders() {
+        return distinguishedPropertySetId == DistinguishedPropertySetType.InternetHeaders;
+    }
+
     /**
      * Get field by alias.
      * @param alias property alias
