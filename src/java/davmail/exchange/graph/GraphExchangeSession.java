@@ -1798,7 +1798,11 @@ public class GraphExchangeSession extends ExchangeSession {
             GraphField field = getField();
             String graphId = field.getGraphId();
             if (field.isExtended()) {
-                if (field.isNumber()) {
+                if (field.isInternetHeaders()) {
+                    // header search does not work over graph, try to match full internet headers
+                    buffer.append("singleValueExtendedProperties/any(ep:ep/id eq 'String 0x007D' and contains(ep/value, '")
+                            .append(attributeName).append(": ").append(StringUtil.escapeQuotes(value)).append("'))");
+                } else if (field.isNumber()) {
                     // check value
                     int intValue = 0;
                     try {
