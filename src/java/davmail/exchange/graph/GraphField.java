@@ -76,12 +76,13 @@ public class GraphField {
         addFieldMap("@odata.etag");
         addFieldMap("changeKey", "@odata.etag");
 
-        addFieldMap("read", "isRead");
+        addFieldMap("read", "isRead", PropertyType.Boolean);
         addFieldMap("messageheaders", 0x007D, PropertyType.String);
         addFieldMap("internetMessageHeaders");
 
         addFieldMap("to", DistinguishedPropertySetType.InternetHeaders, "to");
-        addFieldMap("from");
+        addFieldMap("cc", DistinguishedPropertySetType.InternetHeaders, "cc");
+        addFieldMap("from", DistinguishedPropertySetType.InternetHeaders, "from");
         addFieldMap("date", 0x0e06, PropertyType.SystemTime);
 
         addFieldMap("permanenturl", 0x670E, PropertyType.String); //PR_FLAT_URL_NAME

@@ -1826,12 +1826,15 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
             } else if (field.isMultiValued()) {
                 buffer.append(graphId).append("/any(a:a ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
+            } else if ("body".equals(graphId)) {
+                // only contains supported for body
+                buffer.append("contains(").append(graphId).append("/content,'").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (Operator.Contains.equals(operator)) {
                 // search graph property
                 buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (Operator.StartsWith.equals(operator)) {
                 buffer.append("startswith(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
-            } else if (field.isDate()) {
+            } else if (field.isDate() || field.isBoolean()) {
                 buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" ").append(value);
             } else if ("start".equals(graphId) || "end".equals(graphId)) { // TODO check date value
                 buffer.append(graphId).append("/dateTime ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
