@@ -50,7 +50,7 @@ public class GraphField {
         addFieldMap("id");
 
         // folder extended properties
-        addFieldMap("lastmodified", 0x3008, PropertyType.SystemTime);
+        addFieldMap("folderlastmodified", 0x3008, PropertyType.SystemTime);
         addFieldMap("folderclass", 0x3613, PropertyType.String);
         addFieldMap("ctag", 0x670a, PropertyType.SystemTime); // PR_LOCAL_COMMIT_TIME_MAX
         addFieldMap("uidNext", 0x6751, PropertyType.Integer); // PR_ARTICLE_NUM_NEXT
@@ -59,6 +59,7 @@ public class GraphField {
         addFieldMap("isRead");
         addFieldMap("isDraft");
         addFieldMap("receivedDateTime", PropertyType.SystemTime);
+        addFieldMap("lastmodified", "lastModifiedDateTime", PropertyType.SystemTime);
 
         // message extended properties
         addFieldMap("uid", 0x0FF9, PropertyType.Binary); // PR_RECORD_KEY
@@ -215,10 +216,8 @@ public class GraphField {
         addFieldMap("manager");// MAPI addFieldMap("manager", 0x3A4E, PropertyType.String);
         addFieldMap("profession"); // MAPI addFieldMap("profession", 0x3A46, PropertyType.String);
 
-        // addFieldMap("keywords", DistinguishedPropertySetType.PublicStrings, "Keywords", PropertyType.StringArray); // TODO multivalued
-
-        addFieldMap("othermobile", 0x3A1E, PropertyType.String);
-        addFieldMap("otherTelephone", 0x3A21, PropertyType.String);
+        addFieldMap("othermobile", 0x3A1E, PropertyType.String); // PidTagCarTelephoneNumber
+        addFieldMap("otherTelephone", 0x3A21, PropertyType.String); // PidTagPagerTelephoneNumber
 
         addFieldMap("gender");// MAPI addFieldMap("gender", 0x3A4D, PropertyType.Short);
 
