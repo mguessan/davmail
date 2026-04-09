@@ -56,7 +56,7 @@ public class GraphField {
         addFieldMap("uidNext", 0x6751, PropertyType.Integer); // PR_ARTICLE_NUM_NEXT
 
         // message properties
-        addFieldMap("isRead");
+        addFieldMap("isRead", PropertyType.Boolean);
         addFieldMap("isDraft");
         addFieldMap("receivedDateTime", PropertyType.SystemTime);
         addFieldMap("lastmodified", "lastModifiedDateTime", PropertyType.SystemTime);
@@ -70,8 +70,8 @@ public class GraphField {
         addFieldMap("contentclass", DistinguishedPropertySetType.InternetHeaders, "content-class");
         addFieldMap("iconIndex", 0x1080, PropertyType.Integer); // PR_ICON_INDEX
 
-        addFieldMap("keywords", "categories"); // special case, mapped to message categories
-        addFieldMap( "categories");
+        addFieldMap("keywords", "categories", PropertyType.StringArray); // special case, mapped to message categories
+        addFieldMap( "categories", PropertyType.StringArray);
 
         addFieldMap("@odata.etag");
         addFieldMap("changeKey", "@odata.etag");
@@ -281,8 +281,6 @@ public class GraphField {
 
     private boolean extended = false;
 
-    private boolean indexed;
-
     /**
      * Basic graph field.
      * @param alias property alias
@@ -405,14 +403,6 @@ public class GraphField {
 
     public boolean isExtended() {
         return extended;
-    }
-
-    public boolean isIndexed() {
-        return indexed;
-    }
-
-    public void setIndexed(boolean indexed) {
-        this.indexed = indexed;
     }
 
     public String getAlias() {

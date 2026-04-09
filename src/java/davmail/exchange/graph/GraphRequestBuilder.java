@@ -275,13 +275,15 @@ public class GraphRequestBuilder {
         ArrayList<String> multiValueProperties = new ArrayList<>();
         ArrayList<String> selectProperties = new ArrayList<>();
         for (GraphField field : selectFields) {
-            if (field.isMultiValued()) {
-                multiValueProperties.add(field.getGraphId());
-            } else if (field.isExtended()) {
-                singleValueProperties.add(field.getGraphId());
-                if (field.getAlias().startsWith("smtpemail")) {
-                    // email fetched, load emailAddresses array
-                    selectProperties.add("emailAddresses");
+            if (field.isExtended()) {
+                if (field.isMultiValued()) {
+                    multiValueProperties.add(field.getGraphId());
+                } else {
+                    singleValueProperties.add(field.getGraphId());
+                    if (field.getAlias().startsWith("smtpemail")) {
+                        // email fetched, load emailAddresses array
+                        selectProperties.add("emailAddresses");
+                    }
                 }
             // etag is always returned, no a select field
             } else if (!GraphField.getGraphId("@odata.etag").equals(field.getGraphId())){

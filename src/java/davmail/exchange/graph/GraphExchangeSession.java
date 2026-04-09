@@ -1329,7 +1329,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     static {
         // reference at https://learn.microsoft.com/en-us/graph/api/resources/mailfolder
-        FOLDER_PROPERTIES.add(GraphField.get("lastmodified"));
+        FOLDER_PROPERTIES.add(GraphField.get("folderlastmodified"));
         FOLDER_PROPERTIES.add(GraphField.get("folderclass"));
         FOLDER_PROPERTIES.add(GraphField.get("ctag"));
         FOLDER_PROPERTIES.add(GraphField.get("uidNext"));
@@ -1393,13 +1393,6 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setChildType("messages"));
         if (isDraft) {
             try {
-                graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
-                        .setMailbox(folderId.mailbox)
-                        .setObjectType("messages")
-                        .setObjectId(graphResponse.optString("id"))
-                        .setChildType("move")
-                        .setJsonBody(new JSONObject().put("destinationId", folderId.id)));
-
                 // we have the message in the right folder, apply flags
                 applyMessageProperties(graphResponse, properties);
                 graphResponse = executeGraphRequest(new GraphRequestBuilder()
@@ -1408,6 +1401,13 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectType("messages")
                         .setObjectId(graphResponse.optString("id"))
                         .setJsonBody(graphResponse.jsonObject));
+
+                graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("messages")
+                        .setObjectId(graphResponse.optString("id"))
+                        .setChildType("move")
+                        .setJsonBody(new JSONObject().put("destinationId", folderId.id)));
             } catch (JSONException e) {
                 throw new IOException(e);
             }
@@ -1781,6 +1781,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 return "eq";
             } else if (Operator.IsGreaterThan.equals(operator)) {
                 return "gt";
+            } else if (Operator.IsGreaterThanOrEqualTo.equals(operator)) {
+                return "ge";
+            } else if (Operator.IsLessThan.equals(operator)) {
+                return "lt";
+            } else if (Operator.IsLessThanOrEqualTo.equals(operator)) {
+                return "le";
             } else {
                 LOGGER.warn("Unsupported operator: " + operator + ", switch to equals");
                 return "eq";
@@ -1811,22 +1817,22 @@ public class GraphExchangeSession extends ExchangeSession {
                 } else if (field.isBinary()) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value,Edm.Binary) ").append(convertOperator(operator)).append(" binary'").append(StringUtil.escapeQuotes(value)).append("')");
+                } else if (field.isDate()) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
+                            .append("' and cast(ep/value,Edm.DateTimeOffset) ").append(convertOperator(operator)).append(" datetimeoffset'").append(StringUtil.escapeQuotes(value)).append("')");
                 } else {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
                 }
-            } else if (field.isIndexed()) {
-                if (field.isExtended()) {
-                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
-                            .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
-                } else {
-                    buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
-                }
+            } else if (field.isMultiValued()) {
+                buffer.append(graphId).append("/any(a:a ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (Operator.Contains.equals(operator)) {
                 // search graph property
                 buffer.append("contains(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (Operator.StartsWith.equals(operator)) {
                 buffer.append("startswith(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
+            } else if (field.isDate()) {
+                buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" ").append(value);
             } else if ("start".equals(graphId) || "end".equals(graphId)) { // TODO check date value
                 buffer.append(graphId).append("/dateTime ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
             } else {
@@ -2179,7 +2185,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     JSONObject singleValueProperty = singleValueExtendedProperties.getJSONObject(i);
                     String singleValueId = singleValueProperty.getString("id");
                     String singleValue = singleValueProperty.getString("value");
-                    if (GraphField.get("lastmodified").getGraphId().equals(singleValueId)) {
+                    if (GraphField.get("folderlastmodified").getGraphId().equals(singleValueId)) {
                         folder.etag = singleValue;
                     } else if (GraphField.get("folderclass").getGraphId().equals(singleValueId)) {
                         folder.folderClass = singleValue;
