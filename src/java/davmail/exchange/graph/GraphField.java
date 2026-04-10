@@ -59,6 +59,8 @@ public class GraphField {
         addFieldMap("isRead", PropertyType.Boolean);
         addFieldMap("isDraft");
         addFieldMap("receivedDateTime", PropertyType.SystemTime);
+        addFieldMap("date", "receivedDateTime", PropertyType.SystemTime);
+        // addFieldMap("date", 0x0e06, PropertyType.SystemTime);  // PidTagOriginalDeliveryTime
         addFieldMap("lastmodified", "lastModifiedDateTime", PropertyType.SystemTime);
 
         // message extended properties
@@ -83,7 +85,6 @@ public class GraphField {
         addFieldMap("to", DistinguishedPropertySetType.InternetHeaders, "to");
         addFieldMap("cc", DistinguishedPropertySetType.InternetHeaders, "cc");
         addFieldMap("from", DistinguishedPropertySetType.InternetHeaders, "from");
-        addFieldMap("date", 0x0e06, PropertyType.SystemTime);
 
         addFieldMap("permanenturl", 0x670E, PropertyType.String); //PR_FLAT_URL_NAME
         addFieldMap("lastVerbExecuted", 0x1081, PropertyType.Integer); // PR_ACTION_FLAG
