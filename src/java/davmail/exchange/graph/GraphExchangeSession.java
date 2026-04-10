@@ -1809,6 +1809,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         intValue = Integer.parseInt(value);
                     } catch (NumberFormatException e) {
                         // invalid value, replace with 0
+                        LOGGER.warn("Invalid integer value for "+graphId+" "+value);
                     }
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value, Edm.Int32) ").append(convertOperator(operator)).append(" ").append(intValue).append(")");
@@ -1886,7 +1887,7 @@ public class GraphExchangeSession extends ExchangeSession {
             if (graphField.isExtended()) {
                 if (graphField.isNumber()) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphField.getGraphId())
-                            .append("' and cast(ep/value, Edm.Int32) eq 0)");
+                            .append("' and cast(ep/value, Edm.Int32) eq null)");
                 } else {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphField.getGraphId())
                             .append("' and ep/value eq null)");
