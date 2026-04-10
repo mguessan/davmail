@@ -1542,7 +1542,9 @@ public class ImapConnection extends AbstractConnection {
             if ("DELETED".equals(nextToken)) {
                 // conditions.deleted = Boolean.FALSE;
                 return session.isNull("deleted");
-            } else if ("KEYWORD".equals(nextToken)) {
+            } else if ("FROM".equals(nextToken) || "TO".equals(nextToken) || "CC".equals(nextToken)
+                    || "SUBJECT".equals(nextToken) || "BODY".equals(nextToken) || "TEXT".equals(nextToken)
+                    || "KEYWORD".equals(nextToken) || "LARGER".equals(nextToken) || "SMALLER".equals(nextToken)) {
                 return appendNotSearchParams(nextToken + " " + tokens.nextToken(), conditions);
             } else if ("UID".equals(nextToken)) {
                 conditions.notUidRange = tokens.nextToken();
