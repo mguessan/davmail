@@ -69,21 +69,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             // force consent
             //uriBuilder.addParameter("prompt", "consent");
 
-            if ("https://outlook.live.com".equals(Settings.getOutlookUrl())) {
-                // live.com endpoint, able to obtain a token but EWS endpoint does not work
-                String liveAuthorizeUrl = "https://login.live.com/oauth20_authorize.srf";
-                uriBuilder = new URIBuilder(liveAuthorizeUrl)
-                        .addParameter("client_id", clientId)
-                        .addParameter("response_type", "code")
-                        .addParameter("redirect_uri", redirectUri)
-                        .addParameter("response_mode", "query")
-                        .addParameter("login_hint", username)
-                        .addParameter("scope", "openid offline_access https://outlook.live.com/EWS.AccessAsUser.All Mail.ReadWrite MailboxSettings.Read")
-                        .addParameter("resource", "https://outlook.live.com")
-                //.addParameter("prompt", "consent")
-                ;
-
-            } else if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
+            if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
                 if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
                     // OIDC compliant
                     uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
@@ -93,7 +79,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     //.addParameter("scope", "openid profile offline_access "+Settings.getGraphUrl()+"/.default");
                     //.addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All AuditLog.Read.All Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrintJob.ReadWriteBasic SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read");
                 } else {
-                    // Outlook desktop relies on classic authorize endpoint
+                    // Outlook desktop relies on classic authorize endpoint by default
                     // on graph endpoint default scopes are scope -> AuditLog.Create Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All FileStorageContainer.Selected Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrinterShare.ReadBasic.All PrintJob.Create PrintJob.ReadWriteBasic Reports.Read.All SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read
                     uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
                             .addParameter("resource", Settings.getGraphUrl());
