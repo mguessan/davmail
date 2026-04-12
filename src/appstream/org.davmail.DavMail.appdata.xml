@@ -22,7 +22,7 @@
       calendar support. Thus any standard compliant client can be used
       with Microsoft Exchange. DavMail gateway is implemented in java
       and should run on any platform. Releases are tested on Windows,
-      Linux (Ubuntu) and Mac OSX. Tray does not work on MacOS and is
+      Linux (Ubuntu) and Mac OS X. Tray does not work on MacOS and is
       replaced with a full frame. Tested successfully with the Iphone
       (gateway running on a server).
     </p>
@@ -58,6 +58,253 @@
   </developer>
   <content_rating type="oars-1.1" />
   <releases>
+      <release version="6.6.0" date="2026-04-12">
+          <description>
+              <p>Merged bugfixes provided by users on IMAP compliance and O365 device code authentication support,
+                  changed default OIDC nativeclient after Microsoft recent change to force redirect to
+                  /common/wrongplace.
+                  Also changed duplicate message id handling over SMTP to match a specific user use case.
+                  Please note that configuration file location is now XDG compliant by default.
+                  Major progress on new graph backend even if it's not production ready yet, implemented ldap search,
+                  contact sync,
+                  improved caldav and mail synchronization.
+              </p>
+
+              <p>O365</p>
+              <ul>
+                  <li>O365: remove outlook.live.com reference in O365Authenticator, no longer relevant</li>
+                  <li>O365: merge https://github.com/mguessan/davmail/pull/442 Missing patch to handle O365_DEVICECODE
+                  </li>
+                  <li>O365: move oauth scope to Settings.getOauthScope()</li>
+                  <li>O365: merge https://github.com/mguessan/davmail/pull/442 Refactor to use RestRequest, clean up
+                      code
+                  </li>
+                  <li>O365: merge https://github.com/mguessan/davmail/pull/442 Add device code authenticator</li>
+                  <li>O365: Microsoft changed https://login.microsoftonline.com/common/oauth2/nativeclient to redirect
+                      to /common/wrongplace, use https://localhost/common/oauth2/nativeclient instead
+                  </li>
+                  <li>O365: do not try failover on linux, SWT gtk browser breaks JFX</li>
+                  <li>O365: catch SWT error to enable failover to OpenJFX</li>
+                  <li>O365: log swt browser error detail</li>
+              </ul>
+
+              <p>IMAP</p>
+              <ul>
+                  <li>IMAP: fix complex IMAP search with NOT condition on unprotected search token</li>
+                  <li>IMAP: handle bug 3 from https://github.com/mguessan/davmail/issues/444 RFC 3501 violation breaking
+                      some clients, always encode envelope header value
+                  </li>
+                  <li>IMAP: handle bug 1 from https://github.com/mguessan/davmail/issues/444</li>
+              </ul>
+
+              <p>POP</p>
+              <ul>
+                  <li>POP: fix typo</li>
+              </ul>
+
+              <p>CardDav</p>
+              <ul>
+                  <li>Carddav: handle VCARD4 birthday format yyyyMMdd</li>
+                  <li>Carddav: change photo format to https://datatracker.ietf.org/doc/html/rfc2397 format, see
+                      https://github.com/aluxnimm/outlookcaldavsynchronizer/issues/441
+                  </li>
+              </ul>
+
+              <p>Caldav</p>
+              <ul>
+                  <li>Caldav: do not set private field to null, breaks graph backend that expects boolean</li>
+                  <li>Caldav: mailbox field is empty on standard calendar folder, need to failover to user email in
+                      getCalendarEmail
+                  </li>
+                  <li>Caldav: https://github.com/mguessan/davmail/issues/419 add getCalendarEmail to ExchangeSession
+                  </li>
+                  <li>Caldav: https://github.com/mguessan/davmail/issues/419 implement getCalendarEmail to rely on
+                      calendar mailbox address instead of connected user email on shared calendars
+                  </li>
+                  <li>Caldav: https://github.com/mguessan/davmail/issues/419 add getCalendarEmail to VCalendar</li>
+              </ul>
+
+              <p>SMTP</p>
+              <ul>
+                  <li>SMTP: merge change suggested in https://github.com/mguessan/davmail/pull/437 Allow messages with
+                      the same message id but different recipient list
+                  </li>
+                  <li>SMTP: review smtpAllowDuplicateSend flag logic and improve logging</li>
+                  <li>SMTP: allow sending multiple messages with the same message id, see
+                      https://github.com/mguessan/davmail/issues/433
+                  </li>
+              </ul>
+
+              <p>Enhancements</p>
+              <ul>
+                  <li>Cleanup from audit</li>
+                  <li>Add unit tests on StringEncryptor</li>
+                  <li>Suppress inspection "UnusedProperty" in stdtimezones.properties</li>
+                  <li>Test case for testReplaceIcal4Principal</li>
+                  <li>Avoid errors on null value in StringUtil.escapeQuotes method</li>
+                  <li>Config: switch to XDG compliant config file path by default</li>
+                  <li>NTLM: adjust DavMail NTLM and SpNego to avoid compilation warning</li>
+                  <li>SWT: resize tray icon using AWT SCALE_AREA_AVERAGING for better rendering</li>
+                  <li>Fix encoding on messages</li>
+              </ul>
+
+              <p>Maven</p>
+              <ul>
+                  <li>Maven: update swt to 4.37, windows package</li>
+              </ul>
+
+              <p>EWS</p>
+              <ul>
+                  <li>EWS: improve missing From header handling</li>
+              </ul>
+
+              <p>Documentation</p>
+              <ul>
+                  <li>Doc: document O365DeviceCode in template davmail.properties</li>
+                  <li>Doc: switch urls to https for external links</li>
+                  <li>Doc: merge https://github.com/mguessan/davmail/pull/436/ Superfluous bracket removed</li>
+                  <li>Doc: reference winget in windows setup documentation</li>
+                  <li>Doc: document all undocumented settings in template davmail.properties</li>
+                  <li>Doc: Fix GHCR docker badge</li>
+              </ul>
+              <p>Security</p>
+              <ul>
+                  <li>Security: replace regex in replaceIcal4Principal with simple substring calls to fix
+                      https://github.com/mguessan/davmail/security/code-scanning/22
+                  </li>
+              </ul>
+
+              <p>Linux</p>
+              <ul>
+                  <li>Linux: clean desktop entry content to match recommendations</li>
+                  <li>Linux: prepare spec file for RHEL10</li>
+                  <li>Linux: enable jdk 21 in debian package</li>
+                  <li>Linux: merge https://github.com/mguessan/davmail/pull/427 Fedora 43 fix</li>
+                  <li>Linux: davmail swt overwrite jar if exists</li>
+                  <li>Linux: work on https://github.com/mguessan/davmail/pull/383 Enhance davmail script to allow
+                      overrides
+                  </li>
+                  <li>Linux: Introduce "davmail swt" command in platform independent package to retrieve latest SWT
+                      jar
+                  </li>
+                  <li>Move SWT dependency from suggest to depends in debian package</li>
+              </ul>
+
+              <p>Docker</p>
+              <ul>
+                  <li>Docker: fix interactive run command to store configuration on XDG compliant directory, map user
+                      ids and access X11 without xhost +
+                  </li>
+                  <li>Docker: check for /run/.containerenv on podman</li>
+              </ul>
+
+              <p>OSX</p>
+              <ul>
+                  <li>OSX: fix https://github.com/mguessan/davmail/issues/396 prefer arm64 architecture</li>
+              </ul>
+
+              <p>GUI</p>
+              <ul>
+                  <li>GUI: Enable tray add missing messages</li>
+                  <li>GUI: introduce davmail.enableTray setting to control window/tray icon modes, by default tray is
+                      disabled on linux, override with command line options -notray and -tray, see
+                      https://github.com/mguessan/davmail/issues/428
+                  </li>
+              </ul>
+
+              <p>Graph</p>
+              <ul>
+                  <li>Graph: fix undeleted search, for integer values extended condition is eq null not eq 0</li>
+                  <li>Graph: replace MAPI propety 0x0e06/SystemTime with receivedDateTime for message search</li>
+                  <li>Graph: implement isInternetHeaders in GraphField</li>
+                  <li>Graph: header search does not work over graph, try to match full internet headers in
+                      AttributeCondition
+                  </li>
+                  <li>Graph: map to, cc and from as internetheaders, make isRead boolean, implement body search</li>
+                  <li>Graph: switch move/applyProperties in createMessage, implement more search operators, fix date and
+                      categories search
+                  </li>
+                  <li>Graph: keep MAPI property for folderlastmodified 0x3008/SystemTime, switch to lastModifiedDateTime
+                      for messages
+                  </li>
+                  <li>Graph: add graph specific mappings in LdapConnection (userprincipalname, mailboxtype, persontype,
+                      isfavorite)
+                  </li>
+                  <li>Graph: use lowercase attributes in galfind map to match LdapConnection implementation</li>
+                  <li>Graph: protect search parameter value with double quotes and escape content with backslash</li>
+                  <li>Graph: implement escapeDoubleQuotes in StringUtil</li>
+                  <li>Graph: refactor galFind to properly map attributes coming from people endpoint</li>
+                  <li>Graph: add addHeader to GraphRequestBuilder to set custom HTTP request headers</li>
+                  <li>Graph: switch description field to MAPI property as personalNotes is not searchable</li>
+                  <li>Graph: fix not condition and implement sizeLimit on graph iterator</li>
+                  <li>Graph: first try at people search implementation based on poor filtering support on people
+                      endpoint
+                  </li>
+                  <li>Graph: catch SC_CONFLICT in JsonResponseHandler</li>
+                  <li>Graph: refactor search condition filter to match GraphField implementation, switch galFind to
+                      people handler
+                  </li>
+                  <li>Graph: Implement HttpConflictException for 409 conflict error code</li>
+                  <li>Graph: refactor contact unit test to match Graph API constraints</li>
+                  <li>Graph: map event fields and implement integer extended property search</li>
+                  <li>Graph: force default Oauth scope to "openid profile offline_access" with preconsented application
+                      clientId
+                  </li>
+                  <li>Graph: add missing iconIndex field, handle null values for X-MICROSOFT-CDO properties</li>
+                  <li>Graph: apply field refactoring to events and tasks</li>
+                  <li>Graph: revert change on ExchangeSession.createOrUpdateContact, do not exclude private from reset
+                  </li>
+                  <li>Graph: remove getGraphId from EWS code</li>
+                  <li>Graph: refactor getMimeHeaders based on GraphField, handle missing from header</li>
+                  <li>Graph: implement from header and format returned JSON email address</li>
+                  <li>Graph: extend GraphField refactoring to messages</li>
+                  <li>Graph: move date conversion to graph object, map event fields in GraphField</li>
+                  <li>Graph: compute $select and $expand parameters from provided field list</li>
+                  <li>Graph: implement max count in contact search</li>
+                  <li>Graph: adjust contact test cases for Graph API</li>
+                  <li>Graph: refactor odata.etag and handle null values for boolean fields</li>
+                  <li>Graph: map fileas and outlookmessageclass, exclude subject from contact</li>
+                  <li>Graph: continue graph field refactoring, handle dates in field, improve smtpemail management</li>
+                  <li>Graph: fix regression, force number attributes value</li>
+                  <li>Graph: continue major refactoring, map contact fields in GraphField</li>
+                  <li>Graph: major refactoring, move away from EWS fields and implement GraphField</li>
+                  <li>Graph: handle more search use cases</li>
+                  <li>Graph: get graph url from settings and allow api version override with davmail.graphVersion</li>
+                  <li>Graph: switch to /search/query for people search, need People.Read scope</li>
+                  <li>Graph: experimental implementation of contact search based on AttributeConditions</li>
+                  <li>Graph: implement isBinary on ExtendedFieldURI and force extended graphId name for smtpemail1-3
+                  </li>
+                  <li>Graph: allow graph API version change from beta to v1.0</li>
+                  <li>Graph: fix sonar audit alert on InterruptedException handling</li>
+                  <li>Graph: refactor throttling handling to apply retry logic to graph and json requests</li>
+                  <li>Graph: initial galFind implementation, detect Azure throttling and automatically retry requests
+                  </li>
+                  <li>Graph: add additional signatures for graphId fields</li>
+                  <li>Graph: add Directory.Read.All OIDC scope to access /users endpoint for LDAP search</li>
+                  <li>Graph: review and document GraphObject implementation</li>
+                  <li>Graph: implement VALARM</li>
+                  <li>Graph: implement LOCATION and CATEGORIES on events</li>
+                  <li>Graph: on event creation client may request event by original item name, implement search by
+                      urlcompname in addition to fetch by item id
+                  </li>
+                  <li>Graph: refactor exception occurrences update/delete and fix date conversion</li>
+                  <li>Graph: refactor get recurrence id, extract date configuration to helper class</li>
+                  <li>Graph: fix caldav exception occurrence management, graph returns unique iCalUid instead of master
+                      event uid
+                  </li>
+                  <li>Graph: log updated occurrence content</li>
+                  <li>Graph: fix modified occurrences search</li>
+                  <li>Graph: fix null folderPath and implement deleteItem for contacts, events and tasks</li>
+                  <li>Graph: do not set haspicture to null, breaks graph call</li>
+                  <li>Graph: initiate modified occurrences and rrule implementation</li>
+                  <li>Graph: fix some contact sync issues</li>
+                  <li>Graph: implement getReccurrenceId to compute recurrence id from original start date and time
+                      zone
+                  </li>
+                  <li>Graph: remove GraphExchangeSessionDraft</li>
+              </ul>
+          </description>
+      </release>
       <release version="6.5.1" date="2025-10-29">
           <description>
               <p>Bugfix release to adjust packaging after 6.5.0 major changes, detect Flatpak and adjust settings and

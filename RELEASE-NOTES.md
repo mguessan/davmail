@@ -1,3 +1,163 @@
+## DavMail 6.6.0 2026-04-12
+Merged bugfixes provided by users on IMAP compliance and O365 device code authentication support,
+changed default OIDC nativeclient after Microsoft recent change to force redirect to /common/wrongplace.
+Also changed duplicate message id handling over SMTP to match a specific user use case.
+Please note that configuration file location is now XDG compliant by default.
+Major progress on new graph backend even if it's not production ready yet, implemented ldap search, contact sync,
+improved caldav and mail synchronization.
+
+### O365
+- O365: remove outlook.live.com reference in O365Authenticator, no longer relevant
+- O365: merge https://github.com/mguessan/davmail/pull/442 Missing patch to handle O365_DEVICECODE
+- O365: move oauth scope to Settings.getOauthScope()
+- O365: merge https://github.com/mguessan/davmail/pull/442 Refactor to use RestRequest, clean up code
+- O365: merge https://github.com/mguessan/davmail/pull/442 Add device code authenticator
+- O365: Microsoft changed https://login.microsoftonline.com/common/oauth2/nativeclient to redirect to /common/wrongplace, use https://localhost/common/oauth2/nativeclient instead
+- O365: do not try failover on linux, SWT gtk browser breaks JFX
+- O365: catch SWT error to enable failover to OpenJFX
+- O365: log swt browser error detail
+
+### IMAP
+- IMAP: fix complex IMAP search with NOT condition on unprotected search token
+- IMAP: handle bug 3 from https://github.com/mguessan/davmail/issues/444 RFC 3501 violation breaking some clients, always encode envelope header value
+- IMAP: handle bug 1 from https://github.com/mguessan/davmail/issues/444
+
+### POP
+- POP: fix typo
+
+### CardDav
+- Carddav: handle VCARD4 birthday format yyyyMMdd
+- Carddav: change photo format to https://datatracker.ietf.org/doc/html/rfc2397 format, see https://github.com/aluxnimm/outlookcaldavsynchronizer/issues/441
+
+### Caldav
+- Caldav: do not set private field to null, breaks graph backend that expects boolean
+- Caldav: mailbox field is empty on standard calendar folder, need to failover to user email in getCalendarEmail
+- Caldav: https://github.com/mguessan/davmail/issues/419 add getCalendarEmail to ExchangeSession
+- Caldav: https://github.com/mguessan/davmail/issues/419 implement getCalendarEmail to rely on calendar mailbox address instead of connected user email on shared calendars
+- Caldav: https://github.com/mguessan/davmail/issues/419 add getCalendarEmail to VCalendar
+
+### SMTP
+- SMTP: merge change suggested in https://github.com/mguessan/davmail/pull/437 Allow messages with the same message id but different recipient list
+- SMTP: review smtpAllowDuplicateSend flag logic and improve logging
+- SMTP: allow sending multiple messages with the same message id, see https://github.com/mguessan/davmail/issues/433
+
+### Enhancements
+- Cleanup from audit
+- Add unit tests on StringEncryptor
+- Suppress inspection "UnusedProperty" in stdtimezones.properties
+- Test case for testReplaceIcal4Principal
+- Avoid errors on null value in StringUtil.escapeQuotes method
+- Config: switch to XDG compliant config file path by default
+- NTLM: adjust DavMail NTLM and SpNego to avoid compilation warning
+- SWT: resize tray icon using AWT SCALE_AREA_AVERAGING for better rendering
+- Fix encoding on messages
+
+### Maven
+- Maven: update swt to 4.37, windows package
+
+### EWS
+- EWS: improve missing From header handling
+
+### Documentation
+- Doc: document O365DeviceCode in template davmail.properties
+- Doc: switch urls to https for external links
+- Doc: merge https://github.com/mguessan/davmail/pull/436/ Superfluous bracket removed
+- Doc: reference winget in windows setup documentation
+- Doc: document all undocumented settings in template davmail.properties
+- Doc: Fix GHCR docker badge
+
+### Security
+- Security: replace regex in replaceIcal4Principal with simple substring calls to fix https://github.com/mguessan/davmail/security/code-scanning/22
+
+### Linux
+- Linux: clean desktop entry content to match recommendations
+- Linux: prepare spec file for RHEL10
+- Linux: enable jdk 21 in debian package
+- Linux: merge https://github.com/mguessan/davmail/pull/427 Fedora 43 fix
+- Linux: davmail swt overwrite jar if exists
+- Linux: work on https://github.com/mguessan/davmail/pull/383 Enhance davmail script to allow overrides
+- Linux: Introduce "davmail swt" command in platform independent package to retrieve latest SWT jar
+- Move SWT dependency from suggest to depends in debian package
+ 
+### Docker
+- Docker: fix interactive run command to store configuration on XDG compliant directory, map user ids and access X11 without xhost +
+- Docker: check for /run/.containerenv on podman
+
+### OSX
+- OSX: fix https://github.com/mguessan/davmail/issues/396 prefer arm64 architecture
+
+### GUI
+- GUI: Enable tray add missing messages
+- GUI: introduce davmail.enableTray setting to control window/tray icon modes, by default tray is disabled on linux, override with command line options -notray and -tray, see https://github.com/mguessan/davmail/issues/428
+
+### Graph
+- Graph: fix undeleted search, for integer values extended condition is eq null not eq 0
+- Graph: replace MAPI propety 0x0e06/SystemTime with receivedDateTime for message search
+- Graph: implement isInternetHeaders in GraphField
+- Graph: header search does not work over graph, try to match full internet headers in AttributeCondition
+- Graph: map to, cc and from as internetheaders, make isRead boolean, implement body search
+- Graph: switch move/applyProperties in createMessage, implement more search operators, fix date and categories search
+- Graph: keep MAPI property for folderlastmodified 0x3008/SystemTime, switch to lastModifiedDateTime for messages
+- Graph: add graph specific mappings in LdapConnection (userprincipalname, mailboxtype, persontype, isfavorite)
+- Graph: use lowercase attributes in galfind map to match LdapConnection implementation
+- Graph: protect search parameter value with double quotes and escape content with backslash
+- Graph: implement escapeDoubleQuotes in StringUtil
+- Graph: refactor galFind to properly map attributes coming from people endpoint
+- Graph: add addHeader to GraphRequestBuilder to set custom HTTP request headers
+- Graph: switch description field to MAPI property as personalNotes is not searchable
+- Graph: fix not condition and implement sizeLimit on graph iterator
+- Graph: first try at people search implementation based on poor filtering support on people endpoint
+- Graph: catch SC_CONFLICT in JsonResponseHandler
+- Graph: refactor search condition filter to match GraphField implementation, switch galFind to people handler
+- Graph: Implement HttpConflictException for 409 conflict error code
+- Graph: refactor contact unit test to match Graph API constraints
+- Graph: map event fields and implement integer extended property search
+- Graph: force default Oauth scope to "openid profile offline_access" with preconsented application clientId
+- Graph: add missing iconIndex field, handle null values for X-MICROSOFT-CDO properties
+- Graph: apply field refactoring to events and tasks
+- Graph: revert change on ExchangeSession.createOrUpdateContact, do not exclude private from reset
+- Graph: remove getGraphId from EWS code
+- Graph: refactor getMimeHeaders based on GraphField, handle missing from header
+- Graph: implement from header and format returned JSON email address
+- Graph: extend GraphField refactoring to messages
+- Graph: move date conversion to graph object, map event fields in GraphField
+- Graph: compute $select and $expand parameters from provided field list
+- Graph: implement max count in contact search
+- Graph: adjust contact test cases for Graph API
+- Graph: refactor odata.etag and handle null values for boolean fields
+- Graph: map fileas and outlookmessageclass, exclude subject from contact
+- Graph: continue graph field refactoring, handle dates in field, improve smtpemail management
+- Graph: fix regression, force number attributes value
+- Graph: continue major refactoring, map contact fields in GraphField
+- Graph: major refactoring, move away from EWS fields and implement GraphField
+- Graph: handle more search use cases
+- Graph: get graph url from settings and allow api version override with davmail.graphVersion
+- Graph: switch to /search/query for people search, need People.Read scope
+- Graph: experimental implementation of contact search based on AttributeConditions
+- Graph: implement isBinary on ExtendedFieldURI and force extended graphId name for smtpemail1-3
+- Graph: allow graph API version change from beta to v1.0
+- Graph: fix sonar audit alert on InterruptedException handling
+- Graph: refactor throttling handling to apply retry logic to graph and json requests
+- Graph: initial galFind implementation, detect Azure throttling and automatically retry requests
+- Graph: add additional signatures for graphId fields
+- Graph: add Directory.Read.All OIDC scope to access /users endpoint for LDAP search
+- Graph: review and document GraphObject implementation
+- Graph: implement VALARM
+- Graph: implement LOCATION and CATEGORIES on events
+- Graph: on event creation client may request event by original item name, implement search by urlcompname in addition to fetch by item id
+- Graph: refactor exception occurrences update/delete and fix date conversion
+- Graph: refactor get recurrence id, extract date configuration to helper class
+- Graph: fix caldav exception occurrence management, graph returns unique iCalUid instead of master event uid
+- Graph: log updated occurrence content
+- Graph: fix modified occurrences search
+- Graph: fix null folderPath and implement deleteItem for contacts, events and tasks
+- Graph: do not set haspicture to null, breaks graph call
+- Graph: initiate modified occurrences and rrule implementation
+- Graph: fix some contact sync issues
+- Graph: implement getReccurrenceId to compute recurrence id from original start date and time zone
+- Graph: remove GraphExchangeSessionDraft
+
+
 ## DavMail 6.5.1 2025-10-29
 Bugfix release to adjust packaging after 6.5.0 major changes, detect Flatpak and adjust settings and log
 location accordingly.
