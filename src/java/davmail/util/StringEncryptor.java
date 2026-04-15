@@ -21,6 +21,7 @@ package davmail.util;
 
 import davmail.Settings;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -77,6 +78,8 @@ public class StringEncryptor {
                 byte[] decrypted = dec.doFinal(encrypted);
                 return new String(decrypted, StandardCharsets.UTF_8);
 
+            } catch (BadPaddingException e) {
+                throw new IOException("Unable to decrypt token, invalid password");
             } catch (Exception e) {
                 throw new IOException(e);
             }

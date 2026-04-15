@@ -43,7 +43,7 @@ public class StringEncryptorTest extends TestCase {
             encryptor.decryptString("{AES}invalid");
             fail("Expected IOException");
         } catch (IOException e) {
-            // Expected
+            assertNotNull(e.getMessage());
         }
     }
 
@@ -58,5 +58,37 @@ public class StringEncryptorTest extends TestCase {
         String password = "P@ssw0rd";
         StringEncryptor encryptor = new StringEncryptor(password);
         assertEquals("", encryptor.encryptString(""));
+        assertEquals("", encryptor.decryptString(""));
     }
+
+    public void testPassthrough() throws IOException {
+        String password = "P@ssw0rd";
+        StringEncryptor encryptor = new StringEncryptor(password);
+        assertEquals("plaintext", encryptor.decryptString("plaintext"));
+    }
+
+    public void testInvalidPassword() throws IOException {
+        String password = "P@ssw0rd";
+        StringEncryptor encryptor = new StringEncryptor(password);
+        String encrypted = encryptor.encryptString("plaintext");
+
+        try {
+            new StringEncryptor("invalid").decryptString(encrypted);
+            fail("Expected IOException");
+        } catch (IOException e) {
+            assertNotNull(e.getMessage());
+        }
+    }
+
+    public void testEncryptSpecialCharacters() throws IOException {
+        String password = "P@ssw0rd";
+        String value = "Just a ' test with spécial ch@racters !:/`$£ \"";
+        StringEncryptor encryptor = new StringEncryptor(password);
+        String encrypted = encryptor.encryptString(value);
+
+        encryptor = new StringEncryptor(password);
+        String decrypted = encryptor.decryptString(encrypted);
+        assertEquals(value, decrypted);
+    }
+
 }
