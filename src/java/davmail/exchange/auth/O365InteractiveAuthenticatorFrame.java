@@ -161,9 +161,17 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                     close();
                 }
             } else if (newState == Worker.State.FAILED) {
-                Throwable e = webViewEngine.getLoadWorker().getException();
-                if (e != null) {
-                    handleError(e);
+                location = webViewEngine.getLocation();
+                LOGGER.debug("Webview location: " + location);
+                if (location.startsWith(redirectUri)) {
+                    // with new default redirect https://localhost/common/oauth2/nativeclient we end up here
+                    LOGGER.debug("Location starts with redirectUri, check code");
+                    authenticator.handleCode(location);
+                } else {
+                    Throwable e = webViewEngine.getLoadWorker().getException();
+                    if (e != null) {
+                        handleError(e);
+                    }
                 }
                 close();
             } else {
