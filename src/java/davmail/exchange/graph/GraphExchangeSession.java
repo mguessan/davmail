@@ -274,7 +274,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", responseRequested.toUpperCase());
             }
 
-            if (graphObject.optBoolean("isReminderOn")) {
+            if (jsonEvent.optBoolean("isReminderOn")) {
                 VObject vAlarm = new VObject();
                 vAlarm.type = "VALARM";
                 vAlarm.addPropertyValue("ACTION", "DISPLAY");
@@ -365,6 +365,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                     rruleValue.append(";BYDAY=").append(String.join(",", days));
                 }
+                // handle other frequencies
                 if ("weekly".equals(patternType) && firstDayOfWeek.length() >= 2) {
                     rruleValue.append(";WKST=").append(firstDayOfWeek.substring(0, 2).toUpperCase());
                 }
@@ -678,7 +679,7 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         private void updateExceptionOccurrence(VObject modifiedOccurrence, String exceptionOccurrenceId) throws IOException, JSONException {
-            LOGGER.debug("Updating occurrence " + modifiedOccurrence.getPropertyValue("SUMMARY") + " " + modifiedOccurrence.getPropertyValue("RECCURRENCE-ID"));
+            LOGGER.debug("Updating occurrence " + modifiedOccurrence.getPropertyValue("SUMMARY") + " " + modifiedOccurrence.getPropertyValue("RECURRENCE-ID"));
 
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("subject", modifiedOccurrence.getPropertyValue("SUMMARY"));
@@ -1207,7 +1208,6 @@ public class GraphExchangeSession extends ExchangeSession {
         CONTACT_ATTRIBUTES.add(GraphField.get("othercountry"));
         CONTACT_ATTRIBUTES.add(GraphField.get("othercity"));
         CONTACT_ATTRIBUTES.add(GraphField.get("haspicture"));
-        CONTACT_ATTRIBUTES.add(GraphField.get("keywords"));
         CONTACT_ATTRIBUTES.add(GraphField.get("othermobile"));
         CONTACT_ATTRIBUTES.add(GraphField.get("otherTelephone"));
         CONTACT_ATTRIBUTES.add(GraphField.get("gender"));
@@ -1240,9 +1240,8 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Must set select to retrieve cancelled and exception occurrences, so we must specify all properties
+     * Must set select to retrieve canceled and exception occurrences, so we must specify additional properties
      */
-    protected static final String EVENT_SELECT = "allowNewTimeProposals,attendees,body,bodyPreview,cancelledOccurrences,categories,changeKey,createdDateTime,end,exceptionOccurrences,hasAttachments,iCalUId,id,importance,isAllDay,isOnlineMeeting,isOrganizer,isReminderOn,lastModifiedDateTime,location,organizer,originalStart,originalStartTimeZone,recurrence,reminderMinutesBeforeStart,responseRequested,sensitivity,showAs,start,subject,type";
     protected static final HashSet<GraphField> EVENT_ATTRIBUTES = new HashSet<>();
 
     static {
@@ -1925,7 +1924,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         public boolean isMatch(ExchangeSession.Contact contact) {
             String actualValue = contact.get(attributeName);
-            return actualValue == null;
+            return actualValue != null;
         }
 
     }
@@ -3288,7 +3287,6 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
             }
         }
-        return retryDelay > 0;
     }
 
     /**
