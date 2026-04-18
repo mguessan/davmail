@@ -44,7 +44,7 @@
         <matches string="${ant.java.version}" pattern="8"/>
     </condition>
 
-    <!-- recent debian jdk with openjfx -->
+    <!-- recent debian jdk with OpenJFX -->
     <condition property="is.debian">
         <and>
             <available file="/usr/share/java/javafx-base.jar"/>
@@ -64,7 +64,7 @@
     </condition>
 
     <target name="check-encoding" unless="is.utf8">
-        <fail message="Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8"/>
+        <fail message="Please force UTF-8 encoding to build Debian package with set ANT_OPTS=-Dfile.encoding=UTF-8"/>
     </target>
 
     <target name="svnrelease" if="is.svn">
@@ -306,9 +306,9 @@
                 Exchange. This means LDAP for global address book, SMTP to send messages, IMAP to browse
                 messages on the server in any folder, POP to retrieve inbox messages only, Caldav for
                 calendar support and Carddav for personal contacts sync.
-                Thus any standard compliant client can be used with Microsoft Exchange.
+                Thus, any standard compliant client can be used with Microsoft Exchange.
                 DavMail gateway is implemented in java and should run on any platform. Releases are tested
-                on Windows, Linux (Ubuntu) and Mac OSX. Tested successfully with the Iphone
+                on Windows, Linux (Ubuntu) and Mac OS X. Tested successfully with the iPhone
                 (gateway running on a server).
 
                 https://davmail.sourceforge.net
