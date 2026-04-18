@@ -1,5 +1,5 @@
 FROM debian:12 AS base
-RUN apt-get update && rm -rf /var/lib/apt/lists/*
+RUN apt-get update
 
 
 # First we build the jar file
@@ -16,7 +16,7 @@ RUN ant -Dfile.encoding=UTF-8 jar
 FROM base AS runner
 WORKDIR /davmail
 
-RUN apt-get install -y openjdk-17-jre libcommons-codec-java libcommons-logging-java libhtmlcleaner-java libhttpclient-java libjackrabbit-java libjcifs-java libjettison-java libjna-java liblog4j1.2-java libmail-java libopenjfx-java libslf4j-java libstax2-api-java libwoodstox-java
+RUN apt-get install -y openjdk-17-jre libcommons-codec-java libcommons-logging-java libhtmlcleaner-java libhttpclient-java libjackrabbit-java libjcifs-java libjettison-java libjna-java liblog4j1.2-java libmail-java libopenjfx-java libslf4j-java libstax2-api-java libwoodstox-java && rm -rf /var/lib/apt/lists/*
 
 # Copy jar file
 COPY --from=builder /davmail/dist/davmail.jar /davmail/davmail.jar
