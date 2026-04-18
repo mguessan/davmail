@@ -3279,13 +3279,22 @@ public class GraphExchangeSession extends ExchangeSession {
             Header retryAfter = response.getFirstHeader("Retry-After");
             if (retryAfter != null) {
                 retryDelay = Long.parseLong(retryAfter.getValue()) + 1;
-                LOGGER.debug("Waiting " + retryDelay + " seconds to retry request");
-                try {
-                    Thread.sleep(retryDelay * 1000L);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                waitRetryDelay(retryDelay);
             }
+        } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_SERVICE_UNAVAILABLE) {
+            LOGGER.info("Detected graph request error, waiting to retry " + response.getStatusLine());
+            retryDelay = 5;
+            waitRetryDelay(retryDelay);
+        }
+        return retryDelay > 0;
+    }
+
+    private void waitRetryDelay(long retryDelay) {
+        LOGGER.debug("Waiting " + retryDelay + " seconds to retry request");
+        try {
+            Thread.sleep(retryDelay * 1000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
