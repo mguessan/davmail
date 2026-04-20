@@ -109,6 +109,7 @@ public class O365Token {
     }
 
     public void setJsonToken(JSONObject jsonToken) throws IOException {
+        String scope;
         try {
             final Object error = jsonToken.opt("error");
             if (error != null) {
@@ -117,7 +118,8 @@ public class O365Token {
 
                 throw new DavMailAuthenticationException(jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
             }
-            LOGGER.debug("Obtained token for scopes: " + jsonToken.optString("scope"));
+            scope = jsonToken.optString("scope");
+            LOGGER.debug("Obtained token for scopes: " + scope);
             // access token expires after one hour
             accessToken = jsonToken.getString("access_token");
             // precious refresh token
@@ -166,6 +168,23 @@ public class O365Token {
                 LOGGER.debug("Token: " + tokenBody);
                 username = tokenBody.getString("unique_name");
             }
+
+            // check token compatibility
+            if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
+                // Graph token required
+                if (scope != null && scope.contains("EWS")) {
+                    Settings.storeRefreshToken(username, "");
+                    throw new IOException("Found EWS stored token, incompatible with Graph API");
+                }
+            } else {
+                // EWS token required
+                if (scope != null && !scope.contains("EWS")) {
+                    // clear token
+                    Settings.storeRefreshToken(username, "");
+                    throw new IOException("Found Graph stored token, incompatible with EWS");
+                }
+            }
+
 
         } catch (JSONException e) {
             throw new IOException("Exception parsing token", e);
