@@ -499,56 +499,20 @@ public class GraphExchangeSession extends ExchangeSession {
 
             VObject vEvent = vCalendar.getFirstVevent();
             try {
-                JSONObject jsonObject = new JSONObject();
+                JSONObject jsonEvent = buildJsonEvent(vEvent);
 
                 // urlcompname is an extended property, wrap in GraphObject
-                GraphObject localGraphObject = new GraphObject(jsonObject);
+                GraphObject localGraphObject = new GraphObject(jsonEvent);
                 localGraphObject.put("urlcompname", itemName);
-                jsonObject.put("subject", vEvent.getPropertyValue("SUMMARY"));
-
-                VProperty dtStart = vEvent.getProperty("DTSTART");
-                String dtStartTzid = dtStart.getParamValue("TZID");
-                jsonObject.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
-
-                VProperty dtEnd = vEvent.getProperty("DTEND");
-                String dtEndTzid = dtEnd.getParamValue("TZID");
-                jsonObject.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
-
-                VProperty descriptionProperty = vEvent.getProperty("DESCRIPTION");
-                String description = null;
-                if (descriptionProperty != null) {
-                    description = vEvent.getProperty("DESCRIPTION").getParamValue("ALTREP");
-                }
-                if (description != null && description.startsWith("data:text/html,")) {
-                    description = URIUtil.decode(description.replaceFirst("data:text/html,", ""));
-                    jsonObject.put("body", new JSONObject().put("content", description).put("contentType", "html"));
-                } else {
-                    description = vEvent.getPropertyValue("DESCRIPTION");
-                    jsonObject.put("body", new JSONObject().put("content", description).put("contentType", "text"));
-                }
-
-                String location = vEvent.getPropertyValue("LOCATION");
-                jsonObject.put("location", new JSONObject().put("displayName", location));
-
-                localGraphObject.setCategories(vEvent.getPropertyValue("CATEGORIES"));
-                // Collect categories on multiple lines
-                List<VProperty> categories = vEvent.getProperties("CATEGORIES");
-                if (categories != null) {
-                    HashSet<String> categoryValues = new HashSet<>();
-                    for (VProperty category : categories) {
-                        categoryValues.add(category.getValue());
-                    }
-                    localGraphObject.setCategories(StringUtil.join(categoryValues, ","));
-                }
 
                 // handle reminder configuration
-                jsonObject.put("isReminderOn", vCalendar.hasVAlarm());
-                jsonObject.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
+                jsonEvent.put("isReminderOn", vCalendar.hasVAlarm());
+                jsonEvent.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
 
-                handleRrule(jsonObject, vEvent.getProperty("RRULE"));
+                handleRrule(jsonEvent, vEvent.getProperty("RRULE"));
 
                 if (id != null) {
-                    // assume we can delete occurrence only on new event
+                    // assume we can delete occurrence only on existing event
                     List<VProperty> exdateProperty = vEvent.getProperties("EXDATE");
                     if (exdateProperty != null && !exdateProperty.isEmpty()) {
                         JSONArray cancelledOccurrences = new JSONArray();
@@ -557,7 +521,7 @@ public class GraphExchangeSession extends ExchangeSession {
                             String exDateValue = vCalendar.convertCalendarDateToGraph(exdate.getValue(), exdateTzid);
                             deleteEventOccurrence(id, exDateValue);
                         }
-                        jsonObject.put("cancelledOccurrences", cancelledOccurrences);
+                        jsonEvent.put("cancelledOccurrences", cancelledOccurrences);
                     }
 
                     handleModifiedOccurrences(vCalendar, existingJsonEvent);
@@ -570,20 +534,19 @@ public class GraphExchangeSession extends ExchangeSession {
                             .setObjectType("calendars")
                             .setObjectId(folderId.id)
                             .setChildType("events")
-                            .setJsonBody(jsonObject);
+                            .setJsonBody(jsonEvent);
                 } else {
                     graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
                             .setMailbox(folderId.mailbox)
                             .setObjectType("events")
                             .setObjectId(id)
-                            .setJsonBody(jsonObject);
+                            .setJsonBody(jsonEvent);
                 }
 
                 GraphObject graphResponse = executeGraphRequest(graphRequestBuilder);
                 itemResult.status = graphResponse.statusCode;
 
-                // TODO review itemName logic
-                itemResult.itemName = graphResponse.optString("id") + ".EML";
+                itemResult.itemName = itemName; // preserve requested itemName
                 itemResult.etag = graphResponse.optString("changeKey");
 
             } catch (JSONException e) {
@@ -655,9 +618,19 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         }
 
-        private void createNewModifiedOccurrence(VObject vEvent, JSONObject existingJsonEvent, String originalDateZulu) throws IOException, JSONException {
+        /**
+         * Create a new modified occurrence on event.
+         * @param modifiedOccurrence modified occurrence vEvent
+         * @param existingJsonEvent master graph event
+         * @param originalDateZulu original date in zulu format
+         * @throws IOException
+         * @throws JSONException
+         */
+        private void createNewModifiedOccurrence(VObject modifiedOccurrence, JSONObject existingJsonEvent, String originalDateZulu) throws IOException, JSONException {
+            // assume instance is on same day in UTC timezone
             String startDateTime = originalDateZulu.substring(0, 10) + "T00:00:00.0000000";
             String endDateTime = originalDateZulu.substring(0, 10) + "T23:59:59.9999999";
+            // search for occurrence in master event instances
             GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("events")
@@ -672,33 +645,70 @@ public class GraphExchangeSession extends ExchangeSession {
                     JSONObject occurrence = occurrences.getJSONObject(i);
                     String occurrenceId = occurrence.optString("id");
                     if (occurrenceId != null) {
-                        updateExceptionOccurrence(vEvent, occurrenceId);
+                        updateExceptionOccurrence(modifiedOccurrence, occurrenceId);
                     }
                 }
+            } else {
+                LOGGER.warn("No occurrence found for " + originalDateZulu);
             }
         }
 
         private void updateExceptionOccurrence(VObject modifiedOccurrence, String exceptionOccurrenceId) throws IOException, JSONException {
             LOGGER.debug("Updating occurrence " + modifiedOccurrence.getPropertyValue("SUMMARY") + " " + modifiedOccurrence.getPropertyValue("RECURRENCE-ID"));
 
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("subject", modifiedOccurrence.getPropertyValue("SUMMARY"));
-
-            VProperty dtStart = modifiedOccurrence.getProperty("DTSTART");
-            String dtStartTzid = dtStart.getParamValue("TZID");
-            jsonObject.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
-
-            VProperty dtEnd = modifiedOccurrence.getProperty("DTEND");
-            String dtEndTzid = dtEnd.getParamValue("TZID");
-            jsonObject.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
+            JSONObject jsonEvent = buildJsonEvent(modifiedOccurrence);
 
             GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("events")
                     .setObjectId(exceptionOccurrenceId)
-                    .setJsonBody(jsonObject));
+                    .setJsonBody(jsonEvent));
 
             LOGGER.debug("Updated occurrence: " + graphResponse.jsonObject.toString());
+        }
+
+        private JSONObject buildJsonEvent(VObject vEvent) throws JSONException, IOException {
+            JSONObject jsonEvent = new JSONObject();
+            GraphObject graphObject = new GraphObject(jsonEvent);
+
+            jsonEvent.put("subject", vEvent.getPropertyValue("SUMMARY"));
+
+            VProperty dtStart = vEvent.getProperty("DTSTART");
+            String dtStartTzid = dtStart.getParamValue("TZID");
+            jsonEvent.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
+
+            VProperty dtEnd = vEvent.getProperty("DTEND");
+            String dtEndTzid = dtEnd.getParamValue("TZID");
+            jsonEvent.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
+
+            VProperty descriptionProperty = vEvent.getProperty("DESCRIPTION");
+            String description = null;
+            if (descriptionProperty != null) {
+                description = vEvent.getProperty("DESCRIPTION").getParamValue("ALTREP");
+            }
+            if (description != null && description.startsWith("data:text/html,")) {
+                description = URIUtil.decode(description.replaceFirst("data:text/html,", ""));
+                jsonEvent.put("body", new JSONObject().put("content", description).put("contentType", "html"));
+            } else {
+                description = vEvent.getPropertyValue("DESCRIPTION");
+                jsonEvent.put("body", new JSONObject().put("content", description).put("contentType", "text"));
+            }
+
+            String location = vEvent.getPropertyValue("LOCATION");
+            jsonEvent.put("location", new JSONObject().put("displayName", location));
+
+            graphObject.setCategories(vEvent.getPropertyValue("CATEGORIES"));
+            // Collect categories on multiple lines
+            List<VProperty> categories = vEvent.getProperties("CATEGORIES");
+            if (categories != null) {
+                HashSet<String> categoryValues = new HashSet<>();
+                for (VProperty category : categories) {
+                    categoryValues.add(category.getValue());
+                }
+                graphObject.setCategories(StringUtil.join(categoryValues, ","));
+            }
+
+            return jsonEvent;
         }
 
         private void deleteEventOccurrence(String id, String exDateValue) throws IOException, JSONException {
