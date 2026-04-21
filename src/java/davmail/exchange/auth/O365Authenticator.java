@@ -75,26 +75,24 @@ public class O365Authenticator implements ExchangeAuthenticator {
             // force consent
             //uriBuilder.addParameter("prompt", "consent");
 
-            if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
-                if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
-                    // OIDC compliant
+            if (Settings.getBooleanProperty("davmail.enableGraph")) {
+                // Graph backend
+                if (Settings.getBooleanProperty("davmail.enableOidc")) {
+                    // OIDC compliant, use this with default DavMail clientId, requires admin consent
                     uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                             .addParameter("scope", Settings.getOauthScope());
-                    // return scopes with 00000003-0000-0000-c000-000000000000 scopes
-                    //.addParameter("scope", "openid profile offline_access .default");
-                    //.addParameter("scope", "openid profile offline_access "+Settings.getGraphUrl()+"/.default");
-                    //.addParameter("scope", "openid " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All AuditLog.Read.All Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrintJob.ReadWriteBasic SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read");
                 } else {
-                    // Outlook desktop relies on classic authorize endpoint by default
-                    // on graph endpoint default scopes are scope -> AuditLog.Create Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All FileStorageContainer.Selected Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrinterShare.ReadBasic.All PrintJob.Create PrintJob.ReadWriteBasic Reports.Read.All SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read
+                    // Outlook desktop can work with classic resource based endpoint for authorization
+                    // on graph endpoint default scopes are AuditLog.Create Calendar.ReadWrite Calendars.Read.Shared Calendars.ReadWrite Contacts.ReadWrite DataLossPreventionPolicy.Evaluate Directory.AccessAsUser.All Directory.Read.All Files.Read Files.Read.All Files.ReadWrite.All FileStorageContainer.Selected Group.Read.All Group.ReadWrite.All InformationProtectionPolicy.Read Mail.ReadWrite Mail.Send Notes.Create Organization.Read.All People.Read People.Read.All Printer.Read.All PrinterShare.ReadBasic.All PrintJob.Create PrintJob.ReadWriteBasic Reports.Read.All SensitiveInfoType.Detect SensitiveInfoType.Read.All SensitivityLabel.Evaluate Tasks.ReadWrite TeamMember.ReadWrite.All TeamsTab.ReadWriteForChat User.Read.All User.ReadBasic.All User.ReadWrite Users.Read
                     uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
                             .addParameter("resource", Settings.getGraphUrl());
                 }
-                // Probably irrelevant except for graph api, see above, switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
-            } else if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
+            } else if (Settings.getBooleanProperty("davmail.enableOidc")) {
+                // switch to OIDC endpoint in EWS mode
                 uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                         .addParameter("scope", Settings.getProperty("davmail.oauth.scope", "openid profile offline_access " + Settings.getOutlookUrl() + "/EWS.AccessAsUser.All"));
             } else {
+                // Default endpoint for EWS, scopes defined on application
                 uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
                         .addParameter("resource", Settings.getOutlookUrl());
             }
