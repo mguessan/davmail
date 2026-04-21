@@ -568,6 +568,10 @@ public class GraphExchangeSession extends ExchangeSession {
                     JSONObject pattern = new JSONObject().put("type", "weekly").put("interval", 1).put("daysOfWeek", new JSONArray().put(dayOfWeek));
                     JSONObject range = new JSONObject().put("type", "noEnd").put("startDate", startDate).put("endDate", "0001-01-01");
                     jsonEvent.put("recurrence", new JSONObject().put("pattern", pattern).put("range", range));
+                } else if ("MONTHLY".equals(frequency)) {
+                    JSONObject pattern = new JSONObject().put("type", "absoluteMonthly").put("interval", 1).put("dayOfMonth", startDate.substring(8, 10));
+                    JSONObject range = new JSONObject().put("type", "noEnd").put("startDate", startDate).put("endDate", "0001-01-01");
+                    jsonEvent.put("recurrence", new JSONObject().put("pattern", pattern).put("range", range));
                 }
             }
         }
