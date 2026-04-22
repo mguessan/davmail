@@ -13,7 +13,12 @@ if [ "$1" = 'azul' ]; then
     echo Use platform independent package to run DavMail with Azul JDK
     exit 1
   fi
-  if curl -L --fail -o "$BASE/jre.tgz" "https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=21&ext=tar.gz&os=linux&arch=x86&hw_bitness=64&bundle_type=jre&features=fx"; then
+  case $(uname -m) in
+    x86_64)  AZUL_ARCH=x86; AZUL_BITNESS=64 ;;
+    aarch64) AZUL_ARCH=arm; AZUL_BITNESS=64 ;;
+    *)       echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+  esac
+  if curl -L --fail -o "$BASE/jre.tgz" "https://api.azul.com/zulu/download/community/v1.0/bundles/latest/binary/?jdk_version=21&ext=tar.gz&os=linux&arch=${AZUL_ARCH}&hw_bitness=${AZUL_BITNESS}&bundle_type=jre&features=fx"; then
     echo Downloaded Azul JRE
   else
     echo Unable to download Azul JRE
