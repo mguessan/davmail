@@ -324,7 +324,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     month = null;
                 }
                 // The first day of the week
-                String firstDayOfWeek = pattern.getString("firstDayOfWeek");
+                 String firstDayOfWeek = pattern.getString("firstDayOfWeek");
                 // The day of the month on which the event occurs
                 String dayOfMonth = pattern.getString("dayOfMonth");
                 if ("0".equals(dayOfMonth)) {
@@ -556,23 +556,140 @@ public class GraphExchangeSession extends ExchangeSession {
             return itemResult;
         }
 
+        /**
+         * Convert vCalendar rrule to graph format.
+         * @param jsonEvent graph json event
+         * @param rrule vCalendar rrule
+         * @throws JSONException on error
+         * @throws DavMailException on error
+         */
         private void handleRrule(JSONObject jsonEvent, VProperty rrule) throws JSONException, DavMailException {
             if (rrule != null) {
                 JSONObject start = jsonEvent.getJSONObject("start");
-                String startDate = start.getString("dateTime").substring(0, 10);
-                String dayOfWeek = getDayOfWeek(startDate);
+                String startDate = start.getString("dateTime").substring(0, 10); // start date in yyyy-MM-dd format
+                String startTimeZone = start.optString("timeZone");
 
+                // get information from rrule property
                 Map<String, String> rrules = rrule.getValuesAsMap();
                 String frequency = rrules.get("FREQ");
-                if ("WEEKLY".equals(frequency)) {
-                    JSONObject pattern = new JSONObject().put("type", "weekly").put("interval", 1).put("daysOfWeek", new JSONArray().put(dayOfWeek));
-                    JSONObject range = new JSONObject().put("type", "noEnd").put("startDate", startDate).put("endDate", "0001-01-01");
-                    jsonEvent.put("recurrence", new JSONObject().put("pattern", pattern).put("range", range));
-                } else if ("MONTHLY".equals(frequency)) {
-                    JSONObject pattern = new JSONObject().put("type", "absoluteMonthly").put("interval", 1).put("dayOfMonth", startDate.substring(8, 10));
-                    JSONObject range = new JSONObject().put("type", "noEnd").put("startDate", startDate).put("endDate", "0001-01-01");
-                    jsonEvent.put("recurrence", new JSONObject().put("pattern", pattern).put("range", range));
+                String until = rrules.get("UNTIL");
+                String count = rrules.get("COUNT");
+                int interval = rrules.containsKey("INTERVAL") ? Integer.parseInt(rrules.get("INTERVAL")) : 1; // default interval is 1
+                String byDay = rrules.get("BYDAY");
+                String byMonthDay = rrules.get("BYMONTHDAY");
+                String byMonth = rrules.get("BYMONTH");
+                String wkst = rrules.get("WKST"); // week start day (sunday or monday)
+
+                // build range
+                JSONObject range;
+                if (until != null) {
+                    // endDate recurrenceRange
+                    String endDate = convertUntilToEndDate(until, startTimeZone);
+                    range = new JSONObject().put("type", "endDate").put("startDate", startDate)
+                            .put("endDate", endDate).put("recurrenceTimeZone", startTimeZone);
+                } else if (count != null) {
+                    // numbered recurrenceRange
+                    range = new JSONObject().put("type", "numbered").put("startDate", startDate)
+                            .put("numberOfOccurrences", Integer.parseInt(count));
+                } else {
+                    range = new JSONObject().put("type", "noEnd").put("startDate", startDate).put("endDate", "0001-01-01");
                 }
+
+                // build pattern
+                JSONObject pattern = new JSONObject().put("interval", interval);
+
+                if ("DAILY".equals(frequency)) {
+                    pattern.put("type", "daily").put("dayOfMonth", 0);
+                } else if ("WEEKLY".equals(frequency)) {
+                    pattern.put("type", "weekly").put("daysOfWeek", byDay != null ? convertByDayToArray(byDay) : new JSONArray().put(getDayOfWeek(startDate)));
+                    if (wkst != null) { // TODO is this mandatory ?
+                        pattern.put("firstDayOfWeek", convertCaldavDayToGraph(wkst));
+                    }
+                } else if ("MONTHLY".equals(frequency)) {
+                    if (byDay != null) {
+                        pattern.put("type", "relativeMonthly");
+                        setRelativePattern(pattern, byDay);
+                    } else {
+                        pattern.put("type", "absoluteMonthly");
+                        pattern.put("dayOfMonth", byMonthDay != null ? Integer.parseInt(byMonthDay) : Integer.parseInt(startDate.substring(8, 10)));
+                    }
+                } else if ("YEARLY".equals(frequency)) {
+                    if (byDay != null) {
+                        pattern.put("type", "relativeYearly");
+                        setRelativePattern(pattern, byDay);
+                    } else {
+                        pattern.put("type", "absoluteYearly")
+                                .put("dayOfMonth", byMonthDay != null ? Integer.parseInt(byMonthDay) : Integer.parseInt(startDate.substring(8, 10)));
+                    }
+                    if (byMonth != null) {
+                        pattern.put("month", Integer.parseInt(byMonth));
+                    } else {
+                        pattern.put("month", Integer.parseInt(startDate.substring(5, 7)));
+                    }
+                }
+
+                jsonEvent.put("recurrence", new JSONObject().put("pattern", pattern).put("range", range));
+            }
+        }
+
+        private JSONArray convertByDayToArray(String byDay) {
+            JSONArray daysOfWeek = new JSONArray();
+            for (String day : byDay.split(",")) {
+                // strip numeric prefix (e.g. "2MO" -> "MO", "-1FR" -> "FR")
+                daysOfWeek.put(convertCaldavDayToGraph(day.replaceAll("^-?\\d+", "")));
+            }
+            return daysOfWeek;
+        }
+
+        private String convertCaldavDayToGraph(String weekDay) {
+            switch (weekDay) {
+                case "MO": return "monday";
+                case "TU": return "tuesday";
+                case "WE": return "wednesday";
+                case "TH": return "thursday";
+                case "FR": return "friday";
+                case "SA": return "saturday";
+                case "SU": return "sunday";
+                default: return weekDay.toLowerCase();
+            }
+        }
+
+        private void setRelativePattern(JSONObject pattern, String byDay) throws JSONException {
+            // extract index from first BYDAY value (e.g. "2MO" -> index "second", "-1FR" -> index "last")
+            String firstDay = byDay.split(",")[0];
+            String indexStr = firstDay.replaceAll("[A-Z]+$", "");
+            if (!indexStr.isEmpty()) {
+                pattern.put("index", convertIndex(Integer.parseInt(indexStr)));
+            }
+            pattern.put("daysOfWeek", convertByDayToArray(byDay));
+        }
+
+        private String convertIndex(int index) {
+            switch (index) {
+                case 1: return "first";
+                case 2: return "second";
+                case 3: return "third";
+                case 4: return "fourth";
+                case -1: return "last";
+                default: return "first";
+            }
+        }
+
+        private String convertUntilToEndDate(String until, String timeZone) throws DavMailException {
+            try {
+                SimpleDateFormat parser;
+                if (until.endsWith("Z")) {
+                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+                    parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+                } else {
+                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+                    parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                }
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                formatter.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                return formatter.format(parser.parse(until));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", until);
             }
         }
 
@@ -673,7 +790,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         private JSONObject buildJsonEvent(VObject vEvent) throws JSONException, IOException {
             JSONObject jsonEvent = new JSONObject();
-            GraphObject graphObject = new GraphObject(jsonEvent);
+            GraphObject localGraphObject = new GraphObject(jsonEvent);
 
             jsonEvent.put("subject", vEvent.getPropertyValue("SUMMARY"));
 
@@ -701,7 +818,7 @@ public class GraphExchangeSession extends ExchangeSession {
             String location = vEvent.getPropertyValue("LOCATION");
             jsonEvent.put("location", new JSONObject().put("displayName", location));
 
-            graphObject.setCategories(vEvent.getPropertyValue("CATEGORIES"));
+            localGraphObject.setCategories(vEvent.getPropertyValue("CATEGORIES"));
             // Collect categories on multiple lines
             List<VProperty> categories = vEvent.getProperties("CATEGORIES");
             if (categories != null) {
@@ -709,7 +826,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 for (VProperty category : categories) {
                     categoryValues.add(category.getValue());
                 }
-                graphObject.setCategories(StringUtil.join(categoryValues, ","));
+                localGraphObject.setCategories(StringUtil.join(categoryValues, ","));
             }
 
             return jsonEvent;
@@ -1657,10 +1774,17 @@ public class GraphExchangeSession extends ExchangeSession {
                 for (int i = 0; i < exchangeDateValue.length(); i++) {
                     if (i == 4 || i == 7 || i == 13 || i == 16) {
                         i++;
-                    } else if (exchangeDateValue.length() >= 25 && i == 19) {
-                        i = exchangeDateValue.length() - 1;
                     }
-                    buffer.append(exchangeDateValue.charAt(i));
+                    if (exchangeDateValue.length() == 27 && i == 19) {
+                        // yyyy-MM-dd'T'HH:mm:ss.SSSSSSS timestamp without timezone
+                        i = exchangeDateValue.length();
+                    } else if (exchangeDateValue.length() >= 25 && i == 19) {
+                        // yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z' timestamp without zulu tag
+                        i = exchangeDateValue.length() - 1;
+                        buffer.append(exchangeDateValue.charAt(i++));
+                    } else {
+                        buffer.append(exchangeDateValue.charAt(i));
+                    }
                 }
                 if (exchangeDateValue.length() == 10) {
                     buffer.append("T000000Z");
@@ -3016,7 +3140,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         }
                     }
                 }
-            // map phone numbers
+                // map phone numbers
             } else if ("phones".equals(key)) {
                 JSONArray phones = response.optJSONArray("phones");
                 if (phones != null) {
