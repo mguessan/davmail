@@ -31,6 +31,7 @@ import davmail.exchange.VProperty;
 import davmail.exchange.auth.O365Token;
 import davmail.http.HttpClientAdapter;
 import davmail.http.URIUtil;
+import davmail.ui.NotificationDialog;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -83,6 +84,28 @@ import static davmail.exchange.graph.GraphObject.convertTimezoneFromExchange;
  * Implement ExchangeSession based on Microsoft Graph
  */
 public class GraphExchangeSession extends ExchangeSession {
+
+    static final Map<String, String> partstatToResponseMap = new HashMap<>();
+    static final Map<String, String> responseTypeToPartstatMap = new HashMap<>();
+    static final Map<String, String> statusToBusyStatusMap = new HashMap<>();
+
+    static {
+        partstatToResponseMap.put("ACCEPTED", "accepted");
+        partstatToResponseMap.put("TENTATIVE", "tentativelyAccepted");
+        partstatToResponseMap.put("DECLINED", "declined");
+        partstatToResponseMap.put("NEEDS-ACTION", "notResponded");
+
+        responseTypeToPartstatMap.put("accepted", "ACCEPTED");
+        responseTypeToPartstatMap.put("organizer", "ACCEPTED");
+        responseTypeToPartstatMap.put("tentativelyAccepted", "TENTATIVE");
+        responseTypeToPartstatMap.put("declined", "DECLINED");
+        responseTypeToPartstatMap.put("none", "NEEDS-ACTION");
+        responseTypeToPartstatMap.put("notResponded", "NEEDS-ACTION");
+
+        statusToBusyStatusMap.put("TENTATIVE", "Tentative");
+        statusToBusyStatusMap.put("CONFIRMED", "Busy");
+        // Unable to map CANCELLED: cancelled events are directly deleted on Exchange
+    }
 
     /**
      * Graph folder is identified by mailbox and id
@@ -479,24 +502,55 @@ public class GraphExchangeSession extends ExchangeSession {
         @Override
         public ItemResult createOrUpdate() throws IOException {
 
-            String id = null;
+            String currentItemId = null;
             String currentEtag = null;
+            boolean isMeetingResponse = false;
+            boolean isMozSendInvitations = false;
+            boolean isMozDismiss = false;
+
             JSONObject existingJsonEvent = getEventIfExists(folderId, itemName);
             if (existingJsonEvent != null) {
-                id = existingJsonEvent.optString("id", null);
+                GraphObject currentItem = new GraphObject(existingJsonEvent);
+                currentItemId = existingJsonEvent.optString("id", null);
                 currentEtag = new GraphObject(existingJsonEvent).optString("changeKey");
+
+                String myResponseType = currentItem.optString("responseStatus", "response");
+
+                String currentAttendeeStatus = responseTypeToPartstatMap.get(myResponseType);
+                String newAttendeeStatus = vCalendar.getAttendeeStatus();
+
+                isMeetingResponse = vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()
+                        && newAttendeeStatus != null
+                        && !newAttendeeStatus.equals(currentAttendeeStatus)
+                        // avoid nullpointerexception on unknown status
+                        && partstatToResponseMap.get(newAttendeeStatus) != null;
+
+                // Check mozilla last ack and snooze
+                String newmozlastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+                String currentmozlastack = currentItem.optString("xmozlastack");
+                boolean ismozack = newmozlastack != null && !newmozlastack.equals(currentmozlastack);
+
+                String newmozsnoozetime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+                String currentmozsnoozetime = currentItem.optString("xmozsnoozetime");
+                boolean ismozsnooze = newmozsnoozetime != null && !newmozsnoozetime.equals(currentmozsnoozetime);
+
+                isMozSendInvitations = (newmozlastack == null && newmozsnoozetime == null) // not thunderbird
+                        || !(ismozack || ismozsnooze);
+                isMozDismiss = ismozack || ismozsnooze;
+
+                LOGGER.debug("Existing item found with etag: " + currentEtag + " client etag: " + etag + " id: " + currentItemId);
             }
 
             ItemResult itemResult = new ItemResult();
             if ("*".equals(noneMatch)) {
                 // create requested but already exists
-                if (id != null) {
+                if (currentItemId != null) {
                     itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
                     return itemResult;
                 }
             } else if (etag != null) {
                 // update requested
-                if (id == null || !etag.equals(currentEtag)) {
+                if (currentItemId == null || !etag.equals(currentEtag)) {
                     itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
                     return itemResult;
                 }
@@ -504,52 +558,115 @@ public class GraphExchangeSession extends ExchangeSession {
 
             VObject vEvent = vCalendar.getFirstVevent();
             try {
-                JSONObject jsonEvent = buildJsonEvent(vEvent);
+                GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
 
-                // urlcompname is an extended property, wrap in GraphObject
-                GraphObject localGraphObject = new GraphObject(jsonEvent);
-                localGraphObject.put("urlcompname", itemName);
-
-                // handle reminder configuration
-                jsonEvent.put("isReminderOn", vCalendar.hasVAlarm());
-                jsonEvent.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
-
-                handleRrule(jsonEvent, vEvent.getProperty("RRULE"));
-
-                if (id != null) {
-                    // assume we can delete occurrence only on existing event
-                    List<VProperty> exdateProperty = vEvent.getProperties("EXDATE");
-                    if (exdateProperty != null && !exdateProperty.isEmpty()) {
-                        JSONArray cancelledOccurrences = new JSONArray();
-                        for (VProperty exdate : exdateProperty) {
-                            String exdateTzid = exdate.getParamValue("TZID");
-                            String exDateValue = vCalendar.convertCalendarDateToGraph(exdate.getValue(), exdateTzid);
-                            deleteEventOccurrence(id, exDateValue);
+                if (currentItemId != null && isMeetingResponse) {
+                    // over graph always assume server side calendar management
+                    String body = null;
+                    boolean sendResponse = true;
+                    // This is a meeting response, let user edit notification message
+                    if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
+                        String vEventSubject = vCalendar.getFirstVeventPropertyValue("SUMMARY");
+                        if (vEventSubject == null) {
+                            vEventSubject = BundleMessage.format("MEETING_REQUEST");
                         }
-                        jsonEvent.put("cancelledOccurrences", cancelledOccurrences);
+
+                        String status = vCalendar.getAttendeeStatus();
+                        String notificationSubject = (status != null) ? (BundleMessage.format(status) + vEventSubject) : subject;
+
+                        NotificationDialog notificationDialog = new NotificationDialog(notificationSubject, "");
+                        if (!notificationDialog.getSendNotification()) {
+                            LOGGER.debug("Notification canceled by user");
+                            sendResponse = false;
+                        }
+                        // get description from dialog
+                        body = notificationDialog.getBody();
+                    }
+                    // Prepare request to accept/tentativelyAccept/decline meeting request
+                    try {
+                        JSONObject jsonBody = new JSONObject();
+                        jsonBody.put("sendResponse", sendResponse);
+                        if (body != null && !body.isEmpty()) {
+                            jsonBody.put("comment", body);
+                        }
+                        String action = "accept";
+                        String attendeeStatus = vCalendar.getAttendeeStatus();
+                        if ("ACCEPTED".equals(attendeeStatus)) {
+                            action = "accept";
+                        } else if ("DECLINED".equals(attendeeStatus)) {
+                            action = "decline";
+                        } else if ("TENTATIVE".equals(attendeeStatus)) {
+                            action = "tentativelyAccept";
+                        }
+
+                        graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("events")
+                                .setObjectId(currentItemId)
+                                .setAction(action)
+                                .setJsonBody(jsonBody);
+                    } catch (JSONException e) {
+                        throw new IOException(e);
                     }
 
-                    handleModifiedOccurrences(vCalendar, existingJsonEvent);
-                }
 
-                GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
-                if (id == null) {
-                    graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
-                            .setMailbox(folderId.mailbox)
-                            .setObjectType("calendars")
-                            .setObjectId(folderId.id)
-                            .setChildType("events")
-                            .setJsonBody(jsonEvent);
                 } else {
-                    graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
-                            .setMailbox(folderId.mailbox)
-                            .setObjectType("events")
-                            .setObjectId(id)
-                            .setJsonBody(jsonEvent);
+
+                    JSONObject jsonEvent = buildJsonEvent(vEvent);
+
+                    // urlcompname is an extended property, wrap in GraphObject
+                    GraphObject localGraphObject = new GraphObject(jsonEvent);
+                    localGraphObject.put("urlcompname", itemName);
+
+                    // handle reminder configuration
+                    jsonEvent.put("isReminderOn", vCalendar.hasVAlarm());
+                    jsonEvent.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
+
+                    handleRrule(jsonEvent, vEvent.getProperty("RRULE"));
+
+                    if (currentItemId != null) {
+                        // assume we can delete occurrence only on existing event
+                        List<VProperty> exdateProperty = vEvent.getProperties("EXDATE");
+                        if (exdateProperty != null && !exdateProperty.isEmpty()) {
+                            JSONArray cancelledOccurrences = new JSONArray();
+                            for (VProperty exdate : exdateProperty) {
+                                String exdateTzid = exdate.getParamValue("TZID");
+                                String exDateValue = vCalendar.convertCalendarDateToGraph(exdate.getValue(), exdateTzid);
+                                deleteEventOccurrence(currentItemId, exDateValue);
+                            }
+                            jsonEvent.put("cancelledOccurrences", cancelledOccurrences);
+                        }
+
+                        handleModifiedOccurrences(vCalendar, existingJsonEvent);
+                    }
+
+                    if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer() && isMozSendInvitations) {
+                        // TODO handle send notifications option
+                    }
+                    // TODO isMozDismiss
+
+                    if (currentItemId == null) {
+                        graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("calendars")
+                                .setObjectId(folderId.id)
+                                .setChildType("events")
+                                .setJsonBody(jsonEvent);
+                    } else {
+                        graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("events")
+                                .setObjectId(currentItemId)
+                                .setJsonBody(jsonEvent);
+                    }
                 }
 
                 GraphObject graphResponse = executeGraphRequest(graphRequestBuilder);
                 itemResult.status = graphResponse.statusCode;
+                if (itemResult.status == HttpStatus.SC_ACCEPTED) {
+                    LOGGER.debug("Sent meeting response");
+                    itemResult.status = HttpStatus.SC_OK;
+                }
 
                 itemResult.itemName = itemName; // preserve requested itemName
                 itemResult.etag = graphResponse.optString("changeKey");
@@ -1408,6 +1525,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("recurrence"));
         EVENT_ATTRIBUTES.add(GraphField.get("reminderMinutesBeforeStart"));
         EVENT_ATTRIBUTES.add(GraphField.get("responseRequested"));
+        EVENT_ATTRIBUTES.add(GraphField.get("responseStatus"));
         EVENT_ATTRIBUTES.add(GraphField.get("sensitivity"));
         EVENT_ATTRIBUTES.add(GraphField.get("showAs"));
         EVENT_ATTRIBUTES.add(GraphField.get("start"));

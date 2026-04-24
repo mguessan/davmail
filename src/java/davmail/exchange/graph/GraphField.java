@@ -131,6 +131,8 @@ public class GraphField {
         addFieldMap("showAs");
         addFieldMap("isAllDay", "isAllDay", PropertyType.Boolean);
         addFieldMap("responseRequested");
+        addFieldMap("responseStatus");
+
         addFieldMap("isReminderOn", "isReminderOn", PropertyType.Boolean);
 
         addFieldMap("xmozsendinvitations", DistinguishedPropertySetType.PublicStrings, "xmozsendinvitations");

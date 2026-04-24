@@ -57,9 +57,13 @@ public class GraphRequestBuilder {
     String mailbox;
     String objectType;
 
+    String objectId;
+
     String childType;
     String childId;
     String childSuffix;
+
+    String action;
 
     String select;
     String expand;
@@ -85,7 +89,6 @@ public class GraphRequestBuilder {
     HashMap<String, String> headerMap;
 
     byte[] mimeContent;
-    private String objectId;
 
     /**
      * Set property in the JSON body.
@@ -151,6 +154,11 @@ public class GraphRequestBuilder {
 
     public GraphRequestBuilder setChildSuffix(String childSuffix) {
         this.childSuffix = childSuffix;
+        return this;
+    }
+
+    public GraphRequestBuilder setAction(String action) {
+        this.action = action;
         return this;
     }
 
@@ -262,6 +270,9 @@ public class GraphRequestBuilder {
         }
         if (childSuffix != null) {
             buffer.append("/").append(childSuffix);
+        }
+        if (action != null) {
+            buffer.append("/").append(action);
         }
 
         return buffer.toString();
