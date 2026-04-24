@@ -901,7 +901,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         public boolean isMatch(ExchangeSession.Contact contact) {
             String actualValue = contact.get(attributeName);
-            return actualValue == null;
+            return actualValue != null;
         }
 
     }
