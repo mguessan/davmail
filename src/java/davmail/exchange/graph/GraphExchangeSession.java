@@ -609,7 +609,12 @@ public class GraphExchangeSession extends ExchangeSession {
                         throw new IOException(e);
                     }
 
-
+                } else if (currentItemId != null && isMozDismiss) {
+                    graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("events")
+                            .setObjectId(currentItemId)
+                            .setAction("dismissReminder");
                 } else {
 
                     JSONObject jsonEvent = buildJsonEvent(vEvent);
@@ -644,6 +649,67 @@ public class GraphExchangeSession extends ExchangeSession {
                         // TODO handle send notifications option
                     }
                     // TODO isMozDismiss
+
+
+                    // store mozilla invitations option
+                    String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
+                    if (xMozSendInvitations != null) {
+                        localGraphObject.put("xmozsendinvitations", xMozSendInvitations);
+                    }
+                    // handle mozilla alarm
+                    String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+                    if (xMozLastack != null) {
+                        localGraphObject.put("xmozlastack", xMozLastack);
+                    }
+                    String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+                    if (xMozSnoozeTime != null) {
+                        localGraphObject.put("xmozsnoozetime", xMozSnoozeTime);
+                    }
+
+                    if (vCalendar.isMeeting()) {
+                        // build attendee list
+                        JSONArray attendees = new JSONArray();
+                        jsonEvent.put("attendees", attendees);
+
+                        // TODO: handle attendees on modified occurences
+                        List<VProperty> attendeeProperties = vCalendar.getFirstVeventProperties("ATTENDEE");
+                        if (attendeeProperties != null) {
+                            for (VProperty property : attendeeProperties) {
+                                JSONObject jsonAttendee = new JSONObject();
+                                String attendeeEmail = vCalendar.getEmailValue(property);
+                                if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
+                                    String cn = property.getParamValue("CN");
+                                    jsonAttendee.put("emailAddress", new JSONObject().put("name", cn)
+                                            .put("address", attendeeEmail));
+
+                                    String attendeeRole = property.getParamValue("ROLE");
+                                    if ("REQ-PARTICIPANT".equals(attendeeRole)) {
+                                        jsonAttendee.put("type", "required");
+                                    } else {
+                                        jsonAttendee.put("type", "optional");
+                                    }
+                                    attendees.put(jsonAttendee);
+                                }
+                            }
+                        }
+                    }
+
+                    // patch allday date values, only on 2007
+                    if (vCalendar.isCdoAllDay()) {
+                        // TODO: handle allday
+                    }
+
+                    // showAs: free, tentative, busy, oof, workingElsewhere, unknown
+                    String status = vCalendar.getFirstVeventPropertyValue("STATUS");
+                    if ("TENTATIVE".equals(status)) {
+                        // this is a tentative event
+                        localGraphObject.put("showAs", "tentative");
+                    } else {
+                        // otherwise, we use the same value as before, as received from the server
+                        // however, the case matters, so we still have to transform it "BUSY" -> "Busy"
+                        // TODO double check this
+                        localGraphObject.put("showAs", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "busy" : "free");
+                    }
 
                     if (currentItemId == null) {
                         graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)

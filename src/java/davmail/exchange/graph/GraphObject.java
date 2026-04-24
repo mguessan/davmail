@@ -131,7 +131,7 @@ public class GraphObject {
     public void put(String alias, String value) throws JSONException {
         GraphField field = GraphField.get(alias);
         String key = field.getGraphId();
-        // assume all expanded properties have a space
+        // handle MAPI extended fields
         if (field.isExtended()) {
             // force number attributes value
             if (field.isNumber() && value == null) {
