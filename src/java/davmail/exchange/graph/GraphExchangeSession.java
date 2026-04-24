@@ -666,12 +666,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         localGraphObject.put("xmozsnoozetime", xMozSnoozeTime);
                     }
 
-
-
-                    // patch allday date values, only on 2007
-                    if (vCalendar.isCdoAllDay()) {
-                        // TODO: handle allday
-                    }
+                    localGraphObject.put("isAllDay", vCalendar.isCdoAllDay());
 
                     // showAs: free, tentative, busy, oof, workingElsewhere, unknown
                     String status = vCalendar.getFirstVeventPropertyValue("STATUS");
