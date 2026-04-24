@@ -77,7 +77,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             if (Settings.getBooleanProperty("davmail.enableGraph")) {
                 // Graph backend
-                if (Settings.getBooleanProperty("davmail.enableOidc")) {
+                // default to v2.0 OIDC endpoint
+                if (Settings.getBooleanProperty("davmail.enableOidc", true)) {
                     // OIDC compliant, use this with default DavMail clientId, requires admin consent
                     uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
                             .addParameter("scope", Settings.getOauthScope());
