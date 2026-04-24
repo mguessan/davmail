@@ -136,12 +136,17 @@ public class GraphExchangeSession extends ExchangeSession {
             this.graphObject = graphObject;
 
             id = graphObject.optString("id");
+            String urlcompname = graphObject.optString("urlcompname");
             etag = graphObject.optString("changeKey");
 
             displayName = graphObject.optString("subject");
             subject = graphObject.optString("subject");
 
-            itemName = StringUtil.base64ToUrl(id) + ".EML";
+            if (urlcompname != null) {
+                itemName = urlcompname;
+            } else {
+                itemName = StringUtil.base64ToUrl(id) + ".EML";
+            }
         }
 
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
@@ -1137,7 +1142,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 // reload to get latest etag
                 graphResponse = new GraphObject(getContactIfExists(folderId, itemName));
 
-                itemResult.itemName = graphResponse.optString("id");
+                itemResult.itemName = itemName;
                 itemResult.etag = graphResponse.optString("etag");
 
             } catch (JSONException e) {
@@ -1376,6 +1381,7 @@ public class GraphExchangeSession extends ExchangeSession {
     protected static final HashSet<GraphField> EVENT_ATTRIBUTES = new HashSet<>();
 
     static {
+        EVENT_ATTRIBUTES.add(GraphField.get("urlcompname"));
         EVENT_ATTRIBUTES.add(GraphField.get("allowNewTimeProposals"));
         EVENT_ATTRIBUTES.add(GraphField.get("attendees"));
         EVENT_ATTRIBUTES.add(GraphField.get("bodyPreview"));
@@ -2209,6 +2215,7 @@ public class GraphExchangeSession extends ExchangeSession {
     protected void appendSubFolders(List<ExchangeSession.Folder> folders,
                                     String parentFolderPath, FolderId parentFolderId,
                                     Condition condition, boolean recursive) throws IOException {
+        LOGGER.debug("appendSubFolders " + (parentFolderId.mailbox != null ? parentFolderId.mailbox : "me") + " " + parentFolderPath);
 
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
@@ -2218,7 +2225,6 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setChildType("childFolders")
                 .setSelectFields(FOLDER_PROPERTIES)
                 .setFilter(condition);
-        LOGGER.debug("appendSubFolders " + (parentFolderId.mailbox != null ? parentFolderId.mailbox : "me") + " " + parentFolderPath);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
@@ -2494,6 +2500,7 @@ public class GraphExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected FolderId getSubFolderByName(FolderId currentFolderId, String folderName) throws IOException {
+        LOGGER.debug("getSubFolderByName "+currentFolderId.id+" "+folderName);
         GraphRequestBuilder httpRequestBuilder;
         if ("IPF.Appointment".equals(currentFolderId.folderClass)) {
             httpRequestBuilder = new GraphRequestBuilder()
@@ -3087,8 +3094,11 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     protected String getCalendarEmail(String folderPath) throws IOException {
         FolderId folderId = getFolderId(folderPath);
-
-        return folderId.mailbox;
+        if (folderId.mailbox == null) {
+            return email;
+        } else {
+            return folderId.mailbox;
+        }
     }
 
     /**
