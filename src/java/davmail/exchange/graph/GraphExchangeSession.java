@@ -749,8 +749,8 @@ public class GraphExchangeSession extends ExchangeSession {
          * @param modifiedOccurrence modified occurrence vEvent
          * @param existingJsonEvent master graph event
          * @param originalDateZulu original date in zulu format
-         * @throws IOException
-         * @throws JSONException
+         * @throws IOException on error
+         * @throws JSONException on error
          */
         private void createNewModifiedOccurrence(VObject modifiedOccurrence, JSONObject existingJsonEvent, String originalDateZulu) throws IOException, JSONException {
             // assume instance is on same day in UTC timezone
@@ -3300,22 +3300,22 @@ public class GraphExchangeSession extends ExchangeSession {
         public GraphIterator(JSONObject jsonObject) throws JSONException {
             this.jsonObject = jsonObject;
             nextLink = jsonObject.optString("@odata.nextLink", null);
-            values = jsonObject.getJSONArray("value");
+            values = jsonObject.optJSONArray("value");
         }
 
         public boolean hasNext() throws IOException {
-            if (index < values.length()) {
+            if (values != null && index < values.length()) {
                 return true;
             } else if (nextLink != null) {
                 fetchNextPage();
-                return values.length() > 0;
+                return values != null && values.length() > 0;
             } else {
                 return false;
             }
         }
 
         public JSONObject next() throws IOException {
-            if (!hasNext()) {
+            if (values == null || !hasNext()) {
                 throw new NoSuchElementException();
             }
             try {
@@ -3340,10 +3340,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (nextLink != null && nextLink.endsWith("skip=0")) {
                     nextLink = null;
                 }
-                values = jsonObject.getJSONArray("value");
+                values = jsonObject.optJSONArray("value");
                 index = 0;
-            } catch (JSONException e) {
-                throw new IOException(e.getMessage(), e);
             }
         }
     }
