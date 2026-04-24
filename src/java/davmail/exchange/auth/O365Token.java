@@ -19,6 +19,7 @@
 
 package davmail.exchange.auth;
 
+import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.http.HttpClientAdapter;
@@ -116,7 +117,7 @@ public class O365Token {
                 if (error.equals("authorization_pending"))
                     throw new O365AuthorizationPending();
 
-                throw new DavMailAuthenticationException(jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
+                throw new DavMailAuthenticationException("LOG_MESSAGE",jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
             }
             scope = jsonToken.optString("scope");
             LOGGER.debug("Obtained token for scopes: " + scope);
