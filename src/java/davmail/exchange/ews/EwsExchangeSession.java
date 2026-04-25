@@ -65,6 +65,23 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected static final String ARCHIVE_ROOT = "/archive/";
 
+    public static final Map<String, String> vTodoToTaskStatusMap = new HashMap<>();
+    public static final Map<String, String> taskTovTodoStatusMap = new HashMap<>();
+    static {
+        //taskTovTodoStatusMap.put("NotStarted", null);
+        taskTovTodoStatusMap.put("InProgress", "IN-PROCESS");
+        taskTovTodoStatusMap.put("Completed", "COMPLETED");
+        taskTovTodoStatusMap.put("WaitingOnOthers", "NEEDS-ACTION");
+        taskTovTodoStatusMap.put("Deferred", "CANCELLED");
+
+        //vTodoToTaskStatusMap.put(null, "NotStarted");
+        vTodoToTaskStatusMap.put("IN-PROCESS", "InProgress");
+        vTodoToTaskStatusMap.put("COMPLETED", "Completed");
+        vTodoToTaskStatusMap.put("NEEDS-ACTION", "WaitingOnOthers");
+        vTodoToTaskStatusMap.put("CANCELLED", "Deferred");
+
+    }
+
     /**
      * Message types.
      *
