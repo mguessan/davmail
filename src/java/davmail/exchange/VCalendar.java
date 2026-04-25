@@ -208,7 +208,7 @@ public class VCalendar extends VObject {
 
         // iterate over vObjects
         for (VObject vObject : vObjects) {
-            if ("VEVENT".equals(vObject.type)) {
+            if (vObject.isVEvent()) {
                 if (calendarServerAccess != null) {
                     vObject.setPropertyValue("CLASS", getEventClass(calendarServerAccess));
                     // iCal 3, get X-CALENDARSERVER-ACCESS from local VEVENT
@@ -382,7 +382,7 @@ public class VCalendar extends VObject {
         for (VObject vObject : vObjects) {
             if (vObject.isVTimezone()) {
                 String tzid = vObject.getPropertyValue("TZID");
-                // check if tzid is avalid Exchange timezone id
+                // check if tzid is a valid Exchange timezone id
                 if (!tzidsBundle.containsKey(tzid)) {
                     String exchangeTzid = null;
                     // try to convert standard timezone id to Exchange timezone id
@@ -408,7 +408,7 @@ public class VCalendar extends VObject {
 
     protected void updateTzid(String tzid, String newTzid) {
         for (VObject vObject : vObjects) {
-            if (vObject.isVEvent()) {
+            if (vObject.isVEvent() || vObject.isVTodo()) {
                 for (VProperty vProperty : vObject.properties) {
                     if (tzid.equalsIgnoreCase(vProperty.getParamValue("TZID"))) {
                         vProperty.setParam("TZID", newTzid);

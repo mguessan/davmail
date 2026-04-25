@@ -100,6 +100,10 @@ public class VObject {
         return "VEVENT".equals(type);
     }
 
+    public boolean isVTodo() {
+        return "VTODO".equals(type);
+    }
+
     public boolean isVAlarm() {
         return "VALARM".equals(type);
     }
