@@ -20,6 +20,7 @@
 package davmail.exchange.graph;
 
 import davmail.exception.DavMailException;
+import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.util.DateUtil;
 import davmail.util.StringUtil;
@@ -31,7 +32,9 @@ import org.codehaus.jettison.json.JSONObject;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
 
@@ -332,5 +335,35 @@ public class GraphObject {
     public String toString(int indentFactor) throws JSONException {
         return jsonObject.toString(indentFactor);
     }
+
+    protected static final Map<String, String> vTodoToTaskStatusMap = new HashMap<>();
+    protected static final Map<String, String> taskTovTodoStatusMap = new HashMap<>();
+    static {
+        // The possible values are: notStarted, inProgress, completed, waitingOnOthers, deferred
+        //taskTovTodoStatusMap.put("notStarted", null);
+        taskTovTodoStatusMap.put("inProgress", "IN-PROCESS");
+        taskTovTodoStatusMap.put("completed", "COMPLETED");
+        taskTovTodoStatusMap.put("waitingOnOthers", "NEEDS-ACTION");
+        taskTovTodoStatusMap.put("deferred", "CANCELLED");
+
+        //vTodoToTaskStatusMap.put(null, "NotStarted");
+        vTodoToTaskStatusMap.put("IN-PROCESS", "inProgress");
+        vTodoToTaskStatusMap.put("COMPLETED", "completed");
+        vTodoToTaskStatusMap.put("NEEDS-ACTION", "waitingOnOthers");
+        vTodoToTaskStatusMap.put("CANCELLED", "deferred");
+    }
+
+    public static String getTaskStatusFromVTodo(VObject vEvent) {
+        String taskStatus = vTodoToTaskStatusMap.get(vEvent.getProperty("STATUS"));
+        if (taskStatus == null) {
+            taskStatus = "notStarted";
+        }
+        return taskStatus;
+    }
+
+    public String getVTodoStatusFromTask() {
+        return taskTovTodoStatusMap.get(optString("status"));
+    }
+
 }
 

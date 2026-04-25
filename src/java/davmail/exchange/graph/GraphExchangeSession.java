@@ -205,7 +205,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("PRIORITY", convertPriorityFromExchange(graphObject.optString("importance")));
                     // not supported over graph
                     //vTodo.setPropertyValue("PERCENT-COMPLETE", );
-                    vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(graphObject.optString("status")));
+                    vTodo.setPropertyValue("STATUS", graphObject.getVTodoStatusFromTask());
 
                     vTodo.setPropertyValue("DUE;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("dueDateTime")));
                     vTodo.setPropertyValue("DTSTART;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("startDateTime")));
@@ -1108,11 +1108,7 @@ public class GraphExchangeSession extends ExchangeSession {
             if (importance != null) {
                 localGraphObject.put("importance", importance);
             }
-            String status = vTodoToTaskStatusMap.get(vTodo.getPropertyValue("STATUS"));
-            if (status == null) {
-                status = "notStarted";
-            }
-            localGraphObject.put("status", status);
+            localGraphObject.put("status", GraphObject.getTaskStatusFromVTodo(vTodo));
 
             // TODO refactor duplicate code with event
             VProperty descriptionProperty = vTodo.getProperty("DESCRIPTION");
