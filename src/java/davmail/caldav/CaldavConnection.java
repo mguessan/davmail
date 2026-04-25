@@ -532,9 +532,9 @@ public class CaldavConnection extends AbstractConnection {
                 if ("calendar".equals(displayname)) {
                     displayname = folder.displayName;
                 }
-                response.appendProperty("D:displayname", displayname);
+                response.appendProperty("D:displayname", StringUtil.xmlEncode(displayname));
             } else {
-                response.appendProperty("D:displayname", subFolder);
+                response.appendProperty("D:displayname", StringUtil.xmlEncode(subFolder));
             }
         }
         if (request.hasProperty("calendar-description")) {
@@ -818,7 +818,7 @@ public class CaldavConnection extends AbstractConnection {
                     throw e;
                 } catch (Exception e) {
                     wireLogger.debug(e.getMessage(), e);
-                    DavGatewayTray.warn(new BundleMessage("LOG_ITEM_NOT_AVAILABLE", eventName, href));
+                    wireLogger.warn(new BundleMessage("LOG_ITEM_NOT_AVAILABLE", eventName, href).toString());
                     notFound.add(href);
                 }
             }
