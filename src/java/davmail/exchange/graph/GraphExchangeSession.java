@@ -767,9 +767,7 @@ public class GraphExchangeSession extends ExchangeSession {
          */
         private void handleRrule(JSONObject jsonEvent, VProperty rrule) throws JSONException, DavMailException {
             if (rrule != null) {
-                JSONObject start = null;
-                start = jsonEvent.optJSONObject("start");
-                String startDate;
+                JSONObject start = jsonEvent.optJSONObject("start");
                 if (start == null) {
                     // failover for tasks
                     start = jsonEvent.optJSONObject("startDateTime");
