@@ -3577,7 +3577,28 @@ public class GraphExchangeSession extends ExchangeSession {
     protected String getFreeBusyData(String attendee, String start, String end, int interval) throws IOException {
         // https://learn.microsoft.com/en-us/graph/outlook-get-free-busy-schedule
         // POST /me/calendar/getschedule
-        return null;
+        String fbdata = null;
+        JSONObject jsonBody = new JSONObject();
+        try {
+            String timeZone = getVTimezone().getPropertyValue("TZID");
+            jsonBody.put("Schedules", new JSONArray().put(attendee));
+            jsonBody.put("StartTime", new JSONObject().put("dateTime", start).put("timeZone", timeZone));
+            jsonBody.put("EndTime", new JSONObject().put("dateTime", end).put("timeZone", timeZone));
+            jsonBody.put("availabilityViewInterval", interval);
+
+            GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder()
+                    .setMethod(HttpPost.METHOD_NAME)
+                    .setObjectType("calendar")
+                    .setAction("getschedule")
+                    .setJsonBody(jsonBody));
+            JSONArray value = graphResponse.optJSONArray("value");
+            if (value != null && value.length() > 0) {
+                fbdata = value.getJSONObject(0).optString("availabilityView", null);
+            }
+        } catch (JSONException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+        return fbdata;
     }
 
     @Override
