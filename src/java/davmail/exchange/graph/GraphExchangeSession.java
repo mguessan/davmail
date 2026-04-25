@@ -2529,7 +2529,9 @@ public class GraphExchangeSession extends ExchangeSession {
         while (graphIterator.hasNext()) {
             Folder folder = buildFolder(graphIterator.next());
             folder.folderPath = folder.displayName;
-            folders.add(folder);
+            if (!folder.isDefaultCalendar) {
+                folders.add(folder);
+            }
         }
         return folders;
     }
