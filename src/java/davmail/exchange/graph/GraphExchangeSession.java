@@ -116,6 +116,8 @@ public class GraphExchangeSession extends ExchangeSession {
         public FolderId folderId;
         protected String specialFlag = "";
 
+        protected boolean isDefaultCalendar = false;
+
         protected void setSpecialFlag(String specialFlag) {
             this.specialFlag = "\\" + specialFlag + " ";
         }
@@ -653,7 +655,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
                     // urlcompname is an extended property, wrap in GraphObject
                     GraphObject localGraphObject = new GraphObject(jsonEvent);
-                    localGraphObject.put("urlcompname", itemName);
+                    String urlcompname = convertItemNameToEML(itemName);
+                    localGraphObject.put("urlcompname", urlcompname);
 
                     // handle reminder configuration
                     jsonEvent.put("isReminderOn", vCalendar.hasVAlarm());
@@ -2277,6 +2280,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 } else if (field.isDate()) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value,Edm.DateTimeOffset) ").append(convertOperator(operator)).append(" datetimeoffset'").append(StringUtil.escapeQuotes(value)).append("')");
+                } else if (field.isBoolean()) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
+                            .append("' and cast(ep/value,Edm.Boolean) ").append(convertOperator(operator)).append(" ").append(value).append(")");
                 } else {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and ep/value ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
@@ -2340,6 +2346,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (graphField.isNumber()) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphField.getGraphId())
                             .append("' and cast(ep/value, Edm.Int32) eq null)");
+                } else if (graphField.isBoolean()) {
+                    buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphField.getGraphId())
+                            .append("' and cast(ep/value, Edm.Boolean) eq null)");
                 } else {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphField.getGraphId())
                             .append("' and ep/value eq null)");
@@ -2508,6 +2517,25 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public List<ExchangeSession.Folder> getSubCalendarFolders(String folderName, boolean recursive) throws IOException {
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder();
+            // search calendars, ignore condition
+            httpRequestBuilder.setMethod(HttpGet.METHOD_NAME)
+                    .setObjectType("calendars")
+                    .setSelectFields(FOLDER_PROPERTIES);
+
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+        List<ExchangeSession.Folder> folders = new ArrayList<>();
+        while (graphIterator.hasNext()) {
+            Folder folder = buildFolder(graphIterator.next());
+            folder.folderPath = folder.displayName;
+            folders.add(folder);
+        }
+        return folders;
+    }
+
+
+    @Override
     public List<ExchangeSession.Folder> getSubFolders(String folderPath, Condition condition, boolean recursive) throws IOException {
         String baseFolderPath = folderPath;
         if (baseFolderPath.startsWith("/users/")) {
@@ -2618,6 +2646,7 @@ public class GraphExchangeSession extends ExchangeSession {
             if (folder.folderId.parentFolderId == null) {
                 // calendar
                 folder.displayName = StringUtil.encodeFolderName(jsonResponse.optString("name"));
+                folder.isDefaultCalendar = jsonResponse.optBoolean("isDefaultCalendar");
             } else {
                 String wellKnownName = wellKnownFolderMap.get(jsonResponse.optString("wellKnownName"));
                 if (ExchangeSession.INBOX.equals(wellKnownName)) {
@@ -3107,8 +3136,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     protected Condition getCalendarItemCondition(Condition dateCondition) {
-        // no specific condition for calendar over graph
-        return dateCondition;
+        return or(isTrue("isrecurring"),
+                        and(isFalse("isrecurring"), dateCondition));
     }
 
     /**
