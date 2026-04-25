@@ -98,6 +98,8 @@ public class GraphField {
 
         addFieldMap("instancetype", DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype", PropertyType.Integer);
 
+        addFieldMap("isrecurring", DistinguishedPropertySetType.Appointment, 0x8223, PropertyType.Boolean); // PidLidRecurring
+
         addFieldMap("dtstart", "start");
         addFieldMap("dtend", "end");
         addFieldMap("subject");
@@ -391,6 +393,9 @@ public class GraphField {
                     break;
                 case Address:
                     namespaceGuid = "{00062004-0000-0000-c000-000000000046}";
+                    break;
+                case Appointment:
+                    namespaceGuid = "{00062002-0000-0000-C000-000000000046}";
                     break;
                 case Task:
                     namespaceGuid = "{00062003-0000-0000-c000-000000000046}";
