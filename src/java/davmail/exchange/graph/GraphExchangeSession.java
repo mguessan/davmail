@@ -202,7 +202,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
                     vTodo.addProperty(convertBodyToVproperty("DESCRIPTION", graphObject));
 
-                    vTodo.setPropertyValue("PRIORITY", convertPriorityFromExchange(graphObject.optString("importance")));
+                    vTodo.setPropertyValue("PRIORITY", graphObject.getTaskPriority());
                     // not supported over graph
                     //vTodo.setPropertyValue("PERCENT-COMPLETE", );
                     vTodo.setPropertyValue("STATUS", graphObject.getVTodoStatusFromTask());
@@ -212,6 +212,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("COMPLETED;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("completedDateTime")));
 
                     vTodo.setPropertyValue("CATEGORIES", graphObject.optString("categories"));
+
+                    // handleRecurrence(localVCalendar, graphObject); does not yet work on microsoft side
 
                     localVCalendar.addVObject(vTodo);
                     content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
@@ -624,6 +626,7 @@ public class GraphExchangeSession extends ExchangeSession {
                             .setAction("dismissReminder");
                 } else if ("IPF.Task".equals(folderId.folderClass)) {
                     JSONObject jsonTask = buildJsonTask(vEvent);
+                    // handleRrule(jsonTask, vEvent.getProperty("RRULE")); does not yet work on microsoft side
 
                     if (currentItemId == null) {
                         graphRequestBuilder
@@ -764,7 +767,13 @@ public class GraphExchangeSession extends ExchangeSession {
          */
         private void handleRrule(JSONObject jsonEvent, VProperty rrule) throws JSONException, DavMailException {
             if (rrule != null) {
-                JSONObject start = jsonEvent.getJSONObject("start");
+                JSONObject start = null;
+                start = jsonEvent.optJSONObject("start");
+                String startDate;
+                if (start == null) {
+                    // failover for tasks
+                    start = jsonEvent.optJSONObject("startDateTime");
+                }
                 String startDate = start.getString("dateTime").substring(0, 10); // start date in yyyy-MM-dd format
                 String startTimeZone = start.optString("timeZone");
 
@@ -1104,11 +1113,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
             localGraphObject.put("summary", vTodo.getPropertyValue("SUMMARY"));
 
-            String importance = convertPriorityToExchange(vTodo.getPropertyValue("PRIORITY"));
-            if (importance != null) {
-                localGraphObject.put("importance", importance);
-            }
-            localGraphObject.put("status", GraphObject.getTaskStatusFromVTodo(vTodo));
+            localGraphObject.setTaskImportanceFromVTodo(vTodo);
+            localGraphObject.setTaskStatusFromVTodo(vTodo);
 
             // TODO refactor duplicate code with event
             VProperty descriptionProperty = vTodo.getProperty("DESCRIPTION");

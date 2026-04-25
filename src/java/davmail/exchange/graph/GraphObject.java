@@ -353,16 +353,58 @@ public class GraphObject {
         vTodoToTaskStatusMap.put("CANCELLED", "deferred");
     }
 
-    public static String getTaskStatusFromVTodo(VObject vEvent) {
-        String taskStatus = vTodoToTaskStatusMap.get(vEvent.getProperty("STATUS"));
+    public void setTaskStatusFromVTodo(VObject vEvent) throws JSONException {
+        String taskStatus = vTodoToTaskStatusMap.get(vEvent.getPropertyValue("STATUS"));
         if (taskStatus == null) {
             taskStatus = "notStarted";
         }
-        return taskStatus;
+        put("status", taskStatus);
     }
 
     public String getVTodoStatusFromTask() {
         return taskTovTodoStatusMap.get(optString("status"));
+    }
+
+    protected static final Map<String, String> importanceToPriorityMap = new HashMap<>();
+
+    static {
+        importanceToPriorityMap.put("high", "1");
+        importanceToPriorityMap.put("normal", "5");
+        importanceToPriorityMap.put("low", "9");
+    }
+
+    protected static final Map<String, String> priorityToImportanceMap = new HashMap<>();
+
+    static {
+        // 0 means undefined, map it to normal
+        priorityToImportanceMap.put("0", "normal");
+
+        priorityToImportanceMap.put("1", "high");
+        priorityToImportanceMap.put("2", "high");
+        priorityToImportanceMap.put("3", "high");
+        priorityToImportanceMap.put("4", "normal");
+        priorityToImportanceMap.put("5", "normal");
+        priorityToImportanceMap.put("6", "normal");
+        priorityToImportanceMap.put("7", "low");
+        priorityToImportanceMap.put("8", "low");
+        priorityToImportanceMap.put("9", "low");
+    }
+
+    protected String getTaskPriority() {
+        String taskImportance = optString("importance");
+        String taskPriority = null;
+        if (taskImportance != null) {
+            taskPriority = importanceToPriorityMap.get(taskImportance);
+        }
+        return taskPriority;
+    }
+
+    public void setTaskImportanceFromVTodo(VObject vEvent) throws JSONException {
+        String taskImportance = priorityToImportanceMap.get(vEvent.getPropertyValue("PRIORITY"));
+        if (taskImportance == null) {
+            taskImportance = "normal";
+        }
+        put("importance", taskImportance);
     }
 
 }
