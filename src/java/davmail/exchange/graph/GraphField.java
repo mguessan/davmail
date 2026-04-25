@@ -107,6 +107,14 @@ public class GraphField {
         addFieldMap("createdDateTime", "createdDateTime", PropertyType.SystemTime);
         addFieldMap("lastModifiedDateTime", "lastModifiedDateTime", PropertyType.SystemTime);
 
+        // tasks
+        addFieldMap("summary", "title"); // title conflicts with job title
+        addFieldMap("dueDateTime");
+        addFieldMap("startDateTime");
+        addFieldMap("completedDateTime");
+        addFieldMap("datecompleted", "completedDateTime");
+        addFieldMap("objecttype");
+
         addFieldMap("originalStartTimeZone");
 
         addFieldMap("allowNewTimeProposals");

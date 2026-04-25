@@ -107,6 +107,8 @@ public class GraphExchangeSession extends ExchangeSession {
         // Unable to map CANCELLED: cancelled events are directly deleted on Exchange
     }
 
+    protected Map<String, String> urlcompnameToIdMap = new HashMap<>();
+
     /**
      * Graph folder is identified by mailbox and id
      */
@@ -147,13 +149,18 @@ public class GraphExchangeSession extends ExchangeSession {
             this.folderPath = folderPath;
             this.folderId = folderId;
 
-            if ("IPF.Appointment".equals(folderId.folderClass) && graphObject.optString("taskstatus") != null) {
+            if ("IPF.Task".equals(graphObject.optString("objecttype"))) {
                 // replace folder on task items requested as part of the default calendar
                 try {
                     this.folderId = getFolderId(TASKS);
                 } catch (IOException e) {
                     LOGGER.warn("Unable to replace folder with tasks");
                 }
+                displayName = graphObject.optString("summary");
+                subject = graphObject.optString("summary");
+            } else {
+                displayName = graphObject.optString("subject");
+                subject = graphObject.optString("subject");
             }
 
             this.graphObject = graphObject;
@@ -161,9 +168,6 @@ public class GraphExchangeSession extends ExchangeSession {
             id = graphObject.optString("id");
             String urlcompname = graphObject.optString("urlcompname");
             etag = graphObject.optString("changeKey");
-
-            displayName = graphObject.optString("subject");
-            subject = graphObject.optString("subject");
 
             if (urlcompname != null) {
                 itemName = urlcompname;
@@ -193,12 +197,11 @@ public class GraphExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("CREATED", graphObject.optString("createdDateTime"));
                     // use item id as uid
                     vTodo.setPropertyValue("UID", graphObject.optString("id"));
-                    vTodo.setPropertyValue("TITLE", graphObject.optString("title"));
-                    vTodo.setPropertyValue("SUMMARY", graphObject.optString("title"));
+                    vTodo.setPropertyValue("TITLE", graphObject.optString("summary"));
+                    vTodo.setPropertyValue("SUMMARY", graphObject.optString("summary"));
 
                     vTodo.addProperty(convertBodyToVproperty("DESCRIPTION", graphObject));
 
-                    // TODO refactor
                     vTodo.setPropertyValue("PRIORITY", convertPriorityFromExchange(graphObject.optString("importance")));
                     // not supported over graph
                     //vTodo.setPropertyValue("PERCENT-COMPLETE", );
@@ -352,7 +355,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     month = null;
                 }
                 // The first day of the week
-                 String firstDayOfWeek = pattern.getString("firstDayOfWeek");
+                String firstDayOfWeek = pattern.getString("firstDayOfWeek");
                 // The day of the month on which the event occurs
                 String dayOfMonth = pattern.getString("dayOfMonth");
                 if ("0".equals(dayOfMonth)) {
@@ -501,6 +504,10 @@ public class GraphExchangeSession extends ExchangeSession {
 
         @Override
         public ItemResult createOrUpdate() throws IOException {
+            if (vCalendar.isTodo() && isMainCalendar(folderPath)) {
+                // task item, move to tasks folder
+                folderId = getFolderId(TASKS);
+            }
 
             String currentItemId = null;
             String currentEtag = null;
@@ -615,6 +622,28 @@ public class GraphExchangeSession extends ExchangeSession {
                             .setObjectType("events")
                             .setObjectId(currentItemId)
                             .setAction("dismissReminder");
+                } else if ("IPF.Task".equals(folderId.folderClass)) {
+                    JSONObject jsonTask = buildJsonTask(vEvent);
+
+                    if (currentItemId == null) {
+                        graphRequestBuilder
+                                .setMethod(HttpPost.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("todo/lists")
+                                .setObjectId(folderId.id)
+                                .setChildType("tasks")
+                                .setChildId(currentItemId)
+                                .setJsonBody(jsonTask);
+                    } else {
+                        graphRequestBuilder
+                                .setMethod(HttpPatch.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("todo/lists")
+                                .setObjectId(folderId.id)
+                                .setChildType("tasks")
+                                .setChildId(currentItemId)
+                                .setJsonBody(jsonTask);
+                    }
                 } else {
 
                     JSONObject jsonEvent = buildJsonEvent(vEvent);
@@ -705,13 +734,17 @@ public class GraphExchangeSession extends ExchangeSession {
 
                 // TODO: Force etag check?
                 itemResult.etag = graphResponse.optString("changeKey");
+                /*if (!"IPF.Task".equals(folderId.folderClass)) {
                 graphResponse = executeGraphRequest(new GraphRequestBuilder()
                         .setMethod(HttpGet.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("events")
                         .setObjectId(graphResponse.optString("id"))
                         .setSelect("id"));
+                }*/
 
+                // workaround for Thunderbird, keep a cache of itemName to id map
+                urlcompnameToIdMap.put(itemName, graphResponse.optString("id"));
                 itemResult.itemName = itemName; // preserve requested itemName
                 itemResult.etag = graphResponse.optString("changeKey");
 
@@ -809,14 +842,22 @@ public class GraphExchangeSession extends ExchangeSession {
 
         private String convertCaldavDayToGraph(String weekDay) {
             switch (weekDay) {
-                case "MO": return "monday";
-                case "TU": return "tuesday";
-                case "WE": return "wednesday";
-                case "TH": return "thursday";
-                case "FR": return "friday";
-                case "SA": return "saturday";
-                case "SU": return "sunday";
-                default: return weekDay.toLowerCase();
+                case "MO":
+                    return "monday";
+                case "TU":
+                    return "tuesday";
+                case "WE":
+                    return "wednesday";
+                case "TH":
+                    return "thursday";
+                case "FR":
+                    return "friday";
+                case "SA":
+                    return "saturday";
+                case "SU":
+                    return "sunday";
+                default:
+                    return weekDay.toLowerCase();
             }
         }
 
@@ -832,12 +873,18 @@ public class GraphExchangeSession extends ExchangeSession {
 
         private String convertIndex(int index) {
             switch (index) {
-                case 1: return "first";
-                case 2: return "second";
-                case 3: return "third";
-                case 4: return "fourth";
-                case -1: return "last";
-                default: return "first";
+                case 1:
+                    return "first";
+                case 2:
+                    return "second";
+                case 3:
+                    return "third";
+                case 4:
+                    return "fourth";
+                case -1:
+                    return "last";
+                default:
+                    return "first";
             }
         }
 
@@ -1049,6 +1096,77 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                 }
             }
+        }
+
+        private JSONObject buildJsonTask(VObject vTodo) throws JSONException, IOException {
+            JSONObject jsonEvent = new JSONObject();
+            GraphObject localGraphObject = new GraphObject(jsonEvent);
+
+            localGraphObject.put("summary", vTodo.getPropertyValue("SUMMARY"));
+
+            String importance = convertPriorityToExchange(vTodo.getPropertyValue("PRIORITY"));
+            if (importance != null) {
+                localGraphObject.put("importance", importance);
+            }
+            String status = vTodoToTaskStatusMap.get(vTodo.getPropertyValue("STATUS"));
+            if (status == null) {
+                status = "notStarted";
+            }
+            localGraphObject.put("status", status);
+
+            // TODO refactor duplicate code with event
+            VProperty descriptionProperty = vTodo.getProperty("DESCRIPTION");
+            String description = null;
+            if (descriptionProperty != null) {
+                description = vTodo.getProperty("DESCRIPTION").getParamValue("ALTREP");
+            }
+            if (description != null && description.startsWith("data:text/html,")) {
+                description = URIUtil.decode(description.replaceFirst("data:text/html,", ""));
+                jsonEvent.put("body", new JSONObject().put("content", description).put("contentType", "html"));
+            } else {
+                description = vTodo.getPropertyValue("DESCRIPTION");
+                jsonEvent.put("body", new JSONObject().put("content", description).put("contentType", "text"));
+            }
+
+            VProperty dtStart = vTodo.getProperty("DTSTART");
+            if (dtStart != null) {
+                String dtStartTzid = dtStart.getParamValue("TZID");
+                if (dtStartTzid == null) {
+                    dtStartTzid = vCalendar.getVTimezone().getPropertyValue("TZID");
+                }
+                jsonEvent.put("startDateTime", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
+            }
+
+            VProperty due = vTodo.getProperty("DUE");
+            if (due != null) {
+                String dueTzid = due.getParamValue("TZID");
+                if (dueTzid == null) {
+                    dueTzid = vCalendar.getVTimezone().getPropertyValue("TZID");
+                }
+                jsonEvent.put("dueDateTime", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(due.getValue(), dueTzid)).put("timeZone", dueTzid));
+            }
+
+            VProperty completed = vTodo.getProperty("COMPLETED");
+            if (completed != null) {
+                String completedTzid = completed.getParamValue("TZID");
+                if (completedTzid == null) {
+                    completedTzid = vCalendar.getVTimezone().getPropertyValue("TZID");
+                }
+                jsonEvent.put("completedDateTime", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(completed.getValue(), completedTzid)).put("timeZone", completedTzid));
+            }
+
+            localGraphObject.setCategories(vTodo.getPropertyValue("CATEGORIES"));
+            // Collect categories on multiple lines
+            List<VProperty> categories = vTodo.getProperties("CATEGORIES");
+            if (categories != null) {
+                HashSet<String> categoryValues = new HashSet<>();
+                for (VProperty category : categories) {
+                    categoryValues.add(category.getValue());
+                }
+                localGraphObject.setCategories(StringUtil.join(categoryValues, ","));
+            }
+
+            return jsonEvent;
         }
 
     }
@@ -1546,29 +1664,31 @@ public class GraphExchangeSession extends ExchangeSession {
     private static final Set<GraphField> TODO_PROPERTIES = new HashSet<>();
 
     static {
-        // TODO review new todo properties https://learn.microsoft.com/en-us/graph/api/resources/todotask
-        /*TODO_PROPERTIES.add(Field.get("importance"));
-
-        TODO_PROPERTIES.add(Field.get("subject"));
-        TODO_PROPERTIES.add(Field.get("created"));
-        TODO_PROPERTIES.add(Field.get("lastmodified"));
-        TODO_PROPERTIES.add(Field.get("calendaruid"));
-        TODO_PROPERTIES.add(Field.get("description"));
-        TODO_PROPERTIES.add(Field.get("textbody"));
-        TODO_PROPERTIES.add(Field.get("percentcomplete"));
-        TODO_PROPERTIES.add(Field.get("taskstatus"));
-        TODO_PROPERTIES.add(Field.get("startdate"));
-        TODO_PROPERTIES.add(Field.get("duedate"));
-        TODO_PROPERTIES.add(Field.get("datecompleted"));
-        TODO_PROPERTIES.add(Field.get("keywords"));*/
+        // Task properties https://learn.microsoft.com/en-us/graph/api/resources/todotask
+        TODO_PROPERTIES.add(GraphField.get("id"));
+        TODO_PROPERTIES.add(GraphField.get("summary"));
+        TODO_PROPERTIES.add(GraphField.get("body"));
+        TODO_PROPERTIES.add(GraphField.get("lastModifiedDateTime"));
+        TODO_PROPERTIES.add(GraphField.get("createdDateTime"));
+        TODO_PROPERTIES.add(GraphField.get("importance"));
+        TODO_PROPERTIES.add(GraphField.get("status"));
+        TODO_PROPERTIES.add(GraphField.get("dueDateTime"));
+        TODO_PROPERTIES.add(GraphField.get("startDateTime"));
+        TODO_PROPERTIES.add(GraphField.get("completedDateTime"));
+        TODO_PROPERTIES.add(GraphField.get("categories"));
     }
 
     /**
-     * Must set select to retrieve canceled and exception occurrences, so we must specify additional properties
+     * EVENT_ATTRIBUTES to retrieve all fields including modified occurences, EVENT_LIST_ATTRIBUTES for search
      */
+    protected static final HashSet<GraphField> EVENT_LIST_ATTRIBUTES = new HashSet<>();
     protected static final HashSet<GraphField> EVENT_ATTRIBUTES = new HashSet<>();
 
     static {
+        EVENT_LIST_ATTRIBUTES.add(GraphField.get("id"));
+        EVENT_LIST_ATTRIBUTES.add(GraphField.get("urlcompname"));
+        EVENT_LIST_ATTRIBUTES.add(GraphField.get("changeKey"));
+
         EVENT_ATTRIBUTES.add(GraphField.get("urlcompname"));
         EVENT_ATTRIBUTES.add(GraphField.get("allowNewTimeProposals"));
         EVENT_ATTRIBUTES.add(GraphField.get("attendees"));
@@ -2141,7 +2261,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         intValue = Integer.parseInt(value);
                     } catch (NumberFormatException e) {
                         // invalid value, replace with 0
-                        LOGGER.warn("Invalid integer value for "+graphId+" "+value);
+                        LOGGER.warn("Invalid integer value for " + graphId + " " + value);
                     }
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value, Edm.Int32) ").append(convertOperator(operator)).append(" ").append(intValue).append(")");
@@ -2397,6 +2517,7 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         }
         List<ExchangeSession.Folder> folders = new ArrayList<>();
+        // TODO does not work with calendar folders
         appendSubFolders(folders, baseFolderPath, getFolderId(folderPath), condition, recursive);
         return folders;
     }
@@ -2689,7 +2810,7 @@ public class GraphExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected FolderId getSubFolderByName(FolderId currentFolderId, String folderName) throws IOException {
-        LOGGER.debug("getSubFolderByName "+currentFolderId.id+" "+folderName);
+        LOGGER.debug("getSubFolderByName " + currentFolderId.id + " " + folderName);
         GraphRequestBuilder httpRequestBuilder;
         if ("IPF.Appointment".equals(currentFolderId.folderClass)) {
             httpRequestBuilder = new GraphRequestBuilder()
@@ -3008,7 +3129,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("todo/lists")
                 .setObjectId(folderId.id)
                 .setChildType("tasks")
-                .setSelectFields(TODO_PROPERTIES);
+                //.setSelectFields(TODO_PROPERTIES)
+                ;
         LOGGER.debug("searchTasksOnly " + folderId.getMailboxName() + " " + folderPath);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
@@ -3033,7 +3155,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("calendars")
                 .setObjectId(folderId.id)
                 .setChildType("events")
-                .setSelectFields(EVENT_ATTRIBUTES)
+                .setSelectFields(EVENT_LIST_ATTRIBUTES)
                 .setTimezone(getVTimezone().getPropertyValue("TZID"))
                 .setFilter(condition);
         LOGGER.debug("searchEvents " + folderId.getMailboxName() + " " + folderPath);
@@ -3075,6 +3197,16 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
+    @Override
+    protected String convertItemNameToEML(String itemName) {
+        if (itemName.endsWith(".vcf") || itemName.endsWith(".ics")) {
+            return itemName.substring(0, itemName.length() - 3) + "EML";
+        } else {
+            return itemName;
+        }
+    }
+
+
     private JSONObject getEventIfExists(FolderId folderId, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
         String itemId = null;
@@ -3084,35 +3216,31 @@ public class GraphExchangeSession extends ExchangeSession {
             // try to retrieve by urlcompname
             JSONObject jsonResponse;
             try {
-                jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                        .setMethod(HttpGet.METHOD_NAME)
-                        .setMailbox(folderId.mailbox)
-                        .setObjectType("calendars")
-                        .setObjectId(folderId.id)
-                        .setChildType("events")
-                        .setFilter(isEqualTo("urlcompname", urlcompname))
-                        .setSelect("id") // retrieve id only
-                );
-            } catch (HttpNotFoundException e) {
-                // this may be a task item
-                FolderId taskFolderId = getFolderId(TASKS);
-                jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                                .setMethod(HttpGet.METHOD_NAME)
-                                .setMailbox(folderId.mailbox)
-                                .setObjectType("todo/lists")
-                                .setObjectId(taskFolderId.id)
-                                .setChildType("tasks")
-                                .setFilter(isEqualTo("urlcompname", urlcompname))
-                                .setSelect("id") // retrieve id only
-                );
-            }
+                if (urlcompnameToIdMap.containsKey(urlcompname)) {
+                    // try to fetch id from cache
+                    itemId = urlcompnameToIdMap.get(urlcompname);
+                } else if ("IPF.Appointment".equals(folderId.folderClass)){
+                    jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                            .setMethod(HttpGet.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("calendars")
+                            .setObjectId(folderId.id)
+                            .setChildType("events")
+                            .setFilter(isEqualTo("urlcompname", urlcompname))
+                            .setSelect("id") // retrieve id only
+                    );
 
-            JSONArray values = jsonResponse.optJSONArray("value");
-            if (values != null && values.length() > 0) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Found event " + values.optJSONObject(0));
+                    JSONArray values = jsonResponse.optJSONArray("value");
+                    if (values != null && values.length() > 0) {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Found event " + values.optJSONObject(0));
+                        }
+                        itemId = values.optJSONObject(0).optString("id");
+                    }
                 }
-                itemId = values.optJSONObject(0).optString("id");
+
+            } catch (HttpNotFoundException e) {
+                // do nothing
             }
         }
         if (itemId != null) {
@@ -3128,15 +3256,19 @@ public class GraphExchangeSession extends ExchangeSession {
             } catch (HttpNotFoundException e) {
                 // this may be a task item
                 FolderId taskFolderId = getFolderId(TASKS);
-                return executeJsonRequest(new GraphRequestBuilder()
-                                .setMethod(HttpGet.METHOD_NAME)
-                                .setMailbox(folderId.mailbox)
-                                .setObjectType("todo/lists")
-                                .setObjectId(taskFolderId.id)
-                                .setChildType("tasks")
-                                .setChildId(itemId)
-                        //.setSelectFields(TODO_PROPERTIES) // TODO set fields for todo items
-                );
+                try {
+                    return executeJsonRequest(new GraphRequestBuilder()
+                            .setMethod(HttpGet.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("todo/lists")
+                            .setObjectId(taskFolderId.id)
+                            .setChildType("tasks")
+                            .setChildId(itemId)
+                            //.setSelectFields(TODO_PROPERTIES) // bug on title breaks request
+                    ).put("objecttype", "IPF.Task"); // mark object as task item
+                } catch (JSONException jsonException) {
+                    throw new IOException(jsonException.getMessage(), jsonException);
+                }
             }
         }
         return null;
@@ -3344,7 +3476,7 @@ public class GraphExchangeSession extends ExchangeSession {
             } else if ("phones".equals(key)) {
                 JSONArray phones = response.optJSONArray("phones");
                 if (phones != null) {
-                    for (int i=0;i<phones.length();i++) {
+                    for (int i = 0; i < phones.length(); i++) {
                         String phoneType = phones.optJSONObject(i).optString("type");
                         String phoneNumber = phones.optJSONObject(i).optString("number");
                         if ("business".equals(phoneType)) {
@@ -3354,8 +3486,8 @@ public class GraphExchangeSession extends ExchangeSession {
                         } else if ("home".equals(phoneType)) {
                             contact.put("homePhone", phoneNumber);
                         } else {
-                            LOGGER.debug("Unknown phoneType "+phoneType);
-                            contact.put(phoneType+"Phone", phoneNumber);
+                            LOGGER.debug("Unknown phoneType " + phoneType);
+                            contact.put(phoneType + "Phone", phoneNumber);
                         }
                     }
                 }
@@ -3404,14 +3536,13 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setMethod(HttpGet.METHOD_NAME)
                         .addHeader("X-PeopleQuery-QuerySources", "Mailbox,Directory")
                         .setObjectType("people")
-                        .setObjectId(id)
-                        ;
+                        .setObjectId(id);
                 JSONObject peopleObject = null;
 
                 try {
                     peopleObject = executeJsonRequest(httpRequestBuilder);
                 } catch (HttpNotFoundException e) {
-                    LOGGER.warn("No person found for id "+id);
+                    LOGGER.warn("No person found for id " + id);
                 }
 
                 if (peopleObject != null) {
