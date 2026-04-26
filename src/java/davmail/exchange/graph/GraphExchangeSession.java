@@ -172,11 +172,8 @@ public class GraphExchangeSession extends ExchangeSession {
             String urlcompname = graphObject.optString("urlcompname");
             etag = graphObject.optString("changeKey");
 
-            if (urlcompname != null) {
-                itemName = urlcompname;
-            } else {
-                itemName = StringUtil.base64ToUrl(id) + ".EML";
-            }
+            // prefer id as itemName
+            itemName = StringUtil.base64ToUrl(id) + ".EML";
         }
 
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
@@ -3433,7 +3430,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void processItem(String folderPath, String itemName) throws IOException {
-
+        // TODO mark event messages in inbox processed
     }
 
     @Override
