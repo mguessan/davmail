@@ -3251,6 +3251,10 @@ public abstract class ExchangeSession {
         return vTimezone;
     }
 
+    public String getTimezoneId() {
+        return getVTimezone().getPropertyValue("TZID");
+    }
+
     public void clearVTimezone() {
         vTimezone = null;
     }

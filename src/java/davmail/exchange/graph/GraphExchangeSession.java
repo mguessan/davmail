@@ -76,6 +76,7 @@ import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
 import static davmail.exchange.graph.GraphObject.convertTimezoneFromExchange;
@@ -751,6 +752,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
                 // workaround for Thunderbird, keep a cache of itemName to id map
                 urlcompnameToIdMap.put(itemName, graphResponse.optString("id"));
+
                 itemResult.itemName = itemName; // preserve requested itemName
                 itemResult.etag = graphResponse.optString("changeKey");
 
@@ -1765,6 +1767,10 @@ public class GraphExchangeSession extends ExchangeSession {
                 return mailbox;
             }
         }
+
+        public boolean isCalendar() {
+            return "IPF.Appointment".equals(folderClass);
+        }
     }
 
     HttpClientAdapter httpClient;
@@ -2603,7 +2609,15 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("sendMail")
                 .setContentType("text/plain")
                 .setMimeContent(IOUtil.encodeBase64(mimeMessage)));
+    }
 
+    public void sendMessage(byte[] byteArray) throws IOException {
+        // https://learn.microsoft.com/en-us/graph/api/user-sendmail
+        executeJsonRequest(new GraphRequestBuilder()
+                .setMethod(HttpPost.METHOD_NAME)
+                .setObjectType("sendMail")
+                .setContentType("text/plain")
+                .setMimeContent(IOUtil.encodeBase64(byteArray)));
     }
 
     @Override
@@ -3237,21 +3251,24 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
+    protected String convertItemNameToItemId(String itemName) {
+        return itemName.substring(0, itemName.length() - 4);
+    }
+
 
     private JSONObject getEventIfExists(FolderId folderId, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
         String itemId = null;
         if (isItemId(urlcompname)) {
-            itemId = itemName.substring(0, itemName.length() - 4);
+            itemId = convertItemNameToItemId(urlcompname);
         } else {
-            // try to retrieve by urlcompname
-            JSONObject jsonResponse;
+            // try to retrieve item id by urlcompname
             try {
                 if (urlcompnameToIdMap.containsKey(urlcompname)) {
                     // try to fetch id from cache
                     itemId = urlcompnameToIdMap.get(urlcompname);
-                } else if ("IPF.Appointment".equals(folderId.folderClass)){
-                    jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                } else if (folderId.isCalendar()){
+                    JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
                             .setMethod(HttpGet.METHOD_NAME)
                             .setMailbox(folderId.mailbox)
                             .setObjectType("calendars")
@@ -3271,9 +3288,10 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
 
             } catch (HttpNotFoundException e) {
-                // do nothing
+                LOGGER.debug("No event found for urlcompname " + urlcompname);
             }
         }
+        // fetch item by id
         if (itemId != null) {
             try {
                 return executeJsonRequest(new GraphRequestBuilder()
@@ -3282,7 +3300,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectType("events")
                         .setObjectId(itemId)
                         .setSelectFields(EVENT_ATTRIBUTES)
-                        .setTimezone(getVTimezone().getPropertyValue("TZID"))
+                        .setTimezone(getTimezoneId())
                 );
             } catch (HttpNotFoundException e) {
                 // this may be a task item
@@ -3315,7 +3333,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType("contactFolders")
                     .setObjectId(folderId.id)
                     .setChildType("contacts")
-                    .setChildId(itemName.substring(0, itemName.length() - ".EML".length()))
+                    .setChildId(convertItemNameToItemId(itemName))
                     .setSelectFields(CONTACT_ATTRIBUTES)
             );
 
@@ -3333,7 +3351,7 @@ public class GraphExchangeSession extends ExchangeSession {
             JSONArray values = jsonResponse.optJSONArray("value");
             if (values != null && values.length() > 0) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Contact " + values.optJSONObject(0));
+                    LOGGER.debug("Found contact " + values.optJSONObject(0));
                 }
                 return values.optJSONObject(0);
             }
@@ -3420,7 +3438,15 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public int sendEvent(String icsBody) throws IOException {
-        return 0;
+        String itemName = UUID.randomUUID() + ".EML";
+        byte[] mimeContent = new GraphExchangeSession.Event(DRAFTS, itemName, "urn:content-classes:calendarmessage", icsBody, null, null).createMimeContent();
+        if (mimeContent == null) {
+            // no recipients, cancel
+            return HttpStatus.SC_NO_CONTENT;
+        } else {
+            sendMessage( mimeContent);
+            return HttpStatus.SC_OK;
+        }
     }
 
     @Override
