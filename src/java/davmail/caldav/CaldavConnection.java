@@ -296,9 +296,13 @@ public class CaldavConnection extends AbstractConnection {
         } else if (request.isPut()) {
             String etag = request.getHeader("if-match");
             String noneMatch = request.getHeader("if-none-match");
-            ExchangeSession.ItemResult itemResult = session.createOrUpdateItem(request.getFolderPath(), lastPath, request.getBody(), etag, noneMatch);
-            sendHttpResponse(itemResult.status, buildEtagHeader(request, itemResult), null, "", true);
-
+            if (request.getBody() == null || request.getBody().isEmpty()) {
+                // thunderbird check, ignore
+                sendHttpResponse(HttpStatus.SC_OK, null);
+            } else {
+                ExchangeSession.ItemResult itemResult = session.createOrUpdateItem(request.getFolderPath(), lastPath, request.getBody(), etag, noneMatch);
+                sendHttpResponse(itemResult.status, buildEtagHeader(request, itemResult), null, "", true);
+            }
         } else if (request.isDelete()) {
             if (request.getFolderPath().endsWith("inbox")) {
                 session.processItem(request.getFolderPath(), lastPath);
