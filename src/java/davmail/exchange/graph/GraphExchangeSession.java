@@ -1883,6 +1883,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
                 // unset draft flag on returned draft message properties
                 graphResponse.put("messageFlags", "4");
+                // clear read flag by default
+                graphResponse.put("read", false);
                 applyMessageProperties(graphResponse, properties);
 
                 // now use this to recreate message in the right folder
