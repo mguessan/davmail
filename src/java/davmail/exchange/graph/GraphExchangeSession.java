@@ -52,8 +52,12 @@ import org.htmlcleaner.TagNode;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimePart;
 import javax.mail.internet.MimeUtility;
+import javax.mail.util.SharedByteArrayInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -148,6 +152,11 @@ public class GraphExchangeSession extends ExchangeSession {
 
         protected GraphObject graphObject;
 
+        /**
+         * Preloaded content for event messages
+         */
+        protected VCalendar vCalendar;
+
         public Event(String folderPath, FolderId folderId, GraphObject graphObject) {
             this.folderPath = folderPath;
             this.folderId = folderId;
@@ -188,7 +197,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 LOGGER.debug("Get event: " + itemName);
             }
             try {
-                if ("IPF.Task".equals(folderId.folderClass)) {
+                if (vCalendar != null) {
+                    return vCalendar.toString().getBytes(StandardCharsets.UTF_8);
+                } else if ("IPF.Task".equals(folderId.folderClass)) {
                     VCalendar localVCalendar = new VCalendar();
                     VObject vTodo = new VObject();
                     vTodo.type = "VTODO";
@@ -1590,9 +1601,9 @@ public class GraphExchangeSession extends ExchangeSession {
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("contentclass"));
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("keywords"));
 
-        // experimental, retrieve message headers (TODO remove)
-        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("to"));
+        // experimental, retrieve message headers
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("messageheaders"));
+        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("outlookmessageclass"));
     }
 
     protected static final HashSet<GraphField> CONTACT_ATTRIBUTES = new HashSet<>();
@@ -3155,7 +3166,9 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public List<ExchangeSession.Event> getEventMessages(String folderPath) throws IOException {
-        return null;
+        return searchEvents(folderPath, ITEM_PROPERTIES,
+                and(startsWith("outlookmessageclass", "IPM.Schedule.Meeting."),
+                        or(isNull("processed"), isFalse("processed"))));
     }
 
     @Override
@@ -3201,27 +3214,131 @@ public class GraphExchangeSession extends ExchangeSession {
         ArrayList<ExchangeSession.Event> eventList = new ArrayList<>();
         FolderId folderId = getFolderId(folderPath);
 
-        // /users/{id | userPrincipalName}/calendars/{id}/events
-        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
-                .setMethod(HttpGet.METHOD_NAME)
-                .setMailbox(folderId.mailbox)
-                .setObjectType("calendars")
-                .setObjectId(folderId.id)
-                .setChildType("events")
-                .setSelectFields(EVENT_LIST_ATTRIBUTES)
-                .setTimezone(getVTimezone().getPropertyValue("TZID"))
-                .setFilter(condition);
-        LOGGER.debug("searchEvents " + folderId.getMailboxName() + " " + folderPath);
+        if (folderId.isCalendar()) {
+            // /users/{id | userPrincipalName}/calendars/{id}/events
+            GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("calendars")
+                    .setObjectId(folderId.id)
+                    .setChildType("events")
+                    .setSelectFields(EVENT_LIST_ATTRIBUTES)
+                    .setTimezone(getVTimezone().getPropertyValue("TZID"))
+                    .setFilter(condition);
+            LOGGER.debug("searchEvents " + folderId.getMailboxName() + " " + folderPath);
 
-        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+            GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
-        while (graphIterator.hasNext()) {
-            Event event = new Event(folderPath, folderId, new GraphObject(graphIterator.next()));
-            eventList.add(event);
+            while (graphIterator.hasNext()) {
+                Event event = new Event(folderPath, folderId, new GraphObject(graphIterator.next()));
+                eventList.add(event);
+            }
+        } else {
+            // event messages
+            GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("mailFolders")
+                    .setObjectId(folderId.id)
+                    .setChildType("messages")
+                    .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)
+                    .setFilter(condition);
+            LOGGER.debug("searchEventMessages " + folderId.getMailboxName() + " " + folderPath);
+
+            GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+
+            while (graphIterator.hasNext()) {
+                JSONObject jsonResponse = graphIterator.next();
+                GraphExchangeSession.Message message = buildMessage(jsonResponse);
+                message.folderId = folderId;
+                LOGGER.debug("searchEventMessages " + message.contentClass+" "+message.id);
+                try {
+                    byte[] content = getContent(message);
+                    if (content == null) {
+                        throw new IOException("empty event body");
+                    }
+                    content = getICS(new SharedByteArrayInputStream(content));
+
+                    Event event = new Event(folderPath, folderId, new GraphObject(jsonResponse));
+                    event.vCalendar = new VCalendar(content, email, getVTimezone());
+                    eventList.add(event);
+
+                } catch (IOException | MessagingException e) {
+                    LOGGER.warn("searchEventMessages " + message.id, e);
+                }
+            }
         }
 
         return eventList;
 
+    }
+
+    // TODO refactor to avoid duplicate code
+
+    protected static final String TEXT_CALENDAR = "text/calendar";
+    protected static final String APPLICATION_ICS = "application/ics";
+
+    protected boolean isCalendarContentType(String contentType) {
+        return TEXT_CALENDAR.regionMatches(true, 0, contentType, 0, TEXT_CALENDAR.length()) ||
+                APPLICATION_ICS.regionMatches(true, 0, contentType, 0, APPLICATION_ICS.length());
+    }
+
+    protected MimePart getCalendarMimePart(MimeMultipart multiPart) throws IOException, MessagingException {
+        MimePart bodyPart = null;
+        for (int i = 0; i < multiPart.getCount(); i++) {
+            String contentType = multiPart.getBodyPart(i).getContentType();
+            if (isCalendarContentType(contentType)) {
+                bodyPart = (MimePart) multiPart.getBodyPart(i);
+                break;
+            } else if (contentType.startsWith("multipart")) {
+                Object content = multiPart.getBodyPart(i).getContent();
+                if (content instanceof MimeMultipart) {
+                    bodyPart = getCalendarMimePart((MimeMultipart) content);
+                }
+            }
+        }
+
+        return bodyPart;
+    }
+
+    /**
+     * Load ICS content from MIME message input stream
+     *
+     * @param mimeInputStream mime message input stream
+     * @return mime message ics attachment body
+     * @throws IOException        on error
+     * @throws MessagingException on error
+     */
+    protected byte[] getICS(InputStream mimeInputStream) throws IOException, MessagingException {
+        byte[] result;
+        MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
+        String[] contentClassHeader = mimeMessage.getHeader("Content-class");
+        // task item, return null
+        if (contentClassHeader != null && contentClassHeader.length > 0 && "urn:content-classes:task".equals(contentClassHeader[0])) {
+            return null;
+        }
+        Object mimeBody = mimeMessage.getContent();
+        MimePart bodyPart = null;
+        if (mimeBody instanceof MimeMultipart) {
+            bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
+        } else if (isCalendarContentType(mimeMessage.getContentType())) {
+            // no multipart, single body
+            bodyPart = mimeMessage;
+        }
+
+
+        if (bodyPart != null) {
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                bodyPart.getDataHandler().writeTo(baos);
+                result = baos.toByteArray();
+            }
+        } else {
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                mimeMessage.writeTo(baos);
+                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), StandardCharsets.UTF_8));
+            }
+        }
+        return result;
     }
 
     @Override
