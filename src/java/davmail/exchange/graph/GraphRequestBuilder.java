@@ -115,7 +115,7 @@ public class GraphRequestBuilder {
 
     public GraphRequestBuilder addHeader(String name, String value) {
         if (headerMap == null) {
-            headerMap = new HashMap<String, String>();
+            headerMap = new HashMap<>();
         }
         headerMap.put(name, value);
         return this;
@@ -414,6 +414,8 @@ public class GraphRequestBuilder {
             if (timeZone != null) {
                 httpRequest.setHeader("Prefer", "outlook.timezone=\"" + timeZone + "\"");
             }
+
+            httpRequest.setHeader("Prefer", "IdType=\"ImmutableId\"");
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(httpRequest.getMethod() + " " + httpRequest.getURI());
