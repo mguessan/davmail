@@ -3863,7 +3863,8 @@ public class GraphExchangeSession extends ExchangeSession {
      * @return true if itemName is an EWS item id
      */
     protected static boolean isItemId(String itemName) {
-        return itemName.length() >= 140
+        // Length 72 for immutableId, 140 for classic id
+        return (itemName.length() >= 140 || itemName.length() == 72)
                 // the item name is base64url
                 && itemName.matches("^([A-Za-z0-9-_]{4})*([A-Za-z0-9-_]{4}|[A-Za-z0-9-_]{3}=|[A-Za-z0-9-_]{2}==)\\.EML$")
                 && itemName.indexOf(' ') < 0;
