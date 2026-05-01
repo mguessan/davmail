@@ -2168,7 +2168,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setChildType("$value")
                 .setAccessToken(token.getAccessToken());
 
-        // TODO review mime content handling
+        // Load MIME content from $value endpoint
         byte[] mimeContent;
         try (
                 CloseableHttpResponse response = httpClient.execute(graphRequestBuilder.build());
@@ -2216,10 +2216,14 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setChildType("messages")
                 .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)
                 .setFilter(condition);
+        int maxCount = Settings.getIntProperty("davmail.folderSizeLimit", 0);
+        if (maxCount == 0) {
+            maxCount = Integer.MAX_VALUE;
+        }
         LOGGER.debug("searchMessages " + folderId.getMailboxName() + " " + folderName);
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
-        while (graphIterator.hasNext()) {
+        while (graphIterator.hasNext() && messageList.size() < maxCount) {
             Message message = buildMessage(graphIterator.next());
             message.messageList = messageList;
             message.folderId = folderId;
