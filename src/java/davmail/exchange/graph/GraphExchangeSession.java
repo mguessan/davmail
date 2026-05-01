@@ -690,12 +690,6 @@ public class GraphExchangeSession extends ExchangeSession {
                         handleModifiedOccurrences(vCalendar, existingJsonEvent);
                     }
 
-                    if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer() && isMozSendInvitations) {
-                        // TODO handle send notifications option
-                    }
-                    // TODO isMozDismiss
-
-
                     // store mozilla invitations option
                     String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
                     if (xMozSendInvitations != null) {
@@ -1979,9 +1973,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (messageHeaders != null
                         // workaround for broken message headers on Exchange 2010
                         && messageHeaders.toLowerCase().contains("message-id:")) {
+                    String from = graphResponse.optString("from");
                     // workaround for messages in Sent folder
-                    if (!messageHeaders.contains("From:")) {
-                        String from = graphResponse.optString("from");
+                    if (from != null && !messageHeaders.contains("From:")) {
                         messageHeaders = "From: " + MimeUtility.encodeText(from, "UTF-8", null) + '\r' + '\n' + messageHeaders;
                     }
 
@@ -2013,8 +2007,6 @@ public class GraphExchangeSession extends ExchangeSession {
             message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
 
             message.keywords = graphResponse.optString("keywords");
-
-            graphResponse.optString("messageheaders");
 
         } catch (JSONException e) {
             LOGGER.warn("Error parsing message " + e.getMessage(), e);
