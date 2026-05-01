@@ -2854,7 +2854,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMailbox(mailbox)
                     .setObjectType("mailFolders")
                     .setObjectId(wellKnownFolderName.name())
-                    .setSelectFields(FOLDER_PROPERTIES));
+                    .setSelect("id"));
             return new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Note");
         }
     }
@@ -2874,14 +2874,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType("calendars")
-                    .setSelectFields(FOLDER_PROPERTIES)
+                    .setSelect("id")
                     .setFilter("name eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         } else if ("IPF.Task".equals(currentFolderId.folderClass)) {
             httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType("todo/lists")
-                    .setSelectFields(FOLDER_PROPERTIES)
+                    .setSelect("id")
                     .setFilter("displayName eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         } else {
             String objectType = "mailFolders";
@@ -2894,7 +2894,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType(objectType)
                     .setObjectId(currentFolderId.id)
                     .setChildType("childFolders")
-                    .setSelectFields(FOLDER_PROPERTIES)
+                    .setSelect("id")
                     .setFilter("displayName eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         }
 
