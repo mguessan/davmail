@@ -12,35 +12,42 @@
 
         <section name="DavMail Setup on linux">
             <subsection name="Standalone setup">
-                <p>Prerequisite: Latest OpenJDK with OpenJFX support for best O365 support.
-                    Download of latest Azul FX now included in latest davmail script.
-                    If SWT is available, it provides an improved tray icon (incompatible with O365Interactive mode).
-                    If you do not want any tray icon, run DavMail with the <code>-notray</code> option.
+                <p>Prerequisite: Latest OpenJDK from standard distribution repository or installed locally
+                </p>
+                <p>For interactive authentication two different options are now supported:
+                </p>
+                <ul>
+                    <li>SWT: if Eclipse SWT is available, DavMail will use SWT browser support to obtain O365
+                    authentication token. This is based on your native installed browser.</li>
+                    <li>OpenJFX: requires a JDK with OpenJFX support, embedded browser is based on webkit.</li>
+                </ul>
+
+                <p>Tray icon support: due to various bugs with recent Plasma / Wayland, tray icon is now disabled
+                    by default. To enable tray icon support, run DavMail with <code>-tray</code> option or change
+                    option in settings.
                 </p>
 
-                <p>Download the platform independent package from Sourceforge and uncompress it with
-                    your favorite tool. If you want improved SWT tray icon add the appropriate SWT library in lib
-                    folder from <a href="https://eclipse.dev/eclipse/swt/">https://eclipse.dev/eclipse/swt/</a>, e.g.
-                    swt-4.37-gtk-linux-x86_64.jar
-                </p>
-                <code>unzip davmail-<em>version</em>.zip</code>
+                <ul>
+                    <li>Download the platform independent package from Sourceforge and uncompress it with
+                        your favorite tool <code>unzip davmail-<em>version</em>.zip</code>
+                    </li>
+                    <li>Fetch Azul JDK with OpenJFX support: <code>./davmail azul</code></li>
+                    <li>Fetch SWT for your architecture: <code>./davmail swt</code></li>
+                    <li>Run DavMail: <code>./davmail [davmail.properties]</code></li>
+                </ul>
 
-                <p>Run <code>./davmail azul</code> once to fetch latest Azul JRE FX.
-                </p>
-
-                <p>Just run <code>./davmail</code> to launch DavMail.
-                    You should now see the DavMail gateway icon in the tray :
-                </p>
-                <div style="width: 100%;text-align: center">
-                    <img align="middle" src="images/ubuntutray.png" alt=""/>
-                </div>
             </subsection>
 
             <subsection name="Debian package">
                 <p>This page describes DavMail setup as a graphical application, if you don't want or need a user interface you can run
                     <a href="serversetup.html">DavMail in server mode</a>
                 </p>
-                <p>Download current debian package from Sourceforge, double click on it
+                <p>Note: there is an official Debian package for DavMail, see
+                    <a href="https://packages.debian.org/fr/sid/davmail">https://packages.debian.org/fr/sid/davmail</a>.
+                    However, the latest version may not be available in your distribution, in that case this project
+                    provided package is an option, it comes with embedded dependencies.
+                </p>
+                <p>Download current debian package from Sourceforge, double-click on it
                     to launch package installer.
                 </p>
                 <p>
@@ -54,6 +61,7 @@
                     <li>Enable both in Tweaks</li>
                     <li>Then run DavMail: <code>XDG_CURRENT_DESKTOP= &amp;&amp; davmail</code></li>
                 </ul>
+                <p>On recent Ubuntu versions with Gnome, AppIndicator and KStatusNotifierItem is required for tray icon support</p>
                 <p>Update for Ubuntu Unity users, you can install Indicator SystemtrayUnity:
                     <a href="http://www.webupd8.org/2015/05/on-demand-system-tray-for-ubuntu.html">
                         http://www.webupd8.org/2015/05/on-demand-system-tray-for-ubuntu.html
