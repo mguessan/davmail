@@ -278,7 +278,13 @@ public class GraphExchangeSession extends ExchangeSession {
         private VObject buildVEvent(GraphObject jsonEvent) throws DavMailException, JSONException {
             VObject vEvent = new VObject();
             vEvent.type = "VEVENT";
-            vEvent.setPropertyValue("UID", jsonEvent.optString("iCalUId"));
+            // fetch custom iCalUId from transactionId
+            String iCalUId = jsonEvent.optString("transactionId");
+            if (iCalUId == null) {
+                // default to O365 iCalUid
+                iCalUId = jsonEvent.optString("iCalUId");
+            }
+            vEvent.setPropertyValue("UID", iCalUId);
             vEvent.setPropertyValue("SUMMARY", jsonEvent.optString("subject"));
 
             vEvent.addProperty(convertBodyToVproperty("DESCRIPTION", jsonEvent));
@@ -655,6 +661,12 @@ public class GraphExchangeSession extends ExchangeSession {
                     GraphObject localGraphObject = new GraphObject(jsonEvent);
                     String urlcompname = convertItemNameToEML(itemName);
                     localGraphObject.put("urlcompname", urlcompname);
+
+                    // on event creation push iCalUId from event to transactionId
+                    String iCalUId = vEvent.getPropertyValue("UID");
+                    if (iCalUId != null && !iCalUId.isEmpty()) {
+                        localGraphObject.put("transactionId", iCalUId);
+                    }
 
                     // handle reminder configuration
                     jsonEvent.put("isReminderOn", vCalendar.hasVAlarm());
@@ -1704,6 +1716,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("exceptionOccurrences"));
         EVENT_ATTRIBUTES.add(GraphField.get("hasAttachments"));
         EVENT_ATTRIBUTES.add(GraphField.get("iCalUId"));
+        EVENT_ATTRIBUTES.add(GraphField.get("transactionId"));
         EVENT_ATTRIBUTES.add(GraphField.get("id"));
         EVENT_ATTRIBUTES.add(GraphField.get("importance"));
         EVENT_ATTRIBUTES.add(GraphField.get("isAllDay"));

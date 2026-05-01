@@ -138,6 +138,9 @@ public class GraphField {
         addFieldMap("type");
 
         addFieldMap("iCalUId");
+        addFieldMap("transactionId");
+        //addFieldMap("iCalUId", DistinguishedPropertySetType.Meeting, 0x023, PropertyType.Binary); // PidLidGlobalObjectId
+
         addFieldMap("showAs");
         addFieldMap("isAllDay", "isAllDay", PropertyType.Boolean);
         addFieldMap("responseRequested");
@@ -396,6 +399,9 @@ public class GraphField {
                     break;
                 case Appointment:
                     namespaceGuid = "{00062002-0000-0000-C000-000000000046}";
+                    break;
+                case Meeting:
+                    namespaceGuid = "{6ED8DA90-450B-101B-98DA-00AA003F1305}";
                     break;
                 case Task:
                     namespaceGuid = "{00062003-0000-0000-c000-000000000046}";
