@@ -38,10 +38,6 @@ BuildRequires: ant-unbound
 BuildRequires: java-1.8.0-openjdk-devel
 %endif
 
-%if 0%{?is_opensuse} || 0%{?suse_version}
-BuildRequires: java-21-openjdk-devel
-%endif
-
 # compile with JavaFX on Fedora and latest Suse
 %if 0%{?fedora} > 38 || 0%{?suse_version} >= 01699
 BuildRequires: openjfx
@@ -199,9 +195,9 @@ fi
 %endif
 %endif
 
-if [ "$1" = "0" ]; then
 %if %systemd_support
 %else
+if [ "$1" = "0" ]; then
     /sbin/service davmail stop > /dev/null 2>&1 || :
     /bin/rm -f /var/lib/davmail/pid > /dev/null 2>&1 || :
     %{?stop_on_removal:
@@ -212,15 +208,17 @@ if [ "$1" = "0" ]; then
     /sbin/chkconfig davmail off
     /sbin/chkconfig --del davmail
     }
+fi
 %endif
 
 %if !%systemd_macros
+if [ "$1" = "0" ]; then
     /usr/sbin/userdel davmail
     if getent group davmail >/dev/null 2>&1; then
         /usr/sbin/groupdel davmail
     fi
-%endif
 fi
+%endif
 
 %postun
 %if %systemd_macros
