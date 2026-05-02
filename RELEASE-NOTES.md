@@ -1,3 +1,81 @@
+## DavMail 6.7.0 2026-05-02
+Bugfix release based on user feedback, add PhoneAppOTP (TOTP) support for MFA authentication,
+more work on Graph backend, mostly on Caldav implementation. 
+
+### Graph
+- Graph: raw implementation of getEventMessages and searchEventMessages
+- Graph: cleanup message headers parsing
+- Graph: implement davmail.folderSizeLimit on message folders
+- Graph: adjust isItemId for immutableId values
+- Graph: optimize folder requests by returning only id to build FolderIds
+- Graph: force ImmutableId as a workaround for ErrorIrresolvableConflict error
+- Graph: fix non draft message creation, by default not read
+- Graph: implement custom iCalUId value using transactionId, see https://github.com/mguessan/davmail/issues/462
+- Graph: switch back to id as main itemName on calendar events
+- Graph: review getEventIfExists and implement sendEvent (outbox)
+- Graph: exclude default calendar in getSubCalendarFolders
+- Graph: add isDefaultCalendar property to calendar folders, specific implementation for getSubCalendarFolders
+- Graph: declare isrecurring field, adjust getCalendarItemCondition based recurrence and date condition, ensure urlcompname is always converted
+- Graph: implement getFreeBusyData
+- Graph: fix regression in handleRRule
+- Graph: refactor importance/priority handling, first try at recurrence handling on tasks: does not work on microsoft side
+- Graph: implement graph version of getTaskStatusFromVTodo and getVTodoStatusFromTask
+- Graph: implement task (VTODO) update logic, create a cache of itemName to id
+- Graph: implement allday event
+- Graph: move attendees management to handle modified occurences, refactor getEventIfExists to always fetch event by id, only way to retrieve exception occurences
+- Graph: implement attendees update on meetings, detect mozilla dismiss to trigger dismissReminder
+- Graph: implement meeting response
+- Graph: refactored GraphIterator to handle null value array (even if this should never happen), see https://github.com/mguessan/davmail/issues/458
+- Graph: return default email in getCalendarEmail, return urlcompname as itemName if available
+- Graph: Make OIDC v2.0 endpoint the default in Graph mode
+- Graph: full recurrence pattern and range implementation, fix date conversion on calendar start/end
+- Graph: basic monthly reccurrence handling
+- Graph: refactor calendar event handling to manage modified occurrences updates
+- Graph: detect configuration change between EWS and Graph and clear incompatible stored token
+- Graph: implement throttling like wait on 503 Unknown error, see https://github.com/mguessan/davmail/issues/452
+- Graph: fix wrong event check on isReminderOn, typo on RECURRENCE-ID, duplicate entry in CONTACT_ATTRIBUTES, bug on isMatch
+- Graph: do not set size limit ($top) on galFind search request, incompatible with iterator
+
+### Documentation
+- Doc: update linux setup documentation, SWT mode is now compatible with O365Interactive
+- Doc: merge https://github.com/mguessan/davmail/pull/461
+- Update release guide
+
+### O365
+- O365: revert default redirectUri to https://login.microsoftonline.com/common/oauth2/nativeclient, live.com authentication expects this default value, users can still override with localhost in manual authentication mode
+- O365: fix error handling in O365Token
+- O365: cleanup authentication mode logic in O365Authenticator
+- O365: merge contribution from https://github.com/mguessan/davmail/pull/445
+- O365: handle new https://localhost/common/oauth2/nativeclient default redirect with OpenJFX embedded browser, fix Connection refused by server error
+
+### Caldav
+- Caldav: detect and ignore Thunderbird fake put request
+- Caldav: XML encode displayname on subfolders, only warn on missing items
+- Caldav: apply tzid fix also on VTODO
+
+### EWS
+- EWS: move taskTovTodoStatusMap and vTodoToTaskStatusMap back to EwsExchangeSession
+- EWS: fix exists condition check
+
+### Linux
+- Linux: adjust launch script to allow overriding CLASSPATH
+- Linux: make davmail azul download the right jre based on current architecture
+- Linux: add libswt-webkit-4-jni to dependencies on debian package
+- Linux: fixes from audit, BuildRequires java version on Suse, use 755 access rights for binaries, do not use userdel/groupdel on sysusers distributions
+
+### Windows
+- Winrun4J: fix Xmx parameter typo
+
+### Enhancements
+- i18n: fix regression on message files encoding
+- Build: fix typos in ant build file
+- Improve StringEncryptor implementation to return specific message on invalid password event, add additional use cases
+
+### Docker
+- Docker: try to fix regression on github action build, clean apt only on runner
+- Docker: clean apt cache
+
+
 ## DavMail 6.6.0 2026-04-12
 Merged bugfixes provided by users on IMAP compliance and O365 device code authentication support,
 changed default OIDC nativeclient after Microsoft recent change to force redirect to /common/wrongplace.

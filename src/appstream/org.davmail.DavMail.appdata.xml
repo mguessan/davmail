@@ -58,6 +58,103 @@
   </developer>
   <content_rating type="oars-1.1" />
   <releases>
+      <release version="6.7.0" date="2026-05-02">
+          <description>
+              <p>Bugfix release based on user feedback, add PhoneAppOTP (TOTP) support for MFA authentication,
+                  more work on Graph backend, mostly on Caldav implementation.
+              </p>
+          </description>
+          <p>Graph</p>
+          <ul>
+              <li>Graph: raw implementation of getEventMessages and searchEventMessages</li>
+              <li>Graph: cleanup message headers parsing</li>
+              <li>Graph: implement davmail.folderSizeLimit on message folders</li>
+              <li>Graph: adjust isItemId for immutableId values</li>
+              <li>Graph: optimize folder requests by returning only id to build FolderIds</li>
+              <li>Graph: force ImmutableId as a workaround for ErrorIrresolvableConflict error</li>
+              <li>Graph: fix non draft message creation, by default not read</li>
+              <li>Graph: implement custom iCalUId value using transactionId, see https://github.com/mguessan/davmail/issues/462</li>
+              <li>Graph: switch back to id as main itemName on calendar events</li>
+              <li>Graph: review getEventIfExists and implement sendEvent (outbox)</li>
+              <li>Graph: exclude default calendar in getSubCalendarFolders</li>
+              <li>Graph: add isDefaultCalendar property to calendar folders, specific implementation for getSubCalendarFolders</li>
+              <li>Graph: declare isrecurring field, adjust getCalendarItemCondition based recurrence and date condition, ensure urlcompname is always converted</li>
+              <li>Graph: implement getFreeBusyData</li>
+              <li>Graph: fix regression in handleRRule</li>
+              <li>Graph: refactor importance/priority handling, first try at recurrence handling on tasks: does not work on microsoft side</li>
+              <li>Graph: implement graph version of getTaskStatusFromVTodo and getVTodoStatusFromTask</li>
+              <li>Graph: implement task (VTODO) update logic, create a cache of itemName to id</li>
+              <li>Graph: implement allday event</li>
+              <li>Graph: move attendees management to handle modified occurences, refactor getEventIfExists to always fetch event by id, only way to retrieve exception occurences</li>
+              <li>Graph: implement attendees update on meetings, detect mozilla dismiss to trigger dismissReminder</li>
+              <li>Graph: implement meeting response</li>
+              <li>Graph: refactored GraphIterator to handle null value array (even if this should never happen), see https://github.com/mguessan/davmail/issues/458</li>
+              <li>Graph: return default email in getCalendarEmail, return urlcompname as itemName if available</li>
+              <li>Graph: Make OIDC v2.0 endpoint the default in Graph mode</li>
+              <li>Graph: full recurrence pattern and range implementation, fix date conversion on calendar start/end</li>
+              <li>Graph: basic monthly reccurrence handling</li>
+              <li>Graph: refactor calendar event handling to manage modified occurrences updates</li>
+              <li>Graph: detect configuration change between EWS and Graph and clear incompatible stored token</li>
+              <li>Graph: implement throttling like wait on 503 Unknown error, see https://github.com/mguessan/davmail/issues/452</li>
+              <li>Graph: fix wrong event check on isReminderOn, typo on RECURRENCE-ID, duplicate entry in CONTACT_ATTRIBUTES, bug on isMatch</li>
+              <li>Graph: do not set size limit ($top) on galFind search request, incompatible with iterator</li>
+          </ul>
+
+          <p>Documentation</p>
+          <ul>
+              <li>Doc: update linux setup documentation, SWT mode is now compatible with O365Interactive</li>
+              <li>Doc: merge https://github.com/mguessan/davmail/pull/461</li>
+              <li>Update release guide</li>
+          </ul>
+
+          <p>O365</p>
+          <ul>
+              <li>O365: revert default redirectUri to https://login.microsoftonline.com/common/oauth2/nativeclient, live.com authentication expects this default value, users can still override with localhost in manual authentication mode</li>
+              <li>O365: fix error handling in O365Token</li>
+              <li>O365: cleanup authentication mode logic in O365Authenticator</li>
+              <li>O365: merge contribution from https://github.com/mguessan/davmail/pull/445</li>
+              <li>O365: handle new https://localhost/common/oauth2/nativeclient default redirect with OpenJFX embedded browser, fix Connection refused by server error</li>
+          </ul>
+
+          <p>Caldav</p>
+          <ul>
+              <li>Caldav: detect and ignore Thunderbird fake put request</li>
+              <li>Caldav: XML encode displayname on subfolders, only warn on missing items</li>
+              <li>Caldav: apply tzid fix also on VTODO</li>
+          </ul>
+
+          <p>EWS</p>
+          <ul>
+              <li>EWS: move taskTovTodoStatusMap and vTodoToTaskStatusMap back to EwsExchangeSession</li>
+              <li>EWS: fix exists condition check</li>
+          </ul>
+
+          <p>Linux</p>
+          <ul>
+              <li>Linux: adjust launch script to allow overriding CLASSPATH</li>
+              <li>Linux: make davmail azul download the right jre based on current architecture</li>
+              <li>Linux: add libswt-webkit-4-jni to dependencies on debian package</li>
+              <li>Linux: fixes from audit, BuildRequires java version on Suse, use 755 access rights for binaries, do not use userdel/groupdel on sysusers distributions</li>
+          </ul>
+
+          <p>Windows</p>
+          <ul>
+              <li>Winrun4J: fix Xmx parameter typo</li>
+          </ul>
+
+          <p>Enhancements</p>
+          <ul>
+              <li>i18n: fix regression on message files encoding</li>
+              <li>Build: fix typos in ant build file</li>
+              <li>Improve StringEncryptor implementation to return specific message on invalid password event, add additional use cases</li>
+          </ul>
+
+          <p>Docker</p>
+          <ul>
+              <li>Docker: try to fix regression on github action build, clean apt only on runner</li>
+              <li>Docker: clean apt cache</li>
+          </ul>
+      </release>
       <release version="6.6.0" date="2026-04-12">
           <description>
               <p>Merged bugfixes provided by users on IMAP compliance and O365 device code authentication support,
