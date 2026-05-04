@@ -63,7 +63,6 @@
               <p>Bugfix release based on user feedback, add PhoneAppOTP (TOTP) support for MFA authentication,
                   more work on Graph backend, mostly on Caldav implementation.
               </p>
-          </description>
           <p>Graph</p>
           <ul>
               <li>Graph: raw implementation of getEventMessages and searchEventMessages</li>
@@ -154,6 +153,7 @@
               <li>Docker: try to fix regression on github action build, clean apt only on runner</li>
               <li>Docker: clean apt cache</li>
           </ul>
+          </description>
       </release>
       <release version="6.6.0" date="2026-04-12">
           <description>
