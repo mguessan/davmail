@@ -412,10 +412,10 @@ public class GraphRequestBuilder {
             }
 
             if (timeZone != null) {
-                httpRequest.setHeader("Prefer", "outlook.timezone=\"" + timeZone + "\"");
+                httpRequest.addHeader("Prefer", "outlook.timezone=\"" + timeZone + "\"");
             }
 
-            httpRequest.setHeader("Prefer", "IdType=\"ImmutableId\"");
+            httpRequest.addHeader("Prefer", "IdType=\"ImmutableId\"");
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(httpRequest.getMethod() + " " + httpRequest.getURI());
