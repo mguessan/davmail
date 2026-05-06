@@ -391,7 +391,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     rruleValue.append(patternType.toUpperCase());
                 }
                 if (rangeType.equals("endDate")) {
-                    String endDate = buildUntilDate(range.getString("endDate"), range.getString("recurrenceTimeZone"), graphObject.optJSONObject("start"));
+                    String endDate = buildUntilDate(range.getString("endDate"), graphObject.optJSONObject("start")); // do not need recurrenceTimeZone since we always convert to Zulu
                     rruleValue.append(";UNTIL=").append(endDate);
                 }
                 if (interval > 0) {
@@ -424,21 +424,17 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         }
 
-        private String buildUntilDate(String date, String timeZone, JSONObject startDate) throws DavMailException {
+        private String buildUntilDate(String date, JSONObject startDate) throws DavMailException {
             String result = null;
             if (date != null && date.length() == 10) {
                 String startDateTimeZone = startDate.optString("timeZone");
                 String startDateDateTime = startDate.optString("dateTime");
                 String untilDateTime = date + startDateDateTime.substring(10);
 
-                if (timeZone == null) {
-                    timeZone = startDateTimeZone;
-                }
-
                 SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(startDateTimeZone)));
                 try {
                     result = formatter.format(parser.parse(untilDateTime));
                 } catch (ParseException e) {
@@ -451,10 +447,12 @@ public class GraphExchangeSession extends ExchangeSession {
         private String convertOriginalStartDate(String originalStart, String originalStartTimeZone) throws DavMailException {
             String result = null;
             if (originalStart != null) {
-                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                // Per https://learn.microsoft.com/en-us/graph/api/resources/recurrencerange?view=graph-rest-1.0, originalStart is always in
+                // ISO8601 format, which means originalStartTimeZone is not what should be used to convert the date.
+                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
+                //parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
                 try {
                     result = formatter.format(parser.parse(originalStart));
                 } catch (ParseException e) {
@@ -463,7 +461,6 @@ public class GraphExchangeSession extends ExchangeSession {
             }
             return result;
         }
-
 
         private void setAttendees(VObject vEvent, GraphObject jsonEvent) throws JSONException {
             // handle organizer

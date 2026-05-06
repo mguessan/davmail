@@ -302,10 +302,22 @@ public class GraphObject {
         String originalStartTimeZone = optString("originalStartTimeZone");
         String originalStart = optString("originalStart");
 
-        if (originalStartTimeZone != null && originalStart != null && originalStart.length() >= 19) {
+        if (originalStart != null) {
+            // Per https://learn.microsoft.com/en-us/graph/api/resources/recurrencerange?view=graph-rest-1.0, originalStart is always in
+            // ISO8601 format, which means originalStartTimeZone is not what should be used to convert the date.
+            SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+            //parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
+            try {
+                originalStart = formatter.format(parser.parse(originalStart));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", originalStart);
+            }
             // Convert date from graph to caldav format, keep timezone information
-            VProperty recurrenceId = new VProperty("RECURRENCE-ID", DateUtil.convertDateFormat(originalStart.substring(0, 19), GRAPH_DATE_TIME, CALDAV_DATE_TIME));
+            VProperty recurrenceId = new VProperty("RECURRENCE-ID", DateUtil.convertDateFormat(originalStart.substring(0,19), GRAPH_DATE_TIME, CALDAV_DATE_TIME) + "Z");
             recurrenceId.setParam("TZID", originalStartTimeZone);
+            LOGGER.warn("getRecurrenceId: " + originalStart + ", " + originalStartTimeZone + ", " + recurrenceId);
             return recurrenceId;
         } else {
             throw new DavMailException("LOG_MESSAGE", "Missing original start date and timezone");
