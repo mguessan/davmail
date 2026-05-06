@@ -393,7 +393,10 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (rangeType.equals("endDate")) {
                     String endDate = buildUntilDate(range.getString("endDate"), range.getString("recurrenceTimeZone"), graphObject.optJSONObject("start"));
                     rruleValue.append(";UNTIL=").append(endDate);
-                }
+                } else if (rangeType.equals("numbered")) {
+                    int numberOfOccurrences = range.getInt("numberOfOccurrences");
+                    rruleValue.append(";COUNT=").append(Integer.toString(numberOfOccurrences));
+                } // noEnd is third option
                 if (interval > 0) {
                     rruleValue.append(";INTERVAL=").append(interval);
                 }
