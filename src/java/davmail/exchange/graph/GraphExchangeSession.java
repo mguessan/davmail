@@ -2109,20 +2109,19 @@ public class GraphExchangeSession extends ExchangeSession {
             return null;
         } else {
             StringBuilder buffer = new StringBuilder();
-            if (exchangeDateValue.length() >= 25 || exchangeDateValue.length() == 20 || exchangeDateValue.length() == 10) {
+            if (exchangeDateValue.length() >= 21 || exchangeDateValue.length() == 20 || exchangeDateValue.length() == 10) {
                 for (int i = 0; i < exchangeDateValue.length(); i++) {
-                    if (i == 4 || i == 7 || i == 13 || i == 16) {
+                    if (i == 4 || i == 7 || i == 13 || i == 16 || i == 19) {
                         i++;
                     }
-                    if (exchangeDateValue.length() == 27 && i == 19) {
-                        // yyyy-MM-dd'T'HH:mm:ss.SSSSSSS timestamp without timezone
-                        i = exchangeDateValue.length();
-                    } else if (exchangeDateValue.length() >= 25 && i == 19) {
-                        // yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z' timestamp without zulu tag
-                        i = exchangeDateValue.length() - 1;
-                        buffer.append(exchangeDateValue.charAt(i++));
-                    } else {
+                    if (i < 20) {
                         buffer.append(exchangeDateValue.charAt(i));
+                    } else {
+                        // skip nanoseconds, which is not necessarily provided with all digits,
+                        // except possibly timezone/Z tag at end.
+                        if (i == exchangeDateValue.length()-1 && !Character.isDigit(exchangeDateValue.charAt(i))) {
+                            buffer.append(exchangeDateValue.charAt(i));
+                        }
                     }
                 }
                 if (exchangeDateValue.length() == 10) {
