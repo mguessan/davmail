@@ -1236,11 +1236,24 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private VProperty convertDateTimeTimeZoneToVproperty(String vPropertyName, JSONObject jsonDateTimeTimeZone) throws DavMailException {
-
         if (jsonDateTimeTimeZone != null) {
             String timeZone = jsonDateTimeTimeZone.optString("timeZone");
-            String dateTime = jsonDateTimeTimeZone.optString("dateTime");
-            VProperty vProperty = new VProperty(vPropertyName, convertDateFromExchange(dateTime));
+            String dateTime = convertDateFromExchange(jsonDateTimeTimeZone.optString("dateTime"));
+            // Convert from server to user timezone if different
+            if (timeZone != getVTimezone().getPropertyValue("TZID")) {
+                LOGGER.debug("Server timezone different from user, doing conversion.");
+                SimpleDateFormat parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                formatter.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(getVTimezone().getPropertyValue("TZID"))));
+                try {
+                    dateTime = formatter.format(parser.parse(Character.isDigit(dateTime.charAt(dateTime.length()-1)) ? (dateTime) : (dateTime.substring(0, dateTime.length()-1))));
+                    timeZone = getVTimezone().getPropertyValue("TZID");
+                } catch (ParseException e) {
+                    LOGGER.warn("Unable to convert to user timezone: " + dateTime + ", " + timeZone + ", " + getVTimezone().getPropertyValue("TZID"));
+                }
+            }
+            VProperty vProperty = new VProperty(vPropertyName, dateTime);
             vProperty.addParam("TZID", timeZone);
             return vProperty;
         }
@@ -1261,7 +1274,6 @@ public class GraphExchangeSession extends ExchangeSession {
             zuluDateValue = dateFormat.format(exchangeDateValue);
         }
         return zuluDateValue;
-
     }
 
     protected class Contact extends ExchangeSession.Contact {
