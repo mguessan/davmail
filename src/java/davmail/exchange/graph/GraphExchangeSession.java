@@ -1240,7 +1240,7 @@ public class GraphExchangeSession extends ExchangeSession {
             String timeZone = jsonDateTimeTimeZone.optString("timeZone");
             String dateTime = convertDateFromExchange(jsonDateTimeTimeZone.optString("dateTime"));
             // Convert from server to user timezone if different
-            if (timeZone != getVTimezone().getPropertyValue("TZID")) {
+            if (timeZone != null && !timeZone.equals(getVTimezone().getPropertyValue("TZID"))) {
                 LOGGER.debug("Server timezone different from user, doing conversion.");
                 SimpleDateFormat parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
