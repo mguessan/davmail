@@ -180,7 +180,6 @@ public class VCalendar extends VObject {
         }
 
         // rename TZID for maximum iCal/iPhone compatibility
-        String tzid = null;
         if (fromServer) {
             // get current tzid
             VObject vObject = vTimezone;
@@ -241,24 +240,22 @@ public class VCalendar extends VObject {
                     if ("".equals(vObject.getPropertyValue("CLASS"))) {
                         vObject.removeProperty("CLASS");
                     }
-                    // rename TZID
-                    if (tzid != null) {
-                        VProperty dtStart = vObject.getProperty("DTSTART");
-                        if (dtStart != null && dtStart.getParam("TZID") != null) {
-                            dtStart.setParam("TZID", fixupTZID(dtStart.getParamValue("TZID")));
-                        }
-                        VProperty dtEnd = vObject.getProperty("DTEND");
-                        if (dtEnd != null && dtEnd.getParam("TZID") != null) {
-                           dtEnd.setParam("TZID", fixupTZID(dtEnd.getParamValue("TZID")));
-                        }
-                        VProperty recurrenceId = vObject.getProperty("RECURRENCE-ID");
-                        if (recurrenceId != null && recurrenceId.getParam("TZID") != null) {
-                           recurrenceId.setParam("TZID", fixupTZID(recurrenceId.getParamValue("TZID")));
-                        }
-                        VProperty exDate = vObject.getProperty("EXDATE");
-                        if (exDate != null && exDate.getParam("TZID") != null) {
-                           exDate.setParam("TZID", fixupTZID(exDate.getParamValue("TZID")));
-                        }
+                    // rename TZIDs
+                    VProperty dtStart = vObject.getProperty("DTSTART");
+                    if (dtStart != null && dtStart.getParam("TZID") != null) {
+                        dtStart.setParam("TZID", fixupTZID(dtStart.getParamValue("TZID")));
+                    }
+                    VProperty dtEnd = vObject.getProperty("DTEND");
+                    if (dtEnd != null && dtEnd.getParam("TZID") != null) {
+                        dtEnd.setParam("TZID", fixupTZID(dtEnd.getParamValue("TZID")));
+                    }
+                    VProperty recurrenceId = vObject.getProperty("RECURRENCE-ID");
+                    if (recurrenceId != null && recurrenceId.getParam("TZID") != null) {
+                        recurrenceId.setParam("TZID", fixupTZID(recurrenceId.getParamValue("TZID")));
+                    }
+                    VProperty exDate = vObject.getProperty("EXDATE");
+                    if (exDate != null && exDate.getParam("TZID") != null) {
+                        exDate.setParam("TZID", fixupTZID(exDate.getParamValue("TZID")));
                     }
                     // remove unsupported attachment reference
                     if (vObject.getProperty("ATTACH") != null) {
