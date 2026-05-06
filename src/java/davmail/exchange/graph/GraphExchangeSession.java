@@ -152,11 +152,6 @@ public class GraphExchangeSession extends ExchangeSession {
 
         protected GraphObject graphObject;
 
-        /**
-         * Preloaded content for event messages
-         */
-        protected VCalendar vCalendar;
-
         public Event(String folderPath, FolderId folderId, GraphObject graphObject) {
             this.folderPath = folderPath;
             this.folderId = folderId;
@@ -183,6 +178,11 @@ public class GraphExchangeSession extends ExchangeSession {
 
             // prefer id as itemName
             itemName = StringUtil.base64ToUrl(id) + ".EML";
+        }
+
+        public Event(String folderPath, FolderId folderId, GraphObject graphObject, VCalendar vCalendar) {
+            this(folderPath, folderId, graphObject);
+            this.vCalendar = vCalendar;
         }
 
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
@@ -3259,8 +3259,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                     content = getICS(new SharedByteArrayInputStream(content));
 
-                    Event event = new Event(folderPath, folderId, new GraphObject(jsonResponse));
-                    event.vCalendar = new VCalendar(content, email, getVTimezone());
+                    Event event = new Event(folderPath, folderId, new GraphObject(jsonResponse), new VCalendar(content, email, getVTimezone()));
                     eventList.add(event);
 
                 } catch (IOException | MessagingException e) {
