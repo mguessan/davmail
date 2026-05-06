@@ -186,19 +186,7 @@ public class VCalendar extends VObject {
             VObject vObject = vTimezone;
             if (vObject != null) {
                 String currentTzid = vObject.getPropertyValue("TZID");
-                // fix TZID with \n (Exchange 2010 bug)
-                if (currentTzid != null && currentTzid.endsWith("\n")) {
-                    currentTzid = currentTzid.substring(0, currentTzid.length() - 1);
-                    vObject.setPropertyValue("TZID", currentTzid);
-                }
-                if (currentTzid != null && currentTzid.indexOf(' ') >= 0) {
-                    try {
-                        tzid = ResourceBundle.getBundle("timezones").getString(currentTzid);
-                        vObject.setPropertyValue("TZID", tzid);
-                    } catch (MissingResourceException e) {
-                        LOGGER.debug("Timezone " + currentTzid + " not found in rename table");
-                    }
-                }
+                vObject.setPropertyValue("TZID", fixupTZID(currentTzid));
             }
         }
 
@@ -257,19 +245,19 @@ public class VCalendar extends VObject {
                     if (tzid != null) {
                         VProperty dtStart = vObject.getProperty("DTSTART");
                         if (dtStart != null && dtStart.getParam("TZID") != null) {
-                            dtStart.setParam("TZID", tzid);
+                            dtStart.setParam("TZID", fixupTZID(dtStart.getParamValue("TZID")));
                         }
                         VProperty dtEnd = vObject.getProperty("DTEND");
                         if (dtEnd != null && dtEnd.getParam("TZID") != null) {
-                            dtEnd.setParam("TZID", tzid);
+                           dtEnd.setParam("TZID", fixupTZID(dtEnd.getParamValue("TZID")));
                         }
                         VProperty recurrenceId = vObject.getProperty("RECURRENCE-ID");
                         if (recurrenceId != null && recurrenceId.getParam("TZID") != null) {
-                            recurrenceId.setParam("TZID", tzid);
+                           recurrenceId.setParam("TZID", fixupTZID(recurrenceId.getParamValue("TZID")));
                         }
                         VProperty exDate = vObject.getProperty("EXDATE");
                         if (exDate != null && exDate.getParam("TZID") != null) {
-                            exDate.setParam("TZID", tzid);
+                           exDate.setParam("TZID", fixupTZID(exDate.getParamValue("TZID")));
                         }
                     }
                     // remove unsupported attachment reference
@@ -322,6 +310,21 @@ public class VCalendar extends VObject {
             }
         }
 
+    }
+
+    private String fixupTZID(String currentTzid) {
+        // fix TZID with \n (Exchange 2010 bug)
+        if (currentTzid != null && currentTzid.endsWith("\n")) {
+            currentTzid = currentTzid.substring(0, currentTzid.length() - 1);
+        }
+        if (currentTzid != null && currentTzid.indexOf(' ') >= 0) {
+            try {
+                currentTzid = ResourceBundle.getBundle("timezones").getString(currentTzid);
+            } catch (MissingResourceException e) {
+                LOGGER.debug("Timezone " + currentTzid + " not found in rename table");
+            }
+        }
+        return currentTzid;
     }
 
     private void fixTimezoneToServer() {
