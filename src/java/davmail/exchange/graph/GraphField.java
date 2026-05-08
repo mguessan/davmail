@@ -19,6 +19,7 @@
 
 package davmail.exchange.graph;
 
+import davmail.exchange.ews.ExtendedFieldURI;
 import org.apache.log4j.Logger;
 
 import java.util.HashMap;
@@ -95,6 +96,8 @@ public class GraphField {
         addFieldMap("urlcompname", 0x10f3, PropertyType.String);
 
         // events and tasks https://learn.microsoft.com/en-us/graph/api/resources/event?view=graph-rest-beta
+
+        addFieldMap("processed",  0x65e8, PropertyType.Boolean);
 
         addFieldMap("instancetype", DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype", PropertyType.Integer);
 
