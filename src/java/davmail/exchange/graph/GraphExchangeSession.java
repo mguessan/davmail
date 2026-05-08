@@ -393,7 +393,10 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (rangeType.equals("endDate")) {
                     String endDate = buildUntilDate(range.getString("endDate"), range.getString("recurrenceTimeZone"), graphObject.optJSONObject("start"));
                     rruleValue.append(";UNTIL=").append(endDate);
-                }
+                } else if (rangeType.equals("numbered")) {
+                    int numberOfOccurrences = range.getInt("numberOfOccurrences");
+                    rruleValue.append(";COUNT=").append(Integer.toString(numberOfOccurrences));
+                } // noEnd is third option
                 if (interval > 0) {
                     rruleValue.append(";INTERVAL=").append(interval);
                 }
@@ -2544,10 +2547,10 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     public List<ExchangeSession.Folder> getSubCalendarFolders(String folderName, boolean recursive) throws IOException {
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder();
-            // search calendars, ignore condition
-            httpRequestBuilder.setMethod(HttpGet.METHOD_NAME)
-                    .setObjectType("calendars")
-                    .setSelectFields(FOLDER_PROPERTIES);
+        // search calendars, ignore condition
+        httpRequestBuilder.setMethod(HttpGet.METHOD_NAME)
+                .setObjectType("calendars")
+                .setSelectFields(FOLDER_PROPERTIES);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
         List<ExchangeSession.Folder> folders = new ArrayList<>();
@@ -3167,7 +3170,7 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     protected Condition getCalendarItemCondition(Condition dateCondition) {
         return or(isTrue("isrecurring"),
-                        and(isFalse("isrecurring"), dateCondition));
+                and(isFalse("isrecurring"), dateCondition));
     }
 
     /**
@@ -3425,12 +3428,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 FolderId taskFolderId = getFolderId(TASKS);
                 try {
                     return executeJsonRequest(new GraphRequestBuilder()
-                            .setMethod(HttpGet.METHOD_NAME)
-                            .setMailbox(folderId.mailbox)
-                            .setObjectType("todo/lists")
-                            .setObjectId(taskFolderId.id)
-                            .setChildType("tasks")
-                            .setChildId(itemId)
+                                    .setMethod(HttpGet.METHOD_NAME)
+                                    .setMailbox(folderId.mailbox)
+                                    .setObjectType("todo/lists")
+                                    .setObjectId(taskFolderId.id)
+                                    .setChildType("tasks")
+                                    .setChildId(itemId)
                             //.setSelectFields(TODO_PROPERTIES) // bug on title breaks request
                     ).put("objecttype", "IPF.Task"); // mark object as task item
                 } catch (JSONException jsonException) {
