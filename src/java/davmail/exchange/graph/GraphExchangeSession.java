@@ -678,7 +678,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
                     // on event creation push iCalUId from event to transactionId
                     String iCalUId = vEvent.getPropertyValue("UID");
-                    if (iCalUId != null && !iCalUId.isEmpty()) {
+                    if (iCalUId != null && !iCalUId.isEmpty() && currentItemId == null) {
                         localGraphObject.put("transactionId", iCalUId);
                     }
 
