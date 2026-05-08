@@ -2561,19 +2561,12 @@ public class GraphExchangeSession extends ExchangeSession {
         return folders;
     }
 
-
     @Override
     public List<ExchangeSession.Folder> getSubFolders(String folderPath, Condition condition, boolean recursive) throws IOException {
-        String baseFolderPath = folderPath;
-        if (baseFolderPath.startsWith("/users/")) {
-            int index = baseFolderPath.indexOf('/', "/users/".length());
-            if (index >= 0) {
-                baseFolderPath = baseFolderPath.substring(index + 1);
-            }
-        }
+
         List<ExchangeSession.Folder> folders = new ArrayList<>();
-        // TODO does not work with calendar folders
-        appendSubFolders(folders, baseFolderPath, getFolderId(folderPath), condition, recursive);
+
+        appendSubFolders(folders, getSubfolderPath(folderPath), getFolderId(folderPath), condition, recursive);
         return folders;
     }
 

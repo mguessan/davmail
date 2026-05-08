@@ -708,8 +708,8 @@ public abstract class ExchangeSession {
         }
         List<Folder> results = getSubFolders(folderName, folderCondition,
                 recursive);
-        // need to include base folder in recursive search, except on root
-        if (recursive && !folderName.isEmpty()) {
+        // need to include base folder in recursive search, except on root on personal and shared mailboxes
+        if (recursive && !getSubfolderPath(folderName).isEmpty()) {
             results.add(getFolder(folderName));
         }
 
@@ -728,6 +728,24 @@ public abstract class ExchangeSession {
         return getSubFolders(folderName, isEqualTo("folderclass", "IPF.Appointment"), recursive);
     }
 
+
+    /**
+     * Extract sub folder path from folder path.
+     * Removed shared folder absolute path prefix.
+     * @param folderPath input folder path
+     * @return actual folder path inside mailbox
+     */
+    public String getSubfolderPath(String folderPath) {
+        String baseFolderPath = folderPath;
+        if (baseFolderPath.startsWith("/users/")) {
+            int index = baseFolderPath.indexOf('/', "/users/".length());
+            if (index >= 0) {
+                baseFolderPath = baseFolderPath.substring(index + 1);
+            }
+        }
+        return baseFolderPath;
+    }
+    
     /**
      * Search folders under given folder matching filter.
      *
