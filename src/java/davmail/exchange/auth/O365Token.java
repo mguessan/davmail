@@ -117,7 +117,7 @@ public class O365Token {
                 if (error.equals("authorization_pending"))
                     throw new O365AuthorizationPending();
 
-                throw new DavMailAuthenticationException("LOG_MESSAGE",jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
+                throw new DavMailAuthenticationException("LOG_MESSAGE", jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
             }
             scope = jsonToken.optString("scope");
             LOGGER.debug("Obtained token for scopes: " + scope);
@@ -163,7 +163,7 @@ public class O365Token {
                 }
             }
             // failover: get username from bearer
-            if (username == null) {
+            if (username == null && accessToken.contains(".")) {
                 String decodedBearer = IOUtil.decodeBase64AsString(accessToken.substring(accessToken.indexOf('.') + 1, accessToken.lastIndexOf('.')) + "==");
                 JSONObject tokenBody = new JSONObject(decodedBearer);
                 LOGGER.debug("Token: " + tokenBody);
@@ -173,7 +173,7 @@ public class O365Token {
             // check token compatibility
             if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
                 // Graph token required
-                if (scope != null && scope.contains("EWS")) {
+                if (scope != null && !scope.contains("Mail.ReadWrite")) {
                     Settings.storeRefreshToken(username, "");
                     throw new IOException("Found EWS stored token, incompatible with Graph API");
                 }
@@ -236,7 +236,7 @@ public class O365Token {
         parameters.add(new BasicNameValuePair("client_id", clientId));
 
         // resource is not relevant over OIDC
-        if (!Settings.getBooleanProperty("davmail.enableGraph", false) && !Settings.getBooleanProperty("davmail.enableOidc", false)) {
+        if (!Settings.getBooleanProperty("davmail.enableGraph") && !Settings.getBooleanProperty("davmail.enableOidc")) {
             parameters.add(new BasicNameValuePair("resource", Settings.getOutlookUrl()));
         }
 
