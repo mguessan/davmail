@@ -123,10 +123,10 @@ public final class IOUtil {
     public static byte[] encodeBase64(MimeMessage mimeMessage) throws IOException {
         byte[] mimeContent;
         try (
-                ByteArrayOutputStream baos = new ByteArrayOutputStream()
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()
         ) {
-            mimeMessage.writeTo(baos);
-            mimeContent = IOUtil.encodeBase64(baos.toByteArray());
+            mimeMessage.writeTo(byteArrayOutputStream);
+            mimeContent = IOUtil.encodeBase64(byteArrayOutputStream.toByteArray());
         } catch (MessagingException e) {
             throw new IOException(e.getMessage(), e);
         }
@@ -147,9 +147,9 @@ public final class IOUtil {
             throw new IOException("Unable to decode image data");
         }
         BufferedImage outputImage = resizeImage(inputImage, max);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(outputImage, "jpg", baos);
-        return baos.toByteArray();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ImageIO.write(outputImage, "jpg", byteArrayOutputStream);
+        return byteArrayOutputStream.toByteArray();
     }
 
     /**
@@ -187,9 +187,9 @@ public final class IOUtil {
      * @throws IOException on error
      */
     public static byte[] readFully(InputStream inputStream) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        write(inputStream, baos);
-        return baos.toByteArray();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        write(inputStream, byteArrayOutputStream);
+        return byteArrayOutputStream.toByteArray();
     }
 
     public static byte[] convertToBytes(JSONObject jsonObject) throws IOException {
@@ -198,12 +198,12 @@ public final class IOUtil {
         }
         byte[] result;
         try (
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                OutputStreamWriter writer = new java.io.OutputStreamWriter(baos, StandardCharsets.UTF_8);
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                OutputStreamWriter writer = new java.io.OutputStreamWriter(byteArrayOutputStream, StandardCharsets.UTF_8)
         ) {
             jsonObject.write(writer);
             writer.flush();
-            result = baos.toByteArray();
+            result = byteArrayOutputStream.toByteArray();
         } catch (JSONException e) {
             throw new IOException(e.getMessage(), e);
         }
