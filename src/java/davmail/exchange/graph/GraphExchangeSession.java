@@ -2102,6 +2102,7 @@ public class GraphExchangeSession extends ExchangeSession {
     /**
      * Lightweight conversion method to avoid full string to date and back conversions.
      * Note: Duplicate from EWSEchangeSession, added nanosecond handling
+     * See <a href="https://learn.microsoft.com/en-us/graph/api/resources/datetimetimezone">datetimetimezone</a>
      * @param exchangeDateValue date returned from O365
      * @return converted date
      * @throws DavMailException on error
@@ -2112,18 +2113,18 @@ public class GraphExchangeSession extends ExchangeSession {
             return null;
         } else {
             StringBuilder buffer = new StringBuilder();
-            if (exchangeDateValue.length() >= 25 || exchangeDateValue.length() == 20 || exchangeDateValue.length() == 10) {
+            if (exchangeDateValue.length() >= 21 || exchangeDateValue.length() == 20 || exchangeDateValue.length() == 10) {
                 for (int i = 0; i < exchangeDateValue.length(); i++) {
+                    // skip '-' and ':'
                     if (i == 4 || i == 7 || i == 13 || i == 16) {
                         i++;
                     }
-                    if (exchangeDateValue.length() == 27 && i == 19) {
-                        // yyyy-MM-dd'T'HH:mm:ss.SSSSSSS timestamp without timezone
-                        i = exchangeDateValue.length();
-                    } else if (exchangeDateValue.length() >= 25 && i == 19) {
-                        // yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z' timestamp without zulu tag
-                        i = exchangeDateValue.length() - 1;
-                        buffer.append(exchangeDateValue.charAt(i++));
+                    if (i == 19) {
+                        // optional append Zulu tag
+                        if (exchangeDateValue.endsWith("Z")) {
+                            buffer.append('Z');
+                        }
+                        break;
                     } else {
                         buffer.append(exchangeDateValue.charAt(i));
                     }
