@@ -395,7 +395,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     rruleValue.append(";UNTIL=").append(endDate);
                 } else if (rangeType.equals("numbered")) {
                     int numberOfOccurrences = range.getInt("numberOfOccurrences");
-                    rruleValue.append(";COUNT=").append(Integer.toString(numberOfOccurrences));
+                    rruleValue.append(";COUNT=").append(numberOfOccurrences);
                 } // noEnd is third option
                 if (interval > 0) {
                     rruleValue.append(";INTERVAL=").append(interval);
