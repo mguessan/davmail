@@ -234,7 +234,7 @@ public class KerberosHelper {
      * Create server side Kerberos login context for provided credentials.
      *
      * @param serverPrincipal server principal
-     * @param serverPassword  server passsword
+     * @param serverPassword  server password
      * @return LoginContext server login context
      * @throws LoginException on error
      */
