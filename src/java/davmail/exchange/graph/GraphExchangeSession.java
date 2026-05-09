@@ -3834,7 +3834,7 @@ public class GraphExchangeSession extends ExchangeSession {
         if (!"tzone://Microsoft/Custom".equals(timezoneId)) {
             try {
                 return new VObject(ResourceBundle.getBundle("vtimezones").getString(timezoneId));
-            } catch (IOException e) {
+            } catch (IOException | MissingResourceException e) {
                 LOGGER.warn("Unable to get VTIMEZONE: " + e, e);
             }
         }
