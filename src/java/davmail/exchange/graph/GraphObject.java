@@ -305,26 +305,29 @@ public class GraphObject {
         String originalStart = optString("originalStart");
 
         if (originalStartTimeZone != null && originalStart != null && originalStart.length() >= 19) {
-            String convertedOriginalStart = originalStart;
-            if (originalStart.endsWith("Z")) {
-                // convert to original timezone
-                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            if ("tzone://Microsoft/Custom".equals(originalStartTimeZone)) {
+                // custom timezone, use originalStart as is
+                return new VProperty("RECURRENCE-ID", originalStart);
+            } else {
+                String convertedOriginalStart = originalStart;
+                // Per https://learn.microsoft.com/en-us/graph/api/resources/recurrencerange?view=graph-rest-1.0,
+                // originalStart is always in ISO8601 format
+                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
                 parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+                // format to original timezone
                 formatter.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
                 try {
                     convertedOriginalStart = formatter.format(parser.parse(originalStart));
                 } catch (ParseException e) {
                     LOGGER.warn("Unable to convert to original timezone: " + originalStart + ", " + originalStartTimeZone);
                 }
-            } else {
-                LOGGER.warn("originalStart is not in UTC " + originalStart);
-            }
 
-            // Convert date from graph to caldav format, keep timezone information
-            VProperty recurrenceId = new VProperty("RECURRENCE-ID", convertedOriginalStart);
-            recurrenceId.setParam("TZID", originalStartTimeZone);
-            return recurrenceId;
+                // Convert date from graph to caldav format, keep timezone information
+                VProperty recurrenceId = new VProperty("RECURRENCE-ID", convertedOriginalStart);
+                recurrenceId.setParam("TZID", originalStartTimeZone);
+                return recurrenceId;
+            }
         } else {
             throw new DavMailException("LOG_MESSAGE", "Missing original start date and timezone");
         }
