@@ -460,9 +460,9 @@ public class GraphExchangeSession extends ExchangeSession {
 
         private String convertOriginalStartDate(String originalStart, String originalStartTimeZone) throws DavMailException {
             String result = originalStart;
-            // should not happen originalStart is supposed to be in UTC
+            // should not happen originalStart is supposed to be in UTC, except it is actually ISO8601
             if (originalStart != null && !originalStart.endsWith("Z")) {
-                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
                 parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
