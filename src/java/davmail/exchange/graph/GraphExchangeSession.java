@@ -3831,12 +3831,15 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private VObject getVTimezone(String timezoneId) {
-        try {
-            return new VObject(ResourceBundle.getBundle("vtimezones").getString(timezoneId));
-        } catch (IOException e) {
-            LOGGER.warn("Unable to get VTIMEZONE: " + e, e);
+        if (!"tzone://Microsoft/Custom".equals(timezoneId)) {
+            try {
+                return new VObject(ResourceBundle.getBundle("vtimezones").getString(timezoneId));
+            } catch (IOException e) {
+                LOGGER.warn("Unable to get VTIMEZONE: " + e, e);
+            }
         }
-        return null;
+        // unsupported timezone, return default
+        return getVTimezone();
     }
 
     private JSONObject getMailboxSettings() throws IOException {
