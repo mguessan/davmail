@@ -777,6 +777,10 @@ public class VCalendar extends VObject {
         return email;
     }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     /**
      * VCalendar recipients for notifications
      */

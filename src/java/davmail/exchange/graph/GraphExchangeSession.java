@@ -230,11 +230,18 @@ public class GraphExchangeSession extends ExchangeSession {
                     content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
                 } else {
                     // with graph API there is no way to directly retrieve the MIME content to access VCALENDAR object
+                    // so implementation is based on graph and mapi (extended) properties
 
                     VCalendar localVCalendar = new VCalendar();
-                    // TODO: set email?
-                    // TODO: set timezone based on start date timezone
-                    localVCalendar.setTimezone(getVTimezone());
+                    // set email on vcalendar object for shared calendars
+                    localVCalendar.setEmail(getCalendarEmail(folderPath));
+                    // set timezone based on start date timezone
+                    String originalStarttimezone = graphObject.optString("originalStartTimeZone");
+                    if (originalStarttimezone != null) {
+                        localVCalendar.setTimezone(getVTimezone(originalStarttimezone));
+                    } else {
+                        localVCalendar.setTimezone(getVTimezone());
+                    }
                     localVCalendar.addVObject(buildVEvent(graphObject));
 
                     handleException(localVCalendar, graphObject);
@@ -302,8 +309,11 @@ public class GraphExchangeSession extends ExchangeSession {
 
             vEvent.setPropertyValue("LAST-MODIFIED", jsonEvent.optString("lastModifiedDateTime"));
             vEvent.setPropertyValue("DTSTAMP", jsonEvent.optString("lastModifiedDateTime"));
-            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start")));
-            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end")));
+
+            // retrieve original start timezone to restore original timezone on recurring events across DST
+            String originalStartTimeZone = jsonEvent.optString("originalStartTimeZone");
+            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start"), originalStartTimeZone));
+            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end"), originalStartTimeZone));
 
             vEvent.setPropertyValue("LOCATION", jsonEvent.optString("location", "displayName"));
             vEvent.setPropertyValue("CATEGORIES", jsonEvent.optString("categories"));
@@ -1238,12 +1248,28 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
-    private VProperty convertDateTimeTimeZoneToVproperty(String vPropertyName, JSONObject jsonDateTimeTimeZone) throws DavMailException {
+    private VProperty convertDateTimeTimeZoneToVproperty(String vPropertyName, JSONObject jsonDateTimeTimeZone, String originalStartTimeZone) throws DavMailException {
 
         if (jsonDateTimeTimeZone != null) {
             String timeZone = jsonDateTimeTimeZone.optString("timeZone");
-            String dateTime = jsonDateTimeTimeZone.optString("dateTime");
-            VProperty vProperty = new VProperty(vPropertyName, convertDateFromExchange(dateTime));
+            String dateTime = convertDateFromExchange(jsonDateTimeTimeZone.optString("dateTime"));
+
+            if (originalStartTimeZone != null && !timeZone.equals(originalStartTimeZone)) {
+                LOGGER.debug("originalStartTimeZone different from requested timeZone: " + originalStartTimeZone + " vs " + timeZone);
+                // convert to original timezone
+                SimpleDateFormat parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                formatter.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
+                try {
+                    dateTime = formatter.format(parser.parse(dateTime));
+                    timeZone = originalStartTimeZone;
+                } catch (ParseException e) {
+                    LOGGER.warn("Unable to convert to original timezone: " + dateTime + ", " + originalStartTimeZone);
+                }
+            }
+
+            VProperty vProperty = new VProperty(vPropertyName, dateTime);
             vProperty.addParam("TZID", timeZone);
             return vProperty;
         }
@@ -3796,11 +3822,20 @@ public class GraphExchangeSession extends ExchangeSession {
                 LOGGER.warn("Unable to get user timezone, using GMT Standard Time. Set davmail.timezoneId setting to override this.");
                 timezoneId = "GMT Standard Time";
             }
-            this.vTimezone = new VObject(ResourceBundle.getBundle("vtimezones").getString(timezoneId));
+            this.vTimezone = getVTimezone(timezoneId);
 
         } catch (IOException | MissingResourceException e) {
             LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
         }
+    }
+
+    private VObject getVTimezone(String timezoneId) {
+        try {
+            return new VObject(ResourceBundle.getBundle("vtimezones").getString(timezoneId));
+        } catch (IOException e) {
+            LOGGER.warn("Unable to get VTIMEZONE: " + e, e);
+        }
+        return null;
     }
 
     private JSONObject getMailboxSettings() throws IOException {

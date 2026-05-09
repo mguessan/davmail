@@ -20,6 +20,7 @@
 package davmail.exchange.graph;
 
 import davmail.exception.DavMailException;
+import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.util.DateUtil;
@@ -300,11 +301,24 @@ public class GraphObject {
     public VProperty getRecurrenceId() throws DavMailException {
         // get the unmodified start date and timezone of occurrence
         String originalStartTimeZone = optString("originalStartTimeZone");
+        // originalStart is always in UTC, see https://learn.microsoft.com/en-us/graph/api/resources/event
         String originalStart = optString("originalStart");
 
         if (originalStartTimeZone != null && originalStart != null && originalStart.length() >= 19) {
+            String convertedOriginalStart = originalStart;
+            // convert to original timezone
+            SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+            parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+            formatter.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
+            try {
+                convertedOriginalStart = formatter.format(parser.parse(originalStart));
+            } catch (ParseException e) {
+                LOGGER.warn("Unable to convert to original timezone: " + originalStart + ", " + originalStartTimeZone);
+            }
+
             // Convert date from graph to caldav format, keep timezone information
-            VProperty recurrenceId = new VProperty("RECURRENCE-ID", DateUtil.convertDateFormat(originalStart.substring(0, 19), GRAPH_DATE_TIME, CALDAV_DATE_TIME));
+            VProperty recurrenceId = new VProperty("RECURRENCE-ID", convertedOriginalStart);
             recurrenceId.setParam("TZID", originalStartTimeZone);
             return recurrenceId;
         } else {
