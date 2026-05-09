@@ -938,6 +938,12 @@ public class VCalendar extends VObject {
                 } else {
                     dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
                 }
+                if (vcalendarDateValue.endsWith("Z")) {
+                    // date value is Zulu, ignore provided timezone
+                    dateParser.setTimeZone(TimeZone.getTimeZone("UTC"));
+                } else {
+                    dateParser.setTimeZone(timeZone);
+                }
                 dateParser.setTimeZone(timeZone);
                 SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
                 dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
