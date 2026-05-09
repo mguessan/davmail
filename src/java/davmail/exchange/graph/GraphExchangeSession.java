@@ -312,8 +312,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
             // retrieve original start timezone to restore original timezone on recurring events across DST
             String originalStartTimeZone = jsonEvent.optString("originalStartTimeZone");
-            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start"), originalStartTimeZone));
-            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end"), originalStartTimeZone));
+            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start"), getVTimezone(originalStartTimeZone).getPropertyValue("TZID")));
+            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end"), getVTimezone(originalStartTimeZone).getPropertyValue("TZID")));
 
             vEvent.setPropertyValue("LOCATION", jsonEvent.optString("location", "displayName"));
             vEvent.setPropertyValue("CATEGORIES", jsonEvent.optString("categories"));
