@@ -927,7 +927,10 @@ public class GraphExchangeSession extends ExchangeSession {
         private String convertUntilToEndDate(String until, String timeZone) throws DavMailException {
             try {
                 SimpleDateFormat parser;
-                if (until.endsWith("Z")) {
+                if (until.length() == 8) {
+                    parser = new SimpleDateFormat("yyyyMMdd");
+                    parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                } else if (until.endsWith("Z")) {
                     parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
                     parser.setTimeZone(TimeZone.getTimeZone("UTC"));
                 } else {
