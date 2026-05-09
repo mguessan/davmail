@@ -401,7 +401,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     rruleValue.append(patternType.toUpperCase());
                 }
                 if (rangeType.equals("endDate")) {
-                    String endDate = buildUntilDate(range.getString("endDate"), range.getString("recurrenceTimeZone"), graphObject.optJSONObject("start"));
+                    String endDate = buildUntilDate(range.getString("endDate"), graphObject.optJSONObject("start"));
                     rruleValue.append(";UNTIL=").append(endDate);
                 } else if (rangeType.equals("numbered")) {
                     int numberOfOccurrences = range.getInt("numberOfOccurrences");
@@ -437,21 +437,18 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         }
 
-        private String buildUntilDate(String date, String timeZone, JSONObject startDate) throws DavMailException {
+        private String buildUntilDate(String date, JSONObject startDate) throws DavMailException {
             String result = null;
             if (date != null && date.length() == 10) {
                 String startDateTimeZone = startDate.optString("timeZone");
                 String startDateDateTime = startDate.optString("dateTime");
+                // graph provided until date does not have time part, get value from startDate
                 String untilDateTime = date + startDateDateTime.substring(10);
-
-                if (timeZone == null) {
-                    timeZone = startDateTimeZone;
-                }
 
                 SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(startDateTimeZone)));
                 try {
                     result = formatter.format(parser.parse(untilDateTime));
                 } catch (ParseException e) {
