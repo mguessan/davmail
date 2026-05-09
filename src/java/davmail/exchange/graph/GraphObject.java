@@ -306,15 +306,19 @@ public class GraphObject {
 
         if (originalStartTimeZone != null && originalStart != null && originalStart.length() >= 19) {
             String convertedOriginalStart = originalStart;
-            // convert to original timezone
-            SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
-            parser.setTimeZone(TimeZone.getTimeZone("UTC"));
-            formatter.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
-            try {
-                convertedOriginalStart = formatter.format(parser.parse(originalStart));
-            } catch (ParseException e) {
-                LOGGER.warn("Unable to convert to original timezone: " + originalStart + ", " + originalStartTimeZone);
+            if (originalStart.endsWith("Z")) {
+                // convert to original timezone
+                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+                parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+                formatter.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
+                try {
+                    convertedOriginalStart = formatter.format(parser.parse(originalStart));
+                } catch (ParseException e) {
+                    LOGGER.warn("Unable to convert to original timezone: " + originalStart + ", " + originalStartTimeZone);
+                }
+            } else {
+                LOGGER.warn("originalStart is not in UTC " + originalStart);
             }
 
             // Convert date from graph to caldav format, keep timezone information
@@ -352,6 +356,7 @@ public class GraphObject {
 
     protected static final Map<String, String> vTodoToTaskStatusMap = new HashMap<>();
     protected static final Map<String, String> taskTovTodoStatusMap = new HashMap<>();
+
     static {
         // The possible values are: notStarted, inProgress, completed, waitingOnOthers, deferred
         //taskTovTodoStatusMap.put("notStarted", null);
