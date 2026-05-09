@@ -700,13 +700,11 @@ public class GraphExchangeSession extends ExchangeSession {
                         // assume we can delete occurrence only on existing event
                         List<VProperty> exdateProperty = vEvent.getProperties("EXDATE");
                         if (exdateProperty != null && !exdateProperty.isEmpty()) {
-                            JSONArray cancelledOccurrences = new JSONArray();
                             for (VProperty exdate : exdateProperty) {
                                 String exdateTzid = exdate.getParamValue("TZID");
                                 String exDateValue = vCalendar.convertCalendarDateToGraph(exdate.getValue(), exdateTzid);
                                 deleteEventOccurrence(currentItemId, exDateValue);
                             }
-                            jsonEvent.put("cancelledOccurrences", cancelledOccurrences);
                         }
 
                         handleModifiedOccurrences(vCalendar, existingJsonEvent);
