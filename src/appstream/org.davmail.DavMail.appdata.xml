@@ -84,7 +84,7 @@
               <li>Graph: implement graph version of getTaskStatusFromVTodo and getVTodoStatusFromTask</li>
               <li>Graph: implement task (VTODO) update logic, create a cache of itemName to id</li>
               <li>Graph: implement allday event</li>
-              <li>Graph: move attendees management to handle modified occurences, refactor getEventIfExists to always fetch event by id, only way to retrieve exception occurences</li>
+              <li>Graph: move attendees management to handle modified occurrences, refactor getEventIfExists to always fetch event by id, only way to retrieve exception occurrences</li>
               <li>Graph: implement attendees update on meetings, detect mozilla dismiss to trigger dismissReminder</li>
               <li>Graph: implement meeting response</li>
               <li>Graph: refactored GraphIterator to handle null value array (even if this should never happen), see https://github.com/mguessan/davmail/issues/458</li>

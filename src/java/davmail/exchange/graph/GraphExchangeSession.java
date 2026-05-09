@@ -1727,7 +1727,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     /**
-     * EVENT_ATTRIBUTES to retrieve all fields including modified occurences, EVENT_LIST_ATTRIBUTES for search
+     * EVENT_ATTRIBUTES to retrieve all fields including modified occurrences, EVENT_LIST_ATTRIBUTES for search
      */
     protected static final HashSet<GraphField> EVENT_LIST_ATTRIBUTES = new HashSet<>();
     protected static final HashSet<GraphField> EVENT_ATTRIBUTES = new HashSet<>();
