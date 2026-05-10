@@ -136,7 +136,6 @@ public class GraphField {
         addFieldMap("location");
         addFieldMap("organizer");
         addFieldMap("originalStart");
-        addFieldMap("originalEnd");
         addFieldMap("recurrence");
         addFieldMap("reminderMinutesBeforeStart");
         addFieldMap("start");

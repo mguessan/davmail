@@ -551,6 +551,8 @@ public class GraphExchangeSession extends ExchangeSession {
             boolean isMozSendInvitations = false;
             boolean isMozDismiss = false;
 
+            boolean isOrganizer = false;
+
             JSONObject existingJsonEvent = getEventIfExists(folderId, itemName);
             if (existingJsonEvent != null) {
                 GraphObject currentItem = new GraphObject(existingJsonEvent);
@@ -562,7 +564,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 String currentAttendeeStatus = responseTypeToPartstatMap.get(myResponseType);
                 String newAttendeeStatus = vCalendar.getAttendeeStatus();
 
-                isMeetingResponse = vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()
+                isOrganizer = currentItem.optBoolean("isOrganizer");
+
+                isMeetingResponse = vCalendar.isMeeting() && !isOrganizer
                         && newAttendeeStatus != null
                         && !newAttendeeStatus.equals(currentAttendeeStatus)
                         // avoid nullpointerexception on unknown status
@@ -1767,6 +1771,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("organizer"));
         EVENT_ATTRIBUTES.add(GraphField.get("originalStartTimeZone"));
         EVENT_ATTRIBUTES.add(GraphField.get("originalStart"));
+        EVENT_ATTRIBUTES.add(GraphField.get("originalEndTimeZone"));
         EVENT_ATTRIBUTES.add(GraphField.get("recurrence"));
         EVENT_ATTRIBUTES.add(GraphField.get("reminderMinutesBeforeStart"));
         EVENT_ATTRIBUTES.add(GraphField.get("responseRequested"));
