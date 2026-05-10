@@ -121,7 +121,6 @@ public class GraphField {
         addFieldMap("objecttype");
 
         addFieldMap("originalStartTimeZone");
-        addFieldMap("originalEndTimeZone");
 
         addFieldMap("allowNewTimeProposals");
         addFieldMap("attendees");

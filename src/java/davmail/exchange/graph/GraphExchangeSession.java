@@ -238,14 +238,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     localVCalendar.setEmail(getCalendarEmail(folderPath));
                     // set timezone based on start date timezone
                     String originalStartTimeZone = graphObject.optString("originalStartTimeZone");
-                    String originalEndTimeZone = graphObject.optString("originalEndTimeZone");
                     if (originalStartTimeZone != null && !"tzone://Microsoft/Custom".equals(originalStartTimeZone)) {
                         localVCalendar.setTimezone(getVTimezone(originalStartTimeZone));
-                        // mixed timezone event, append both VTIMEZONE objects
-                        if (originalEndTimeZone != null && !"tzone://Microsoft/Custom".equals(originalEndTimeZone)
-                                && !originalEndTimeZone.equals(originalStartTimeZone)) {
-                            localVCalendar.setTimezone(getVTimezone(originalEndTimeZone));
-                        }
                     } else {
                         localVCalendar.setTimezone(getVTimezone());
                     }
@@ -1771,7 +1765,6 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("organizer"));
         EVENT_ATTRIBUTES.add(GraphField.get("originalStartTimeZone"));
         EVENT_ATTRIBUTES.add(GraphField.get("originalStart"));
-        EVENT_ATTRIBUTES.add(GraphField.get("originalEndTimeZone"));
         EVENT_ATTRIBUTES.add(GraphField.get("recurrence"));
         EVENT_ATTRIBUTES.add(GraphField.get("reminderMinutesBeforeStart"));
         EVENT_ATTRIBUTES.add(GraphField.get("responseRequested"));
