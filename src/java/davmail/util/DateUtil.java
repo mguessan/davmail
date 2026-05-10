@@ -20,19 +20,71 @@
 package davmail.util;
 
 import davmail.exception.DavMailException;
+import org.apache.log4j.Logger;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ResourceBundle;
 
 /**
- * Date related conversion methods
+ * Date conversion methods
  */
 public class DateUtil {
+
+    protected static final Logger LOGGER = Logger.getLogger("davmail.util.DateUtil");
+
     public static final String GRAPH_DATE_TIME = "yyyy-MM-dd'T'HH:mm:ss";
     public static final String CALDAV_DATE_TIME = "yyyyMMdd'T'HHmmss";
+
+    /**
+     * Standard to Exchange timezone mapping
+     */
+    public static final ResourceBundle STD_TO_EXCHANGE_TZ = ResourceBundle.getBundle("exchtimezones");
+    /**
+     * Standard to Exchange timezone mapping
+     */
+    public static final ResourceBundle EXCHANGE_TO_STD_TZ = ResourceBundle.getBundle("stdtimezones");
+
+    public static final ResourceBundle VTIMEZONES = ResourceBundle.getBundle("vtimezones");
+
+
+
+    public static String getExchangeTimeZone(String timezoneId) {
+        if (EXCHANGE_TO_STD_TZ.containsKey(timezoneId)) {
+            return timezoneId;
+        } else if (STD_TO_EXCHANGE_TZ.containsKey(timezoneId)) {
+            return STD_TO_EXCHANGE_TZ.getString(timezoneId);
+        } else {
+            LOGGER.warn("Unknown timezone: " + timezoneId);
+            // fallback to UTC / Zulu
+            return "UTC";
+        }
+    }
+
+    public static String getStandardTimeZone(String timezoneId) {
+        if (STD_TO_EXCHANGE_TZ.containsKey(timezoneId)) {
+            return timezoneId;
+        } else if (EXCHANGE_TO_STD_TZ.containsKey(timezoneId)) {
+            return EXCHANGE_TO_STD_TZ.getString(timezoneId);
+        } else {
+            LOGGER.warn("Unknown timezone: " + timezoneId);
+            // fallback to UTC / Zulu
+            return "UTC";
+        }
+    }
+
+    public static String getVTimeZone(String timezoneId) {
+        String exchangeTimeZone = getExchangeTimeZone(timezoneId);
+        if (VTIMEZONES.containsKey(exchangeTimeZone)) {
+            return VTIMEZONES.getString(exchangeTimeZone);
+        } else {
+            LOGGER.warn("VTimezone not available for timezone: " + exchangeTimeZone);
+            return VTIMEZONES.getString("UTC");
+        }
+    }
 
     public static String convertDateFormat(String sourceDate, String sourceFormat, String targetFormat) throws DavMailException {
         String targetDate = null;
