@@ -849,19 +849,24 @@ public class VCalendar extends VObject {
     }
 
     public String getAttendeeStatus() {
-        String status = null;
-        List<VProperty> attendeeProperties = getFirstVeventProperties("ATTENDEE");
-        if (attendeeProperties != null) {
-            for (VProperty property : attendeeProperties) {
-                String attendeeEmail = getEmailValue(property);
-                if (email.equalsIgnoreCase(attendeeEmail) && property.hasParam("PARTSTAT")) {
-                    // found current user attendee line
-                    status = property.getParamValue("PARTSTAT");
-                    break;
+        String attendeeStatus = null;
+        // iterate over all Vevents to detect meeting response
+        for (VObject vObject : vObjects) {
+            if ("VEVENT".equals(vObject.type)) {
+                List<VProperty> attendeeProperties = vObject.getProperties("ATTENDEE");
+                if (attendeeProperties != null) {
+                    for (VProperty property : attendeeProperties) {
+                        if (email.equalsIgnoreCase(getEmailValue(property))) {
+                            String status = property.getParamValue("PARTSTAT");
+                            if (!"NEEDS-ACTION".equals(status)) {
+                                attendeeStatus = status;
+                            }
+                        }
+                    }
                 }
             }
         }
-        return status;
+        return attendeeStatus;
     }
 
     /**
