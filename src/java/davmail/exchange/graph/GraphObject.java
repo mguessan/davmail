@@ -311,9 +311,17 @@ public class GraphObject {
             SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
             parser.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-            // format to original timezone
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
-            formatter.setTimeZone(DateUtil.getTimeZone(originalStartTimeZone));
+            String standardTimeZoneId = DateUtil.getStandardTimeZone(originalStartTimeZone);
+            SimpleDateFormat formatter;
+            if (standardTimeZoneId == null) {
+                // format to zulu
+                formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+            } else {
+                // format to original timezone
+                formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+                formatter.setTimeZone(DateUtil.getTimeZone(standardTimeZoneId));
+            }
             try {
                 convertedOriginalStart = formatter.format(parser.parse(originalStart));
             } catch (ParseException e) {
@@ -322,7 +330,9 @@ public class GraphObject {
 
             // Convert date from graph to caldav format, keep timezone information
             VProperty recurrenceId = new VProperty("RECURRENCE-ID", convertedOriginalStart);
-            recurrenceId.setParam("TZID", originalStartTimeZone);
+            if (standardTimeZoneId != null) {
+                recurrenceId.setParam("TZID", originalStartTimeZone);
+            }
             return recurrenceId;
         } else {
             throw new DavMailException("LOG_MESSAGE", "Missing original start date and timezone");
