@@ -236,9 +236,15 @@ public class GraphExchangeSession extends ExchangeSession {
                     // set email on vcalendar object for shared calendars
                     localVCalendar.setEmail(getCalendarEmail(folderPath));
                     // set timezone based on start date timezone
-                    String originalStarttimezone = graphObject.optString("originalStartTimeZone");
-                    if (originalStarttimezone != null) {
-                        localVCalendar.setTimezone(getVTimezone(originalStarttimezone));
+                    String originalStartTimeZone = graphObject.optString("originalStartTimeZone");
+                    String originalEndTimeZone = graphObject.optString("originalEndTimeZone");
+                    if (originalStartTimeZone != null && !"tzone://Microsoft/Custom".equals(originalStartTimeZone)) {
+                        localVCalendar.setTimezone(getVTimezone(originalStartTimeZone));
+                        // mixed timezone event, append both VTIMEZONE objects
+                        if (originalEndTimeZone != null && !"tzone://Microsoft/Custom".equals(originalEndTimeZone)
+                                && !originalEndTimeZone.equals(originalStartTimeZone)) {
+                            localVCalendar.setTimezone(getVTimezone(originalEndTimeZone));
+                        }
                     } else {
                         localVCalendar.setTimezone(getVTimezone());
                     }
