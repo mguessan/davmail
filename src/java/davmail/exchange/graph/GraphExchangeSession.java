@@ -33,6 +33,7 @@ import davmail.http.HttpClientAdapter;
 import davmail.http.URIUtil;
 import davmail.ui.NotificationDialog;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.DateUtil;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.http.Header;
@@ -318,8 +319,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
             // retrieve original start timezone to restore original timezone on recurring events across DST
             String originalStartTimeZone = jsonEvent.optString("originalStartTimeZone");
-            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start"), originalStartTimeZone));
-            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end"), originalStartTimeZone));
+            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start"), DateUtil.getExchangeTimeZone(originalStartTimeZone)));
+            vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end"), DateUtil.getExchangeTimeZone(originalStartTimeZone)));
 
             vEvent.setPropertyValue("LOCATION", jsonEvent.optString("location", "displayName"));
             vEvent.setPropertyValue("CATEGORIES", jsonEvent.optString("categories"));
@@ -464,14 +465,13 @@ public class GraphExchangeSession extends ExchangeSession {
             return result;
         }
 
-        private String convertOriginalStartDate(String originalStart, String originalStartTimeZone) throws DavMailException {
+        private String convertOriginalStartDate(String originalStart) throws DavMailException {
             String result = originalStart;
-            // should not happen originalStart is supposed to be in UTC
+            // originalStart is in ISO8601 format, convert if not already zulu
             if (originalStart != null && !originalStart.endsWith("Z")) {
-                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
                 try {
                     result = formatter.format(parser.parse(originalStart));
                 } catch (ParseException e) {
@@ -981,7 +981,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (exceptionOccurrences != null) {
                     for (int i = 0; i < exceptionOccurrences.length(); i++) {
                         JSONObject exceptionOccurrence = exceptionOccurrences.optJSONObject(i);
-                        String exceptionOriginalStart = convertOriginalStartDate(exceptionOccurrence.optString("originalStart"), exceptionOccurrence.optString("originalStartTimeZone"));
+                        String exceptionOriginalStart = convertOriginalStartDate(exceptionOccurrence.optString("originalStart"));
                         LOGGER.debug("Looking at occurrence " + exceptionOriginalStart + " for " + originalDateZulu);
                         if (originalDateZulu.equals(exceptionOriginalStart)) {
                             updateExceptionOccurrence(modifiedOccurrence, exceptionOccurrence.getString("id"));
@@ -1261,11 +1261,11 @@ public class GraphExchangeSession extends ExchangeSession {
 
             if (originalStartTimeZone != null && !timeZone.equals(originalStartTimeZone)) {
                 LOGGER.debug("originalStartTimeZone different from requested timeZone: " + originalStartTimeZone + " vs " + timeZone);
-                // convert to original timezone
+                // convert to original timezone to preserve time over DST
                 SimpleDateFormat parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
-                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
-                formatter.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(originalStartTimeZone)));
+                parser.setTimeZone(DateUtil.getTimeZone(timeZone));
+                formatter.setTimeZone(DateUtil.getTimeZone(originalStartTimeZone));
                 try {
                     dateTime = formatter.format(parser.parse(dateTime));
                     timeZone = originalStartTimeZone;
@@ -3835,14 +3835,15 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private VObject getVTimezone(String timezoneId) {
-        if (!"tzone://Microsoft/Custom".equals(timezoneId)) {
+        String vTimeZone = DateUtil.getVTimeZone(timezoneId);
+        if (vTimeZone != null) {
             try {
-                return new VObject(ResourceBundle.getBundle("vtimezones").getString(timezoneId));
+                return new VObject(vTimeZone);
             } catch (IOException e) {
                 LOGGER.warn("Unable to get VTIMEZONE: " + e, e);
             }
         }
-        // unsupported timezone, return default
+        // unsupported timezone, return user default timezone
         return getVTimezone();
     }
 

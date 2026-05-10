@@ -28,6 +28,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ResourceBundle;
+import java.util.TimeZone;
 
 /**
  * Date conversion methods
@@ -51,7 +52,11 @@ public class DateUtil {
     public static final ResourceBundle VTIMEZONES = ResourceBundle.getBundle("vtimezones");
 
 
-
+    /**
+     * Convert timezone to Exchange timezone.
+     * @param timezoneId exchange or standard timezone id
+     * @return exchange timezone or null if unknown
+     */
     public static String getExchangeTimeZone(String timezoneId) {
         if (EXCHANGE_TO_STD_TZ.containsKey(timezoneId)) {
             return timezoneId;
@@ -59,11 +64,15 @@ public class DateUtil {
             return STD_TO_EXCHANGE_TZ.getString(timezoneId);
         } else {
             LOGGER.warn("Unknown timezone: " + timezoneId);
-            // fallback to UTC / Zulu
-            return "UTC";
+            return null;
         }
     }
 
+    /**
+     * Convert timezone id to standard timezone id.
+     * @param timezoneId exchange or standard timezone id
+     * @return standard timezone or null if unknown
+     */
     public static String getStandardTimeZone(String timezoneId) {
         if (STD_TO_EXCHANGE_TZ.containsKey(timezoneId)) {
             return timezoneId;
@@ -71,18 +80,27 @@ public class DateUtil {
             return EXCHANGE_TO_STD_TZ.getString(timezoneId);
         } else {
             LOGGER.warn("Unknown timezone: " + timezoneId);
-            // fallback to UTC / Zulu
-            return "UTC";
+            return null;
+        }
+    }
+
+    public static TimeZone getTimeZone(String timezoneId) {
+        String standardTimeZoneId = getStandardTimeZone(timezoneId);
+        if (standardTimeZoneId != null) {
+            return TimeZone.getTimeZone(standardTimeZoneId);
+        } else {
+            LOGGER.warn("Unknown timezone: " + timezoneId+", using UTC");
+            return TimeZone.getTimeZone("UTC");
         }
     }
 
     public static String getVTimeZone(String timezoneId) {
         String exchangeTimeZone = getExchangeTimeZone(timezoneId);
-        if (VTIMEZONES.containsKey(exchangeTimeZone)) {
+        if (exchangeTimeZone != null && VTIMEZONES.containsKey(exchangeTimeZone)) {
             return VTIMEZONES.getString(exchangeTimeZone);
         } else {
             LOGGER.warn("VTimezone not available for timezone: " + exchangeTimeZone);
-            return VTIMEZONES.getString("UTC");
+            return null;
         }
     }
 
