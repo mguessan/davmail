@@ -27,18 +27,15 @@ import java.io.IOException;
 
 /**
  * Exchange session test case.
- * Open a session to default DavMail server as found in user davmail.properties,
- * except if url is not null
+ * Open a session to default DavMail server as found in user test.properties
  */
-public class AbstractExchangeSessionTestCase extends AbstractDavMailTestCase {
+public abstract class AbstractExchangeSessionTestCase extends AbstractDavMailTestCase {
 
     @Override
     public void setUp() throws IOException {
         super.setUp();
         if (session == null) {
-            // open session, get username and password from davmail.properties
-            // Note: those properties should *not* exist in normal production mode,
-            // they are not used by DavMail, just by this test case
+            // open session, get username and password from test.properties
             session = ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.url"), Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
         }
     }
