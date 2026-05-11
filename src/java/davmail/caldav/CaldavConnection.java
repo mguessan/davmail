@@ -1104,27 +1104,28 @@ public class CaldavConnection extends AbstractConnection {
         HashMap<String, String> valueMap = new HashMap<>();
         ArrayList<String> attendees = new ArrayList<>();
         HashMap<String, String> attendeeKeyMap = new HashMap<>();
-        ICSBufferedReader reader = new ICSBufferedReader(new StringReader(body));
-        String line;
-        String key;
-        while ((line = reader.readLine()) != null) {
-            int index = line.indexOf(':');
-            if (index <= 0) {
-                throw new DavMailException("EXCEPTION_INVALID_REQUEST", body);
-            }
-            String fullkey = line.substring(0, index);
-            String value = line.substring(index + 1);
-            int semicolonIndex = fullkey.indexOf(';');
-            if (semicolonIndex > 0) {
-                key = fullkey.substring(0, semicolonIndex);
-            } else {
-                key = fullkey;
-            }
-            if ("ATTENDEE".equals(key)) {
-                attendees.add(value);
-                attendeeKeyMap.put(value, fullkey);
-            } else {
-                valueMap.put(key, value);
+        try (ICSBufferedReader reader = new ICSBufferedReader(new StringReader(body))) {
+            String line;
+            String key;
+            while ((line = reader.readLine()) != null) {
+                int index = line.indexOf(':');
+                if (index <= 0) {
+                    throw new DavMailException("EXCEPTION_INVALID_REQUEST", body);
+                }
+                String fullkey = line.substring(0, index);
+                String value = line.substring(index + 1);
+                int semicolonIndex = fullkey.indexOf(';');
+                if (semicolonIndex > 0) {
+                    key = fullkey.substring(0, semicolonIndex);
+                } else {
+                    key = fullkey;
+                }
+                if ("ATTENDEE".equals(key)) {
+                    attendees.add(value);
+                    attendeeKeyMap.put(value, fullkey);
+                } else {
+                    valueMap.put(key, value);
+                }
             }
         }
         // get freebusy for each attendee
