@@ -19,7 +19,6 @@
 
 package davmail.exchange.graph;
 
-import davmail.exchange.ews.ExtendedFieldURI;
 import org.apache.log4j.Logger;
 
 import java.util.HashMap;
@@ -198,7 +197,7 @@ public class GraphField {
         //addFieldMap("o", DistinguishedPropertySetType.Address, 0x3A18, PropertyType.String); // department
         addFieldMap("o", "companyName"); // department
 
-        addFieldMap("department", "department");// MAPI addFieldMap("department",  0x3A18, PropertyType.String);
+        addFieldMap("department", "department");// MAPI addFieldMap("department", 0x3A18, PropertyType.String);
 
         addFieldMap("smtpemail1", DistinguishedPropertySetType.Address, 0x8083, PropertyType.String); // Email1EmailAddress
         addFieldMap("smtpemail2", DistinguishedPropertySetType.Address, 0x8093, PropertyType.String); // Email2EmailAddress
@@ -338,7 +337,7 @@ public class GraphField {
     }
 
     /**
-     * Create extended field.
+     * Create an extended field.
      *
      * @param alias          property alias
      * @param intPropertyTag property tag as int
