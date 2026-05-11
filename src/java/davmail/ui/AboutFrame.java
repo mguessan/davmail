@@ -44,7 +44,7 @@ public class AboutFrame extends JFrame {
      * About frame.
      */
     public AboutFrame() {
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_ABOUT_DAVMAIL"));
         try {
             setIconImages(DavGatewayTray.getFrameIcons());
@@ -131,7 +131,7 @@ public class AboutFrame extends JFrame {
 
 
     /**
-     * Update about frame content with current released version.
+     * Update about frame content with the current released version.
      */
     public void update() {
         jEditorPane.setText(getContent(DavGateway.getReleasedVersion()));
