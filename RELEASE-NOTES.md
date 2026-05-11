@@ -22,7 +22,7 @@ more work on Graph backend, mostly on Caldav implementation.
 - Graph: implement graph version of getTaskStatusFromVTodo and getVTodoStatusFromTask
 - Graph: implement task (VTODO) update logic, create a cache of itemName to id
 - Graph: implement allday event
-- Graph: move attendees management to handle modified occurences, refactor getEventIfExists to always fetch event by id, only way to retrieve exception occurences
+- Graph: move attendees management to handle modified occurrences, refactor getEventIfExists to always fetch event by id, only way to retrieve exception occurrences
 - Graph: implement attendees update on meetings, detect mozilla dismiss to trigger dismissReminder
 - Graph: implement meeting response
 - Graph: refactored GraphIterator to handle null value array (even if this should never happen), see https://github.com/mguessan/davmail/issues/458
@@ -1307,10 +1307,10 @@ value is a comma separated list of emails or domains (user@company.com or @compa
 - HTTP: improve HttpClientAdapter interface
 - HTTP: switch check released version to HttpClient 4
 - HTTP: implement Get and Rest requests with HttpClient 4
-- HTTP: reenable basic proxy authentication on Java >= 1.8.111 in HttpClientAdapter
+- HTTP: re-enable basic proxy authentication on Java >= 1.8.111 in HttpClientAdapter
 - HTTP: reimplement URIUtil to prepare HttpClient 4 migration
 - HTTP: Cleanup from audit
-- HTTP: reenable basic proxy authentication on Java >= 1.8.111: jdk.http.auth.tunneling.disabledSchemes=""
+- HTTP: re-enable basic proxy authentication on Java >= 1.8.111: jdk.http.auth.tunneling.disabledSchemes=""
 - HTTP: Implement JCIFS NTLM authentication with HttpClient 4
 
 ### GUI:
@@ -1409,7 +1409,7 @@ Also upgraded libraries to prepare HttpClient 4 upgrade.
 - Caldav: adjust isOrganizer check (again) to work on all Exchange server versions
 - Caldav: workaround for missing DTEND in event, avoid NullPointerException
 - Caldav: fix recurrence options and implement interval over EWS
-- Caldav: fix montly recurrence handling
+- Caldav: fix monthly recurrence handling
 
 ### IMAP:
 - IMAP: fix #704 implement [TRYCREATE] on folder not found
@@ -1470,7 +1470,7 @@ Also upgraded libraries to prepare HttpClient 4 upgrade.
 - Linux: fix spec file regression
 
 ### Maven:
-- Maven: reenable site plugins in pom
+- Maven: re-enable site plugins in pom
 
 
 ## DavMail 5.1.0 2018-12-18
@@ -2187,7 +2187,7 @@ Another bug fix release with some efforts on packaging.
 
 ### Packaging:
 - Compute distribution packages checksums
-- Maven: set mimimum Maven version and fix FindBugs filter
+- Maven: set minimum Maven version and fix FindBugs filter
 - Maven: add Gtk lib in repo to avoid ClassNotFound
 - Maven: exclude non DavMail classes from FindBugs report
 - Maven: Update POM to Maven 3
@@ -2505,7 +2505,7 @@ Also fixed a few bugs reported by users and improved documentation.
 ### Caldav:
 - Caldav: flag ORGANIZER participant status as ACCEPTED instead of NEEDS-ACTION
 - Caldav: do not overwrite X-MICROSOFT-CDO-BUSYSTATUS if TRANSP is not provided
-- Merge patch to set sensitivy on VTODO
+- Merge patch to set sensitivity on VTODO
 
 ### OSX:
 - OSX: Get application path from library path with Java7 launcher
@@ -2759,7 +2759,7 @@ and additional enhancements and bugfixes.
 
 ### Caldav:
 - Caldav: encode semicolon in urlcompname
-- Caldav: fix attendees in modified occurences
+- Caldav: fix attendees in modified occurrences
 - Caldav: additional timezone names for Exchange 2010
 - Caldav: additional timezones available in Exchange 2007
 - Caldav: Partial fix for missing items on Exchange 2010
@@ -3224,8 +3224,8 @@ on Linux 64 and many other bugfixes.
 - IMAP: test custom header search
 - IMAP: workaround for Exchange 2003 search deleted support
 - IMAP: fix 3303767, do not send line count for non text bodyparts
-- IMAP: another fix for 3297849, ENVELOPE formating error/bogus quotes
-- IMAP: fix 3297849, ENVELOPE formating error/bogus quotes
+- IMAP: another fix for 3297849, ENVELOPE formatting error/bogus quotes
+- IMAP: fix 3297849, ENVELOPE formatting error/bogus quotes
 - IMAP: Fix nullpointer in broken message handling
 - IMAP: fix infinite loop detection
 - IMAP: detect infinite loop on the client side
@@ -3284,7 +3284,7 @@ Also implemented Microsoft Forefront Unified Access Gateway support.
 - Implement Microsoft Forefront Unified Access Gateway logon form compatibility
 
 ### IMAP:
-- IMAP: fix 3201374 envelope superflous space
+- IMAP: fix 3201374 envelope superfluous space
 - IMAP: fix LOGOUT implementation to improve SquirrelMail compatibility
 
 ### OSX:
@@ -3747,7 +3747,7 @@ Exchange Web Services support, LDAP optimizations and many other bufixes.
 - Caldav: more vcalendar patches
 - Caldav: start new VCalendar fixICS implementation
 - Caldav: call fixICS on download
-- Caldav: reenable Lightning 1.0b2 bug workaround
+- Caldav: re-enable Lightning 1.0b2 bug workaround
 - Caldav: failover for 404 not found on items containing '+' in url, search item by urlcompname to get permanenturl
 
 ### LDAP:
@@ -4134,7 +4134,7 @@ and DavMail can now retrieve proxy settings directly from system configuration.
 - SMTP: implement AUTH LOGIN username (with optional initial-response, see RFC2554)
 
 ### IMAP:
-- IMAP: Keep a single message in MessageList cache to handle chunked fetch, reenable maxSize in ImapConnection.
+- IMAP: Keep a single message in MessageList cache to handle chunked fetch, re-enable maxSize in ImapConnection.
 - IMAP: implement subparts partial fetch
 - IMAP: Fix message write, double dot only for POP, not IMAP
 - IMAP: Do not advertise not yet supported custom flags
@@ -4376,7 +4376,7 @@ describe DavMail features.
 - LDAP: implement startsWith on Contact search, only objectclass=* is a full search
 - LDAP: fix for iCal4 attendee completion,  send localhost if current socket is local, else send fully qualified domain name
 - LDAP: major refactoring from Dan Foody to improve complex filters handling
-- LDAP: improve contact search, reencode uids to hex to avoid case sensitivity issues
+- LDAP: improve contact search, re-encode uids to hex to avoid case sensitivity issues
 
 ### Documentation:
 - Doc: Set Dan Foody as main java contributor
@@ -4577,7 +4577,7 @@ and a lot of bug fixes.
 ### Enhancements:
 - Remove NTLM authentication, breaks Basic authentication (missing domain in username)
 - Set NTLM as last authentication scheme
-- Experimental: reenable NTLM authentication
+- Experimental: re-enable NTLM authentication
 - Upgrade SWT to 3.5
 - Use getFolderPath in getSubFolders
 - Make API more consistent: createMessage must get a folder path, not URL
@@ -4777,7 +4777,7 @@ Also added client to gateway encryption (SSL) support, started I18N
 - Fixed 2717547: Unsupported filter attribute: apple-group-memberguid
 - URI encode alias in getEmail()
 - Fix SSLProtocolSocketFactory with HttpClient 3.1
-- Reenable limited timeout on getReleasedVersion
+- Re-enable limited timeout on getReleasedVersion
 - Always exclude NTLM authentication, not only for proxy authorization
 - Fix 2717446 from Eivind Tagseth
 
