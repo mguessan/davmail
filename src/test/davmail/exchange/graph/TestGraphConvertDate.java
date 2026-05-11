@@ -20,10 +20,14 @@
 package davmail.exchange.graph;
 
 import davmail.exchange.AbstractExchangeSessionTestCase;
+import davmail.util.DateUtil;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Enumeration;
+import java.util.ResourceBundle;
 
 public class TestGraphConvertDate extends AbstractExchangeSessionTestCase {
     public void testConvertDate() throws IOException {
@@ -58,4 +62,24 @@ public class TestGraphConvertDate extends AbstractExchangeSessionTestCase {
 
         assertEquals(outputDateString, GraphExchangeSession.convertDateFromExchange(inputDateString));
     }
+
+    public void testTimeZoneMapping() throws IOException {
+        ResourceBundle vtimezones = ResourceBundle.getBundle("vtimezones");
+        Enumeration<String> tzKeys = vtimezones.getKeys();
+        while (tzKeys.hasMoreElements()) {
+            String tzKey = tzKeys.nextElement();
+            ArrayList<String> missing = new ArrayList<>();
+            if (!(DateUtil.EXCHANGE_TO_STD_TZ.containsKey(tzKey))) {
+                System.out.println("Missing from EXCHANGE_TO_STD_TZ: " + tzKey);
+                missing.add(tzKey);
+            }
+            assertEquals(0, missing.size());
+        }
+
+        assertNotNull(DateUtil.getVTimeZone("UTC"));
+        assertNotNull(DateUtil.getVTimeZone("tzone://Microsoft/Utc"));
+
+    }
+
+
 }
