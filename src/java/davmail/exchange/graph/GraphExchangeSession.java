@@ -63,7 +63,9 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.net.NoRouteToHostException;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -1213,6 +1215,25 @@ public class GraphExchangeSession extends ExchangeSession {
 
     }
 
+    /**
+     * Override isExpired check.
+     * @return true if session / token is expired
+     * @throws NoRouteToHostException on network error
+     * @throws UnknownHostException on network error
+     */
+    @Override
+    public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
+        boolean isExpired = false;
+        try {
+            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setSelect("id"));
+        } catch (UnknownHostException | NoRouteToHostException exc) {
+            throw exc;
+        } catch (IOException e) {
+            isExpired = true;
+        }
+
+        return isExpired;
+    }
     private String convertHtmlToText(String htmlText) {
         StringBuilder builder = new StringBuilder();
 
