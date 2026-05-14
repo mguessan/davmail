@@ -2864,6 +2864,8 @@ public class GraphExchangeSession extends ExchangeSession {
         return currentFolderId;
     }
 
+    protected HashMap<String, FolderId> folderIdCache = new HashMap<>();
+
     /**
      * Build folderId for well-known folders.
      * Set EWS folderClass values according to: <a href="https://learn.microsoft.com/en-us/exchange/client-developer/exchange-web-services/folders-and-items-in-ews-in-exchange">...</a>
@@ -2873,7 +2875,11 @@ public class GraphExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     private FolderId getWellKnownFolderId(String mailbox, WellKnownFolderName wellKnownFolderName) throws IOException {
-        if (wellKnownFolderName == WellKnownFolderName.tasks) {
+        FolderId wellKnownFolderId = null;
+        if (mailbox == null && folderIdCache.containsKey(wellKnownFolderName.name())) {
+            // get folder id from cache
+            wellKnownFolderId = folderIdCache.get(wellKnownFolderName.name());
+        } else if (wellKnownFolderName == WellKnownFolderName.tasks) {
             // retrieve folder id from todo endpoint
             GraphIterator graphIterator = executeSearchRequest(new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
@@ -2882,7 +2888,7 @@ public class GraphExchangeSession extends ExchangeSession {
             while (graphIterator.hasNext()) {
                 JSONObject jsonResponse = graphIterator.next();
                 if (jsonResponse.optString("wellknownListName").equals("defaultList")) {
-                    return new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Task");
+                    wellKnownFolderId = new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Task");
                 }
             }
             // should not happen
@@ -2895,8 +2901,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType("mailFolders")
                     .setObjectId(wellKnownFolderName.name())
                     .setSelect("id"));
-            return new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Note");
+            wellKnownFolderId = new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Note");
         }
+        // cache folder id on personal mailbox
+        if (mailbox == null && !folderIdCache.containsKey(wellKnownFolderName.name())) {
+            folderIdCache.put(wellKnownFolderName.name(), wellKnownFolderId);
+        }
+
+        return wellKnownFolderId;
     }
 
     /**
