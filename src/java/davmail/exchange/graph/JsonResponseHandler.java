@@ -29,6 +29,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.ResponseHandler;
+import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -41,6 +42,9 @@ import java.util.zip.GZIPInputStream;
  * Generic JSON response handler for graph API calls
  */
 public class JsonResponseHandler implements ResponseHandler<JSONObject> {
+
+    protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.JsonResponseHandler");
+
     @Override
     public JSONObject handleResponse(HttpResponse response) throws IOException {
         JSONObject jsonResponse = null;
@@ -68,6 +72,10 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
                 try {
                     JSONObject jsonError = jsonResponse.getJSONObject("error");
                     errorMessage = jsonError.optString("code") + " " + jsonError.optString("message");
+
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(response.getStatusLine().getStatusCode()+" "+response.getStatusLine().getReasonPhrase()+" " + jsonError);
+                    }
                 } catch (JSONException e) {
                     // ignore
                 }
