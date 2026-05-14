@@ -1225,7 +1225,7 @@ public class GraphExchangeSession extends ExchangeSession {
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
         boolean isExpired = false;
         try {
-            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setSelect("id"));
+            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setObjectType("mailFolders").setSelect("id"));
         } catch (UnknownHostException | NoRouteToHostException exc) {
             throw exc;
         } catch (IOException e) {
