@@ -2892,7 +2892,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
             }
             // should not happen
-            throw new HttpNotFoundException("Folder '" + wellKnownFolderName.name() + "' not found");
+            if (wellKnownFolderId == null) {
+                throw new HttpNotFoundException("Folder '" + wellKnownFolderName.name() + "' not found");
+            }
 
         } else {
             JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
