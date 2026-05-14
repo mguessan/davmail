@@ -78,7 +78,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.NoSuchElementException;
-import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -174,7 +173,6 @@ public class GraphExchangeSession extends ExchangeSession {
             this.graphObject = graphObject;
 
             id = graphObject.optString("id");
-            String urlcompname = graphObject.optString("urlcompname");
             etag = graphObject.optString("changeKey");
 
             // prefer id as itemName
@@ -651,11 +649,20 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
 
                 } else if (currentItemId != null && isMozDismiss) {
-                    graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
+                    // Thunderbird snooze / dismiss, only update fields, do not call dismissReminder as this removes alarm completely
+                    String newmozlastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+                    String newmozsnoozetime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+
+                    JSONObject jsonEvent = new JSONObject();
+                    jsonEvent.put("xmozlastack", newmozlastack);
+                    jsonEvent.put("xmozsnoozetime", newmozsnoozetime);
+
+                    graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
                             .setMailbox(folderId.mailbox)
                             .setObjectType("events")
                             .setObjectId(currentItemId)
-                            .setAction("dismissReminder");
+                            .setJsonBody(jsonEvent);
+
                 } else if ("IPF.Task".equals(folderId.folderClass)) {
                     JSONObject jsonTask = buildJsonTask(vEvent);
                     // handleRrule(jsonTask, vEvent.getProperty("RRULE")); does not yet work on microsoft side
@@ -3122,18 +3129,9 @@ public class GraphExchangeSession extends ExchangeSession {
 
 
     /**
-     * Common item properties
+     * Common item properties, not used over Graph
      */
     protected static final Set<String> ITEM_PROPERTIES = new HashSet<>();
-
-    static {
-        //ITEM_PROPERTIES.add("etag");
-        //ITEM_PROPERTIES.add("displayname");
-        // calendar CdoInstanceType
-        //ITEM_PROPERTIES.add("instancetype");
-        //ITEM_PROPERTIES.add("urlcompname");
-        //ITEM_PROPERTIES.add("subject");
-    }
 
     protected static final HashSet<String> EVENT_REQUEST_PROPERTIES = new HashSet<>();
 
@@ -3277,7 +3275,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 JSONObject jsonResponse = graphIterator.next();
                 GraphExchangeSession.Message message = buildMessage(jsonResponse);
                 message.folderId = folderId;
-                LOGGER.debug("searchEventMessages " + message.contentClass+" "+message.id);
+                LOGGER.debug("searchEventMessages " + message.contentClass + " " + message.id);
                 try {
                     byte[] content = getContent(message);
                     if (content == null) {
@@ -3417,7 +3415,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (urlcompnameToIdMap.containsKey(urlcompname)) {
                     // try to fetch id from cache
                     itemId = urlcompnameToIdMap.get(urlcompname);
-                } else if (folderId.isCalendar()){
+                } else if (folderId.isCalendar()) {
                     JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
                             .setMethod(HttpGet.METHOD_NAME)
                             .setMailbox(folderId.mailbox)
@@ -3594,7 +3592,7 @@ public class GraphExchangeSession extends ExchangeSession {
             // no recipients, cancel
             return HttpStatus.SC_NO_CONTENT;
         } else {
-            sendMessage( mimeContent);
+            sendMessage(mimeContent);
             return HttpStatus.SC_OK;
         }
     }
