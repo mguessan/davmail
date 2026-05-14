@@ -1805,6 +1805,8 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     protected static class FolderId {
+        protected static String IPF_CONTACT = "IPF.Contact";
+
         protected String mailbox;
         protected String id;
         protected String parentFolderId;
@@ -1846,6 +1848,8 @@ public class GraphExchangeSession extends ExchangeSession {
         public boolean isCalendar() {
             return "IPF.Appointment".equals(folderClass);
         }
+
+        public boolean isContact() { return IPF_CONTACT.equals(folderClass); }
     }
 
     HttpClientAdapter httpClient;
@@ -2708,7 +2712,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType("calendars");
         } else if ("IPF.Task".equals(folderId.folderClass)) {
             httpRequestBuilder.setObjectType("todo/lists");
-        } else if ("IPF.Contact".equals(folderId.folderClass)) {
+        } else if (folderId.isContact()) {
             httpRequestBuilder
                     .setSelectFields(FOLDER_PROPERTIES)
                     .setObjectType("contactFolders");
@@ -2850,7 +2854,7 @@ public class GraphExchangeSession extends ExchangeSession {
             currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.tasks);
             folderNames = folderPath.substring(TASKS.length()).split("/");
         } else if (isSubFolderOf(folderPath, CONTACTS)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.contacts, "IPF.Contact");
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.contacts, FolderId.IPF_CONTACT);
             folderNames = folderPath.substring(CONTACTS.length()).split("/");
         } else if (isSubFolderOf(folderPath, SENT)) {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.sentitems);
@@ -2965,7 +2969,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setFilter("displayName eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
         } else {
             String objectType = "mailFolders";
-            if ("IPF.Contact".equals(currentFolderId.folderClass)) {
+            if (currentFolderId.isContact()) {
                 objectType = "contactFolders";
             }
             httpRequestBuilder = new GraphRequestBuilder()
@@ -3034,7 +3038,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
             try {
                 String objectType = "mailFolders";
-                if ("IPF.Contact".equals(folderClass)) {
+                if (FolderId.IPF_CONTACT.equals(folderClass)) {
                     objectType = "contactFolders";
                 }
                 executeJsonRequest(new GraphRequestBuilder()
@@ -3074,7 +3078,7 @@ public class GraphExchangeSession extends ExchangeSession {
         } else {
             if (folderId != null) {
                 String objectType = "mailFolders";
-                if ("IPF.Contact".equals(folderId.folderClass)) {
+                if (folderId.isContact()) {
                     objectType = "contactFolders";
                 }
                 executeJsonRequest(new GraphRequestBuilder()
@@ -3408,7 +3412,7 @@ public class GraphExchangeSession extends ExchangeSession {
     public Item getItem(String folderPath, String itemName) throws IOException {
         FolderId folderId = getFolderId(folderPath);
 
-        if ("IPF.Contact".equals(folderId.folderClass)) {
+        if (folderId.isContact()) {
             JSONObject jsonResponse = getContactIfExists(folderId, itemName);
             if (jsonResponse != null) {
                 Contact contact = new Contact(new GraphObject(jsonResponse));
