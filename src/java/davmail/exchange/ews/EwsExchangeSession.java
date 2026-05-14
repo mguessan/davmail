@@ -1710,7 +1710,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 MultiValuedFieldUpdate requiredAttendees = new MultiValuedFieldUpdate(Field.get("requiredattendees"));
                 MultiValuedFieldUpdate optionalAttendees = new MultiValuedFieldUpdate(Field.get("optionalattendees"));
 
-                // for some reason we are unable to update timezone on a shared calendar
+                // Set attendees only if we try to impersonate calendar identity
                 if (!isShared || Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
                     updates.add(requiredAttendees);
                     updates.add(optionalAttendees);
@@ -1939,6 +1939,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent(), isMozDismiss));
 
                         boolean isShared = !email.equalsIgnoreCase(vCalendar.getCalendarEmail());
+                        // set mailbox on request when impersonate is enabled
                         if (isShared && Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
                             createOrUpdateItemMethod.mailbox = vCalendar.getCalendarEmail();
                         }
