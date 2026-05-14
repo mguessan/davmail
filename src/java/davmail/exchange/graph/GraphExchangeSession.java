@@ -2745,7 +2745,6 @@ public class GraphExchangeSession extends ExchangeSession {
                         folder.setSpecialFlag(wellKnownName);
                     }
 
-                    // TODO: reevaluate folder name encoding over graph
                     folder.displayName = StringUtil.encodeFolderName(jsonResponse.getString("displayName"));
                 }
 
@@ -2924,7 +2923,13 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectType("mailFolders")
                     .setObjectId(wellKnownFolderName.name())
                     .setSelect("id"));
-            wellKnownFolderId = new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Note");
+            String id = jsonResponse.optString("id");
+            if (id == null) {
+                LOGGER.warn("Missing id on folder '" + wellKnownFolderName.name() + "'");
+                // should not happen, return well known name as id
+                id = wellKnownFolderName.name();
+            }
+            wellKnownFolderId = new FolderId(mailbox, id, "IPF.Note");
         }
         // cache folder id on personal mailbox
         if (mailbox == null && !folderIdCache.containsKey(wellKnownFolderName.name())) {
