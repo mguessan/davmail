@@ -2279,7 +2279,7 @@ public class EwsExchangeSession extends ExchangeSession {
         protected void fixAttendees(GetItemMethod getItemMethod, VObject vEvent) throws EWSException {
             if (getItemMethod.getResponseItem() != null) {
                 List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
-                if (attendees != null) {
+                if (attendees != null && vEvent.getProperties("ATTENDEE") == null) {
                     for (EWSMethod.Attendee attendee : attendees) {
                         VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
                         attendeeProperty.addParam("CN", attendee.name);
