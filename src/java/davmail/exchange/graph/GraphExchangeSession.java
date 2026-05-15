@@ -2506,7 +2506,13 @@ public class GraphExchangeSession extends ExchangeSession {
                     } else {
                         buffer.append(" ").append(operator.toString()).append(" ");
                     }
-                    condition.appendTo(buffer);
+                    if (condition instanceof MultiCondition) {
+                        buffer.append("(");
+                        condition.appendTo(buffer);
+                        buffer.append(")");
+                    } else {
+                        condition.appendTo(buffer);
+                    }
                 }
             }
         }
