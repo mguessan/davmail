@@ -1803,6 +1803,9 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("start"));
         EVENT_ATTRIBUTES.add(GraphField.get("subject"));
         EVENT_ATTRIBUTES.add(GraphField.get("type"));
+
+        EVENT_ATTRIBUTES.add(GraphField.get("xmozlastack"));
+        EVENT_ATTRIBUTES.add(GraphField.get("xmozsnoozetime"));
     }
 
     protected static class FolderId {
