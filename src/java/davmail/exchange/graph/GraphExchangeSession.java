@@ -583,7 +583,9 @@ public class GraphExchangeSession extends ExchangeSession {
             }
 
             ItemResult itemResult = new ItemResult();
-            if ("*".equals(noneMatch)) {
+            if (isMeetingResponse || isMozDismiss) {
+                LOGGER.debug("Ignore etag check, meeting response or dismiss");
+            } else if ("*".equals(noneMatch)) {
                 // create requested but already exists
                 if (currentItemId != null) {
                     itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
