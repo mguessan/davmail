@@ -113,6 +113,11 @@ public class GraphRequestBuilder {
         return this;
     }
 
+    public GraphRequestBuilder setJsonBody(GraphObject graphObject) {
+        this.jsonBody = graphObject.jsonObject;
+        return this;
+    }
+
     public GraphRequestBuilder addHeader(String name, String value) {
         if (headerMap == null) {
             headerMap = new HashMap<>();

@@ -51,6 +51,10 @@ public class GraphObject {
     protected final JSONObject jsonObject;
     protected int statusCode;
 
+    public GraphObject() {
+        this.jsonObject = new JSONObject();
+    }
+
     public GraphObject(JSONObject jsonObject) {
         this.jsonObject = jsonObject;
     }
@@ -132,7 +136,7 @@ public class GraphObject {
      * @param value property value
      * @throws JSONException on error
      */
-    public void put(String alias, String value) throws JSONException {
+    public GraphObject put(String alias, String value) throws JSONException {
         GraphField field = GraphField.get(alias);
         String key = field.getGraphId();
         // handle MAPI extended fields
@@ -148,6 +152,7 @@ public class GraphObject {
         } else {
             jsonObject.put(key, value == null ? JSONObject.NULL : value);
         }
+        return this;
     }
 
     /**

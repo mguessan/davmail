@@ -655,15 +655,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     String newmozlastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
                     String newmozsnoozetime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
 
-                    JSONObject jsonEvent = new JSONObject();
-                    jsonEvent.put("xmozlastack", newmozlastack);
-                    jsonEvent.put("xmozsnoozetime", newmozsnoozetime);
-
                     graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
                             .setMailbox(folderId.mailbox)
                             .setObjectType("events")
                             .setObjectId(currentItemId)
-                            .setJsonBody(jsonEvent);
+                            .setJsonBody(new GraphObject()
+                                    .put("xmozlastack", newmozlastack)
+                                    .put("xmozsnoozetime", newmozsnoozetime)
+                            );
 
                 } else if ("IPF.Task".equals(folderId.folderClass)) {
                     JSONObject jsonTask = buildJsonTask(vEvent);
