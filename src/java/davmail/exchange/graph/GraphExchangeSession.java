@@ -158,7 +158,7 @@ public class GraphExchangeSession extends ExchangeSession {
             this.folderPath = folderPath;
             this.folderId = folderId;
 
-            if ("IPF.Task".equals(graphObject.optString("objecttype"))) {
+            if (FolderId.IPF_TASK.equals(graphObject.optString("objecttype"))) {
                 // replace folder on task items requested as part of the default calendar
                 try {
                     this.folderId = getFolderId(TASKS);
@@ -200,7 +200,7 @@ public class GraphExchangeSession extends ExchangeSession {
             try {
                 if (vCalendar != null) {
                     return vCalendar.toString().getBytes(StandardCharsets.UTF_8);
-                } else if ("IPF.Task".equals(folderId.folderClass)) {
+                } else if (folderId.isTask()) {
                     VCalendar localVCalendar = new VCalendar();
                     VObject vTodo = new VObject();
                     vTodo.type = "VTODO";
@@ -666,7 +666,7 @@ public class GraphExchangeSession extends ExchangeSession {
                                     .put("xmozsnoozetime", newmozsnoozetime)
                             );
 
-                } else if ("IPF.Task".equals(folderId.folderClass)) {
+                } else if (folderId.isTask()) {
                     JSONObject jsonTask = buildJsonTask(vEvent);
                     // handleRrule(jsonTask, vEvent.getProperty("RRULE")); does not yet work on microsoft side
 
@@ -778,7 +778,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
                 // TODO: Force etag check?
                 itemResult.etag = graphResponse.optString("changeKey");
-                /*if (!"IPF.Task".equals(folderId.folderClass)) {
+                /*if (!folderId.isTask()) {
                 graphResponse = executeGraphRequest(new GraphRequestBuilder()
                         .setMethod(HttpGet.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
@@ -1806,7 +1806,11 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     protected static class FolderId {
-        protected static String IPF_CONTACT = "IPF.Contact";
+        protected static final String IPF_NOTE = "IPF.Note";
+        protected static final String IPF_CONTACT = "IPF.Contact";
+        protected static final String IPF_APPOINTMENT = "IPF.Appointment";
+        protected static final String IPF_TASK = "IPF.Task";
+
 
         protected String mailbox;
         protected String id;
@@ -1846,11 +1850,17 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         }
 
+        public boolean isMail() {
+            return IPF_NOTE.equals(folderClass);
+        }
+
         public boolean isCalendar() {
-            return "IPF.Appointment".equals(folderClass);
+            return IPF_APPOINTMENT.equals(folderClass);
         }
 
         public boolean isContact() { return IPF_CONTACT.equals(folderClass); }
+
+        public boolean isTask() { return IPF_TASK.equals(folderClass); }
     }
 
     HttpClientAdapter httpClient;
@@ -2713,11 +2723,11 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(folderId.mailbox)
                 .setObjectId(folderId.id);
-        if ("IPF.Appointment".equals(folderId.folderClass)) {
+        if (folderId.isCalendar()) {
             httpRequestBuilder
                     .setSelectFields(FOLDER_PROPERTIES)
                     .setObjectType("calendars");
-        } else if ("IPF.Task".equals(folderId.folderClass)) {
+        } else if (folderId.isTask()) {
             httpRequestBuilder.setObjectType("todo/lists");
         } else if (folderId.isContact()) {
             httpRequestBuilder
@@ -2854,7 +2864,7 @@ public class GraphExchangeSession extends ExchangeSession {
             currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.inbox);
             folderNames = folderPath.substring(INBOX.length()).split("/");
         } else if (isSubFolderOf(folderPath, CALENDAR)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.calendar, "IPF.Appointment");
+            currentFolderId = new FolderId(mailbox, WellKnownFolderName.calendar, FolderId.IPF_APPOINTMENT);
             // TODO subfolders not supported with graph
             folderNames = folderPath.substring(CALENDAR.length()).split("/");
         } else if (isSubFolderOf(folderPath, TASKS)) {
@@ -2919,7 +2929,7 @@ public class GraphExchangeSession extends ExchangeSession {
             while (graphIterator.hasNext()) {
                 JSONObject jsonResponse = graphIterator.next();
                 if (jsonResponse.optString("wellknownListName").equals("defaultList")) {
-                    wellKnownFolderId = new FolderId(mailbox, jsonResponse.optString("id"), "IPF.Task");
+                    wellKnownFolderId = new FolderId(mailbox, jsonResponse.optString("id"), FolderId.IPF_TASK);
                 }
             }
             // should not happen
@@ -2937,10 +2947,10 @@ public class GraphExchangeSession extends ExchangeSession {
             String id = jsonResponse.optString("id");
             if (id == null) {
                 LOGGER.warn("Missing id on folder '" + wellKnownFolderName.name() + "'");
-                // should not happen, return well known name as id
+                // should not happen, return wellknown name as id
                 id = wellKnownFolderName.name();
             }
-            wellKnownFolderId = new FolderId(mailbox, id, "IPF.Note");
+            wellKnownFolderId = new FolderId(mailbox, id, FolderId.IPF_NOTE);
         }
         // cache folder id on personal mailbox
         if (mailbox == null && !folderIdCache.containsKey(wellKnownFolderName.name())) {
@@ -2960,14 +2970,14 @@ public class GraphExchangeSession extends ExchangeSession {
     protected FolderId getSubFolderByName(FolderId currentFolderId, String folderName) throws IOException {
         LOGGER.debug("getSubFolderByName " + currentFolderId.id + " " + folderName);
         GraphRequestBuilder httpRequestBuilder;
-        if ("IPF.Appointment".equals(currentFolderId.folderClass)) {
+        if (currentFolderId.isCalendar()) {
             httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(currentFolderId.mailbox)
                     .setObjectType("calendars")
                     .setSelect("id")
                     .setFilter("name eq '" + StringUtil.escapeQuotes(StringUtil.decodeFolderName(folderName)) + "'");
-        } else if ("IPF.Task".equals(currentFolderId.folderClass)) {
+        } else if (currentFolderId.isTask()) {
             httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(currentFolderId.mailbox)
@@ -3016,7 +3026,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public int createFolder(String folderPath, String folderClass, Map<String, String> properties) throws IOException {
-        if ("IPF.Appointment".equals(folderClass) && folderPath.startsWith("calendar/")) {
+        if (FolderId.IPF_APPOINTMENT.equals(folderClass) && folderPath.startsWith("calendar/")) {
             // calendars/calendarName
             String calendarName = folderPath.substring(folderPath.indexOf('/') + 1);
             // create calendar
@@ -3429,7 +3439,7 @@ public class GraphExchangeSession extends ExchangeSession {
             } else {
                 throw new IOException("Item " + folderPath + " " + itemName + " not found");
             }
-        } else if ("IPF.Appointment".equals(folderId.folderClass)) {
+        } else if (folderId.isCalendar()) {
             JSONObject jsonResponse = getEventIfExists(folderId, itemName);
             if (jsonResponse != null) {
                 return new Event(folderPath, folderId, new GraphObject(jsonResponse));
@@ -3513,7 +3523,7 @@ public class GraphExchangeSession extends ExchangeSession {
                                     .setChildType("tasks")
                                     .setChildId(itemId)
                             //.setSelectFields(TODO_PROPERTIES) // bug on title breaks request
-                    ).put("objecttype", "IPF.Task"); // mark object as task item
+                    ).put("objecttype", FolderId.IPF_TASK); // mark object as task item
                 } catch (JSONException jsonException) {
                     throw new IOException(jsonException.getMessage(), jsonException);
                 }
@@ -3611,7 +3621,7 @@ public class GraphExchangeSession extends ExchangeSession {
         } else if (item instanceof GraphExchangeSession.Event) {
             FolderId folderId = ((Event) item).folderId;
 
-            if (folderId.folderClass.equals("IPF.Appointment")) {
+            if (folderId.isCalendar()) {
                 executeJsonRequest(new GraphRequestBuilder()
                         .setMethod(HttpDelete.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
