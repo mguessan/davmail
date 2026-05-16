@@ -173,9 +173,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     }
 
     protected void loadIcons() {
-        image = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
-        activeImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG));
-        inactiveImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG));
+        image = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
+        activeImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_ACTIVE_PNG));
+        inactiveImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_INACTIVE_PNG));
 
         frameIcons = new ArrayList<>();
         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
@@ -228,6 +228,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         // construct a TrayIcon
         trayIcon = new TrayIcon(image, BundleMessage.format("UI_DAVMAIL_GATEWAY"), popup);
         // set the TrayIcon properties
+        trayIcon.setImageAutoSize(true);
         trayIcon.addActionListener(settingsListener);
         // ...
         // add the tray image

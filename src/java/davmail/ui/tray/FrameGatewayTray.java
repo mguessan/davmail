@@ -259,7 +259,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
 
         mainFrame.setMinimumSize(new Dimension(400, 250));
         mainFrame.pack();
-        // workaround MacOSX
+        // workaround macOS
         if (mainFrame.getSize().width < 400 || mainFrame.getSize().height < 180) {
             mainFrame.setSize(Math.max(mainFrame.getSize().width, 400),
                     Math.max(mainFrame.getSize().height, 180));

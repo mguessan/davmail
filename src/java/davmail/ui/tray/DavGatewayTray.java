@@ -338,6 +338,10 @@ public final class DavGatewayTray {
                 throw new IOException("Missing resource: " + fileName);
             }
             result = ImageIO.read(imageUrl);
+
+            if (Settings.getBooleanProperty("davmail.trayGrayscale", false)) {
+                result = convertGrayscale(result);
+            }
         } catch (IOException e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
         }
@@ -362,9 +366,6 @@ public final class DavGatewayTray {
     }
 
     public static BufferedImage adjustTrayIcon(BufferedImage image) {
-        if (Settings.getBooleanProperty("davmail.trayGrayscale", false)) {
-            image = convertGrayscale(image);
-        }
         Color backgroundColor = null;
         String backgroundColorString = Settings.getProperty("davmail.trayBackgroundColor");
 
