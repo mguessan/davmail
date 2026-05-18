@@ -695,13 +695,18 @@ public class GraphExchangeSession extends ExchangeSession {
                                 .setJsonBody(jsonTask);
                     }
                 } else if (isExistingEvent && isMeeting && !isOrganizer && !isMeetingResponse && !isMozDismiss) {
-                    LOGGER.debug("Update on existing meeting, not organizer, not a meeting response or dismiss: ignore changes");
-                    // TODO: allow specific properties update
+                    GraphObject localGraphObject = new GraphObject();
+                    LOGGER.debug("Update on existing meeting, not organizer, not a meeting response or dismiss: allow specific changes");
+
+                    // handle reminder configuration
+                    localGraphObject.put("isReminderOn", vCalendar.hasVAlarm());
+                    localGraphObject.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
+
                     graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
                             .setMailbox(folderId.mailbox)
                             .setObjectType("events")
                             .setObjectId(currentItemId)
-                            .setJsonBody(new GraphObject()
+                            .setJsonBody(localGraphObject
                             );
                 } else {
 
