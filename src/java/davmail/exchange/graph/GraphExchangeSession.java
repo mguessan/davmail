@@ -541,14 +541,18 @@ public class GraphExchangeSession extends ExchangeSession {
 
             String currentItemId = null;
             String currentEtag = null;
+            boolean isExistingEvent = false;
             boolean isMeetingResponse = false;
             boolean isMozSendInvitations = false;
             boolean isMozDismiss = false;
 
             boolean isOrganizer = false;
+            boolean isMeeting = false;
 
             JSONObject existingJsonEvent = getEventIfExists(folderId, itemName);
             if (existingJsonEvent != null) {
+                isExistingEvent = true;
+
                 GraphObject currentItem = new GraphObject(existingJsonEvent);
                 currentItemId = existingJsonEvent.optString("id", null);
                 currentEtag = new GraphObject(existingJsonEvent).optString("changeKey");
@@ -559,6 +563,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 String newAttendeeStatus = vCalendar.getAttendeeStatus();
 
                 isOrganizer = currentItem.optBoolean("isOrganizer");
+                isMeeting = currentItem.optJSONArray("attendees") != null;
 
                 isMeetingResponse = vCalendar.isMeeting() && !isOrganizer
                         && newAttendeeStatus != null
@@ -689,6 +694,15 @@ public class GraphExchangeSession extends ExchangeSession {
                                 .setChildId(currentItemId)
                                 .setJsonBody(jsonTask);
                     }
+                } else if (isExistingEvent && isMeeting && !isOrganizer && !isMeetingResponse && !isMozDismiss) {
+                    LOGGER.debug("Update on existing meeting, not organizer, not a meeting response or dismiss: ignore changes");
+                    // TODO: allow specific properties update
+                    graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("events")
+                            .setObjectId(currentItemId)
+                            .setJsonBody(new GraphObject()
+                            );
                 } else {
 
                     JSONObject jsonEvent = buildJsonEvent(vEvent);
