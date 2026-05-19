@@ -104,18 +104,47 @@ library = /path/to/pkcs11module]]></source>
 
                 <p>Sample pkcs11.config for NSS Soft token (Thunderbird/Firefox):</p>
 <source><![CDATA[
-name=NSS
-library=softokn3
-nssArgs="configdir='/path/to/firefox/profile' certPrefix='' keyPrefix='' secmod='secmod.db' flags=readOnly"
+name = NSS
+library = softokn3
+nssArgs = "configdir='/path/to/firefox/profile' certPrefix='' keyPrefix='' secmod='secmod.db' flags=readOnly"
 slot = 2
 ]]></source>
 
                 <p>Another one for Coolkey (see <a href="http://pkg-coolkey.alioth.debian.org/">Coolkey for Debian</a>
                     and <a href="http://www7320.nrlssc.navy.mil/pubs/2006/CommonAccessCardLinux.pdf">United States Department of Defense Common Access Cards</a>):</p>
 <source><![CDATA[
-name=CoolKey
-library=/usr/cac/lib/pkcs11/libcoolkeypk11.so
+name = CoolKey
+library = /usr/cac/lib/pkcs11/libcoolkeypk11.so
 ]]></source>
+
+                <p>Here is a sample pkcs11.config for OpenSC (Linux/Mac):</p>
+<source><![CDATA[
+name = OpenSC
+library = /usr/lib64/opensc-pkcs11.so
+# Optional but recommended:
+slotListIndex = 0
+# Also optional:
+# slot = 0
+# Or use slot=-1 for auto-detection in some cases.
+]]></source>
+
+                <p>Finally, here is a sample pkcs11.config for p11-kit-trust (Linux):</p>
+<source><![CDATA[
+name = p11-kit-trust
+library = /usr/lib64/pkcs11/p11-kit-trust.so
+slotListIndex = 0
+]]></source>
+
+                <p>If you get an error from DavMail that looks like <code>Unable to configure
+                SunPKCS11 provider Initialization failed slotListIndex is 0 but token only has
+                0 slots</code>, that means the <code>davmail.ssl.pkcs11Library</code> setting is
+                pointing to a library that is not working. On Linux, if you have DavMail configured to use
+                <code>/usr/lib64/opensc-pkcs11.so</code>, try <code>/usr/lib64/pkcs11/opensc-pkcs11.so</code> or
+                <code>/usr/lib64/pkcs11/gnome-keyring-pkcs11.so</code> instead. Essentially, you need the command
+                <code>p11tool --provider /path/to/somefile.so --list-tokens</code> to return output that does
+                not indicate an error. Try all the <code>*.so</code> files under <code>/usr/lib64/pkcs11/</code>
+                until you find one that works!</p>
+
                 <p>Note that spaces in library path may break Sun PKCS11, use <code>C:\Progra~2\ActivIdentity\ActivClient\acpkcs211.dll</code>
                 instead of <code>C:\Program Files (x86)\ActivIdentity\ActivClient\acpkcs211.dll</code></p>
 
