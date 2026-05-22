@@ -960,9 +960,13 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         private void setRelativePattern(JSONObject pattern, String byDay) throws JSONException {
-            // extract index from first BYDAY value (e.g. "2MO" -> index "second", "-1FR" -> index "last")
+            // extract index from the first BYDAY value (e.g. "2MO" -> index "second", "-1FR" -> index "last")
             String firstDay = byDay.split(",")[0];
-            String indexStr = firstDay.replaceAll("[A-Z]+$", "");
+            int i = 0;
+            while (i < firstDay.length() && (Character.isDigit(firstDay.charAt(i)) || firstDay.charAt(i) == '-')) {
+                i++;
+            }
+            String indexStr = firstDay.substring(0, i);
             if (!indexStr.isEmpty()) {
                 pattern.put("index", convertIndex(Integer.parseInt(indexStr)));
             }
