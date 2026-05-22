@@ -96,7 +96,7 @@ public class O365Token {
     }
 
     protected String buildTokenUrl(String tenantId) {
-        if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
+        if (Settings.getBooleanProperty("davmail.enableOidc", Settings.getBooleanProperty("davmail.enableGraph"))) {
             // OIDC configuration visible at https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
             return Settings.getO365LoginUrl()+"/"+tenantId+"/oauth2/v2.0/token";
         } else {
