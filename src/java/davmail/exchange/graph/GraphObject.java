@@ -174,8 +174,14 @@ public class GraphObject {
         return this;
     }
 
-    public void put(String key, JSONArray values) throws JSONException {
-        jsonObject.put(key, values);
+     public GraphObject put(String key, JSONArray value) throws JSONException {
+        jsonObject.put(key, value);
+        return this;
+    }
+
+    public GraphObject put(String key, JSONObject value) throws JSONException {
+        jsonObject.put(key, value);
+        return this;
     }
 
     /**

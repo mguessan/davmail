@@ -592,13 +592,13 @@ public class GraphExchangeSession extends ExchangeSession {
                 LOGGER.debug("Ignore etag check, meeting response or dismiss");
             } else if ("*".equals(noneMatch)) {
                 // create requested but already exists
-                if (currentItemId != null) {
+                if (isExistingEvent) {
                     itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
                     return itemResult;
                 }
             } else if (etag != null) {
-                // update requested
-                if (currentItemId == null || !etag.equals(currentEtag)) {
+                // update requested, fail if event does not exist or etag mismatch
+                if (!isExistingEvent || !etag.equals(currentEtag)) {
                     itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
                     return itemResult;
                 }
@@ -619,26 +619,25 @@ public class GraphExchangeSession extends ExchangeSession {
                     graphResponse = updateReminder(currentItemId);
                 } else {
 
-                    JSONObject jsonEvent = buildJsonEvent(vEvent);
+                    GraphObject newGraphEvent = buildJsonEvent(vEvent);
 
-                    // urlcompname is an extended property, wrap in GraphObject
-                    GraphObject localGraphObject = new GraphObject(jsonEvent);
-                    String urlcompname = convertItemNameToEML(itemName);
-                    localGraphObject.put("urlcompname", urlcompname);
+                    // set client provided itemName in extended property
+                    newGraphEvent.put("urlcompname", convertItemNameToEML(itemName));
 
                     // on event creation push iCalUId from event to transactionId
                     String iCalUId = vEvent.getPropertyValue("UID");
-                    if (iCalUId != null && !iCalUId.isEmpty() && !isExistingEvent) {
-                        localGraphObject.put("transactionId", iCalUId);
+                    if (!isExistingEvent && iCalUId != null && !iCalUId.isEmpty()) {
+                        newGraphEvent.put("transactionId", iCalUId);
                     }
 
                     // handle reminder configuration
-                    jsonEvent.put("isReminderOn", vCalendar.hasVAlarm());
-                    jsonEvent.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
+                    newGraphEvent.put("isReminderOn", vCalendar.hasVAlarm());
+                    newGraphEvent.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
 
-                    handleRrule(jsonEvent, vEvent.getProperty("RRULE"));
+                    convertRruleToGraph(newGraphEvent, vEvent.getProperty("RRULE"));
 
-                    if (currentItemId != null) {
+                    // TODO handle exdate on new events
+                    if (isExistingEvent) {
                         // assume we can delete occurrence only on existing event
                         List<VProperty> exdateProperty = vEvent.getProperties("EXDATE");
                         if (exdateProperty != null && !exdateProperty.isEmpty()) {
@@ -655,30 +654,29 @@ public class GraphExchangeSession extends ExchangeSession {
                     // store mozilla invitations option
                     String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
                     if (xMozSendInvitations != null) {
-                        localGraphObject.put("xmozsendinvitations", xMozSendInvitations);
+                        newGraphEvent.put("xmozsendinvitations", xMozSendInvitations);
                     }
                     // handle mozilla alarm
                     String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
                     if (xMozLastack != null) {
-                        localGraphObject.put("xmozlastack", xMozLastack);
+                        newGraphEvent.put("xmozlastack", xMozLastack);
                     }
                     String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
                     if (xMozSnoozeTime != null) {
-                        localGraphObject.put("xmozsnoozetime", xMozSnoozeTime);
+                        newGraphEvent.put("xmozsnoozetime", xMozSnoozeTime);
                     }
 
-                    localGraphObject.put("isAllDay", vCalendar.isCdoAllDay());
+                    newGraphEvent.put("isAllDay", vCalendar.isCdoAllDay());
 
                     // showAs: free, tentative, busy, oof, workingElsewhere, unknown
                     String status = vCalendar.getFirstVeventPropertyValue("STATUS");
                     if ("TENTATIVE".equals(status)) {
                         // this is a tentative event
-                        localGraphObject.put("showAs", "tentative");
+                        newGraphEvent.put("showAs", "tentative");
                     } else {
                         // otherwise, we use the same value as before, as received from the server
                         // however, the case matters, so we still have to transform it "BUSY" -> "Busy"
-                        // TODO double check this
-                        localGraphObject.put("showAs", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "busy" : "free");
+                        newGraphEvent.put("showAs", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "busy" : "free");
                     }
 
                     if (currentItemId == null) {
@@ -687,13 +685,13 @@ public class GraphExchangeSession extends ExchangeSession {
                                 .setObjectType("calendars")
                                 .setObjectId(folderId.id)
                                 .setChildType("events")
-                                .setJsonBody(jsonEvent);
+                                .setJsonBody(newGraphEvent);
                     } else {
                         graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
                                 .setMailbox(folderId.mailbox)
                                 .setObjectType("events")
                                 .setObjectId(currentItemId)
-                                .setJsonBody(jsonEvent);
+                                .setJsonBody(newGraphEvent);
                     }
                     graphResponse = executeGraphRequest(graphRequestBuilder);
                 }
@@ -704,16 +702,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     itemResult.status = HttpStatus.SC_OK;
                 }
 
-                // TODO: Force etag check?
                 itemResult.etag = graphResponse.optString("changeKey");
-                /*if (!folderId.isTask()) {
-                graphResponse = executeGraphRequest(new GraphRequestBuilder()
-                        .setMethod(HttpGet.METHOD_NAME)
-                        .setMailbox(folderId.mailbox)
-                        .setObjectType("events")
-                        .setObjectId(graphResponse.optString("id"))
-                        .setSelect("id"));
-                }*/
 
                 // workaround for Thunderbird, keep a cache of itemName to id map
                 urlcompnameToIdMap.put(itemName, graphResponse.optString("id"));
@@ -846,7 +835,7 @@ public class GraphExchangeSession extends ExchangeSession {
          * @throws JSONException on error
          * @throws DavMailException on error
          */
-        private void handleRrule(JSONObject jsonEvent, VProperty rrule) throws JSONException, DavMailException {
+        private void convertRruleToGraph(GraphObject jsonEvent, VProperty rrule) throws JSONException, DavMailException {
             if (rrule != null) {
                 JSONObject start = jsonEvent.optJSONObject("start");
                 if (start == null) {
@@ -1081,48 +1070,50 @@ public class GraphExchangeSession extends ExchangeSession {
         private void updateExceptionOccurrence(VObject modifiedOccurrence, String exceptionOccurrenceId) throws IOException, JSONException {
             LOGGER.debug("Updating occurrence " + modifiedOccurrence.getPropertyValue("SUMMARY") + " " + modifiedOccurrence.getPropertyValue("RECURRENCE-ID"));
 
-            JSONObject jsonEvent = buildJsonEvent(modifiedOccurrence);
+            GraphObject graphEventOccurrence = buildJsonEvent(modifiedOccurrence);
 
-            GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
+            GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder()
+                    .setMethod(HttpPatch.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("events")
                     .setObjectId(exceptionOccurrenceId)
-                    .setJsonBody(jsonEvent));
+                    .setJsonBody(graphEventOccurrence));
 
             LOGGER.debug("Updated occurrence: " + graphResponse.jsonObject.toString());
         }
 
-        private JSONObject buildJsonEvent(VObject vEvent) throws JSONException, IOException {
-            JSONObject jsonEvent = new JSONObject();
-            GraphObject localGraphObject = new GraphObject(jsonEvent);
+        private GraphObject buildJsonEvent(VObject vEvent) throws JSONException, IOException {
+            GraphObject newGraphEvent = new GraphObject();
 
-            jsonEvent.put("subject", vEvent.getPropertyValue("SUMMARY"));
+            newGraphEvent.put("subject", vEvent.getPropertyValue("SUMMARY"));
 
+            // set start and end date
             VProperty dtStart = vEvent.getProperty("DTSTART");
             String dtStartTzid = dtStart.getParamValue("TZID");
-            jsonEvent.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
+            newGraphEvent.put("start", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtStart.getValue(), dtStartTzid)).put("timeZone", dtStartTzid));
 
             VProperty dtEnd = vEvent.getProperty("DTEND");
             String dtEndTzid = dtEnd.getParamValue("TZID");
-            jsonEvent.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
+            newGraphEvent.put("end", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(dtEnd.getValue(), dtEndTzid)).put("timeZone", dtEndTzid));
 
             VProperty descriptionProperty = vEvent.getProperty("DESCRIPTION");
             String description = null;
             if (descriptionProperty != null) {
-                description = vEvent.getProperty("DESCRIPTION").getParamValue("ALTREP");
+                // prefer html description
+                description = descriptionProperty.getParamValue("ALTREP");
             }
             if (description != null && description.startsWith("data:text/html,")) {
                 description = URIUtil.decode(description.replaceFirst("data:text/html,", ""));
-                jsonEvent.put("body", new JSONObject().put("content", description).put("contentType", "html"));
-            } else {
-                description = vEvent.getPropertyValue("DESCRIPTION");
-                jsonEvent.put("body", new JSONObject().put("content", description).put("contentType", "text"));
+                newGraphEvent.put("body", new JSONObject().put("content", description).put("contentType", "html"));
+            } else if (descriptionProperty != null){
+                description = descriptionProperty.getValue();
+                newGraphEvent.put("body", new JSONObject().put("content", description).put("contentType", "text"));
             }
 
             String location = vEvent.getPropertyValue("LOCATION");
-            jsonEvent.put("location", new JSONObject().put("displayName", location));
+            newGraphEvent.put("location", new JSONObject().put("displayName", location));
 
-            localGraphObject.setCategories(vEvent.getPropertyValue("CATEGORIES"));
+            newGraphEvent.setCategories(vEvent.getPropertyValue("CATEGORIES"));
             // Collect categories on multiple lines
             List<VProperty> categories = vEvent.getProperties("CATEGORIES");
             if (categories != null) {
@@ -1130,22 +1121,22 @@ public class GraphExchangeSession extends ExchangeSession {
                 for (VProperty category : categories) {
                     categoryValues.add(category.getValue());
                 }
-                localGraphObject.setCategories(StringUtil.join(categoryValues, ","));
+                newGraphEvent.setCategories(StringUtil.join(categoryValues, ","));
             }
 
             if (vCalendar.isMeeting()) {
                 // build attendee list
                 JSONArray attendees = new JSONArray();
-                jsonEvent.put("attendees", attendees);
+                newGraphEvent.put("attendees", attendees);
 
                 List<VProperty> attendeeProperties = vEvent.getProperties("ATTENDEE");
                 if (attendeeProperties != null) {
                     for (VProperty property : attendeeProperties) {
-                        JSONObject jsonAttendee = new JSONObject();
                         String attendeeEmail = vCalendar.getEmailValue(property);
                         if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
                             String cn = property.getParamValue("CN");
-                            jsonAttendee.put("emailAddress", new JSONObject().put("name", cn)
+                            JSONObject jsonAttendee = new JSONObject()
+                                    .put("emailAddress", new JSONObject().put("name", cn)
                                     .put("address", attendeeEmail));
 
                             String attendeeRole = property.getParamValue("ROLE");
@@ -1160,7 +1151,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
             }
 
-            return jsonEvent;
+            return newGraphEvent;
         }
 
         private void deleteEventOccurrence(String id, String exDateValue) throws IOException, JSONException {
