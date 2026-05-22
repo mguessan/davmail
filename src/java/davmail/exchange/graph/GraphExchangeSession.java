@@ -350,6 +350,8 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.setPropertyValue("X-MOZ-LASTACK", jsonEvent.optString("xmozlastack"));
             vEvent.setPropertyValue("X-MOZ-SNOOZE-TIME", jsonEvent.optString("xmozsnoozetime"));
 
+            vEvent.setPropertyValue("X-MICROSOFT-DISALLOW-COUNTER", jsonEvent.optBoolean("allowNewTimeProposals")?"FALSE":"TRUE");
+
             setAttendees(vEvent, jsonEvent);
 
             return vEvent;
@@ -633,6 +635,9 @@ public class GraphExchangeSession extends ExchangeSession {
                     // handle reminder configuration
                     newGraphEvent.put("isReminderOn", vCalendar.hasVAlarm());
                     newGraphEvent.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
+
+                    String disaLLowCounter = vEvent.getPropertyValue("X-MICROSOFT-DISALLOW-COUNTER");
+                    newGraphEvent.put("allowNewTimeProposals", !"TRUE".equals(disaLLowCounter));
 
                     convertRruleToGraph(newGraphEvent, vEvent.getProperty("RRULE"));
 
