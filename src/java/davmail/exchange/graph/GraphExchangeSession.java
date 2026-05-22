@@ -636,21 +636,6 @@ public class GraphExchangeSession extends ExchangeSession {
 
                     convertRruleToGraph(newGraphEvent, vEvent.getProperty("RRULE"));
 
-                    // TODO handle exdate on new events
-                    if (isExistingEvent) {
-                        // assume we can delete occurrence only on existing event
-                        List<VProperty> exdateProperty = vEvent.getProperties("EXDATE");
-                        if (exdateProperty != null && !exdateProperty.isEmpty()) {
-                            for (VProperty exdate : exdateProperty) {
-                                String exdateTzid = exdate.getParamValue("TZID");
-                                String exDateValue = vCalendar.convertCalendarDateToGraph(exdate.getValue(), exdateTzid);
-                                deleteEventOccurrence(currentItemId, exDateValue);
-                            }
-                        }
-
-                        handleModifiedOccurrences(vCalendar, existingJsonEvent);
-                    }
-
                     // store mozilla invitations option
                     String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
                     if (xMozSendInvitations != null) {
@@ -694,6 +679,33 @@ public class GraphExchangeSession extends ExchangeSession {
                                 .setJsonBody(newGraphEvent);
                     }
                     graphResponse = executeGraphRequest(graphRequestBuilder);
+
+                    // at that point event exists
+                    currentItemId = graphResponse.optString("id");
+                    if (existingJsonEvent == null) {
+                        // new event, take response as reference
+                        existingJsonEvent = graphResponse.jsonObject;
+                    }
+
+                    // find and delete exdate occurrences
+                    List<VProperty> exdateProperty = vEvent.getProperties("EXDATE");
+                    if (exdateProperty != null && !exdateProperty.isEmpty()) {
+                        for (VProperty exdate : exdateProperty) {
+                            String exdateTzid = exdate.getParamValue("TZID");
+                            String exDateValue = vCalendar.convertCalendarDateToGraph(exdate.getValue(), exdateTzid);
+                            deleteEventOccurrence(currentItemId, exDateValue);
+                        }
+                    }
+
+                    handleModifiedOccurrences(vCalendar, existingJsonEvent);
+
+                    // need to refresh etag after exception updates
+                    graphResponse = executeGraphRequest(new GraphRequestBuilder()
+                            .setMethod(HttpGet.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("events")
+                            .setObjectId(currentItemId)
+                            .setSelect("id"));
                 }
 
                 itemResult.status = graphResponse.statusCode;
