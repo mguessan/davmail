@@ -162,7 +162,7 @@ public class GraphObject {
      * @param value property value
      * @throws JSONException on error
      */
-    public void put(String alias, boolean value) throws JSONException {
+    public GraphObject put(String alias, boolean value) throws JSONException {
         GraphField field = GraphField.get(alias);
         String key = field.getGraphId();
         // extended field values go under singleValueExtendedProperties
@@ -171,6 +171,7 @@ public class GraphObject {
         } else {
             jsonObject.put(key, value);
         }
+        return this;
     }
 
     public void put(String key, JSONArray values) throws JSONException {

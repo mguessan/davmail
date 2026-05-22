@@ -605,109 +605,18 @@ public class GraphExchangeSession extends ExchangeSession {
             }
 
             VObject vEvent = vCalendar.getFirstVevent();
+            GraphObject graphResponse;
             try {
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
 
-                if (currentItemId != null && isMeetingResponse) {
-                    // over graph always assume server side calendar management
-                    String body = null;
-                    boolean sendResponse = true;
-                    // This is a meeting response, let user edit notification message
-                    if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
-                        String vEventSubject = vCalendar.getFirstVeventPropertyValue("SUMMARY");
-                        if (vEventSubject == null) {
-                            vEventSubject = BundleMessage.format("MEETING_REQUEST");
-                        }
-
-                        String status = vCalendar.getAttendeeStatus();
-                        String notificationSubject = (status != null) ? (BundleMessage.format(status) + vEventSubject) : subject;
-
-                        NotificationDialog notificationDialog = new NotificationDialog(notificationSubject, "");
-                        if (!notificationDialog.getSendNotification()) {
-                            LOGGER.debug("Notification canceled by user");
-                            sendResponse = false;
-                        }
-                        // get description from dialog
-                        body = notificationDialog.getBody();
-                    }
-                    // Prepare request to accept/tentativelyAccept/decline meeting request
-                    try {
-                        JSONObject jsonBody = new JSONObject();
-                        jsonBody.put("sendResponse", sendResponse);
-                        if (body != null && !body.isEmpty()) {
-                            jsonBody.put("comment", body);
-                        }
-                        String action = "accept";
-                        String attendeeStatus = vCalendar.getAttendeeStatus();
-                        if ("ACCEPTED".equals(attendeeStatus)) {
-                            action = "accept";
-                        } else if ("DECLINED".equals(attendeeStatus)) {
-                            action = "decline";
-                        } else if ("TENTATIVE".equals(attendeeStatus)) {
-                            action = "tentativelyAccept";
-                        }
-
-                        graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
-                                .setMailbox(folderId.mailbox)
-                                .setObjectType("events")
-                                .setObjectId(currentItemId)
-                                .setAction(action)
-                                .setJsonBody(jsonBody);
-                    } catch (JSONException e) {
-                        throw new IOException(e);
-                    }
-
-                } else if (currentItemId != null && isMozDismiss) {
-                    // Thunderbird snooze / dismiss, only update fields, do not call dismissReminder as this removes alarm completely
-                    String newmozlastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
-                    String newmozsnoozetime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
-
-                    graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
-                            .setMailbox(folderId.mailbox)
-                            .setObjectType("events")
-                            .setObjectId(currentItemId)
-                            .setJsonBody(new GraphObject()
-                                    .put("xmozlastack", newmozlastack)
-                                    .put("xmozsnoozetime", newmozsnoozetime)
-                            );
-
+                if (isExistingEvent && isMeetingResponse) {
+                    graphResponse = sendMeetingResponse(currentItemId);
+                } else if (isExistingEvent && isMozDismiss) {
+                    graphResponse = mozDismissEvent(currentItemId);
                 } else if (folderId.isTask()) {
-                    JSONObject jsonTask = buildJsonTask(vEvent);
-                    // handleRrule(jsonTask, vEvent.getProperty("RRULE")); does not yet work on microsoft side
-
-                    if (currentItemId == null) {
-                        graphRequestBuilder
-                                .setMethod(HttpPost.METHOD_NAME)
-                                .setMailbox(folderId.mailbox)
-                                .setObjectType("todo/lists")
-                                .setObjectId(folderId.id)
-                                .setChildType("tasks")
-                                .setChildId(currentItemId)
-                                .setJsonBody(jsonTask);
-                    } else {
-                        graphRequestBuilder
-                                .setMethod(HttpPatch.METHOD_NAME)
-                                .setMailbox(folderId.mailbox)
-                                .setObjectType("todo/lists")
-                                .setObjectId(folderId.id)
-                                .setChildType("tasks")
-                                .setChildId(currentItemId)
-                                .setJsonBody(jsonTask);
-                    }
-                } else if (isExistingEvent && isMeeting && !isOrganizer && !isMeetingResponse && !isMozDismiss) {
-                    GraphObject localGraphObject = new GraphObject();
-                    LOGGER.debug("Update on existing meeting, not organizer, not a meeting response or dismiss: allow specific changes");
-
-                    // handle reminder configuration
-                    localGraphObject.put("isReminderOn", vCalendar.hasVAlarm());
-                    localGraphObject.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
-
-                    graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
-                            .setMailbox(folderId.mailbox)
-                            .setObjectType("events")
-                            .setObjectId(currentItemId)
-                            .setJsonBody(localGraphObject
-                            );
+                    graphResponse = createOrUpdateTask(currentItemId);
+                } else if (isExistingEvent && isMeeting && !isOrganizer) {
+                    graphResponse = updateReminder(currentItemId);
                 } else {
 
                     JSONObject jsonEvent = buildJsonEvent(vEvent);
@@ -719,7 +628,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
                     // on event creation push iCalUId from event to transactionId
                     String iCalUId = vEvent.getPropertyValue("UID");
-                    if (iCalUId != null && !iCalUId.isEmpty() && currentItemId == null) {
+                    if (iCalUId != null && !iCalUId.isEmpty() && !isExistingEvent) {
                         localGraphObject.put("transactionId", iCalUId);
                     }
 
@@ -786,9 +695,9 @@ public class GraphExchangeSession extends ExchangeSession {
                                 .setObjectId(currentItemId)
                                 .setJsonBody(jsonEvent);
                     }
+                    graphResponse = executeGraphRequest(graphRequestBuilder);
                 }
 
-                GraphObject graphResponse = executeGraphRequest(graphRequestBuilder);
                 itemResult.status = graphResponse.statusCode;
                 if (itemResult.status == HttpStatus.SC_ACCEPTED) {
                     LOGGER.debug("Sent meeting response");
@@ -817,6 +726,117 @@ public class GraphExchangeSession extends ExchangeSession {
             }
 
             return itemResult;
+        }
+
+        private GraphObject updateReminder(String currentItemId) throws JSONException, IOException {
+            LOGGER.debug("Update on existing meeting, not organizer, not a meeting response or dismiss: allow reminder updates only");
+
+            // handle reminder configuration
+            GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("events")
+                    .setObjectId(currentItemId)
+                    .setJsonBody(new GraphObject().put("isReminderOn", vCalendar.hasVAlarm())
+                            .put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart())
+                    );
+            return executeGraphRequest(graphRequestBuilder);
+        }
+
+        protected GraphObject createOrUpdateTask(String currentItemId) throws IOException, JSONException {
+            JSONObject jsonTask = buildJsonTask(vCalendar.getFirstVevent());
+            // handleRrule(jsonTask, vEvent.getProperty("RRULE")); does not yet work on microsoft side
+            GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
+
+            if (currentItemId == null) {
+                graphRequestBuilder
+                        .setMethod(HttpPost.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("todo/lists")
+                        .setObjectId(folderId.id)
+                        .setChildType("tasks")
+                        .setChildId(currentItemId)
+                        .setJsonBody(jsonTask);
+            } else {
+                graphRequestBuilder
+                        .setMethod(HttpPatch.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("todo/lists")
+                        .setObjectId(folderId.id)
+                        .setChildType("tasks")
+                        .setChildId(currentItemId)
+                        .setJsonBody(jsonTask);
+            }
+            return executeGraphRequest(graphRequestBuilder);
+        }
+
+        private GraphObject mozDismissEvent(String currentItemId) throws IOException, JSONException {
+            // Thunderbird snooze / dismiss, only update fields, do not call dismissReminder as this removes alarm completely
+            String newmozlastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+            String newmozsnoozetime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+
+            GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("events")
+                    .setObjectId(currentItemId)
+                    .setJsonBody(new GraphObject()
+                            .put("xmozlastack", newmozlastack)
+                            .put("xmozsnoozetime", newmozsnoozetime)
+                    );
+
+            return executeGraphRequest(graphRequestBuilder);
+        }
+
+        protected GraphObject sendMeetingResponse(String currentItemId) throws IOException {
+            // over graph always assume server side calendar management
+            String body = null;
+            boolean sendResponse = true;
+            // This is a meeting response, let user edit notification message
+            if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
+                String vEventSubject = vCalendar.getFirstVeventPropertyValue("SUMMARY");
+                if (vEventSubject == null) {
+                    vEventSubject = BundleMessage.format("MEETING_REQUEST");
+                }
+
+                String status = vCalendar.getAttendeeStatus();
+                String notificationSubject = (status != null) ? (BundleMessage.format(status) + vEventSubject) : subject;
+
+                NotificationDialog notificationDialog = new NotificationDialog(notificationSubject, "");
+                if (!notificationDialog.getSendNotification()) {
+                    LOGGER.debug("Notification canceled by user");
+                    sendResponse = false;
+                }
+                // get description from dialog
+                body = notificationDialog.getBody();
+            }
+            // Prepare request to accept/tentativelyAccept/decline meeting request
+            try {
+                JSONObject jsonBody = new JSONObject();
+                jsonBody.put("sendResponse", sendResponse);
+                if (body != null && !body.isEmpty()) {
+                    jsonBody.put("comment", body);
+                }
+                String action = "accept";
+                String attendeeStatus = vCalendar.getAttendeeStatus();
+                if ("ACCEPTED".equals(attendeeStatus)) {
+                    action = "accept";
+                } else if ("DECLINED".equals(attendeeStatus)) {
+                    action = "decline";
+                } else if ("TENTATIVE".equals(attendeeStatus)) {
+                    action = "tentativelyAccept";
+                }
+
+                GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("events")
+                        .setObjectId(currentItemId)
+                        .setAction(action)
+                        .setJsonBody(jsonBody);
+
+                return executeGraphRequest(graphRequestBuilder);
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
+
         }
 
         /**
