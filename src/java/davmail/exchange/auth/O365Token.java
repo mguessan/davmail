@@ -117,6 +117,11 @@ public class O365Token {
                 if (error.equals("authorization_pending"))
                     throw new O365AuthorizationPending();
 
+                if (error.equals("invalid_grant") && Settings.getProperty("davmail.oauth.scope") == null) {
+                    LOGGER.warn("received invalid grant and scope is not set, if this is a live.com account please set davmail.oauth.scope=openid profile offline_access Mail.ReadWrite");
+                    Settings.setProperty("davmail.oauth.scope", "openid profile offline_access Mail.ReadWrite");
+                }
+
                 throw new DavMailAuthenticationException("LOG_MESSAGE", jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
             }
             scope = jsonToken.optString("scope");
