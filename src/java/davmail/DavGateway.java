@@ -206,6 +206,9 @@ public final class DavGateway {
         }
         if (!errorMessages.isEmpty()) {
             DavGatewayTray.error(new BundleMessage("LOG_MESSAGE", errorMessages));
+            if (Settings.getBooleanProperty("davmail.exitOnBindFailed", false)) {
+                System.exit(1);
+            }
         }
 
         // check for new version in a separate thread
