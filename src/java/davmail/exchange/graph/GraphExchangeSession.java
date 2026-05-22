@@ -636,6 +636,10 @@ public class GraphExchangeSession extends ExchangeSession {
                     newGraphEvent.put("isReminderOn", vCalendar.hasVAlarm());
                     newGraphEvent.put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
 
+                    if (vCalendar.isMeeting() && Settings.getBooleanProperty("davmail.caldav.enableOnlineMeeting", true)) {
+                        // new meeting, assume we want a Teams event
+                        newGraphEvent.put("isOnlineMeeting", true);
+                    }
                     String disaLLowCounter = vEvent.getPropertyValue("X-MICROSOFT-DISALLOW-COUNTER");
                     newGraphEvent.put("allowNewTimeProposals", !"TRUE".equals(disaLLowCounter));
 
@@ -669,18 +673,18 @@ public class GraphExchangeSession extends ExchangeSession {
                         newGraphEvent.put("showAs", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "busy" : "free");
                     }
 
-                    if (currentItemId == null) {
+                    if (isExistingEvent) {
+                        graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("events")
+                                .setObjectId(currentItemId)
+                                .setJsonBody(newGraphEvent);
+                    } else {
                         graphRequestBuilder.setMethod(HttpPost.METHOD_NAME)
                                 .setMailbox(folderId.mailbox)
                                 .setObjectType("calendars")
                                 .setObjectId(folderId.id)
                                 .setChildType("events")
-                                .setJsonBody(newGraphEvent);
-                    } else {
-                        graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
-                                .setMailbox(folderId.mailbox)
-                                .setObjectType("events")
-                                .setObjectId(currentItemId)
                                 .setJsonBody(newGraphEvent);
                     }
                     graphResponse = executeGraphRequest(graphRequestBuilder);
@@ -1154,7 +1158,7 @@ public class GraphExchangeSession extends ExchangeSession {
                             String cn = property.getParamValue("CN");
                             JSONObject jsonAttendee = new JSONObject()
                                     .put("emailAddress", new JSONObject().put("name", cn)
-                                    .put("address", attendeeEmail));
+                                            .put("address", attendeeEmail));
 
                             String attendeeRole = property.getParamValue("ROLE");
                             if ("REQ-PARTICIPANT".equals(attendeeRole)) {
