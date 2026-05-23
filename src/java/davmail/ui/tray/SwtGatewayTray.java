@@ -72,7 +72,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static Shell shell;
     private boolean isActive = true;
     private static boolean isReady = false;
-    private static volatile Error error;
+    private static Error error;
     private boolean firstMessage = true;
 
     public static void initDisplay() {

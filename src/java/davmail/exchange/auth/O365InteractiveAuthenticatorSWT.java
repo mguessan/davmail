@@ -43,8 +43,8 @@ public class O365InteractiveAuthenticatorSWT {
     Shell shell;
     Browser browser;
     private final Object LOCK = new Object();
-    private volatile boolean isReady = false;
-    private volatile Error error;
+    private boolean isReady = false;
+    private Error error;
 
     public O365InteractiveAuthenticatorSWT() {
 
