@@ -60,7 +60,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     private boolean isActive = true;
 
     /**
-     * Return AWT Image icon for frame title.
+     * Return AWT Image icon for the frame title.
      *
      * @return frame icon
      */
@@ -84,14 +84,14 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Set tray icon to inactive (network down)
+     * Set the tray icon to default (standby)
      */
     public void resetIcon() {
         SwingUtilities.invokeLater(() -> trayIcon.setImage(image));
     }
 
     /**
-     * Set tray icon to inactive (network down)
+     * Set the tray icon to inactive (network down)
      */
     public void inactiveIcon() {
         isActive = false;
@@ -99,7 +99,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Check if current tray status is inactive (network down).
+     * Check if the current tray status is inactive (network down).
      *
      * @return true if inactive
      */
@@ -133,7 +133,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Open about window
+     * Open about window dialog
      */
     public void about() {
         SwingUtilities.invokeLater(() -> {
@@ -145,7 +145,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Open settings window
+     * Open the settings window dialog
      */
     public void preferences() {
         SwingUtilities.invokeLater(() -> {
@@ -158,7 +158,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Create tray icon and register frame listeners.
+     * Create the tray icon and register frame listeners.
      */
     public void init() {
         SwingUtilities.invokeLater(this::createAndShowGUI);
