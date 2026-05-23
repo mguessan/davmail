@@ -84,6 +84,7 @@ public class O365ManualAuthenticatorDialog extends JDialog {
         credentialPanel.add(promptLabel);
 
         codeField.setMaximumSize(codeField.getPreferredSize());
+        addContextMenu(codeField);
         codeField.addActionListener(evt -> {
             code = codeField.getText();
             setVisible(false);
@@ -111,6 +112,30 @@ public class O365ManualAuthenticatorDialog extends JDialog {
                         getSize().height / 2);
         setAlwaysOnTop(true);
         setVisible(true);
+    }
+
+    private void addContextMenu(final JTextField textField) {
+        JPopupMenu popupMenu = new JPopupMenu();
+
+        JMenuItem cutItem = new JMenuItem(BundleMessage.format("UI_MENU_CUT"));
+        cutItem.addActionListener(evt -> textField.cut());
+        popupMenu.add(cutItem);
+
+        JMenuItem copyItem = new JMenuItem(BundleMessage.format("UI_MENU_COPY"));
+        copyItem.addActionListener(evt -> textField.copy());
+        popupMenu.add(copyItem);
+
+        JMenuItem pasteItem = new JMenuItem(BundleMessage.format("UI_MENU_PASTE"));
+        pasteItem.addActionListener(evt -> textField.paste());
+        popupMenu.add(pasteItem);
+
+        popupMenu.addSeparator();
+
+        JMenuItem selectAllItem = new JMenuItem(BundleMessage.format("UI_MENU_SELECT_ALL"));
+        selectAllItem.addActionListener(evt -> textField.selectAll());
+        popupMenu.add(selectAllItem);
+
+        textField.setComponentPopupMenu(popupMenu);
     }
 
     private JEditorPane getEditorPane(String text) {
