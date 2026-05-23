@@ -24,7 +24,7 @@ import org.apache.log4j.Logger;
 import javax.swing.*;
 
 /**
- * MacOSX specific frame to handle menu
+ * macOS specific frame to handle the menu
  */
 public class OSXFrameGatewayTray extends FrameGatewayTray implements OSXTrayInterface {
     protected static final Logger LOGGER = Logger.getLogger(OSXFrameGatewayTray.class);
@@ -36,7 +36,6 @@ public class OSXFrameGatewayTray extends FrameGatewayTray implements OSXTrayInte
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(menu);
         mainFrame.setJMenuBar(menuBar);
-
     }
 
 

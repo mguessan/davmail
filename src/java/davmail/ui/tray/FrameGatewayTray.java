@@ -50,7 +50,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     private boolean isActive = true;
 
     /**
-     * Return AWT Image icon for frame title.
+     * Return AWT Image icon for the frame title.
      *
      * @return frame icon
      */
@@ -75,14 +75,14 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Set tray icon to inactive (network down)
+     * Set the tray icon to inactive (network down)
      */
     public void resetIcon() {
         SwingUtilities.invokeLater(() -> mainFrame.setIconImage(image));
     }
 
     /**
-     * Set tray icon to inactive (network down)
+     * Set the tray icon to inactive (network down)
      */
     public void inactiveIcon() {
         isActive = false;
@@ -90,7 +90,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Check if current tray status is inactive (network down).
+     * Check if the current tray status is inactive (network down).
      *
      * @return true if inactive
      */
@@ -99,7 +99,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Log and display balloon message according to log level.
+     * Log and display the balloon message according to log level.
      *
      * @param message text message
      * @param level   log level
@@ -123,7 +123,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Open about window
+     * Open about window dialog
      */
     public void about() {
         SwingUtilities.invokeLater(() -> {
@@ -135,7 +135,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Open settings window
+     * Open the settings window dialog
      */
     public void preferences() {
         SwingUtilities.invokeLater(() -> {
@@ -148,7 +148,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     }
 
     /**
-     * Create tray icon and register frame listeners.
+     * Create the tray icon and register frame listeners.
      */
     public void init() {
         SwingUtilities.invokeLater(this::createAndShowGUI);

@@ -37,19 +37,19 @@ public interface DavGatewayTrayInterface {
     void resetIcon();
 
     /**
-     * Set tray icon to inactive (network down)
+     * Set the tray icon to inactive (network down)
      */
     void inactiveIcon();
 
     /**
-     * Check if current tray status is inactive (network down).
+     * Check if the current tray status is inactive (network down).
      *
      * @return true if inactive
      */
     boolean isActive();
 
     /**
-     * Return AWT Image icon for frame title.
+     * Return AWT Image icon for the frame title.
      *
      * @return frame icon
      */
@@ -64,7 +64,7 @@ public interface DavGatewayTrayInterface {
     void displayMessage(String message, Level level);
 
     /**
-     * Create tray icon and register frame listeners.
+     * Create the tray icon and register frame listeners.
      */
     void init();
 

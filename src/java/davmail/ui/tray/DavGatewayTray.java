@@ -47,7 +47,7 @@ public final class DavGatewayTray {
     static DavGatewayTrayInterface davGatewayTray;
 
     /**
-     * Return AWT Image icon for frame title.
+     * Return AWT Image icon for the frame title.
      *
      * @return frame icon
      */
@@ -72,7 +72,7 @@ public final class DavGatewayTray {
     }
 
     /**
-     * Set tray icon to inactive (network down)
+     * Set the tray icon to inactive (network down)
      */
     public static void resetIcon() {
         if (davGatewayTray != null && isActive()) {
@@ -81,7 +81,7 @@ public final class DavGatewayTray {
     }
 
     /**
-     * Check if current tray status is inactive (network down).
+     * Check if the current tray status is inactive (network down).
      *
      * @return true if inactive
      */
@@ -90,7 +90,7 @@ public final class DavGatewayTray {
     }
 
     /**
-     * Log and display balloon message according to log level.
+     * Log and display the balloon message according to log level.
      *
      * @param message text message
      * @param level   log level
@@ -224,7 +224,7 @@ public final class DavGatewayTray {
     }
 
     /**
-     * Create tray icon and register frame listeners.
+     * Create the tray icon and register frame listeners.
      */
     public static void init() {
         String currentDesktop = System.getenv("XDG_CURRENT_DESKTOP");
@@ -237,7 +237,7 @@ public final class DavGatewayTray {
         );
 
         if (Settings.isLinux()) {
-            // enable anti aliasing on linux
+            // enable antialiasing on linux
             System.setProperty("awt.useSystemAAFontSettings", "on");
             System.setProperty("swing.aatext", "true");
         }
@@ -324,7 +324,7 @@ public final class DavGatewayTray {
     }
 
     /**
-     * Load image with current class loader.
+     * Load the image with the current class loader.
      *
      * @param fileName image resource file name
      * @return image
