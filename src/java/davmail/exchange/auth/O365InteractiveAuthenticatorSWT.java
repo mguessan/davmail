@@ -21,11 +21,9 @@ package davmail.exchange.auth;
 
 import davmail.BundleMessage;
 import davmail.Settings;
-import davmail.ui.tray.DavGatewayTray;
 import davmail.ui.tray.SwtGatewayTray;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.SWTError;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
@@ -45,8 +43,8 @@ public class O365InteractiveAuthenticatorSWT {
     Shell shell;
     Browser browser;
     private final Object LOCK = new Object();
-    private boolean isReady = false;
-    private SWTError error;
+    private volatile boolean isReady = false;
+    private volatile Error error;
 
     public O365InteractiveAuthenticatorSWT() {
 
@@ -116,27 +114,27 @@ public class O365InteractiveAuthenticatorSWT {
 
                 shell.open();
                 shell.setActive();
-            } catch (SWTError e) {
-                error = e;
+            } catch (Throwable e) {
+                LOGGER.error("Error in SWT thread", e);
+                synchronized (LOCK) {
+                    error = new Error(e);
+                    LOCK.notifyAll();  // wake up waiting thread immediately
+                }
             }
 
         });
 
-        while (true) {
-            // wait for SWT browser init
-            try {
-                synchronized (LOCK) {
-                    if (error != null) {
-                        throw error;
-                    }
-                    if (isReady) {
-                        break;
-                    }
+        synchronized (LOCK) {
+            while (!isReady && error == null) {
+                try {
                     LOCK.wait(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
                 }
-            } catch (InterruptedException e) {
-                DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
-                Thread.currentThread().interrupt();
+            }
+            if (error != null) {
+                throw error;
             }
         }
 

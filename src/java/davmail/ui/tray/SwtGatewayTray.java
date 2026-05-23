@@ -72,7 +72,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static Shell shell;
     private boolean isActive = true;
     private static boolean isReady = false;
-    private static Error error;
+    private static volatile Error error;
     private boolean firstMessage = true;
 
     public static void initDisplay() {
@@ -108,26 +108,25 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         System.exit(0);
                     } catch (Throwable e) {
                         LOGGER.error("Error in SWT thread", e);
-                        error = new Error(e);
+                        synchronized (LOCK) {
+                            error = new Error(e);
+                            LOCK.notifyAll();  // wake up waiting thread immediately
+                        }
                     }
                 }
             };
             swtThread.start();
-            while (true) {
-                // wait for SWT init
-                try {
-                    synchronized (LOCK) {
-                        if (error != null) {
-                            throw error;
-                        }
-                        if (isReady) {
-                            break;
-                        }
+            synchronized (LOCK) {
+                while (!isReady && error == null) {  // move entire wait inside synchronized
+                    try {
                         LOCK.wait(1000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
                     }
-                } catch (InterruptedException e) {
-                    DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
-                    Thread.currentThread().interrupt();
+                }
+                if (error != null) {
+                    throw error;
                 }
             }
         }
