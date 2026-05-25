@@ -1674,38 +1674,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     updates.add(Field.createFieldUpdate("keywords", StringUtil.join(categoryValues, ",")));
                 }
 
-                VProperty rrule = vEvent.getProperty("RRULE");
-                if (rrule != null) {
-                    RecurrenceFieldUpdate recurrenceFieldUpdate = new RecurrenceFieldUpdate();
-                    List<String> rruleValues = rrule.getValues();
-                    for (String rruleValue : rruleValues) {
-                        int index = rruleValue.indexOf("=");
-                        if (index >= 0) {
-                            String key = rruleValue.substring(0, index);
-                            String value = rruleValue.substring(index + 1);
-                            switch (key) {
-                                case "FREQ":
-                                    recurrenceFieldUpdate.setRecurrencePattern(value);
-                                    break;
-                                case "UNTIL":
-                                    recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value) + "Z"));
-                                    break;
-                                case "COUNT":
-                                    recurrenceFieldUpdate.setCount(value);
-                                    break;
-                                case "BYDAY":
-                                    recurrenceFieldUpdate.setByDay(value.split(","));
-                                    break;
-                                case "INTERVAL":
-                                    recurrenceFieldUpdate.setRecurrenceInterval(value);
-                                    break;
-                            }
-                        }
-                    }
-                    recurrenceFieldUpdate.setStartDate(parseDateFromExchange(convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART")) + "Z"));
-                    updates.add(recurrenceFieldUpdate);
-                }
-
+                convertRruleToRecurrenceFieldUpdate(vEvent, updates);
 
                 MultiValuedFieldUpdate requiredAttendees = new MultiValuedFieldUpdate(Field.get("requiredattendees"));
                 MultiValuedFieldUpdate optionalAttendees = new MultiValuedFieldUpdate(Field.get("optionalattendees"));
@@ -1757,6 +1726,41 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
             return updates;
+        }
+
+        private void convertRruleToRecurrenceFieldUpdate(VObject vEvent, List<FieldUpdate> updates) throws DavMailException {
+            VProperty rrule = vEvent.getProperty("RRULE");
+            if (rrule != null) {
+                RecurrenceFieldUpdate recurrenceFieldUpdate = new RecurrenceFieldUpdate();
+                List<String> rruleValues = rrule.getValues();
+                for (String rruleValue : rruleValues) {
+                    int index = rruleValue.indexOf("=");
+                    if (index >= 0) {
+                        String key = rruleValue.substring(0, index);
+                        String value = rruleValue.substring(index + 1);
+                        switch (key) {
+                            case "FREQ":
+                                recurrenceFieldUpdate.setRecurrencePattern(value);
+                                break;
+                            case "UNTIL":
+                                recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value) + "Z"));
+                                break;
+                            case "COUNT":
+                                recurrenceFieldUpdate.setCount(value);
+                                break;
+                            case "BYDAY":
+                                recurrenceFieldUpdate.setByDay(value.split(","));
+                                break;
+                            case "INTERVAL":
+                                recurrenceFieldUpdate.setRecurrenceInterval(value);
+                                break;
+                        }
+                    }
+                }
+                recurrenceFieldUpdate.setStartDate(parseDateFromExchange(convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART")) + "Z"));
+                updates.add(recurrenceFieldUpdate);
+            }
+
         }
 
         @Override
