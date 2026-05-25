@@ -1732,6 +1732,10 @@ public class EwsExchangeSession extends ExchangeSession {
             VProperty rrule = vEvent.getProperty("RRULE");
             if (rrule != null) {
                 RecurrenceFieldUpdate recurrenceFieldUpdate = new RecurrenceFieldUpdate();
+                String freq = null;
+                String byDay = null;
+                String byMonthDay = null;
+                String byMonth = null;
                 List<String> rruleValues = rrule.getValues();
                 for (String rruleValue : rruleValues) {
                     int index = rruleValue.indexOf("=");
@@ -1740,27 +1744,65 @@ public class EwsExchangeSession extends ExchangeSession {
                         String value = rruleValue.substring(index + 1);
                         switch (key) {
                             case "FREQ":
-                                recurrenceFieldUpdate.setRecurrencePattern(value);
+                                freq = value;
                                 break;
                             case "UNTIL":
-                                recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value) + "Z"));
+                                String untilValue = value.endsWith("Z") ? value.substring(0, value.length() - 1) : value;
+                                recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(untilValue) + "Z"));
                                 break;
                             case "COUNT":
                                 recurrenceFieldUpdate.setCount(value);
                                 break;
                             case "BYDAY":
-                                recurrenceFieldUpdate.setByDay(value.split(","));
+                                byDay = value;
+                                break;
+                            case "BYMONTHDAY":
+                                byMonthDay = value;
+                                break;
+                            case "BYMONTH":
+                                byMonth = value;
                                 break;
                             case "INTERVAL":
                                 recurrenceFieldUpdate.setRecurrenceInterval(value);
                                 break;
+                            case "WKST":
+                                String wkstDay = RecurrenceFieldUpdate.calDayToDayOfWeek.get(value);
+                                if (wkstDay != null) {
+                                    recurrenceFieldUpdate.setFirstDayOfWeek(wkstDay);
+                                }
+                                break;
                         }
                     }
+                }
+                // determine if BYDAY contains a positional prefix (relative pattern, e.g. "2MO", "-1FR")
+                boolean isRelative = byDay != null && Character.isDigit(byDay.charAt(0)) ||
+                        byDay != null && byDay.charAt(0) == '-';
+                if ("MONTHLY".equals(freq)) {
+                    if (isRelative) {
+                        recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.RelativeMonthlyRecurrence);
+                        recurrenceFieldUpdate.setDayOfWeekIndexFromByDay(byDay);
+                    } else {
+                        recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.AbsoluteMonthlyRecurrence);
+                        if (byMonthDay != null) recurrenceFieldUpdate.setDayOfMonth(byMonthDay);
+                    }
+                } else if ("YEARLY".equals(freq)) {
+                    if (isRelative) {
+                        recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.RelativeYearlyRecurrence);
+                        recurrenceFieldUpdate.setDayOfWeekIndexFromByDay(byDay);
+                    } else {
+                        recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.AbsoluteYearlyRecurrence);
+                        if (byMonthDay != null) recurrenceFieldUpdate.setDayOfMonth(byMonthDay);
+                    }
+                    if (byMonth != null) recurrenceFieldUpdate.setMonthFromByMonth(byMonth);
+                } else if (freq != null) {
+                    recurrenceFieldUpdate.setRecurrencePattern(freq);
+                }
+                if (byDay != null && (isRelative || "WEEKLY".equals(freq) || "DAILY".equals(freq))) {
+                    recurrenceFieldUpdate.setByDay(byDay.split(","));
                 }
                 recurrenceFieldUpdate.setStartDate(parseDateFromExchange(convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART")) + "Z"));
                 updates.add(recurrenceFieldUpdate);
             }
-
         }
 
         @Override

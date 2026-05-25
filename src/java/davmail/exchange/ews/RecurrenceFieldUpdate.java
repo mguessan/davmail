@@ -32,6 +32,7 @@ import java.util.Locale;
 
 /**
  * Handle calendar item recurrence update
+ * See <a href="https://learn.microsoft.com/en-us/exchange/client-developer/exchange-web-services/recurrence-patterns-and-ews">...</a>
  */
 public class RecurrenceFieldUpdate extends FieldUpdate {
     public static final Logger LOGGER = Logger.getLogger(RecurrenceFieldUpdate.class);
@@ -49,6 +50,10 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
     protected Date endDate;
     protected String count;
     protected HashSet<String> byDays = null;
+    protected String dayOfMonth;
+    protected String month;
+    protected String dayOfWeekIndex;
+    protected String firstDayOfWeek;
 
     public void setStartDate(Date startDate) {
         this.startDate = startDate;
@@ -61,7 +66,9 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
     public void setByDay(String[] days) {
         byDays = new HashSet<>();
         for (String day: days) {
-            String value = calDayToDayOfWeek.get(day);
+            // strip leading positional index (e.g. "2MO" -> "MO", "-1FR" -> "FR")
+            String dayCode = day.replaceAll("^-?\\d+", "");
+            String value = calDayToDayOfWeek.get(dayCode);
             if (value == null) {
                 LOGGER.warn("Invalid day value: "+day);
             } else {
@@ -74,17 +81,33 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
         }
     }
 
+    public void setDayOfMonth(String dayOfMonth) {
+        this.dayOfMonth = dayOfMonth;
+    }
+
+    public void setMonthFromByMonth(String byMonth) {
+        this.month = convertByMonthToName(byMonth);
+    }
+
+    public void setDayOfWeekIndexFromByDay(String byDay) {
+        this.dayOfWeekIndex = extractDayOfWeekIndex(byDay);
+    }
+
+    public void setFirstDayOfWeek(String firstDayOfWeek) {
+        this.firstDayOfWeek = firstDayOfWeek;
+    }
+
     public void setCount(String count) {
         this.count = count;
     }
 
-    public enum RecurrencePattern {DailyRecurrence, WeeklyRecurrence,  AbsoluteMonthlyRecurrence, AbsoluteYearlyRecurrence}
+    public enum RecurrencePattern {DailyRecurrence, WeeklyRecurrence, AbsoluteMonthlyRecurrence, AbsoluteYearlyRecurrence, RelativeMonthlyRecurrence, RelativeYearlyRecurrence}
 
     RecurrencePattern recurrencePattern;
     int recurrenceInterval = 1;
 
     /**
-     * Create recurrence field update.
+     * Create a recurrence field update.
      */
     public RecurrenceFieldUpdate() {
     }
@@ -102,6 +125,10 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
             setRecurrencePattern(RecurrencePattern.AbsoluteMonthlyRecurrence);
         } else if ("YEARLY".equals(value)) {
             setRecurrencePattern(RecurrencePattern.AbsoluteYearlyRecurrence);
+        } else if ("RELATIVEMONTHLY".equals(value)) {
+            setRecurrencePattern(RecurrencePattern.RelativeMonthlyRecurrence);
+        } else if ("RELATIVEYEARLY".equals(value)) {
+            setRecurrencePattern(RecurrencePattern.RelativeYearlyRecurrence);
         }
     }
 
@@ -110,7 +137,7 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
     }
 
     /**
-     * Write field to request writer.
+     * Write this field to request writer.
      *
      * @param itemType item type
      * @param writer   request writer
@@ -138,9 +165,20 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
             } else if (recurrencePattern == RecurrencePattern.AbsoluteMonthlyRecurrence) {
                 writeInterval(writer);
                 writeDayOfMonth(writer);
+            } else if (recurrencePattern == RecurrencePattern.RelativeYearlyRecurrence) {
+                writeDaysOfWeek(writer);
+                writeDayOfWeekIndex(writer);
+                writeMonth(writer);
+            } else if (recurrencePattern == RecurrencePattern.RelativeMonthlyRecurrence) {
+                writeInterval(writer);
+                writeDaysOfWeek(writer);
+                writeDayOfWeekIndex(writer);
             } else if (recurrencePattern == RecurrencePattern.WeeklyRecurrence) {
                 writeInterval(writer);
                 writeDaysOfWeek(writer);
+                if (firstDayOfWeek != null) {
+                    writeFirstDayOfWeek(writer);
+                }
             } else if (recurrencePattern == RecurrencePattern.DailyRecurrence) {
                 writeInterval(writer);
             }
@@ -213,14 +251,26 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
 
     private void writeDayOfMonth(Writer writer) throws IOException {
         writer.write("<t:DayOfMonth>");
-        writer.write(getDayOfMonth());
+        writer.write(dayOfMonth != null ? dayOfMonth : getDayOfMonth());
         writer.write("</t:DayOfMonth>");
     }
 
     private void writeMonth(Writer writer) throws IOException {
         writer.write("<t:Month>");
-        writer.write(getMonth());
+        writer.write(month != null ? month : getMonth());
         writer.write("</t:Month>");
+    }
+
+    private void writeDayOfWeekIndex(Writer writer) throws IOException {
+        writer.write("<t:DayOfWeekIndex>");
+        writer.write(dayOfWeekIndex != null ? dayOfWeekIndex : "First");
+        writer.write("</t:DayOfWeekIndex>");
+    }
+
+    private void writeFirstDayOfWeek(Writer writer) throws IOException {
+        writer.write("<t:FirstDayOfWeek>");
+        writer.write(firstDayOfWeek);
+        writer.write("</t:FirstDayOfWeek>");
     }
 
     private String getDayOfWeek() {
@@ -230,7 +280,7 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
     }
 
     private String getMonth() {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MMMMM", Locale.ENGLISH);
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MMMM", Locale.ENGLISH);
         simpleDateFormat.setTimeZone(ExchangeSession.GMT_TIMEZONE);
         return simpleDateFormat.format(startDate);
     }
@@ -246,5 +296,36 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
         simpleDateFormat.setTimeZone(ExchangeSession.GMT_TIMEZONE);
         return simpleDateFormat.format(date);
     }
+
+    private String extractDayOfWeekIndex(String byDay) {
+        // extract numeric prefix from first entry, e.g. "2MO" -> "Second", "-1FR" -> "Last"
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(-?\\d+)").matcher(byDay);
+        if (m.find()) {
+            switch (m.group(1)) {
+                case "2":  return "Second";
+                case "3":  return "Third";
+                case "4":  return "Fourth";
+                case "-1": return "Last";
+                default:   return "First";
+            }
+        }
+        return "First";
+    }
+
+    private static final String[] MONTH_NAMES = {
+            "January","February","March","April","May","June",
+            "July","August","September","October","November","December"
+    };
+
+    private String convertByMonthToName(String byMonth) {
+        try {
+            int m = Integer.parseInt(byMonth);
+            if (m >= 1 && m <= 12) return MONTH_NAMES[m - 1];
+        } catch (NumberFormatException e) {
+            // ignore
+        }
+        return byMonth;
+    }
+
 
 }
