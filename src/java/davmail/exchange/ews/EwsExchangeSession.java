@@ -274,7 +274,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         try {
             folderIdMap = new HashMap<>();
-            // load actual well known folder ids
+            // load actual well-known folder ids
             folderIdMap.put(internalGetFolder(INBOX).folderId.value, INBOX);
             folderIdMap.put(internalGetFolder(CALENDAR).folderId.value, CALENDAR);
             folderIdMap.put(internalGetFolder(CONTACTS).folderId.value, CONTACTS);
@@ -388,7 +388,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     list.add(Field.createFieldUpdate("iconIndex", "262"));
                 }
             } else if ("draft".equals(entry.getKey())) {
-                // note: draft is readonly after create
+                // note: draft is readonly after creation
                 list.add(Field.createFieldUpdate("messageFlags", entry.getValue()));
             } else if ("deleted".equals(entry.getKey())) {
                 list.add(Field.createFieldUpdate("deleted", entry.getValue()));
@@ -508,7 +508,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * Get item content.
      *
      * @param itemId EWS item id
-     * @return item content as byte array
+     * @return item content as a byte array
      * @throws IOException on error
      */
     protected byte[] getContent(ItemId itemId) throws IOException {
@@ -828,7 +828,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     Integer.parseInt(value);
                     buffer.append(value);
                 } catch (NumberFormatException e) {
-                    // invalid value, replace with 0
+                    // invalid value, replace value with 0
                     buffer.append('0');
                 }
             } else {
@@ -1409,7 +1409,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 } else {
                     newItem.type = "Contact";
                 }
-                // force urlcompname on create
+                // force urlcompname on creation
                 fieldUpdates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
                 buildFieldUpdates(fieldUpdates, true);
                 newItem.setFieldUpdates(fieldUpdates);
@@ -1434,7 +1434,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             // disable contact picture handling on Exchange 2007
             if (!"Exchange2007_SP1".equals(serverVersion)
-                    // prefer user provided photo
+                    // prefer the user provided photo
                     && getADPhoto(get("smtpemail1")) == null) {
                 // first delete current picture
                 if (currentFileAttachment != null) {
@@ -1493,7 +1493,7 @@ public class EwsExchangeSession extends ExchangeSession {
         /**
          * Handle excluded dates (deleted occurrences).
          *
-         * @param currentItemId current item id to iterate over occurrences
+         * @param currentItemId the current item id to iterate over occurrences
          * @param vCalendar     vCalendar object
          * @throws DavMailException on error
          */
@@ -1552,7 +1552,7 @@ public class EwsExchangeSession extends ExchangeSession {
         /**
          * Handle modified occurrences.
          *
-         * @param currentItemId current item id to iterate over occurrences
+         * @param currentItemId the current item id to iterate over occurrences
          * @param vCalendar     vCalendar object
          * @throws DavMailException on error
          */
@@ -2288,7 +2288,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 // LAST-MODIFIED is missing in event content
                                 modifiedOccurrence.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getOccurrenceMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
 
-                                // fix uid, should be the same as main VEVENT
+                                // fix caldav uid, should be the same as main VEVENT
                                 if (calendaruid != null) {
                                     modifiedOccurrence.setPropertyValue("UID", calendaruid);
                                 }
@@ -2349,7 +2349,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Get all contacts and distribution lists in provided folder.
+     * Get all contacts and distribution lists in the provided folder.
      *
      * @param folderPath Exchange folder path
      * @return list of contacts
@@ -2806,7 +2806,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected String getTimezoneidFromOptions() {
         String result = null;
-        // get time zone setting from html body
+        // get time zone setting from HTML body
         String optionsPath = "/owa/?ae=Options&t=Regional";
         GetRequest optionsMethod = new GetRequest(optionsPath);
         try (
@@ -2931,7 +2931,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Check if folderPath is base folder or a sub folder path.
+     * Check if folderPath is the base folder or a sub folder path.
      *
      * @param folderPath folder path
      * @param baseFolder base folder
@@ -2967,20 +2967,20 @@ public class EwsExchangeSession extends ExchangeSession {
 
     public static String decodeFolderName(String folderName) {
         if (folderName.contains("_xF8FF_")) {
-            return folderName.replaceAll("_xF8FF_", "/");
+            return folderName.replace("_xF8FF_", "/");
         }
         if (folderName.contains("_x003E_")) {
-            return folderName.replaceAll("_x003E_", ">");
+            return folderName.replace("_x003E_", ">");
         }
         return folderName;
     }
 
     public static String encodeFolderName(String folderName) {
         if (folderName.contains("/")) {
-            folderName = folderName.replaceAll("/", "_xF8FF_");
+            folderName = folderName.replace("/", "_xF8FF_");
         }
         if (folderName.contains(">")) {
-            folderName = folderName.replaceAll(">", "_x003E_");
+            folderName = folderName.replace(">", "_x003E_");
         }
         return folderName;
     }
@@ -3237,7 +3237,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Format date to exchange search format.
+     * Format date to exchange defined search format.
      *
      * @param date date object
      * @return formatted search date
@@ -3250,7 +3250,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Check if itemName is long and base64 encoded.
+     * Check if the itemName is long and base64 encoded.
      * User generated item names are usually short
      *
      * @param itemName item name
