@@ -76,7 +76,7 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
         // common DavMail client id
         final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         String resource;
-        if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
+        if (Settings.isGraphEnabled()) {
             resource = Settings.getGraphUrl();
         } else {
             resource = Settings.getOutlookUrl();
@@ -98,10 +98,10 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
         ArrayList<NameValuePair> parameters = new ArrayList<>();
         parameters.add(new BasicNameValuePair("client_id", clientId));
         if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
-            url = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/v2.0/devicecode?api-version=1.0";
+            url = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/v2.0/devicecode";
             parameters.add(new BasicNameValuePair("scope", Settings.getOauthScope()));
         } else {
-            url = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/devicecode?api-version=1.0";
+            url = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/devicecode";
             parameters.add(new BasicNameValuePair("resource", resource));
         }
 

@@ -75,7 +75,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             // force consent
             //uriBuilder.addParameter("prompt", "consent");
 
-            if (Settings.getBooleanProperty("davmail.enableGraph")) {
+            if (Settings.isGraphEnabled()) {
                 // Graph backend
                 // default to v2.0 OIDC endpoint
                 if (Settings.getBooleanProperty("davmail.enableOidc", true)) {
@@ -365,11 +365,11 @@ public class O365Authenticator implements ExchangeAuthenticator {
         String wa = extract("name=\"wa\" value=\"([^\"]+)\"", responseBodyAsString);
         String wresult = extract("name=\"wresult\" value=\"([^\"]+)\"", responseBodyAsString);
         // decode wresult
-        wresult = wresult.replaceAll("&quot;", "\"");
-        wresult = wresult.replaceAll("&lt;", "<");
-        wresult = wresult.replaceAll("&gt;", ">");
+        wresult = wresult.replace("&quot;", "\"");
+        wresult = wresult.replace("&lt;", "<");
+        wresult = wresult.replace("&gt;", ">");
         String wctx = extract("name=\"wctx\" value=\"([^\"]+)\"", responseBodyAsString);
-        wctx = wctx.replaceAll("&amp;", "&");
+        wctx = wctx.replace("&amp;", "&");
 
         PostRequest targetMethod = new PostRequest(targetUrl);
         targetMethod.setRequestHeader("Content-type", "application/x-www-form-urlencoded");

@@ -66,11 +66,21 @@ public final class Settings {
 
     public static final String O365_LOGIN_URL = "https://login.microsoftonline.com";
 
-    public static final String O365 = "O365";
+    // protocol modes
+    public static final String O365_EWS = "O365EWS"; // classic O365 over EWS
+    public static final String O365_GRAPH = "O365Graph"; // new O365 graph backend
+    public static final String EXCHANGE_EWS = "ExchangeEWS"; // on prem Exchange
+    public static final String EXCHANGE_WEBDAV = "ExchangeWebDav"; // on prem Exchange legacy webdav
+
+    // authentication modes
+    public static final String O365_INTERACTIVE = "O365Interactive"; // interactive embedded browser O365 login
+    public static final String O365_MANUAL = "O365Manual"; // manual O365 authentication dialog
+    public static final String O365_DEVICECODE = "O365DeviceCode"; // O365 device code authentication
+    public static final String O365_TRANSPARENT = "O365Transparent"; // Transparent automated authentication
+
+    // legacy protocol modes
     public static final String O365_MODERN = "O365Modern";
-    public static final String O365_INTERACTIVE = "O365Interactive";
-    public static final String O365_MANUAL = "O365Manual";
-    public static final String O365_DEVICECODE = "O365DeviceCode";
+    public static final String O365 = "O365";
     public static final String WEBDAV = "WebDav";
     public static final String EWS = "EWS";
     public static final String AUTO = "Auto";
@@ -196,7 +206,8 @@ public final class Settings {
      * Ports above 1024 for unix/linux
      */
     public static void setDefaultSettings() {
-        SETTINGS_PROPERTIES.put("davmail.mode", O365_INTERACTIVE);
+        SETTINGS_PROPERTIES.put("davmail.mode", O365_EWS);
+        SETTINGS_PROPERTIES.put("davmail.authentication", O365_INTERACTIVE);
         SETTINGS_PROPERTIES.put("davmail.url", getO365Url());
         SETTINGS_PROPERTIES.put("davmail.popPort", "1110");
         SETTINGS_PROPERTIES.put("davmail.imapPort", "1143");
@@ -859,6 +870,10 @@ public final class Settings {
             defaultOauthScope = "openid profile offline_access";
         }
         return Settings.getProperty("davmail.oauth.scope", defaultOauthScope);
+    }
+
+    public static boolean isGraphEnabled() {
+        return Settings.O365_GRAPH.equals(Settings.getProperty("davmail.mode")) || Settings.getBooleanProperty("davmail.enableGraph");
     }
 
     public static boolean isSWTAvailable() {

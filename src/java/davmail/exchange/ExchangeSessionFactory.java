@@ -158,23 +158,13 @@ public final class ExchangeSessionFactory {
                 }
                 // check for overridden authenticator
                 String authenticatorClass = Settings.getProperty("davmail.authenticator");
-                if (authenticatorClass == null) {
-                    switch (mode) {
-                        case Settings.O365_MODERN:
-                            authenticatorClass = "davmail.exchange.auth.O365Authenticator";
-                            break;
-                        case Settings.O365_INTERACTIVE:
-                            authenticatorClass = "davmail.exchange.auth.O365InteractiveAuthenticator";
-                            if (GraphicsEnvironment.isHeadless()) {
-                                throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", "O365Interactive not supported in headless mode");
-                            }
-                            break;
-                        case Settings.O365_MANUAL:
-                            authenticatorClass = "davmail.exchange.auth.O365ManualAuthenticator";
-                            break;
-                        case Settings.O365_DEVICECODE:
-                            authenticatorClass = "davmail.exchange.auth.O365DeviceCodeAuthenticator";
-                            break;
+                if (authenticatorClass == null && mode.startsWith("O365")) {
+                    // set authenticator class based on authentication mode
+                    String authentication = Settings.getProperty("davmail.authentication");
+                    authenticatorClass = getAuthenticatorClass(authentication);
+                    if (authenticatorClass == null) {
+                        // fallback to legacy modes
+                        authenticatorClass = getAuthenticatorClass(mode);
                     }
                 }
 
@@ -185,13 +175,17 @@ public final class ExchangeSessionFactory {
                     authenticator.setPassword(poolKey.password);
                     authenticator.authenticate();
 
-                    if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
+                    if (Settings.isGraphEnabled()) {
                         session = new GraphExchangeSession(authenticator.getHttpClientAdapter(), authenticator.getToken(), poolKey.userName);
                     } else {
                         session = new EwsExchangeSession(authenticator.getExchangeUri(), authenticator.getToken(), poolKey.userName);
                     }
 
-                } else if (Settings.EWS.equals(mode) || Settings.O365.equals(mode)
+                } else if (
+                        // new mode
+                        Settings.EXCHANGE_EWS.equals(mode)
+                        // legacy
+                        || Settings.EWS.equals(mode) || Settings.O365.equals(mode)
                         // direct EWS even if mode is different
                         || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")
                         || poolKey.url.toLowerCase().endsWith("/ews/services.wsdl")) {
@@ -210,6 +204,7 @@ public final class ExchangeSessionFactory {
                                 exchangeFormAuthenticator.getExchangeUri(), exchangeFormAuthenticator.getUsername());
                     }
                 } else {
+                    // Legacy Exchange 2003 WebDav mode
                     ExchangeFormAuthenticator exchangeFormAuthenticator = new ExchangeFormAuthenticator();
                     exchangeFormAuthenticator.setUrl(poolKey.url);
                     exchangeFormAuthenticator.setUsername(poolKey.userName);
@@ -245,6 +240,29 @@ public final class ExchangeSessionFactory {
             handleNetworkDown(exc);
         }
         return session;
+    }
+
+    private static String getAuthenticatorClass(String authentication) throws DavMailException {
+        String authenticatorClass = null;
+        switch (authentication) {
+            case Settings.O365_INTERACTIVE:
+                authenticatorClass = "davmail.exchange.auth.O365InteractiveAuthenticator";
+                if (GraphicsEnvironment.isHeadless()) {
+                    throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", "O365Interactive not supported in headless mode");
+                }
+                break;
+            case Settings.O365_MANUAL:
+                authenticatorClass = "davmail.exchange.auth.O365ManualAuthenticator";
+                break;
+            case Settings.O365_DEVICECODE:
+                authenticatorClass = "davmail.exchange.auth.O365DeviceCodeAuthenticator";
+                break;
+            case Settings.O365_TRANSPARENT:
+            case Settings.O365_MODERN:
+                authenticatorClass = "davmail.exchange.auth.O365Authenticator";
+                break;
+        }
+        return authenticatorClass;
     }
 
     /**

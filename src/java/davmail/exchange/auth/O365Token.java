@@ -100,7 +100,7 @@ public class O365Token {
     }
 
     protected String buildTokenUrl(String tenantId) {
-        if (Settings.getBooleanProperty("davmail.enableOidc", Settings.getBooleanProperty("davmail.enableGraph"))) {
+        if (Settings.getBooleanProperty("davmail.enableOidc", Settings.isGraphEnabled())) {
             // OIDC configuration visible at https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
             return Settings.getO365LoginUrl()+"/"+tenantId+"/oauth2/v2.0/token";
         } else {
@@ -124,6 +124,11 @@ public class O365Token {
                 if (error.equals("invalid_grant") && Settings.getProperty("davmail.oauth.scope") == null) {
                     LOGGER.warn("received invalid grant and scope is not set, if this is a live.com account please set davmail.oauth.scope=openid profile offline_access Mail.ReadWrite");
                     Settings.setProperty("davmail.oauth.scope", "openid profile offline_access Mail.ReadWrite");
+                }
+
+                if (error.equals("invalid_grant") && "openid profile offline_access Mail.ReadWrite".equals(Settings.getProperty("davmail.oauth.scope"))
+                    && !Settings.isGraphEnabled()) {
+                    LOGGER.warn("received invalid grant and graph is disabled, if this is a live.com account please set davmail.enableGraph=true");
                 }
 
                 throw new DavMailAuthenticationException("LOG_MESSAGE", jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
@@ -180,9 +185,9 @@ public class O365Token {
             }
 
             // check token compatibility
-            if (Settings.getBooleanProperty("davmail.enableGraph", false)) {
+            if (Settings.isGraphEnabled()) {
                 // Graph token required
-                if (scope != null && !scope.contains("Mail.ReadWrite")) {
+                if (scope != null && (!scope.contains("Mail.ReadWrite") || scope.contains(Settings.getOutlookUrl()))) {
                     Settings.storeRefreshToken(username, "");
                     throw new IOException("Found EWS stored token, incompatible with Graph API");
                 }

@@ -104,6 +104,7 @@ public class SettingsFrame extends JFrame {
     protected JCheckBox enableKeepAliveCheckBox;
     protected JCheckBox popMarkReadOnRetrCheckBox;
     protected JComboBox<String> modeComboBox;
+    protected JComboBox<String> authenticationComboBox;
     protected JCheckBox enableKerberosCheckBox;
     protected JTextField folderSizeLimitField;
     protected JCheckBox smtpSaveInSentCheckBox;
@@ -159,29 +160,34 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getSettingsPanel() {
-        JPanel settingsPanel = new JPanel(new GridLayout(7, 2));
+        JPanel settingsPanel = new JPanel(new GridLayout(8, 2));
         settingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_GATEWAY")));
 
         modeComboBox = new JComboBox<>();
-        modeComboBox.addItem(Settings.EWS);
-        modeComboBox.addItem(Settings.O365);
-        modeComboBox.addItem(Settings.O365_MODERN);
-        modeComboBox.addItem(Settings.O365_INTERACTIVE);
-        modeComboBox.addItem(Settings.O365_MANUAL);
-        modeComboBox.addItem(Settings.O365_DEVICECODE);
-        modeComboBox.addItem(Settings.WEBDAV);
-        modeComboBox.addItem(Settings.AUTO);
-        modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.EWS));
+        modeComboBox.addItem(Settings.O365_EWS);
+        modeComboBox.addItem(Settings.O365_GRAPH);
+        modeComboBox.addItem(Settings.EXCHANGE_EWS);
+        modeComboBox.addItem(Settings.EXCHANGE_WEBDAV);
+        modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.O365_EWS));
         modeComboBox.addActionListener(evt -> {
             String selectedItem = (String)modeComboBox.getSelectedItem();
             modeComboBox.setToolTipText(BundleMessage.format("UI_"+selectedItem+"_HELP"));
             if (selectedItem != null && selectedItem.startsWith("O365")) {
                 urlField.setEnabled(false);
                 urlField.setText(Settings.getO365Url());
+                authenticationComboBox.setEnabled(true);
             } else {
                 urlField.setEnabled(true);
+                authenticationComboBox.setEnabled(false);
             }
         });
+
+        authenticationComboBox = new JComboBox<>();
+        authenticationComboBox.addItem(Settings.O365_INTERACTIVE);
+        authenticationComboBox.addItem(Settings.O365_MANUAL);
+        authenticationComboBox.addItem(Settings.O365_DEVICECODE);
+        authenticationComboBox.addItem(Settings.O365_TRANSPARENT);
+
         urlField = new JTextField(Settings.getProperty("davmail.url", Settings.getO365Url()), 20);
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         popPortCheckBox = new JCheckBox();
@@ -238,8 +244,10 @@ public class SettingsFrame extends JFrame {
             ldapNoSSLCheckBox.setEnabled(ldapPortCheckBox.isSelected() && isSslEnabled());
         });
 
-        addSettingComponent(settingsPanel, BundleMessage.format("UI_ENABLE_EWS"), modeComboBox,
-                BundleMessage.format("UI_ENABLE_EWS_HELP"));
+        addSettingComponent(settingsPanel, BundleMessage.format("UI_MODE"), modeComboBox,
+                BundleMessage.format("UI_MODE_HELP"));
+        addSettingComponent(settingsPanel, BundleMessage.format("UI_AUTHENTICATION"), authenticationComboBox,
+                BundleMessage.format("UI_AUTHENTICATION_HELP"));
         addSettingComponent(settingsPanel, BundleMessage.format("UI_OWA_URL"), urlField, BundleMessage.format("UI_OWA_URL_HELP"));
         addPortSettingComponent(settingsPanel, BundleMessage.format("UI_POP_PORT"), popPortField, popPortCheckBox,
                 popNoSSLCheckBox, BundleMessage.format("UI_POP_PORT_HELP"));
@@ -671,7 +679,8 @@ public class SettingsFrame extends JFrame {
         imapAlwaysApproxMsgSizeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize", false));
         enableKeepAliveCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKeepAlive", false));
         popMarkReadOnRetrCheckBox.setSelected(Settings.getBooleanProperty("davmail.popMarkReadOnRetr", false));
-        modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.EWS));
+        modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.O365_EWS));
+        authenticationComboBox.setSelectedItem(Settings.getProperty("davmail.authentication", Settings.O365_INTERACTIVE));
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
         enableKerberosCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKerberos", false));
         folderSizeLimitField.setText(Settings.getProperty("davmail.folderSizeLimit"));
@@ -852,6 +861,7 @@ public class SettingsFrame extends JFrame {
             Settings.setProperty("davmail.popMarkReadOnRetr", String.valueOf(popMarkReadOnRetrCheckBox.isSelected()));
 
             Settings.setProperty("davmail.mode", (String) modeComboBox.getSelectedItem());
+            Settings.setProperty("davmail.authentication", (String) authenticationComboBox.getSelectedItem());
             Settings.setProperty("davmail.enableKerberos", String.valueOf(enableKerberosCheckBox.isSelected()));
             Settings.setProperty("davmail.folderSizeLimit", folderSizeLimitField.getText());
             Settings.setProperty("davmail.smtpSaveInSent", String.valueOf(smtpSaveInSentCheckBox.isSelected()));
