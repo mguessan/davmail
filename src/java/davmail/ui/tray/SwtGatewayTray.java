@@ -47,6 +47,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Tray icon handler based on SWT
@@ -54,7 +57,8 @@ import java.util.ArrayList;
 public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static final Logger LOGGER = Logger.getLogger(SwtGatewayTray.class);
 
-    private static final Object LOCK = new Object();
+    private static final ReentrantLock lock = new ReentrantLock();
+    private static final Condition ready = lock.newCondition();
 
     protected SwtGatewayTray() {
     }
@@ -88,9 +92,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         shell = new Shell(display);
 
                         // ready, notify waiting thread
-                        synchronized (LOCK) {
+                        lock.lock();
+                        try {
                             isReady = true;
-                            LOCK.notifyAll();
+                            ready.signalAll();
+                        } finally {
+                            lock.unlock();
                         }
 
                         // start main loop, shell can be null before init
@@ -109,23 +116,28 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         System.exit(0);
                     } catch (Throwable e) {
                         LOGGER.error("Error in SWT thread", e);
-                        synchronized (LOCK) {
+                        lock.lock();
+                        try {
                             error = new Error(e);
-                            LOCK.notifyAll();  // wake up waiting thread immediately
+                            ready.signalAll();
+                        } finally {
+                            lock.unlock();
                         }
                     }
                 }
             };
             swtThread.start();
 
-            while (!isReady && error == null) {  // move entire wait inside synchronized
-                synchronized (LOCK) {
-                    try {
-                        LOCK.wait(1000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
+            while (!isReady && error == null) {
+                lock.lock();
+                try {
+                    //noinspection ResultOfMethodCallIgnored
+                    ready.await(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                } finally {
+                    lock.unlock();
                 }
                 if (error != null) {
                     throw error;

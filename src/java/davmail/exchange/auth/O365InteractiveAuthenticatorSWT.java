@@ -31,6 +31,10 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * Alternative embedded browser implementation based on SWT instead of OpenJFX
  */
@@ -42,7 +46,8 @@ public class O365InteractiveAuthenticatorSWT {
 
     Shell shell;
     Browser browser;
-    private final Object LOCK = new Object();
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition ready = lock.newCondition();
     private boolean isReady = false;
     private Error error;
 
@@ -106,32 +111,39 @@ public class O365InteractiveAuthenticatorSWT {
                     }
                 });
 
-                synchronized (LOCK) {
-                    // ready
+                lock.lock();
+                try {
                     isReady = true;
-                    LOCK.notifyAll();
+                    ready.signalAll();
+                } finally {
+                    lock.unlock();
                 }
 
                 shell.open();
                 shell.setActive();
             } catch (Throwable e) {
                 LOGGER.error("Error in SWT thread", e);
-                synchronized (LOCK) {
+                lock.lock();
+                try {
                     error = new Error(e);
-                    LOCK.notifyAll();  // wake up waiting thread immediately
+                    ready.signalAll();
+                } finally {
+                    lock.unlock();
                 }
             }
 
         });
 
-        synchronized (LOCK) {
-            while (!isReady && error == null) {
-                try {
-                    LOCK.wait(1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
+        while (!isReady && error == null) {
+            lock.lock();
+            try {
+                //noinspection ResultOfMethodCallIgnored
+                ready.await(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            } finally {
+                lock.unlock();
             }
             if (error != null) {
                 throw error;
