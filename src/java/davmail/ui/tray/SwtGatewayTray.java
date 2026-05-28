@@ -86,8 +86,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     try {
                         display = Display.getDefault();
                         shell = new Shell(display);
+
+                        // ready, notify waiting thread
                         synchronized (LOCK) {
-                            // ready
                             isReady = true;
                             LOCK.notifyAll();
                         }
@@ -116,8 +117,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 }
             };
             swtThread.start();
-            synchronized (LOCK) {
-                while (!isReady && error == null) {  // move entire wait inside synchronized
+
+            while (!isReady && error == null) {  // move entire wait inside synchronized
+                synchronized (LOCK) {
                     try {
                         LOCK.wait(1000);
                     } catch (InterruptedException e) {
