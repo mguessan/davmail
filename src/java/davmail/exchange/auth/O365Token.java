@@ -81,6 +81,7 @@ public class O365Token {
             tokenRequest.setRequestHeader("Origin", origin);
         }
 
+        LOGGER.debug("Obtain token for tenantId:" + tenantId + " clientId:" + clientId + " redirectUri:" + redirectUri + " tokenUrl:" + tokenUrl);
         executeRequest(tokenRequest);
     }
 
