@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 500" width="1100" height="500">
+  <defs>
+    <linearGradient id="clientGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e3f2fd"/>
+      <stop offset="100%" style="stop-color:#bbdefb"/>
+    </linearGradient>
+    <linearGradient id="gatewayGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e8f5e9"/>
+      <stop offset="100%" style="stop-color:#a5d6a7"/>
+    </linearGradient>
+    <linearGradient id="exchangeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fff3e0"/>
+      <stop offset="100%" style="stop-color:#ffcc80"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="2" dy="3" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#546e7a"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="500" fill="#fafafa" rx="12"/>
+
+
+
+  <!-- Mail Clients Group -->
+  <rect x="30" y="60" width="220" height="400" rx="12" fill="url(#clientGrad)" stroke="#1565c0" stroke-width="2" filter="url(#shadow)"/>
+  <text x="140" y="90" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1565c0">Mail Clients</text>
+
+  <rect x="50" y="108" width="180" height="40" rx="8" fill="#ffffff" stroke="#90caf9" stroke-width="1.5"/>
+  <text x="148" y="133" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#1a237e">Thunderbird</text>
+
+  <rect x="50" y="160" width="180" height="40" rx="8" fill="#ffffff" stroke="#90caf9" stroke-width="1.5"/>
+  <text x="140" y="185" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#1a237e">Apple Mail</text>
+
+  <rect x="50" y="212" width="180" height="40" rx="8" fill="#ffffff" stroke="#90caf9" stroke-width="1.5"/>
+  <text x="148" y="237" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#1a237e">Evolution</text>
+
+  <rect x="50" y="264" width="180" height="40" rx="8" fill="#ffffff" stroke="#90caf9" stroke-width="1.5"/>
+  <text x="148" y="289" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#1a237e">Outlook</text>
+
+  <rect x="50" y="316" width="180" height="40" rx="8" fill="#ffffff" stroke="#90caf9" stroke-width="1.5"/>
+  <text x="140" y="341" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#1a237e">Other email clients</text>
+
+
+  <!-- Protocols column -->
+  <rect x="300" y="60" width="160" height="400" rx="12" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2" filter="url(#shadow)"/>
+  <text x="380" y="90" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="bold" fill="#6a1b9a">Protocols</text>
+
+  <rect x="320" y="115" width="120" height="36" rx="8" fill="#ffffff" stroke="#ce93d8" stroke-width="1.5"/>
+  <text x="380" y="138" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#4a148c">POP3</text>
+
+  <rect x="320" y="163" width="120" height="36" rx="8" fill="#ffffff" stroke="#ce93d8" stroke-width="1.5"/>
+  <text x="380" y="186" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#4a148c">IMAP</text>
+
+  <rect x="320" y="211" width="120" height="36" rx="8" fill="#ffffff" stroke="#ce93d8" stroke-width="1.5"/>
+  <text x="380" y="234" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#4a148c">SMTP</text>
+
+  <rect x="320" y="259" width="120" height="36" rx="8" fill="#ffffff" stroke="#ce93d8" stroke-width="1.5"/>
+  <text x="380" y="282" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#4a148c">CalDAV</text>
+
+  <rect x="320" y="307" width="120" height="36" rx="8" fill="#ffffff" stroke="#ce93d8" stroke-width="1.5"/>
+  <text x="380" y="330" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#4a148c">CardDAV</text>
+
+  <rect x="320" y="355" width="120" height="36" rx="8" fill="#ffffff" stroke="#ce93d8" stroke-width="1.5"/>
+  <text x="380" y="378" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#4a148c">LDAP</text>
+
+  <!-- DavMail Gateway -->
+  <rect x="520" y="60" width="200" height="400" rx="12" fill="url(#gatewayGrad)" stroke="#2e7d32" stroke-width="2" filter="url(#shadow)"/>
+  <text x="620" y="90" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="bold" fill="#2e7d32">DavMail Gateway</text>
+
+  <!-- DavMail icon -->
+  <g transform="translate(580, 140) scale(0.67)">
+    <linearGradient id="iconA" x1="-.099" x2="140.817" y1="-1.88" y2="143.258" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d96a00"/>
+      <stop offset="1" stop-color="#a74200"/>
+    </linearGradient>
+    <linearGradient id="iconB" x1="59.337" x2="59.337" y1="115.615" y2="5.11" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffa700"/>
+      <stop offset=".691" stop-color="#ff0"/>
+    </linearGradient>
+    <linearGradient id="iconC" x1="59.316" x2="59.316" y1="-7.13" y2="58.984" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff0"/>
+      <stop offset=".166" stop-color="#ffff25"/>
+      <stop offset=".538" stop-color="#ffff83"/>
+      <stop offset="1" stop-color="#fff"/>
+    </linearGradient>
+    <linearGradient id="iconD" x1="59.337" x2="59.337" y1="95.426" y2="18.379" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d96a00"/>
+      <stop offset="1" stop-color="#560000"/>
+    </linearGradient>
+    <linearGradient id="iconE" x1="59.337" x2="59.337" y1="-1.44" y2="104.815" gradientUnits="userSpaceOnUse">
+      <stop offset=".046" stop-color="#fff"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <path fill="url(#iconA)" d="m0 59.335c0 32.719 26.619 59.339 59.337 59.339 32.721 0 59.337-26.62 59.337-59.339 0-32.716-26.616-59.335-59.337-59.335-32.718 0-59.337 26.619-59.337 59.335zm5.394 0c0-29.743 24.198-53.941 53.943-53.941 29.744 0 53.944 24.198 53.944 53.941 0 29.747-24.2 53.946-53.944 53.946-29.745.001-53.943-24.198-53.943-53.946z"/>
+    <path fill="url(#iconB)" d="m115.977 59.335c0 31.285-25.356 56.642-56.64 56.642-31.28 0-56.64-25.356-56.64-56.642 0-31.28 25.359-56.639 56.64-56.639 31.283 0 56.64 25.36 56.64 56.639z"/>
+    <path fill="url(#iconC)" d="m80.266 15.686c0-.318-.104-.634-.308-.907-.336-.451-.908-.724-1.521-.724h-28.8c-.758 0-1.441.417-1.709 1.057l-9.561 32.638c-.213.503-.132 1.063.209 1.504.342.441.902.705 1.502.705h12.951c-1.933 3.715-10.297 19.806-10.297 19.806-.111.222-.166.453-.166.688 0 .305.095.612.285.876.336.471.915.756 1.541.756h7.032c-.958 3.606-9.659 36.342-9.659 36.342-.035.128-.048.254-.048.379 0 .639.424 1.237 1.108 1.498.815.313 1.764.055 2.251-.605l32.834-44.768c.365-.5.396-1.14.079-1.669-.318-.528-.939-.856-1.608-.856 0 0-5.89 0-9.428 0 2.482-3.876 12.813-20.006 12.813-20.006.16-.251.237-.528.237-.81s-.079-.566-.244-.818c-.33-.502-.93-.813-1.58-.813 0 0-9.329 0-13.075 0 1.734-3.729 15.023-23.646 15.023-23.646.09-.204.139-.415.139-.627z"/>
+    <path fill="url(#iconD)" d="m49.637 13.014c-1.19 0-2.237.665-2.669 1.694l-9.601 32.748c.011-.039.025-.077.041-.114-.361.851-.232 1.803.344 2.548.539.695 1.408 1.11 2.326 1.11h11.236c-1.349 2.593-9.506 18.285-9.506 18.285-.006.012-.283 1.168-.283 1.168 0 .532.166 1.045.479 1.483.531.744 1.424 1.189 2.387 1.189h5.678c-.646 2.432-9.311 35.034-9.311 35.034 0 .004-.083.646-.083.646 0 1.088.697 2.058 1.777 2.471 1.243.477 2.7.072 3.461-.96l32.837-44.769c.609-.834.661-1.94.132-2.82-.506-.841-1.464-1.363-2.501-1.363 0 0-5.1 0-7.524 0 1.736-2.711 11.785-18.402 11.785-18.402.264-.412.402-.886.402-1.372 0-.496-.144-.977-.415-1.391-.52-.791-1.459-1.282-2.45-1.282 0 0-8.712 0-11.331 0 3.296-5.752 14.025-21.847 14.146-22.026.072-.108.057-.028.085-.155l.229-1.05c0-.551-.178-1.081-.516-1.531-.53-.713-1.411-1.141-2.354-1.141zm-10.239 35.601c-.079-.102-.156-.266-.074-.459.016-.037.029-.075.041-.114l9.561-32.638c.064-.136.373-.308.71-.308h28.801c.283 0 .545.117.685.305.068.09.103.188.103.286 0 0-.026.108-.04.161-.993 1.491-13.312 19.988-15.024 23.672-.065.14-.098.29-.098.439 0 .195.055.39.164.56.19.3.521.481.877.481h13.075c.294 0 .572.135.709.344.049.074.073.157.073.247s-.024.172-.073.25l-12.812 20.003c-.205.32-.219.727-.036 1.061.182.334.533.542.913.542h9.428c.302 0 .59.141.717.353.1.167.09.355-.028.518l-32.834 44.765c-.208.282-.666.394-1.04.25-.267-.103-.439-.31-.439-.526.013-.111 9.671-36.453 9.671-36.453.083-.313.017-.646-.18-.902s-.502-.406-.826-.406h-7.032c-.287 0-.553-.122-.693-.319-.06-.083-.091-.177-.091-.271l.055-.221 10.291-19.793c.167-.323.155-.709-.034-1.021-.188-.311-.526-.501-.89-.501h-12.95c-.275-.003-.535-.119-.68-.305zm39.863-32.88c-.01.014-.05.076-.067.101.009-.025.021-.032.067-.101z"/>
+    <path fill="url(#iconE)" d="m59.336 75.139c21.167 0 39.952-8.113 51.708-20.642-2.748-26.13-24.846-46.497-51.707-46.497-26.859 0-48.959 20.367-51.708 46.498 11.758 12.528 30.541 20.641 51.707 20.641z"/>
+  </g>
+
+  <text x="620" y="270" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#1b5e20">Protocol Translation</text>
+  <text x="620" y="290" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#1b5e20">Authentication</text>
+  <text x="620" y="310" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#1b5e20">Caching</text>
+
+  <rect x="545" y="340" width="150" height="30" rx="6" fill="#c8e6c9" stroke="#66bb6a" stroke-width="1"/>
+  <text x="620" y="360" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#1b5e20">Windows / Linux / macOS</text>
+
+  <rect x="545" y="380" width="150" height="30" rx="6" fill="#c8e6c9" stroke="#66bb6a" stroke-width="1"/>
+  <text x="620" y="400" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#1b5e20">Server or Desktop mode</text>
+
+  <!-- Exchange / O365 -->
+  <rect x="780" y="60" width="290" height="400" rx="12" fill="url(#exchangeGrad)" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <text x="925" y="90" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="bold" fill="#e65100">Microsoft Exchange</text>
+
+  <rect x="805" y="120" width="240" height="50" rx="8" fill="#ffffff" stroke="#ffb74d" stroke-width="1.5"/>
+  <text x="925" y="140" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#bf360c">On-Premises Exchange</text>
+  <text x="925" y="158" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#6d4c41">Exchange Web Services (EWS)</text>
+
+  <rect x="805" y="185" width="240" height="50" rx="8" fill="#ffffff" stroke="#ffb74d" stroke-width="1.5"/>
+  <text x="925" y="205" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#bf360c">Office 365</text>
+  <text x="925" y="223" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#6d4c41">EWS or Microsoft Graph API</text>
+
+  <rect x="805" y="250" width="240" height="50" rx="8" fill="#ffffff" stroke="#ffb74d" stroke-width="1.5"/>
+  <text x="925" y="270" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#bf360c">Outlook Web Access (OWA)</text>
+  <text x="925" y="288" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#6d4c41">Legacy WebDAV / HTTP</text>
+
+  <rect x="805" y="315" width="240" height="50" rx="8" fill="#ffffff" stroke="#ffb74d" stroke-width="1.5"/>
+  <text x="925" y="335" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#bf360c">OAuth 2.0 / Modern Auth</text>
+  <text x="925" y="353" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#6d4c41">Interactive &amp; Transparent authentication</text>
+
+  <!-- Arrows: Clients -> Protocols -->
+  <line x1="250" y1="260" x2="298" y2="260" stroke="#546e7a" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- Arrows: Protocols -> Gateway -->
+  <line x1="460" y1="260" x2="518" y2="260" stroke="#546e7a" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- Arrows: Gateway -> Exchange -->
+  <line x1="720" y1="260" x2="778" y2="260" stroke="#546e7a" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="749" y="248" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#546e7a">HTTPS</text>
+
+</svg>
