@@ -88,6 +88,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 @Override
                 public void run() {
                     try {
+                        Display.setAppName("davmail");
                         display = Display.getDefault();
                         shell = new Shell(display);
 
