@@ -283,6 +283,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             } else {
                 bufferedImage = ImageIO.read(imageUrl);
             }
+            if (bufferedImage == null) {
+                throw new IOException(fileName);
+            }
             if (bufferedImage.getWidth() != targetSize || bufferedImage.getHeight() != targetSize) {
                 bufferedImage = DavGatewayTray.scaleImage(bufferedImage, targetSize);
             }
