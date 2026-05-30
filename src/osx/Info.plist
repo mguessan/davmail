@@ -41,5 +41,7 @@
     <array>
     <string>-Dsun.net.inetaddr.ttl=60 -Xmx512m</string>
     </array>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>There was an error while launching the application. Please click OK to display a dialog with more information or cancel and view the syslog for details.</string>
   </dict>
 </plist>
