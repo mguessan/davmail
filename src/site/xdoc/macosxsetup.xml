@@ -76,5 +76,21 @@
             </p>
         </section>
 
+        <section name="Advanced">
+            <p>You can embed the JDK inside the application bundle to create a standalone application.
+                Grab the Zulu JRE FX zip package, see above instructions, then move its content inside DavMail.app.
+                Then edit DavMail Info.plist to adjust JAVA_HOME, an example LSEnvironment setting is already available.
+            <source><![CDATA[
+                <key>LSEnvironment</key>
+                <dict><key>JAVA_HOME</key><string>Contents/Frameworks/azul-jre-fx/Contents/Home</string></dict>
+            ]]></source>
+            </p>
+            <p>As macOS maintains an internal cache of application settings, you will have to force a full cache reload:
+            </p>
+            <source><![CDATA[
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -seed
+            ]]></source>
+        </section>
+
     </body>
 </document>
