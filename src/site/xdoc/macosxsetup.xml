@@ -12,13 +12,19 @@
 
         <section name="DavMail Setup on Mac OS X">
             <p>DavMail requires a recent Java JRE, with OpenJFX support for O365Interactive authentication.</p>
-            <p>Recommended source is Azul at: <a href="https://www.azul.com/downloads/?version=java-25-lts&os=macos&package=jre-fx#zulu">Download Azul JDK</a>.
-            Pick your architecture, ARM for apple silicon and x86 64 for intel based Macs</p>
-            <p>Next download
-            <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
-            </a>
+            <p>Recommended source is Azul at: <a
+                    href="https://www.azul.com/downloads/?version=java-25-lts&amp;os=macos&amp;package=jdk-fx#zulu">Download
+                Azul JDK</a>.
+                Pick your architecture, ARM for Apple Silicon and x86 64 for intel-based Macs.
             </p>
-            <p>This application bundle is built from source with ant, however to avoid the apple tax the
+            <p>An alternative is to use SDKMAN to install java, see <a href="https://sdkman.io/jdks/zulu/">SDKMAN Zulu</a>
+                <code>sdk install java 25.0.3.fx-zulu</code>
+            </p>
+            <p>Next download
+                <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
+                </a>
+            </p>
+            <p>This application bundle is built from source with ant. However, to avoid the apple tax, the
                 package is not signed. On recent macOS versions you will get a security warning and a suggestion to move
                 application to trash. Just open settings / Privacy &amp; Security, find the message:
                 "DavMail was blocked from use because it is not from an identified developer" and click
@@ -44,7 +50,7 @@
             <div style="width: 100%;text-align: center">
                 <img src="images/osxgatekeeper.png" alt="OSX Gatekeeper"/>
             </div>
-            <p>Launch DavMail application once (double click on the application icon).</p>
+            <p>Launch DavMail application once (double-click on the application icon).</p>
             <p>You can then go back to System Preferences/Security and Privacy and restore original setting.
             </p>
             <p>On first start the application displays the Settings (Preferences) frame.
@@ -55,6 +61,18 @@
             <p>Growl is no longer supported.</p>
             <p>Adjust DavMail settings:
                 <a href="gettingstarted.html">Getting started</a>
+            </p>
+        </section>
+        <section name="Troubleshooting">
+            <p>If macOS is unable to find you JDK/JRE, check java version in a terminal:
+            <code>java -version</code>.
+                If you get the following message:
+                <code>The operation couldn’t be completed. Unable to locate a Java Runtime.</code>
+                you need to reference your version of java for the system wrappers:
+                <code>sudo ln -sfn /path/to/your/jdk /Library/Java/JavaVirtualMachines/yourjdk.jdk</code>
+            </p>
+            <p>If you chose the zip or tar.gz package, you may also want to set JAVA_HOME and add
+                <code>$JAVA_HOME/bin</code> to your PATH.
             </p>
         </section>
 
