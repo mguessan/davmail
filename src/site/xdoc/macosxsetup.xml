@@ -4,36 +4,39 @@
           xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
-        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Mac OS X setup</title>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - macOS setup</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 
     <body>
 
         <section name="DavMail Setup on Mac OS X">
-            <p>Either setup Java 7/8 from <a href="http://www.java.com">Oracle Java page</a> or use Apple provided Java 6 at
-            <a href="http://support.apple.com/kb/DL1572">Java for OS X 2014-001</a>, then download
+            <p>DavMail requires a recent Java JRE, with OpenJFX support for O365Interactive authentication.</p>
+            <p>Recommended source is Azul at: <a href="https://www.azul.com/downloads/?version=java-25-lts&os=macos&package=jre-fx#zulu">Download Azul JDK</a>.
+            Pick your architecture, ARM for apple silicon and x86 64 for intel based Macs</p>
+            <p>Next download
             <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
             </a>
             </p>
-            <p>Note to OSX Mountain Lion users: you need to disable Gatekeeper (at least temporarily) to avoid the
+            <p>This application bundle is built from source with ant, however to avoid the apple tax the
+                package is not signed. On recent macOS versions you will get a security warning and a suggestion to move
+                application to trash. Just open settings / Privacy &amp; Security, find the message:
+                "DavMail was blocked from use because it is not from an identified developer" and click
+                <code>Open Anyway</code>
+            </p>
+            <p>On older OSX Mountain Lion, you need to disable Gatekeeper (at least temporarily) to avoid the
                 warning or <code>DavMail is damaged and can’t be opened</code> message with Java 6 package.
             </p>
-            <p>Older OSX releases include Java 5, this version does not support Tray icon,
-                and DavMail uses a dedicated frame instead. An upgrade to Java 6 will enable tray icon.
-                Recent OSX versions either include Java 6 or can install it automatically on first Java application
-                launch. Note that Java 7 is only available from Oracle and will not be provided by Apple.
-            </p>
 
-            <p>Download DavMail Mac OSX package from Sourceforge:
+            <p>Download DavMail macOS package from Sourceforge:
             </p>
             <div style="width: 100%;text-align: center">
                 <img src="images/osxdownload.png" alt="OSX Download"/>
             </div>
             <p>Safari should automatically extract application from archive. If not, just
-                double click on the zip file to trigger decompression. DavMail.app directory is then recognised as a
-                valid OSX application, except on Mountain Lion as application downloaded through Safari are marked
-                as invalid.
+                double-click on the zip file to trigger decompression. DavMail.app directory is then recognized as a
+                valid OSX application. However, as the application is not signed, you will need to bypass warning
+                under Privacy &amp; Security.
             </p>
             <p>On OSX Mountain Lion, open System Preferences and choose
                 Security and Privacy, then unlock panel with lock icon and choose Anywhere:
