@@ -235,6 +235,8 @@ public final class DavGatewayTray {
                 " System tray " + (SystemTray.isSupported() ? "" : "not ") + "supported " +
                 ((currentDesktop == null) ? "" : "Current Desktop: " + currentDesktop)
         );
+        String codeLocation = DavGatewayTray.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        LOGGER.debug("Code location: " + codeLocation);
 
         if (Settings.isLinux()) {
             // enable antialiasing on linux
