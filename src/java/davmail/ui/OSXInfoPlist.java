@@ -18,6 +18,7 @@
  */
 package davmail.ui;
 
+import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import org.apache.log4j.Logger;
 
@@ -86,8 +87,16 @@ public class OSXInfoPlist {
     }
 
     private static String getInfoPlistPath() throws IOException {
-        File file = new File(INFO_PLIST_PATH);
+        // code location points to davmail.jar
+        String codeLocation = DavGatewayTray.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        File file = new File(codeLocation);
         if (file.exists()) {
+            // code location is absolute path
+            return file.getParent() + File.separator + INFO_PLIST_PATH;
+        }
+        file = new File(INFO_PLIST_PATH);
+        if (file.exists()) {
+            // fallback to relative path
             return INFO_PLIST_PATH;
         }
         throw new IOException("Info.plist file not found");
