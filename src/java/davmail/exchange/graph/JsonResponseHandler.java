@@ -22,6 +22,7 @@ package davmail.exchange.graph;
 import davmail.exception.HttpConflictException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
+import davmail.exception.HttpPreconditionFailedException;
 import davmail.http.HttpClientAdapter;
 import davmail.util.IOUtil;
 import org.apache.http.Header;
@@ -91,6 +92,9 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
             }
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_CONFLICT) {
                 throw new HttpConflictException(errorMessage);
+            }
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_PRECONDITION_FAILED) {
+                throw new HttpPreconditionFailedException(errorMessage);
             }
             throw new IOException(errorMessage);
         }

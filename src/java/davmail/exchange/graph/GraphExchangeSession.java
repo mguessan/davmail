@@ -24,6 +24,7 @@ import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
+import davmail.exception.HttpPreconditionFailedException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
@@ -350,7 +351,7 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.setPropertyValue("X-MOZ-LASTACK", jsonEvent.optString("xmozlastack"));
             vEvent.setPropertyValue("X-MOZ-SNOOZE-TIME", jsonEvent.optString("xmozsnoozetime"));
 
-            vEvent.setPropertyValue("X-MICROSOFT-DISALLOW-COUNTER", jsonEvent.optBoolean("allowNewTimeProposals")?"FALSE":"TRUE");
+            vEvent.setPropertyValue("X-MICROSOFT-DISALLOW-COUNTER", jsonEvent.optBoolean("allowNewTimeProposals") ? "FALSE" : "TRUE");
 
             setAttendees(vEvent, jsonEvent);
 
@@ -1130,7 +1131,7 @@ public class GraphExchangeSession extends ExchangeSession {
             if (description != null && description.startsWith("data:text/html,")) {
                 description = URIUtil.decode(description.replaceFirst("data:text/html,", ""));
                 newGraphEvent.put("body", new JSONObject().put("content", description).put("contentType", "html"));
-            } else if (descriptionProperty != null){
+            } else if (descriptionProperty != null) {
                 description = descriptionProperty.getValue();
                 newGraphEvent.put("body", new JSONObject().put("content", description).put("contentType", "text"));
             }
@@ -1290,6 +1291,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         return isExpired;
     }
+
     private String convertHtmlToText(String htmlText) {
         StringBuilder builder = new StringBuilder();
 
@@ -1916,9 +1918,13 @@ public class GraphExchangeSession extends ExchangeSession {
             return IPF_APPOINTMENT.equals(folderClass);
         }
 
-        public boolean isContact() { return IPF_CONTACT.equals(folderClass); }
+        public boolean isContact() {
+            return IPF_CONTACT.equals(folderClass);
+        }
 
-        public boolean isTask() { return IPF_TASK.equals(folderClass); }
+        public boolean isTask() {
+            return IPF_TASK.equals(folderClass);
+        }
     }
 
     HttpClientAdapter httpClient;
@@ -2058,7 +2064,6 @@ public class GraphExchangeSession extends ExchangeSession {
     private void applyMessageProperties(GraphObject graphResponse, Map<String, String> properties) throws JSONException {
         if (properties != null) {
             for (Map.Entry<String, String> entry : properties.entrySet()) {
-                // TODO
                 if ("read".equals(entry.getKey())) {
                     graphResponse.put(entry.getKey(), "1".equals(entry.getValue()));
                 } else if ("junk".equals(entry.getKey())) {
@@ -2275,12 +2280,33 @@ public class GraphExchangeSession extends ExchangeSession {
             GraphObject graphObject = new GraphObject(new JSONObject());
             // we have the message in the right folder, apply flags
             applyMessageProperties(graphObject, properties);
-            executeJsonRequest(new GraphRequestBuilder()
-                    .setMethod(HttpPatch.METHOD_NAME)
-                    .setMailbox(((Message) message).folderId.mailbox)
-                    .setObjectType("messages")
-                    .setObjectId(((Message) message).id)
-                    .setJsonBody(graphObject.jsonObject));
+            try {
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpPatch.METHOD_NAME)
+                        .setMailbox(((Message) message).folderId.mailbox)
+                        .setObjectType("messages")
+                        .setObjectId(((Message) message).id)
+                        .setJsonBody(graphObject.jsonObject));
+            } catch (HttpPreconditionFailedException e) {
+                LOGGER.debug("Received HTTP 412 Precondition Failed");
+
+                // this will trigger an HttpNotFoundException if message was deleted
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpGet.METHOD_NAME)
+                        .setMailbox(((Message) message).folderId.mailbox)
+                        .setObjectType("messages")
+                        .setObjectId(((Message) message).id)
+                        .setSelect("id"));
+
+                // retry once
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpPatch.METHOD_NAME)
+                        .setMailbox(((Message) message).folderId.mailbox)
+                        .setObjectType("messages")
+                        .setObjectId(((Message) message).id)
+                        .setJsonBody(graphObject.jsonObject));
+
+            }
         } catch (JSONException e) {
             throw new IOException(e);
         }
