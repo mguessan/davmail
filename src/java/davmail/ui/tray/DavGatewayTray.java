@@ -273,7 +273,7 @@ public final class DavGatewayTray {
                 if (davGatewayTray == null /*&& !isLinux()*/) {
                     try {
                         if (SystemTray.isSupported()) {
-                            if (isOSX()) {
+                            if (Settings.isOSX()) {
                                 davGatewayTray = new OSXAwtGatewayTray();
                             } else {
                                 davGatewayTray = new AwtGatewayTray();
@@ -287,7 +287,7 @@ public final class DavGatewayTray {
             }
 
             if (davGatewayTray == null) {
-                if (isOSX()) {
+                if (Settings.isOSX()) {
                     // MacOS
                     davGatewayTray = new OSXFrameGatewayTray();
                 } else {
@@ -298,14 +298,6 @@ public final class DavGatewayTray {
         }
     }
 
-    /**
-     * Test if running on OSX
-     *
-     * @return true on Mac OS X
-     */
-    public static boolean isOSX() {
-        return System.getProperty("os.name").toLowerCase().startsWith("mac os x");
-    }
 
     /**
      * Test if running on Windows

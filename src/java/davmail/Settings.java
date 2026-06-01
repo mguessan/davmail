@@ -794,6 +794,15 @@ public final class Settings {
     }
 
     /**
+     * Test if running on OSX
+     *
+     * @return true on Mac OS X
+     */
+    public static boolean isOSX() {
+        return System.getProperty("os.name").toLowerCase().startsWith("mac os x");
+    }
+
+    /**
      * Test if running on Linux
      *
      * @return true on Linux
@@ -884,7 +893,10 @@ public final class Settings {
             classloader.loadClass("org.eclipse.swt.SWT");
             isSWTAvailable = true;
         } catch (Throwable e) {
-            LOGGER.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+            // do not log on OSX, using standard system tray by default
+            if (!isOSX()) {
+                LOGGER.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+            }
         }
         return isSWTAvailable;
     }
