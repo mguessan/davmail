@@ -31,11 +31,7 @@ public class OSXFrameGatewayTray extends FrameGatewayTray implements OSXTrayInte
 
     @Override
     protected void buildMenu() {
-        // create a popup menu
-        JMenu menu = new JMenu(BundleMessage.format("UI_LOGS"));
-        JMenuBar menuBar = new JMenuBar();
-        menuBar.add(menu);
-        mainFrame.setJMenuBar(menuBar);
+        // nothing to do, using native settings and about entry points
     }
 
 
