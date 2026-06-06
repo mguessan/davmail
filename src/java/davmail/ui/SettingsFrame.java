@@ -168,7 +168,8 @@ public class SettingsFrame extends JFrame {
         modeComboBox.addItem(Settings.O365_GRAPH);
         modeComboBox.addItem(Settings.EXCHANGE_EWS);
         modeComboBox.addItem(Settings.EXCHANGE_WEBDAV);
-        modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.O365_EWS));
+        String modeComboBoxSelectedItem = Settings.getProperty("davmail.mode", Settings.O365_EWS);
+        modeComboBox.setSelectedItem(modeComboBoxSelectedItem);
         modeComboBox.addActionListener(evt -> {
             String selectedItem = (String)modeComboBox.getSelectedItem();
             modeComboBox.setToolTipText(BundleMessage.format("UI_"+selectedItem+"_HELP"));
@@ -189,6 +190,9 @@ public class SettingsFrame extends JFrame {
         authenticationComboBox.addItem(Settings.O365_TRANSPARENT);
 
         urlField = new JTextField(Settings.getProperty("davmail.url", Settings.getO365Url()), 20);
+        if (modeComboBoxSelectedItem.startsWith("O365")) {
+            urlField.setEnabled(false);
+        }
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         popPortCheckBox = new JCheckBox();
         popNoSSLCheckBox = new JCheckBox(BundleMessage.format("UI_NO_SSL"), Settings.getBooleanProperty("davmail.ssl.nosecurepop"));
