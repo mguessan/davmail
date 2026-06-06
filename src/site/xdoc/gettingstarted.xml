@@ -35,6 +35,8 @@
                             <li>ExchangeWebDav Exchange on prem over WebDav</li>
                         </ul>
                     </td>
+                </tr>
+                <tr>
                     <td>Authentication</td>
                     <td>Authentication mode:<br/>
                         <ul>
