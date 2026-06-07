@@ -134,22 +134,19 @@ public class O365InteractiveAuthenticatorSWT {
 
         });
 
-        while (!isReady && error == null) {
-            lock.lock();
-            try {
-                //noinspection ResultOfMethodCallIgnored
-                ready.await(1, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            } finally {
-                lock.unlock();
+        lock.lock();
+        try {
+            while (!isReady) {
+                ready.await();
+                if (error != null) {
+                    throw error;
+                }
             }
-            if (error != null) {
-                throw error;
-            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            lock.unlock();
         }
-
     }
 
     protected void dispose() {

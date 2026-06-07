@@ -47,7 +47,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -129,20 +128,18 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             };
             swtThread.start();
 
-            while (!isReady && error == null) {
-                lock.lock();
-                try {
-                    //noinspection ResultOfMethodCallIgnored
-                    ready.await(1, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                } finally {
-                    lock.unlock();
+            lock.lock();
+            try {
+                while (!isReady) {
+                    ready.await();
+                    if (error != null) {
+                        throw error;
+                    }
                 }
-                if (error != null) {
-                    throw error;
-                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                lock.unlock();
             }
         }
     }
