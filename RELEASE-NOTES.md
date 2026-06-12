@@ -1,3 +1,131 @@
+## DavMail 6.8.0 2026-06-12
+First version with active Graph support available in GUI, refactored configuration to separate mode (Graph, EWS, ...) from authentication.
+Includes a lot of user contributions to Graph backend, mostly on calendar events handling.
+Improved macOS Tahoe support and fixed regressions on tray icon and hide from dock settings.
+Reviewed documentation to match recent changes.
+
+### Graph
+- Graph: new workaround attempt for https://github.com/mguessan/davmail/issues/491 ErrorIrresolvableConflict, check if message exists and retry update
+- Graph: Translate missing messages for new modes/authentication
+- Graph: Missing messages for new modes/authentication
+- Graph: https://github.com/mguessan/davmail/issues/404 refactor mode handling to separate authentication from protocol. Introduce O365EWS, O365Graph and ExchangeEWS modes. Authentication set separately in davmail.authentication setting.
+- Graph: implement davmail.caldav.enableOnlineMeeting to automatically create a Teams meeting
+- Graph: detect invalid_grant error on live.com accounts and force scope to openid profile offline_access Mail.ReadWrite
+- Graph: enable OIDC by default with Graph enabled when retrieving token
+- Graph: implement X-MICROSOFT-DISALLOW-COUNTER/allowNewTimeProposals
+- Graph: move exdate/exception handling after create to handle event import with exceptions
+- Graph: more refactoring on event createOrUpdate to prepare exdate handling on create
+- Graph: refactor event createOrUpdate to prepare exdate handling on create
+- Graph: allow reminder updates for existing meetings
+- Graph: try to protect against unwanted meeting updates when not organizer
+- Graph: add missing xmozsnoozetime and xmozlastack to event attributes
+- Graph: refactor folderId to improve readability
+- Graph: do not check etag on meeting responses or dismiss
+- Graph: fix Thunderbird snooze / dismiss, properly map xmozlastack/xmozsnoozetime with GraphObject
+- Graph: handle multilevel conditions, add parentheses
+- Graph: dump full JSON error in debug mode
+- Graph: refactor folderId IPF_CONTACT to avoid duplicate strings
+- Graph: switch to mailFolders root for isExpired check
+- Graph: workaround for https://github.com/mguessan/davmail/issues/488, missing id on folder
+- Graph: override isExpired check with a simple call to /me
+- Graph: implement well-known folder id cache on personal mailbox
+- Graph: Thunderbird snooze / dismiss, only update fields, do not call dismissReminder as this removes alarm completely
+- Graph: handle tzone://Microsoft/Utc specifically, see https://github.com/mguessan/davmail/issues/469
+- Graph: format recurrenceId to Zulu when original start timezone is not available
+- Graph: drop originalEndTimeZone
+- Graph: switch to isOrganizer to detect invites
+- Graph: map originalEndTimeZone and originalEnd fields
+- Graph: improve getAttendeeStatus, iterate over all Vevents to detect meeting response
+- Graph: https://github.com/mguessan/davmail/pull/486 refactor timezone conversion, parse originalStart as ISO8601 string
+- Graph: occurrences are deleted with explicit calls, not the cancelledOccurrences property
+- Graph: https://github.com/mguessan/davmail/pull/481 do not try to convert original start with unknown timezone
+- Graph: fix https://github.com/mguessan/davmail/issues/469 unsupported timezone value from originalStartTimeZone
+- Graph: fix regression in convertOriginalStartDate, originalStart is supposed to be in UTC
+- Graph: catch when originalStart is not in UTC format in getRecurrenceId
+- Graph: handle until recurrence rule in yyyyMMdd format
+- Graph: https://github.com/mguessan/davmail/pull/481 ignore provided timezone when date is already Zulu
+- Graph: https://github.com/mguessan/davmail/pull/481 apply the buildUntilDate patch, recurrenceTimeZone is irrelevant
+- Graph: restore original start timezone on recurring events, adjust recurrence id based on originalStart being always in UTC, see https://github.com/mguessan/davmail/issues/469
+- Graph: fix https://github.com/mguessan/davmail/issues/474 Update src/etc/davmail.properties with Graph override settings
+- Graph: merge https://github.com/mguessan/davmail/pull/485 Only set transactionId on create, not update, to avoid ErrorInvalidRequest
+- Graph: fix https://github.com/mguessan/davmail/issues/471 Cannot create event, regression introduced by event message implementation
+- Graph: merge https://github.com/mguessan/davmail/pull/478 Fix/improve nanosecond date conversion handling
+- Graph: implement unit tests for GraphExchangeSession.convertDateFromExchange()
+- Graph: merge https://github.com/mguessan/davmail/pull/476 send outlook.timezone Prefer header alongside IdType
+- Graph: Merge https://github.com/mguessan/davmail/pull/477 Add support for numbered recurrence type in CalDAV downloads.
+- Graph: push missing processed extended field
+- Graph: extract getSubfolderPath method to handle shared mailbox case in getSubfolders
+
+### O365
+- O365: improve token request logging
+- O365: fix ExchangeSessionFactory.getAuthenticatorClass()
+- O365: merge https://github.com/mguessan/davmail/pull/441 Allow sending HTTP origin header for token requests
+- O365: improve token check, a valid graph token may contain EWS scope
+
+### EWS
+- EWS: implement additional recurrence patterns in EWS mode
+- EWS: refactor rrule handling in EwsExchangeSession
+- EWS: fix https://github.com/mguessan/davmail/issues/149 do not try to fix attendees if Exchange provided them already
+- EWS: comment davmail.caldavImpersonate setting
+
+
+### Caldav
+- Caldav: all missing timezone mappings
+- Caldav: more missing timezone mappings
+- Caldav: add timezone mapping for Central Standard Time and Asia/Singapore
+- Caldav: prepare improved Standard to Exchange timezone mapping
+- Caldav: append both timezone objects on mixed timezone events
+- Caldav: merge https://github.com/mguessan/davmail/pull/480 Teach fixVCalendar to convert TZIDs individually
+
+### SWT
+- SWT: cleanup sync from audit
+- SWT: set AppName to avoid default icon with embedded browser window under Wayland
+- SWT: catch missing image
+- SWT: replace synchronized block with ReentrantLock
+- SWT: fix thread synchronization
+- SWT: review synchronization code around SWT thread initialization
+
+### Documentation
+- Documentation: update DavMail settings documentation with new modes and authentication options
+- Doc: new modern architecture diagram
+- Doc: merge https://github.com/mguessan/davmail/pull/490 Add more tips for configuring PKCS11
+
+### GUI
+- GUI: disable URL field when mode is O365
+- Fix https://github.com/mguessan/davmail/issues/170 O365 Interactive/Manual does not allow context menu/paste
+- GUI: switch to 128x128 icons and enable tray icon auto-size
+- GUI: properly dispose window on close in AboutFrame
+
+### OSX
+- OSX: do not log missing SWT on OSX
+- OSX: remove empty Logs menu
+- OSX: alternative way to locate Info.plist file
+- OSX: replace exec with open -a --args to ensure proper application context under macOS Tahoe
+- OSX: Revert to script based version of universalJavaApplicationStub, upgrade to latest 3.3.0 version
+- OSX: Provide instructions for embedding JDK inside application bundle
+- OSX: More troubleshooting instructions
+- OSX: Update setup instructions
+- OSX: add NSAppleEventsUsageDescription recommended by universalJavaApplicationStub
+- OSX: upgrade universalJavaApplicationStub to latest compiled version
+
+### Linux
+- Linux: merge https://github.com/mguessan/davmail/issues/465 libswt-webkit-4-jni dependencies does not exist
+- Linux: fix regression on Suse builds, move if check inside old init / userdel section
+
+### Build
+- Appveyor: add jdk25 as target
+- Flatpak: Fix appdata file format
+
+### Enhancements
+- Log code location at startup
+- Cleanup from audit
+- Add missing messages
+- Append line feed at end of file
+- Fix https://github.com/mguessan/davmail/issues/438 Davmail does not exit when socket bind failed, introduce davmail.exitOnBindFailed setting
+- Merge https://github.com/mguessan/davmail/pull/464/ Fix some typos (found by codespell)
+- Update AbstractExchangeSessionTestCase, use test.properties for credentials
+
+
 ## DavMail 6.7.0 2026-05-02
 Bugfix release based on user feedback, add PhoneAppOTP (TOTP) support for MFA authentication,
 more work on Graph backend, mostly on Caldav implementation. 
