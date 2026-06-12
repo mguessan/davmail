@@ -2866,6 +2866,7 @@ public abstract class ExchangeSession {
                 if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
                         && !"lastmodified".equals(key) && !"sensitivity".equals(key)
                         && !"haspicture".equals(key)
+                        && !"usersmimecertificate".equals(key) && !"msexchangecertificate".equals(key)
                         && !properties.containsKey(key)) {
                     properties.put(key, null);
                 }
