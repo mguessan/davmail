@@ -156,8 +156,7 @@ public class KerberosHelper {
         synchronized (LOCK) {
             // check cached TGT
             if (clientLoginContext != null) {
-                for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
-                    KerberosTicket kerberosTicket = (KerberosTicket) ticket;
+                for (KerberosTicket kerberosTicket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
                     if (kerberosTicket.getServer().getName().startsWith("krbtgt") && !kerberosTicket.isCurrent()) {
                         LOGGER.debug("KerberosHelper.clientLogin cached TGT expired, try to relogin");
                         clientLoginContext = null;
@@ -166,13 +165,13 @@ public class KerberosHelper {
             }
             // create client login context
             if (clientLoginContext == null) {
-                final LoginContext localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
+                final LoginContext localLoginContext = new LoginContext("spnego-client", null, KERBEROS_CALLBACK_HANDLER,
+                        new KerberosLoginConfiguration(KERBEROS_CALLBACK_HANDLER.principal));
                 localLoginContext.login();
                 clientLoginContext = localLoginContext;
             }
             // try to renew almost expired tickets
-            for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
-                KerberosTicket kerberosTicket = (KerberosTicket) ticket;
+            for (KerberosTicket kerberosTicket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
                 LOGGER.debug("KerberosHelper.clientLogin ticket for " + kerberosTicket.getServer().getName() + " expires at " + kerberosTicket.getEndTime());
                 if (kerberosTicket.getEndTime().getTime() < System.currentTimeMillis() + 10000) {
                     if (kerberosTicket.isRenewable()) {

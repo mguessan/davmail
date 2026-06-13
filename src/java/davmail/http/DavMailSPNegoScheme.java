@@ -81,7 +81,8 @@ public class DavMailSPNegoScheme extends SPNegoScheme {
             if (clientLoginContext == null) {
                 final LoginContext localLoginContext;
                 try {
-                    localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
+                    localLoginContext = new LoginContext("spnego-client", null, KERBEROS_CALLBACK_HANDLER,
+                            new KerberosLoginConfiguration(KERBEROS_CALLBACK_HANDLER.principal));
                     localLoginContext.login();
                     clientLoginContext = localLoginContext;
                 } catch (LoginException e) {
