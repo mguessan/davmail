@@ -22,6 +22,7 @@ import davmail.caldav.CaldavServer;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.auth.ExchangeAuthenticator;
+import davmail.exchange.auth.KerberosCheck;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.GetRequest;
 import davmail.imap.ImapServer;
@@ -61,6 +62,7 @@ public final class DavGateway {
         boolean tray = false;
         boolean server = false;
         boolean token = false;
+        boolean kerberos = false;
 
         // check environment for davmail settings path in Docker
         String configFilePath = Settings.getConfigFilePath();
@@ -78,6 +80,9 @@ public final class DavGateway {
                         break;
                     case "-token":
                         token = true;
+                        break;
+                    case "-kerberos":
+                        kerberos = true;
                         break;
                 }
             } else {
@@ -105,9 +110,17 @@ public final class DavGateway {
                 System.out.println(authenticator.getToken().getRefreshToken());
             } catch (IOException | ClassNotFoundException | NoSuchMethodException | InstantiationException |
                      IllegalAccessException | InvocationTargetException e) {
-                System.err.println(e+" "+e.getMessage());
+                System.err.println(e + " " + e.getMessage());
             }
             // force shutdown on Linux
+            System.exit(0);
+        } else if (kerberos) {
+            KerberosCheck kerberosCheck = new KerberosCheck();
+            if (kerberosCheck.checkKerberosAuthentication()) {
+                System.out.println("Kerberos authentication successful");
+            } else {
+                System.out.println("Kerberos authentication failed");
+            }
             System.exit(0);
         } else {
 
