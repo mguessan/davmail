@@ -165,8 +165,7 @@ public class KerberosHelper {
             }
             // create client login context
             if (clientLoginContext == null) {
-                final LoginContext localLoginContext = new LoginContext("spnego-client", null, KERBEROS_CALLBACK_HANDLER,
-                        new KerberosLoginConfiguration(KERBEROS_CALLBACK_HANDLER.principal));
+                final LoginContext localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
                 localLoginContext.login();
                 clientLoginContext = localLoginContext;
             }

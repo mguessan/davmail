@@ -37,13 +37,33 @@ import java.util.HashMap;
  */
 public class KerberosLoginConfiguration extends Configuration {
     protected static final Logger LOGGER = Logger.getLogger(KerberosLoginConfiguration.class);
+    protected static final AppConfigurationEntry[] CLIENT_LOGIN_MODULE;
     protected static final AppConfigurationEntry[] SERVER_LOGIN_MODULE;
 
     static {
+        HashMap<String, String> clientLoginModuleOptions = new HashMap<>();
+        if (LOGGER.isDebugEnabled()) {
+            clientLoginModuleOptions.put("debug", "true");
+        }
+
+        clientLoginModuleOptions.put("useTicketCache", "true");
+        clientLoginModuleOptions.put("renewTGT", "true");
+
+        String krb5ccName = System.getenv().get("KRB5CCNAME");
+        if (krb5ccName != null && !krb5ccName.isEmpty()) {
+            clientLoginModuleOptions.put("ticketCache", krb5ccName);
+        }
+
+        CLIENT_LOGIN_MODULE = new AppConfigurationEntry[]{new AppConfigurationEntry(
+                "com.sun.security.auth.module.Krb5LoginModule",
+                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                clientLoginModuleOptions)};
+
         HashMap<String, String> serverLoginModuleOptions = new HashMap<>();
         if (LOGGER.isDebugEnabled()) {
             serverLoginModuleOptions.put("debug", "true");
         }
+
         serverLoginModuleOptions.put("isInitiator", "false"); // acceptor (server) mode
         serverLoginModuleOptions.put("useKeyTab", "false"); // do not use credentials stored in keytab file
         serverLoginModuleOptions.put("storeKey", "true"); // store credentials in subject
@@ -53,41 +73,10 @@ public class KerberosLoginConfiguration extends Configuration {
                 serverLoginModuleOptions)};
     }
 
-    private static AppConfigurationEntry[] buildClientLoginModule(String principal) {
-        HashMap<String, String> options = new HashMap<>();
-        if (LOGGER.isDebugEnabled()) {
-            options.put("debug", "true");
-        }
-        options.put("useTicketCache", "true");
-        options.put("renewTGT", "true");
-        String krb5ccName = System.getenv().get("KRB5CCNAME");
-        if (krb5ccName != null && !krb5ccName.isEmpty()) {
-            options.put("ticketCache", krb5ccName);
-        }
-        if (principal != null && !principal.isEmpty()) {
-            options.put("principal", principal);
-        }
-        LOGGER.debug("KerberosLoginConfiguration: " + options);
-        return new AppConfigurationEntry[]{new AppConfigurationEntry(
-                "com.sun.security.auth.module.Krb5LoginModule",
-                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-                options)};
-    }
-
-    private final String clientPrincipal;
-
-    public KerberosLoginConfiguration(String clientPrincipal) {
-        this.clientPrincipal = clientPrincipal;
-    }
-
-    public KerberosLoginConfiguration() {
-        this(null);
-    }
-
     @Override
     public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
         if ("spnego-client".equals(name)) {
-            return buildClientLoginModule(clientPrincipal);
+            return CLIENT_LOGIN_MODULE;
         } else if ("spnego-server".equals(name)) {
             return SERVER_LOGIN_MODULE;
         } else {

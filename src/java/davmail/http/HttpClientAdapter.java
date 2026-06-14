@@ -28,6 +28,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
 import org.apache.http.auth.NTCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpResponseException;
@@ -66,6 +67,7 @@ import org.codehaus.jettison.json.JSONObject;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.*;
+import java.security.Principal;
 import java.security.Security;
 import java.util.HashSet;
 import java.util.List;
@@ -603,11 +605,24 @@ public class HttpClientAdapter implements Closeable {
     }
 
     public void setCredentials(String username, String password) {
-        parseUserName(username);
-        if (userid != null && password != null) {
-            LOGGER.debug("Creating NTCredentials for user " + userid + " workstation " + WORKSTATION_NAME + " domain " + domain);
-            NTCredentials credentials = new NTCredentials(userid, password, WORKSTATION_NAME, domain);
-            provider.setCredentials(AuthScope.ANY, credentials);
+        if (Settings.getBooleanProperty("davmail.enableKerberos")) {
+            LOGGER.debug("Kerberos enabled, set empty credentials");
+            provider.setCredentials(new AuthScope(null, -1, null), new Credentials() {
+                public String getPassword() {
+                    return null;
+                }
+
+                public Principal getUserPrincipal() {
+                    return null;
+                }
+            });
+        } else {
+            parseUserName(username);
+            if (userid != null && password != null) {
+                LOGGER.debug("Creating NTCredentials for user " + userid + " workstation " + WORKSTATION_NAME + " domain " + domain);
+                NTCredentials credentials = new NTCredentials(userid, password, WORKSTATION_NAME, domain);
+                provider.setCredentials(AuthScope.ANY, credentials);
+            }
         }
     }
 

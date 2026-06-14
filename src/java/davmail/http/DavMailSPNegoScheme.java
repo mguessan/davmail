@@ -22,7 +22,8 @@ package davmail.http;
 import org.apache.http.auth.Credentials;
 import org.apache.http.impl.auth.SPNegoScheme;
 import org.apache.log4j.Logger;
-import org.ietf.jgss.*;
+import org.ietf.jgss.GSSException;
+import org.ietf.jgss.Oid;
 
 import javax.security.auth.RefreshFailedException;
 import javax.security.auth.Subject;
@@ -33,8 +34,8 @@ import java.security.PrivilegedAction;
 import java.security.Security;
 
 /**
- * Override native SPNegoScheme to handle Kerberos.
- * Try to get Kerberos ticket from session, if this fails use callbacks to get credentials from user.
+ * Override the native SPNegoScheme to handle Kerberos.
+ * Try to get Kerberos ticket from the session, if this fails, use callbacks to get credentials interactively.
  */
 public class DavMailSPNegoScheme extends SPNegoScheme {
     protected static final Logger LOGGER = Logger.getLogger(DavMailSPNegoScheme.class);
@@ -81,8 +82,7 @@ public class DavMailSPNegoScheme extends SPNegoScheme {
             if (clientLoginContext == null) {
                 final LoginContext localLoginContext;
                 try {
-                    localLoginContext = new LoginContext("spnego-client", null, KERBEROS_CALLBACK_HANDLER,
-                            new KerberosLoginConfiguration(KERBEROS_CALLBACK_HANDLER.principal));
+                    localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
                     localLoginContext.login();
                     clientLoginContext = localLoginContext;
                 } catch (LoginException e) {
