@@ -18,6 +18,7 @@
  */
 package davmail.http;
 
+import davmail.Settings;
 import org.apache.log4j.Logger;
 
 import javax.security.auth.login.AppConfigurationEntry;
@@ -52,6 +53,8 @@ public class KerberosLoginConfiguration extends Configuration {
         String krb5ccName = System.getenv().get("KRB5CCNAME");
         if (krb5ccName != null && !krb5ccName.isEmpty()) {
             clientLoginModuleOptions.put("ticketCache", krb5ccName);
+        } else if (Settings.isLinux()) {
+            LOGGER.warn("KRB5CCNAME environment variable not set, this may cause Kerberos authentication to fail if default_ccache_name is set ti KEYRING");
         }
 
         CLIENT_LOGIN_MODULE = new AppConfigurationEntry[]{new AppConfigurationEntry(
