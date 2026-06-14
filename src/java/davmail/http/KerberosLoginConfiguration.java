@@ -54,7 +54,7 @@ public class KerberosLoginConfiguration extends Configuration {
         if (krb5ccName != null && !krb5ccName.isEmpty()) {
             clientLoginModuleOptions.put("ticketCache", krb5ccName);
         } else if (Settings.isLinux()) {
-            LOGGER.warn("KRB5CCNAME environment variable not set, this may cause Kerberos authentication to fail if default_ccache_name is set ti KEYRING");
+            LOGGER.warn("KRB5CCNAME environment variable not set, this may cause Kerberos authentication to fail if default_ccache_name is set to KEYRING");
         }
 
         CLIENT_LOGIN_MODULE = new AppConfigurationEntry[]{new AppConfigurationEntry(
