@@ -139,6 +139,10 @@ rm -f dist/lib/*win32*.jar
 rm -f dist/lib/*x86*.jar
 rm -f dist/lib/*growl*.jar
 rm -f dist/lib/javafx*.jar
+rm -f dist/lib/jdk.*.jar
+rm -f dist/lib/jfx.*.jar
+rm -f dist/lib/junit*.jar
+rm -f dist/lib/winrun4j*.jar
 install -m 0664 dist/lib/* $RPM_BUILD_ROOT%{_datadir}/davmail/lib/
 install -m 0664 dist/*.jar $RPM_BUILD_ROOT%{_datadir}/davmail/
 
