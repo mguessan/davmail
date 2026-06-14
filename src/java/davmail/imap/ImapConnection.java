@@ -974,7 +974,7 @@ public class ImapConnection extends AbstractConnection {
                         partOutputStream = new PartOutputStream(baos, false, true, startIndex, maxSize);
                         partInputStream = messageWrapper.getRawInputStream();
                     } else if ("RFC822.HEADER".equals(param) || (partIndexString != null && partIndexString.startsWith("HEADER"))) {
-                        // Header requested fetch  headers
+                        // Header requested fetch     headers
                         String[] requestedHeaders = getRequestedHeaders(partIndexString);
                         // OSX Lion special flags request
                         if (requestedHeaders != null && requestedHeaders.length == 1 && "content-class".equals(requestedHeaders[0]) && message.contentClass != null) {

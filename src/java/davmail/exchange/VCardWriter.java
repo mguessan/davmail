@@ -46,7 +46,7 @@ public class VCardWriter extends ICSBufferedWriter {
     public void appendProperty(String propertyName, String... propertyValue) {
         boolean hasValue = false;
         for (String value : propertyValue) {
-            if ((value != null) && (value.length() > 0)) {
+            if ((value != null) && (!value.isEmpty())) {
                 hasValue = true;
                 break;
             }

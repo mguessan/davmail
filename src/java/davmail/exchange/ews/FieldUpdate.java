@@ -53,7 +53,7 @@ public class FieldUpdate {
     public void write(String itemType, Writer writer) throws IOException {
         String action;
         //noinspection VariableNotUsedInsideIf
-        if (value == null || value.length() == 0) {
+        if (value == null || value.isEmpty()) {
             action = "Delete";
         } else {
             action = "Set";
@@ -66,9 +66,9 @@ public class FieldUpdate {
         }
 
         // do not try to set empty value on create
-        if (itemType != null || (value != null && value.length() > 0)) {
+        if (itemType != null || (value != null && !value.isEmpty())) {
             StringBuilder buffer = new StringBuilder();
-            if (value == null || value.length() == 0) {
+            if (value == null || value.isEmpty()) {
                 fieldURI.appendTo(buffer);
             } else {
                 fieldURI.appendValue(buffer, itemType, value);

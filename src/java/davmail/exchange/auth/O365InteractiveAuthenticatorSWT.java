@@ -31,7 +31,6 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -63,7 +62,7 @@ public class O365InteractiveAuthenticatorSWT {
         // initialize SWT
         SwtGatewayTray.initDisplay();
 
-        // allow SSO on windows
+        // allow SSO on Windows
         System.setProperty("org.eclipse.swt.browser.Edge.allowSingleSignOnUsingOSPrimaryAccount",
                 Settings.getProperty("davmail.oauth.allowSingleSignOnUsingOSPrimaryAccount", "true"));
 

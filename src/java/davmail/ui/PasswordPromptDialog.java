@@ -26,7 +26,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 /**
- * Get smartcard password
+ * Get smart card password
  */
 public class PasswordPromptDialog extends JDialog {
     final JPasswordField passwordField = new JPasswordField(20);
@@ -46,7 +46,7 @@ public class PasswordPromptDialog extends JDialog {
     }
 
     /**
-     * Get smartcard password.
+     * Get smart card password.
      *
      * @param prompt password prompt from PKCS11 module
      */
@@ -55,7 +55,7 @@ public class PasswordPromptDialog extends JDialog {
     }
 
     /**
-     * Get smartcard password.
+     * Get smart card password.
      *
      * @param prompt       password prompt from PKCS11 module
      * @param captchaImage ISA filter pinsafe image
