@@ -277,15 +277,11 @@ public class VCalendar extends VObject {
                         }
                     }
                 } else {
-                    // add organizer line to all events created in Exchange for active sync
-                    String organizer = getEmailValue(vObject.getProperty("ORGANIZER"));
-                    if (organizer == null) {
-                        vObject.setPropertyValue("ORGANIZER", "MAILTO:" + email);
-                    } else if (!email.equalsIgnoreCase(organizer) && vObject.getProperty("X-MICROSOFT-CDO-REPLYTIME") == null) {
-                        vObject.setPropertyValue("X-MICROSOFT-CDO-REPLYTIME", now);
-                    }
-                    // set OWA allday flag
+                    // from client to server
+
+                    // set Exchange allday flag
                     vObject.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", isAllDay(vObject) ? "TRUE" : "FALSE");
+                    // set Exchange busy status from TRANSP property
                     if (vObject.getPropertyValue("TRANSP") != null) {
                         vObject.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS",
                                 !"TRANSPARENT".equals(vObject.getPropertyValue("TRANSP")) ? "BUSY" : "FREE");
