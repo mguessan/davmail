@@ -44,6 +44,10 @@
         <available classname="javafx.embed.swing.JFXPanel" property="is.javafx" classpathref="classpath"/>
     </condition>
 
+    <condition property="is.winrun4j">
+        <available classname="org.boris.winrun4j.AbstractService" classpathref="classpath"/>
+    </condition>
+
     <condition property="is.java8">
         <matches string="${ant.java.version}" pattern="8"/>
     </condition>
@@ -115,6 +119,7 @@
         <echo level="info" message="Compile on debian with openjfx"/>
         <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8"
                includeantruntime="false">
+            <exclude name="davmail/service/DavService.java" unless="is.winrun4j"/>
             <compilerarg value="--add-exports"/>
             <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED"/>
             <compilerarg value="--add-exports"/>
@@ -134,6 +139,7 @@
         <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8" source="11" target="11"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
+            <exclude name="davmail/service/DavService.java" unless="is.winrun4j"/>
             <compilerarg value="--add-exports"/>
             <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED"/>
             <compilerarg value="--add-exports"/>
@@ -150,6 +156,7 @@
         <javac srcdir="src/java" destdir="target/classes" source="1.8" target="1.8" debug="on" encoding="UTF-8"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
+            <exclude name="davmail/service/DavService.java" unless="is.winrun4j"/>
             <classpath>
                 <path refid="classpath"/>
             </classpath>
