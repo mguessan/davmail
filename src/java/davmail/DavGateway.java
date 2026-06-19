@@ -84,6 +84,8 @@ public final class DavGateway {
                     case "-kerberos":
                         kerberos = true;
                         break;
+                    default:
+                        LOGGER.warn("Unknown option: " + arg);
                 }
             } else {
                 configFilePath = arg;
