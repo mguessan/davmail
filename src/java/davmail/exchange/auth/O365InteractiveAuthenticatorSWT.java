@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Alternative embedded browser implementation based on SWT instead of OpenJFX
  */
-public class O365InteractiveAuthenticatorSWT {
+public class O365InteractiveAuthenticatorSWT implements O365InteractiveAuthenticatorBackend {
 
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticatorSWT.class);
 
@@ -80,7 +80,7 @@ public class O365InteractiveAuthenticatorSWT {
                     if (!authenticator.isAuthenticated && authenticator.errorCode == null) {
                         authenticator.errorCode = "user closed authentication window";
                     }
-                    dispose();
+                    close();
                 });
 
                 browser = new Browser(shell, SWT.NONE);
@@ -99,7 +99,7 @@ public class O365InteractiveAuthenticatorSWT {
                             authenticator.handleCode(location);
 
                             shell.close();
-                            dispose();
+                            close();
                         }
 
                     }
@@ -148,7 +148,11 @@ public class O365InteractiveAuthenticatorSWT {
         }
     }
 
-    protected void dispose() {
+    public boolean isVisible() {
+        return true;
+    }
+
+    public void close() {
         Display.getDefault().asyncExec(() -> {
             if (browser != null) {
                 browser.dispose();
