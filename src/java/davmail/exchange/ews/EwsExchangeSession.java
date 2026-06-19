@@ -2001,7 +2001,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
 
                 if (createOrUpdateItemMethod == null) {
-                    // create
+                    // create item from VCALENDAR content, set additional properties as workaround to Exchange handling issues
                     EWSMethod.Item newItem = new EWSMethod.Item();
                     newItem.type = "CalendarItem";
                     newItem.mimeContent = IOUtil.encodeBase64(vCalendar.toString());
@@ -2037,6 +2037,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
 
                     if (vCalendar.isMeeting() && "Exchange2007_SP1".equals(serverVersion)) {
+                        // Exchange 2007 does not properly handle attendees
                         Set<String> requiredAttendees = new HashSet<>();
                         Set<String> optionalAttendees = new HashSet<>();
                         List<VProperty> attendeeProperties = vCalendar.getFirstVeventProperties("ATTENDEE");
@@ -2044,16 +2045,6 @@ public class EwsExchangeSession extends ExchangeSession {
                             for (VProperty property : attendeeProperties) {
                                 String attendeeEmail = vCalendar.getEmailValue(property);
                                 if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
-                                    if (email.equals(attendeeEmail)) {
-                                        String ownerPartStat = property.getParamValue("PARTSTAT");
-                                        if ("ACCEPTED".equals(ownerPartStat)) {
-                                            ownerResponseReply = "AcceptItem";
-                                            // do not send DeclineItem to avoid deleting target event
-                                        } else if ("DECLINED".equals(ownerPartStat) ||
-                                                "TENTATIVE".equals(ownerPartStat)) {
-                                            ownerResponseReply = "TentativelyAcceptItem";
-                                        }
-                                    }
                                     InternetAddress internetAddress = new InternetAddress(attendeeEmail, property.getParamValue("CN"));
                                     String attendeeRole = property.getParamValue("ROLE");
                                     if ("REQ-PARTICIPANT".equals(attendeeRole)) {
@@ -2064,6 +2055,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 }
                             }
                         }
+                        // add organizer as FROM recipient
                         List<VProperty> organizerProperties = vCalendar.getFirstVeventProperties("ORGANIZER");
                         if (organizerProperties != null) {
                             VProperty property = organizerProperties.get(0);
@@ -2073,9 +2065,11 @@ public class EwsExchangeSession extends ExchangeSession {
                             }
                         }
 
+                        // add required attendes as TO recipients
                         if (!requiredAttendees.isEmpty()) {
                             updates.add(Field.createFieldUpdate("to", StringUtil.join(requiredAttendees, ", ")));
                         }
+                        // add optional attendees as CC recipients
                         if (!optionalAttendees.isEmpty()) {
                             updates.add(Field.createFieldUpdate("cc", StringUtil.join(optionalAttendees, ", ")));
                         }
@@ -2129,25 +2123,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 } else {
                     LOGGER.warn("Overwritten event " + getHref());
                 }
-            }
-
-            // force responsetype on Exchange 2007
-            if (ownerResponseReply != null) {
-                EWSMethod.Item responseTypeItem = new EWSMethod.Item();
-                responseTypeItem.referenceItemId = new ItemId("ReferenceItemId", createOrUpdateItemMethod.getResponseItem());
-                responseTypeItem.type = ownerResponseReply;
-                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, null, responseTypeItem);
-                executeMethod(createOrUpdateItemMethod);
-
-                // force urlcompname again
-                ArrayList<FieldUpdate> updates = new ArrayList<>();
-                updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-                createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                        ConflictResolution.AlwaysOverwrite,
-                        SendMeetingInvitationsOrCancellations.SendToNone,
-                        new ItemId(createOrUpdateItemMethod.getResponseItem()),
-                        updates);
-                executeMethod(createOrUpdateItemMethod);
             }
 
             // handle deleted occurrences
