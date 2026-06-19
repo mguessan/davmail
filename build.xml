@@ -22,6 +22,10 @@
         </delete>
     </target>
 
+    <condition property="buildvariant" value="${buildvariant}" else="trunk">
+        <isset property="buildvariant"/>
+    </condition>
+
     <condition property="is.windows">
         <os family="windows"/>
     </condition>
@@ -338,7 +342,7 @@
     <target name="jar" depends="compile">
         <delete dir="dist"/>
         <mkdir dir="dist"/>
-        <property name="release-name" value="${version}-trunk"/>
+        <property name="release-name" value="${version}-${buildvariant}"/>
         <pathconvert property="manifest-classpath" pathsep=" ">
             <mapper>
                 <chainedmapper>
