@@ -69,7 +69,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
-import java.util.Stack;
+import java.util.ArrayDeque;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -802,8 +802,8 @@ public class ImapConnection extends AbstractConnection {
     }
 
     static private class KeepAlive {
-        private ScheduledExecutorService scheduler;
-        private ScheduledFuture<?> task;
+        private final ScheduledExecutorService scheduler;
+        private final ScheduledFuture<?> task;
 
         public KeepAlive(Runnable cb) {
             scheduler = Executors.newScheduledThreadPool(1, r -> new Thread(r, currentThread().getName() + "-KeepAlive"));
@@ -2140,7 +2140,7 @@ public class ImapConnection extends AbstractConnection {
     static protected class ImapTokenizer {
         char[] value;
         int startIndex;
-        Stack<Character> quotes = new Stack<>();
+        ArrayDeque<Character> quotes = new ArrayDeque<>();
 
         ImapTokenizer(String value) {
             this.value = value.toCharArray();
