@@ -30,6 +30,7 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
@@ -87,6 +88,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 @Override
                 public void run() {
                     try {
+                        LOGGER.info("Detected SWT "+ Library.getVersionString()+", init display");
                         Display.setAppName("davmail");
                         display = Display.getDefault();
                         shell = new Shell(display);
