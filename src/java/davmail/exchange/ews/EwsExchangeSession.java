@@ -141,6 +141,24 @@ public class EwsExchangeSession extends ExchangeSession {
         // Unable to map CANCELLED: cancelled events are directly deleted on Exchange
     }
 
+    static final String UTC_TIMEZONE = "UTC";
+
+    static String resolveCalendarTimezone(VObject vEvent, String propertyName) {
+        VProperty property = vEvent.getProperty(propertyName);
+        String timezone = null;
+        if (property != null) {
+            String value = property.getValue();
+            if (value != null && value.endsWith("Z")) {
+                return UTC_TIMEZONE;
+            }
+            timezone = property.getParamValue("TZID");
+        }
+        if (timezone != null && timezone.isEmpty()) {
+            timezone = null;
+        }
+        return timezone;
+    }
+
     protected HttpClientAdapter httpClient;
 
     protected Map<String, String> folderIdMap;
@@ -1629,17 +1647,24 @@ public class EwsExchangeSession extends ExchangeSession {
                 updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART"))));
                 updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vEvent.getPropertyValue("DTEND"))));
                 if ("Exchange2007_SP1".equals(serverVersion)) {
-                    updates.add(Field.createFieldUpdate("meetingtimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
+                    String meetingtimezone = resolveCalendarTimezone(vEvent, "DTSTART");
+                    if (meetingtimezone != null) {
+                        updates.add(Field.createFieldUpdate("meetingtimezone", meetingtimezone));
+                    }
                 } else {
-                    String starttimezone = vEvent.getProperty("DTSTART").getParamValue("TZID");
+                    String starttimezone = resolveCalendarTimezone(vEvent, "DTSTART");
                     String endtimezone = starttimezone;
                     if (vEvent.getProperty("DTEND") != null) {
-                        endtimezone = vEvent.getProperty("DTEND").getParamValue("TZID");
+                        endtimezone = resolveCalendarTimezone(vEvent, "DTEND");
                     }
                     // for some reason we are unable to update timezone on a shared calendar
                     if (!isShared || Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
-                        updates.add(Field.createFieldUpdate("starttimezone", starttimezone));
-                        updates.add(Field.createFieldUpdate("endtimezone", endtimezone));
+                        if (starttimezone != null) {
+                            updates.add(Field.createFieldUpdate("starttimezone", starttimezone));
+                        }
+                        if (endtimezone != null) {
+                            updates.add(Field.createFieldUpdate("endtimezone", endtimezone));
+                        }
                     }
                 }
 
