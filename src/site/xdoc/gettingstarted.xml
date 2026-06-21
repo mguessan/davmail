@@ -40,16 +40,16 @@
                     <td>Authentication</td>
                     <td>Authentication mode:<br/>
                         <ul>
-                            <li>O365Interactive Office 365 with interactive browser window, not available in headless mode (OpenJFX or SWT required)</li>
+                            <li>O365Interactive Office 365 with an interactive browser window, not available in headless mode (OpenJFX or SWT required)</li>
                             <li>O365Manual Office 365 with interactive dialog, not available in headless mode</li>
                             <li>O365DeviceCode Office 365 with device code flow</li>
-                            <li>O365Transparent Office 365 transparent authentication, does not support all MFA factors</li>
+                            <li>O365Transparent Office 365 transparent authentication, limited MFA factors support</li>
                         </ul>
                     </td>
                 </tr>
                 <tr>
                     <td>OWA url</td>
-                    <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL
+                    <td>Outlook Web Access URL to access the exchange server, must be the base webmail URL
                         <br/>
                         The path depends on Exchange version and configuration, with or without a reverse proxy.
                         DavMail must be able to find the authentication form at the provided URL.<br/>
@@ -59,7 +59,7 @@
                           <li>Exchange 2007 Webdav mode: <code>https://<i>mail.company.com</i>/owa/</code></li>
                           <li>Exchange 2007 EWS mode: <code>https://<i>mail.company.com</i>/owa/</code></li>
                           <li>Exchange 2010 EWS mode: <code>https://<i>mail.company.com</i>/owa/</code></li>
-                          <li>Exchange 2010 EWS mode with unsupported authentication form e.g. Windows Live login:
+                          <li>Exchange 2010 EWS mode with an unsupported authentication form:
                               <code>https://<i>mail.company.com</i>/ews/exchange.asmx</code></li>
                         </ul>
                     </td>
