@@ -50,8 +50,8 @@ Value: 1
 
             <subsection name="Linux workstation Kerberos setup">
                 <p>Windows kerberos token is not available on a default Linux workstation setup. You will need to
-                    configure /etc/krb5.conf with Active directory domain name. You may also need to provide a kdc
-                    (Active Directory Domain controller):
+                    configure /etc/krb5.conf with your Active Directory domain name. You may also need to provide a kdc
+                    (Active Directory Domain controller) address:
                 </p>
                 <source><![CDATA[
 [libdefaults]
@@ -65,6 +65,27 @@ Value: 1
 ]]></source>
                 <p>Then create Kerberos ticket: <code>kinit <i>username</i></code>.</p>
                 <p>Check ticket with<code>klist</code></p>
+                <p>Additional note: on recent linux distribution by default credential cache is stored in OS keyring
+                with: <code>default_ccache_name = KEYRING:persistent:%{uid}</code>, making it invisible to Java. The
+                    workaround is to set KRB5CCNAME environment variable first:
+
+                <source><![CDATA[
+# set ticket cache path
+KRB5CCNAME=/tmp/krb5cc_$(id -u)
+
+# Reset authentication
+kdestroy -A
+
+# Authenticate
+kinit
+
+# Check ticket, should have a FILE ticket cache
+klist
+
+# Check authentication, should succeed without prompting for credentials
+davmail -kerberos
+]]></source>
+                </p>
             </subsection>
             
             <subsection name="DavMail configuration">
@@ -72,7 +93,8 @@ Value: 1
                 must make sure external connections to DavMail are disabled.</p>
                 <p>There is no way in current implementation to define a local password to secure client to DavMail
                 communication.</p>
-                <p>DavMail needs direct access to Kerberos ticket, which means Kerberos will not work in server mode.</p>
+                <p>DavMail needs direct access to Kerberos ticket, which means Kerberos will not work with a
+                    remote DavMail instance.</p>
             </subsection>
 
         </section>
