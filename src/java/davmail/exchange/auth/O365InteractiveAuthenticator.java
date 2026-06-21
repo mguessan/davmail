@@ -53,8 +53,8 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
     URI ewsUrl = URI.create(Settings.getO365Url());
 
-    private O365InteractiveAuthenticatorFrame o365InteractiveAuthenticatorFrame;
-    private O365InteractiveAuthenticatorSWT o365InteractiveAuthenticatorSWT;
+    private O365InteractiveAuthenticatorBackend o365InteractiveAuthenticatorFrame;
+    private O365InteractiveAuthenticatorBackend o365InteractiveAuthenticatorSWT;
     private O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog;
 
     private String username;
@@ -144,14 +144,14 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         if (isSWTAvailable && !isDocker) {
             LOGGER.debug("Open SWT browser");
             try {
-                o365InteractiveAuthenticatorSWT = new O365InteractiveAuthenticatorSWT();
+                o365InteractiveAuthenticatorSWT = (O365InteractiveAuthenticatorBackend)Class.forName("davmail.exchange.auth.O365InteractiveAuthenticatorSWT").newInstance();
                 o365InteractiveAuthenticatorSWT.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
                 o365InteractiveAuthenticatorSWT.authenticate(initUrl, redirectUri);
-            } catch (Error e) {
+            } catch (Error | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                 LOGGER.warn("Unable to load SWT browser: "+e.getMessage());
                 if (o365InteractiveAuthenticatorSWT != null) {
                     try {
-                        o365InteractiveAuthenticatorSWT.dispose();
+                        o365InteractiveAuthenticatorSWT.close();
                     } catch (Throwable t) {
                         LOGGER.warn("Error disposing SWT frame: "+t.getMessage());
                     }
@@ -166,10 +166,10 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             LOGGER.info("Open JavaFX (OpenJFX) browser");
             SwingUtilities.invokeLater(() -> {
                 try {
-                    o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
+                    o365InteractiveAuthenticatorFrame = (O365InteractiveAuthenticatorBackend)Class.forName("davmail.exchange.auth.O365InteractiveAuthenticatorFrame").newInstance();
                     o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
                     o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
-                } catch (NoClassDefFoundError e) {
+                } catch (NoClassDefFoundError | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                     LOGGER.warn("Unable to load JavaFX (OpenJFX)");
                 } catch (IllegalAccessError e) {
                     LOGGER.warn("Unable to load JavaFX (OpenJFX), append --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED to java options");
@@ -212,7 +212,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         }
 
         if (o365InteractiveAuthenticatorSWT != null) {
-            o365InteractiveAuthenticatorSWT.dispose();
+            o365InteractiveAuthenticatorSWT.close();
         }
 
         if (isAuthenticated) {
