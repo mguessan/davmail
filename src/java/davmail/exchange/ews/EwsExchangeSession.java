@@ -1818,7 +1818,6 @@ public class EwsExchangeSession extends ExchangeSession {
             // first try to load existing event
             String currentEtag = null;
             ItemId currentItemId = null;
-            String ownerResponseReply = null;
             boolean isMeetingResponse = false;
             boolean isMozSendInvitations = true;
             boolean isMozDismiss = false;
