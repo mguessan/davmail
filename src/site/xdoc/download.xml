@@ -68,9 +68,7 @@
             </subsection>
 
             <subsection name="Server (shared) mode">
-                <ul>
-                    <li>
-                        <strong>Standalone:</strong>
+                <p>
                         Download standalone package for Windows:
                         <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-standalone.zip
                         </a>
@@ -81,19 +79,7 @@
                         and follow instructions at
                         <a href="serversetup.html">DavMail Setup as a standalone server</a>
                         <br/>
-                    </li>
-                    <li>
-                        <strong>Webapp:</strong>
-                        If you intend to run DavMail inside an application server, download webapp package
-                        <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.war
-                        </a>
-                        <br/>
-                        and follow instructions at
-                        <a href="serversetup.html">DavMail Setup as a JEE Web Application</a>
-                        (last section)
-                        <br/>
-                    </li>
-                </ul>
+                </p>
             </subsection>
 
             <subsection name="Build from source">
