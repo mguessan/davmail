@@ -18,40 +18,39 @@
                 Pick your architecture, ARM for Apple Silicon and x86 64 for intel-based Macs.
             </p>
             <p>An alternative is to use SDKMAN to install java, see <a href="https://sdkman.io/jdks/zulu/">SDKMAN Zulu</a>
-                <code>sdk install java 25.0.3.fx-zulu</code>
+                <code><![CDATA[
+sdk install java 25.0.3.fx-zulu
+]]></code>
             </p>
             <p>Next download
-                <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
-                </a>
-            </p>
-            <p>This application bundle is built from source with ant. However, to avoid the apple tax, the
-                package is not signed. On recent macOS versions you will get a security warning and a suggestion to move
-                application to trash. Just open settings / Privacy &amp; Security, find the message:
-                "DavMail was blocked from use because it is not from an identified developer" and click
-                <code>Open Anyway</code>
-            </p>
-            <p>On older OSX Mountain Lion, you need to disable Gatekeeper (at least temporarily) to avoid the
-                warning or <code>DavMail is damaged and can’t be opened</code> message with Java 6 package.
-            </p>
-
-            <p>Download DavMail macOS package from Sourceforge:
+                <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip</a>
             </p>
             <div style="width: 100%;text-align: center">
                 <img src="images/osxdownload.png" alt="OSX Download"/>
             </div>
-            <p>Safari should automatically extract application from archive. If not, just
-                double-click on the zip file to trigger decompression. DavMail.app directory is then recognized as a
-                valid OSX application. However, as the application is not signed, you will need to bypass warning
-                under Privacy &amp; Security.
+
+            <p>DavMail is opensourc and the application bundle is built from publicly available source.
+                However, to avoid the apple tax, the package is not signed.
+                On recent macOS versions (e.g. macOS Tahoe) you will get a security warning and a suggestion to move
+                application to trash. Open settings / Privacy &amp; Security, find the message:
+                "DavMail was blocked from use because it is not from an identified developer" and click
+                <code>Open Anyway</code>
             </p>
+
             <p>On OSX Mountain Lion, open System Preferences and choose
                 Security and Privacy, then unlock panel with lock icon and choose Anywhere:
             </p>
             <div style="width: 100%;text-align: center">
                 <img src="images/osxgatekeeper.png" alt="OSX Gatekeeper"/>
             </div>
+
+            <p>Safari should automatically extract application from archive. If not, just
+                double-click on the zip file to trigger decompression. DavMail.app directory is then recognized as a
+                valid OSX application.
+            </p>
             <p>Launch DavMail application once (double-click on the application icon).</p>
-            <p>You can then go back to System Preferences/Security and Privacy and restore original setting.
+            <p>On OSX Mountain Lion, You can then go back to System Preferences/Security and Privacy and restore
+                original setting.
             </p>
             <p>On first start the application displays the Settings (Preferences) frame.
             </p>
@@ -59,12 +58,12 @@
                 <img src="images/osxdesktop.jpg" alt="OSX Desktop"/>
             </div>
             <p>Growl is no longer supported.</p>
-            <p>Adjust DavMail settings:
+            <p>Next step is to adjust DavMail settings:
                 <a href="gettingstarted.html">Getting started</a>
             </p>
         </section>
         <section name="Troubleshooting">
-            <p>If macOS is unable to find you JDK/JRE, check java version in a terminal:
+            <p>If macOS is unable to find you JDK/JRE, check the current java version in a terminal:
             <code>java -version</code>.
                 If you get the following message:
                 <code>The operation couldn’t be completed. Unable to locate a Java Runtime.</code>
@@ -81,8 +80,8 @@
                 Grab the Zulu JRE FX zip package, see above instructions, then move its content inside DavMail.app.
                 Then edit DavMail Info.plist to adjust JAVA_HOME, an example LSEnvironment setting is already available.
             <source><![CDATA[
-                <key>LSEnvironment</key>
-                <dict><key>JAVA_HOME</key><string>Contents/Frameworks/azul-jre-fx/Contents/Home</string></dict>
+<key>LSEnvironment</key>
+<dict><key>JAVA_HOME</key><string>Contents/Frameworks/azul-jre-fx/Contents/Home</string></dict>
             ]]></source>
             </p>
             <p>As macOS maintains an internal cache of application settings, you will have to force a full cache reload:
