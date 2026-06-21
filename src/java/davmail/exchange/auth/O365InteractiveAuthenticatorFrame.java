@@ -54,7 +54,7 @@ import java.nio.charset.StandardCharsets;
  * Interactive authenticator UI based on OpenJFX.
  * Need access to internal urlhandler on recent JDK versions with: --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED
  */
-public class O365InteractiveAuthenticatorFrame extends JFrame {
+public class O365InteractiveAuthenticatorFrame extends JFrame implements O365InteractiveAuthenticatorBackend {
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticatorFrame.class);
 
     private O365InteractiveAuthenticator authenticator;

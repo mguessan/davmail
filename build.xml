@@ -22,6 +22,10 @@
         </delete>
     </target>
 
+    <condition property="buildvariant" value="${buildvariant}" else="trunk">
+        <isset property="buildvariant"/>
+    </condition>
+
     <condition property="is.windows">
         <os family="windows"/>
     </condition>
@@ -40,16 +44,17 @@
         <available classname="javafx.embed.swing.JFXPanel" property="is.javafx" classpathref="classpath"/>
     </condition>
 
+    <condition property="is.winrun4j">
+        <available classname="org.boris.winrun4j.AbstractService" classpathref="classpath"/>
+    </condition>
+
     <condition property="is.java8">
         <matches string="${ant.java.version}" pattern="8"/>
     </condition>
 
     <!-- recent debian jdk with OpenJFX -->
     <condition property="is.debian">
-        <and>
-            <available file="/usr/share/java/javafx-base.jar"/>
-            <matches string="${ant.java.version}" pattern="1[1-9]|[2-9][0-9]"/>
-        </and>
+        <matches string="${ant.java.version}" pattern="1[1-9]|[2-9][0-9]"/>
     </condition>
 
     <condition property="is.java11">
@@ -108,16 +113,16 @@
 
     <target name="compile-debian" if="is.debian">
         <mkdir dir="target/classes"/>
-        <echo level="info" message="Compile on debian with openjfx"/>
+        <echo level="info" message="Compile on debian"/>
         <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8"
                includeantruntime="false">
+            <exclude name="davmail/service/DavService.java" unless="is.winrun4j"/>
+            <exclude name="davmail/exchange/auth/O365InteractiveAuthenticatorFrame.java" unless="is.javafx"/>
+            <exclude name="davmail/exchange/auth/O365InteractiveJSLogger.java" unless="is.javafx"/>
             <compilerarg value="--add-exports"/>
             <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED"/>
             <compilerarg value="--add-exports"/>
             <compilerarg value="java.base/sun.net.www.protocol.https=ALL-UNNAMED"/>
-            <compilerarg value="--module-path"/>
-            <compilerarg value="/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar"/>
-            <compilerarg value="--add-modules=javafx.base,javafx.controls,javafx.fxml,javafx.graphics,javafx.media,javafx.swing,javafx.web"/>
             <classpath>
                 <path refid="classpath"/>
             </classpath>
@@ -130,6 +135,9 @@
         <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8" source="11" target="11"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
+            <exclude name="davmail/service/DavService.java" unless="is.winrun4j"/>
+            <exclude name="davmail/exchange/auth/O365InteractiveAuthenticatorFrame.java" unless="is.javafx"/>
+            <exclude name="davmail/exchange/auth/O365InteractiveJSLogger.java" unless="is.javafx"/>
             <compilerarg value="--add-exports"/>
             <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED"/>
             <compilerarg value="--add-exports"/>
@@ -146,6 +154,9 @@
         <javac srcdir="src/java" destdir="target/classes" source="1.8" target="1.8" debug="on" encoding="UTF-8"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
+            <exclude name="davmail/service/DavService.java" unless="is.winrun4j"/>
+            <exclude name="davmail/exchange/auth/O365InteractiveAuthenticatorFrame.java" unless="is.javafx"/>
+            <exclude name="davmail/exchange/auth/O365InteractiveJSLogger.java" unless="is.javafx"/>
             <classpath>
                 <path refid="classpath"/>
             </classpath>
@@ -338,7 +349,7 @@
     <target name="jar" depends="compile">
         <delete dir="dist"/>
         <mkdir dir="dist"/>
-        <property name="release-name" value="${version}-trunk"/>
+        <property name="release-name" value="${version}-${buildvariant}"/>
         <pathconvert property="manifest-classpath" pathsep=" ">
             <mapper>
                 <chainedmapper>
