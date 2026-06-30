@@ -15,7 +15,7 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="6.6.1">
+            <subsection name="6.8.2">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
@@ -28,8 +28,8 @@
                     <strong>Next major release</strong>
                 </p>
                 <ul>
-                    <li>Implement a new Graph API backend. EWS is deprecated and will eventually be removed by
-                    Microsoft making this new backend mandatory</li>
+                    <li>Complete implementation of Graph backend. EWS is deprecated and will eventually be removed by
+                    Microsoft. EWS will remain available for on prem Exchange</li>
                 </ul>
             </subsection>
             <subsection name="Future">

@@ -58,6 +58,83 @@
   </developer>
   <content_rating type="oars-1.1" />
   <releases>
+      <release version="6.8.1" date="2026-06-30">
+          <description>
+              <p>Bugfix release with a fix for a long standing bug on contact sync over EWS.
+                  Implemented davmail.folderFetchPageSize in graph mode to change the default message fetch page size.
+                  Fixed an issue with kerberos authentication, KRB5CCNAME environment variable is mandatory
+                  with recent Linux distributions to force file based kerberos cache, introduced a new -kerberos
+                  command line option to validate token access.
+              </p>
+              <p>Graph</p>
+              <ul>
+                  <li>Graph: bring back paging size with davmail.folderFetchPageSize, see
+                      https://github.com/mguessan/davmail/issues/500
+                  </li>
+              </ul>
+
+              <p>O365</p>
+              <ul>
+                  <li>O365: merge java part of https://github.com/mguessan/davmail/pull/494</li>
+                  <li>O365: set resource parameter on token request only if OIDC is explicitly set to false</li>
+              </ul>
+              <p>EWS</p>
+              <ul>
+                  <li>EWS: merge https://github.com/mguessan/davmail/pull/496 Preserve UTC timezone when creating events
+                      with Zulu DTSTART/DTEND
+                  </li>
+                  <li>EWS: cleanup unused ownerResponseReply variable</li>
+                  <li>EWS: completely drop Exchange 2007 workaround on organizer response type, see
+                      https://github.com/mguessan/davmail/issues/493
+                  </li>
+                  <li>EWS: usersmimecertificate and msexchangecertificate are readonly, do not try to remove them from
+                      contact properties, see https://sourceforge.net/p/davmail/bugs/749/
+                  </li>
+              </ul>
+
+              <p>Kerberos</p>
+              <ul>
+                  <li>Kerberos: warn on linux on missing KRB5CCNAME environment variable</li>
+                  <li>Kerberos: introduce -kerberos command line option to check Kerberos configuration</li>
+                  <li>Kerberos: revert to static client login module creation and set empty credentials when kerberos is
+                      enabled to force JAAS authentication
+                  </li>
+                  <li>Kerberos: build client login module dynamically with principal</li>
+              </ul>
+              <p>Linux</p>
+              <ul>
+                  <li>Linux: exclude hamcrest-core dependency from build</li>
+                  <li>Linux: switch SWT : version 4.40 on linux platform independent package</li>
+                  <li>Linux: remove unused jars from RPM package</li>
+
+              </ul>
+              <p>Documentation</p>
+              <ul>
+                  <li>Doc: update macOS instructions</li>
+                  <li>Doc: drop references to legacy webapp package</li>
+                  <li>Doc: improve Kerberos setup instructions, describe KRB5CCNAME environment variable usage</li>
+                  <li>Doc: Add links to Flatpak and Docker on home page</li>
+                  <li>Doc: Update project home page description</li>
+                  <li>Doc: typo updates</li>
+              </ul>
+              <p>SWT</p>
+              <ul>
+                  <li>SWT: log loaded SWT version</li>
+              </ul>
+              <p>CalDAV</p>
+              <ul>
+                  <li>Caldav: map missing Europe/Kyiv standard timezone</li>
+                  <li>Caldav: drop old ActiveSync related workaround, see
+                      https://github.com/mguessan/davmail/issues/493
+                  </li>
+              </ul>
+              <p>Enhancement</p>
+              <ul>
+                  <li>Add proper warning on unknown command line option</li>
+                  <li>Cleanup from audit</li>
+              </ul>
+          </description>
+      </release>
       <release version="6.8.0" date="2026-06-12">
           <description>
               <p>First version with active Graph support available in GUI, refactored configuration to separate mode

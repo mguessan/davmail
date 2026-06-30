@@ -1,3 +1,54 @@
+## DavMail 6.8.1 2026-06-30
+Bugfix release with a fix for a long standing bug on contact sync over EWS.
+Implemented davmail.folderFetchPageSize in graph mode to change the default message fetch page size.
+Fixed an issue with kerberos authentication, KRB5CCNAME environment variable is mandatory
+with recent Linux distributions to force file based kerberos cache, introduced a new -kerberos 
+command line option to validate token access.
+
+### Graph
+- Graph: bring back paging size with davmail.folderFetchPageSize, see https://github.com/mguessan/davmail/issues/500
+
+### O365
+- O365: merge java part of https://github.com/mguessan/davmail/pull/494
+- O365: set resource parameter on token request only if OIDC is explicitly set to false
+
+### EWS
+- EWS: merge https://github.com/mguessan/davmail/pull/496 Preserve UTC timezone when creating events with Zulu DTSTART/DTEND
+- EWS: cleanup unused ownerResponseReply variable
+- EWS: completely drop Exchange 2007 workaround on organizer response type, see https://github.com/mguessan/davmail/issues/493
+- EWS: usersmimecertificate and msexchangecertificate are readonly, do not try to remove them from contact properties, see https://sourceforge.net/p/davmail/bugs/749/
+
+### Kerberos
+- Kerberos: warn on linux on missing KRB5CCNAME environment variable
+- Kerberos: introduce -kerberos command line option to check Kerberos configuration
+- Kerberos: revert to static client login module creation and set empty credentials when kerberos is enabled to force JAAS authentication
+- Kerberos: build client login module dynamically with principal
+
+### Linux
+- Linux: exclude hamcrest-core dependency from build
+- Linux: switch SWT : version 4.40 on linux platform independent package
+- Linux: remove unused jars from RPM package
+
+### Documentation
+- Doc: update macOS instructions
+- Doc: drop references to legacy webapp package
+- Doc: improve Kerberos setup instructions, describe KRB5CCNAME environment variable usage
+- Doc: Add links to Flatpak and Docker on home page
+- Doc: Update project home page description
+- Doc: typo updates
+
+### SWT
+- SWT: log loaded SWT version
+
+### CalDAV
+- Caldav: map missing Europe/Kyiv standard timezone
+- Caldav: drop old ActiveSync related workaround, see https://github.com/mguessan/davmail/issues/493
+
+### Enhancement
+- Add proper warning on unknown command line option
+- Cleanup from audit
+
+
 ## DavMail 6.8.0 2026-06-12
 First version with active Graph support available in GUI, refactored configuration to separate mode (Graph, EWS, ...) from authentication.
 Includes a lot of user contributions to Graph backend, mostly on calendar events handling.
