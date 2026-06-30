@@ -93,6 +93,8 @@ import static davmail.exchange.graph.GraphObject.convertTimezoneFromExchange;
  */
 public class GraphExchangeSession extends ExchangeSession {
 
+    protected static final int PAGE_SIZE = 500;
+
     static final Map<String, String> partstatToResponseMap = new HashMap<>();
     static final Map<String, String> responseTypeToPartstatMap = new HashMap<>();
     static final Map<String, String> statusToBusyStatusMap = new HashMap<>();
@@ -2383,6 +2385,11 @@ public class GraphExchangeSession extends ExchangeSession {
         if (maxCount == 0) {
             maxCount = Integer.MAX_VALUE;
         }
+        // set paging to folderFetchPageSize
+        httpRequestBuilder.setSizeLimit(Math.min(maxCount,
+                Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE)
+                ));
+
         LOGGER.debug("searchMessages " + folderId.getMailboxName() + " " + folderName);
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
