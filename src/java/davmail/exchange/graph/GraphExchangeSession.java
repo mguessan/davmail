@@ -4108,14 +4108,14 @@ public class GraphExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     private GraphObject executeGraphRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
-        HttpRequestBase request = httpRequestBuilder
-                .setAccessToken(token.getAccessToken())
-                .build();
-
         GraphObject graphObject = null;
         boolean isThrottled;
         int retryCount = 0;
         do {
+            HttpRequestBase request = httpRequestBuilder
+                    .setAccessToken(token.getAccessToken())
+                    .build();
+
             // DEBUG only, disable gzip encoding
             //request.setHeader("Accept-Encoding", "");
             try (
