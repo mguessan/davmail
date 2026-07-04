@@ -25,6 +25,7 @@ import davmail.exception.DavMailException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.HttpPreconditionFailedException;
+import davmail.exception.HttpServerErrorException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
@@ -4040,6 +4041,7 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         private void fetchNextPage() throws IOException {
+            LOGGER.debug("GET " + nextLink);
             HttpGet request = new HttpGet(nextLink);
             request.setHeader("Authorization", "Bearer " + token.getAccessToken());
             try (
@@ -4065,9 +4067,12 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
+    private static final int MAX_RETRIES = 10;
+
     private JSONObject executeJsonRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         JSONObject jsonResponse = null;
         boolean isThrottled;
+        int retryCount = 0;
         do {
             HttpRequestBase request = httpRequestBuilder
                     .setAccessToken(token.getAccessToken())
@@ -4082,11 +4087,16 @@ public class GraphExchangeSession extends ExchangeSession {
                     LOGGER.warn(response.getStatusLine());
                 }
                 isThrottled = handleThrottling(response);
-                if (!isThrottled) {
+                if (isThrottled) {
+                    retryCount++;
+                } else {
                     jsonResponse = new JsonResponseHandler().handleResponse(response);
                 }
             }
-        } while (isThrottled);
+        } while (isThrottled && retryCount < MAX_RETRIES);
+        if (isThrottled) {
+            throw new HttpServerErrorException("Throttled and retry count exceeded");
+        }
         return jsonResponse;
     }
 
@@ -4104,6 +4114,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         GraphObject graphObject = null;
         boolean isThrottled;
+        int retryCount = 0;
         do {
             // DEBUG only, disable gzip encoding
             //request.setHeader("Accept-Encoding", "");
@@ -4114,12 +4125,17 @@ public class GraphExchangeSession extends ExchangeSession {
                     LOGGER.warn("Request returned " + response.getStatusLine());
                 }
                 isThrottled = handleThrottling(response);
-                if (!isThrottled) {
+                if (isThrottled) {
+                    retryCount++;
+                } else {
                     graphObject = new GraphObject(new JsonResponseHandler().handleResponse(response));
                     graphObject.statusCode = response.getStatusLine().getStatusCode();
                 }
             }
-        } while (isThrottled);
+        } while (isThrottled && retryCount < MAX_RETRIES);
+        if (isThrottled) {
+            throw new HttpServerErrorException("Throttled and retry count exceeded");
+        }
         return graphObject;
     }
 
@@ -4140,7 +4156,7 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_SERVICE_UNAVAILABLE) {
             LOGGER.info("Detected graph request error, waiting to retry " + response.getStatusLine());
-            retryDelay = 5;
+            retryDelay = 10;
             waitRetryDelay(retryDelay);
         }
         return retryDelay > 0;
