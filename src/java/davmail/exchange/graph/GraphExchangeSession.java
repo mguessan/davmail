@@ -85,6 +85,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -4145,6 +4146,8 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
+    private static final Pattern BASE64_EML_PATTERN = Pattern.compile("^([A-Za-z0-9\\-_]{4})*([A-Za-z0-9\\-_]{4}|[A-Za-z0-9\\-_]{3}=|[A-Za-z0-9\\-_]{2}==)\\.EML$");
+
     /**
      * Check if itemName is long and base64 encoded.
      * User-generated item names are usually short
@@ -4156,7 +4159,7 @@ public class GraphExchangeSession extends ExchangeSession {
         // Length 72 for immutableId, 140 for classic id
         return (itemName.length() >= 140 || itemName.length() == 72)
                 // the item name is base64url
-                && itemName.matches("^([A-Za-z0-9-_]{4})*([A-Za-z0-9-_]{4}|[A-Za-z0-9-_]{3}=|[A-Za-z0-9-_]{2}==)\\.EML$")
+                && BASE64_EML_PATTERN.matcher(itemName).matches()
                 && itemName.indexOf(' ') < 0;
     }
 
