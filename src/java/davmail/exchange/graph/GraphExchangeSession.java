@@ -87,8 +87,6 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
-import static davmail.exchange.graph.GraphObject.convertTimezoneFromExchange;
-
 /**
  * Implement ExchangeSession based on Microsoft Graph
  */
@@ -455,7 +453,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(startDateTimeZone)));
+                parser.setTimeZone(DateUtil.getTimeZone(startDateTimeZone));
                 try {
                     result = formatter.format(parser.parse(untilDateTime));
                 } catch (ParseException e) {
@@ -999,16 +997,16 @@ public class GraphExchangeSession extends ExchangeSession {
                 SimpleDateFormat parser;
                 if (until.length() == 8) {
                     parser = new SimpleDateFormat("yyyyMMdd");
-                    parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                    parser.setTimeZone(DateUtil.getTimeZone(timeZone));
                 } else if (until.endsWith("Z")) {
                     parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-                    parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    parser.setTimeZone(DateUtil.getTimeZone(timeZone));
                 } else {
                     parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
-                    parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                    parser.setTimeZone(DateUtil.getTimeZone(timeZone));
                 }
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-                formatter.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                formatter.setTimeZone(DateUtil.getTimeZone(timeZone));
                 return formatter.format(parser.parse(until));
             } catch (ParseException e) {
                 throw new DavMailException("EXCEPTION_INVALID_DATE", until);

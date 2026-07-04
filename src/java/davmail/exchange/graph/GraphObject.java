@@ -295,7 +295,7 @@ public class GraphObject {
             if (timeZone != null && dateTime != null) {
                 try {
                     SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS");
-                    parser.setTimeZone(TimeZone.getTimeZone(convertTimezoneFromExchange(timeZone)));
+                    parser.setTimeZone(DateUtil.getTimeZone(timeZone));
                     return parser.parse(dateTime);
                 } catch (ParseException e) {
                     throw new DavMailException("EXCEPTION_INVALID_DATE", dateTime);
@@ -351,20 +351,6 @@ public class GraphObject {
         }
     }
 
-    /**
-     * Convert Exchange timezone id to standard timezone id.
-     * Standard timezones use the area/location format.
-     * @param exchangeTimezone Exchange / O365 timezone id
-     * @return standard timezone
-     */
-    public static String convertTimezoneFromExchange(String exchangeTimezone) {
-        ResourceBundle tzidsBundle = ResourceBundle.getBundle("stdtimezones");
-        if (tzidsBundle.containsKey(exchangeTimezone)) {
-            return tzidsBundle.getString(exchangeTimezone);
-        } else {
-            return exchangeTimezone;
-        }
-    }
 
 
     public int optInt(String key) {
