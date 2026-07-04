@@ -40,9 +40,14 @@ public class DateUtil {
     protected static final Logger LOGGER = Logger.getLogger(DateUtil.class);
 
     public static final String GRAPH_DATE_TIME = "yyyy-MM-dd'T'HH:mm:ss";
+    public static final String GRAPH_ZULU_DATE_TIME = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+
     public static final String CALDAV_DATE_TIME = "yyyyMMdd'T'HHmmss";
+    public static final String ISO8601_DATE_TIME = "yyyy-MM-dd'T'HH:mm:ssXXX";
 
     public static final String YYYY_MM_DDTHH_MM_SS_SSSSSSS = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSS";
+
+    public static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
 
     /**
@@ -102,7 +107,7 @@ public class DateUtil {
         if (standardTimeZoneId != null) {
             return TimeZone.getTimeZone(standardTimeZoneId);
         } else {
-            LOGGER.warn("Unknown timezone: " + timezoneId+", using UTC");
+            LOGGER.warn("Unknown timezone: " + timezoneId + ", using UTC");
             return TimeZone.getTimeZone("UTC");
         }
     }
@@ -118,13 +123,13 @@ public class DateUtil {
     }
 
     public static String convertDate(String sourceDate, String sourceFormat, String sourceTimezone,
-                                           String targetFormat, String targetTimezone) throws DavMailException {
+                                     String targetFormat, String targetTimezone) throws DavMailException {
         return convertDate(sourceDate, sourceFormat, getTimeZone(sourceTimezone), targetFormat, getTimeZone(targetTimezone));
     }
 
     public static String convertDate(String sourceDate, String sourceFormat, TimeZone sourceTimezone,
                                      String targetFormat, TimeZone targetTimezone) throws DavMailException {
-        String targetDate = null;
+        String targetDate;
         SimpleDateFormat parser = new SimpleDateFormat(sourceFormat);
         parser.setTimeZone(sourceTimezone);
         SimpleDateFormat formatter = new SimpleDateFormat(targetFormat);
@@ -138,7 +143,23 @@ public class DateUtil {
         return targetDate;
     }
 
-     public static String convertDateFormat(String sourceDate, String sourceFormat, String targetFormat) throws DavMailException {
+    public static String convertISO8601ToZulu(String sourceDate) throws DavMailException {
+
+        String targetDate;
+        // timezone included in source format
+        SimpleDateFormat parser = new SimpleDateFormat(ISO8601_DATE_TIME);
+        SimpleDateFormat formatter = new SimpleDateFormat(GRAPH_ZULU_DATE_TIME);
+        formatter.setTimeZone(UTC);
+        try {
+            targetDate = formatter.format(parser.parse(sourceDate));
+        } catch (ParseException e) {
+            LOGGER.error("Error converting date: " + sourceDate + " from " + ISO8601_DATE_TIME + " to " + GRAPH_ZULU_DATE_TIME, e);
+            throw new DavMailException("EXCEPTION_INVALID_DATE", sourceDate);
+        }
+        return targetDate;
+    }
+
+    public static String convertDateFormat(String sourceDate, String sourceFormat, String targetFormat) throws DavMailException {
         String targetDate = null;
         if (sourceDate != null) {
             try {

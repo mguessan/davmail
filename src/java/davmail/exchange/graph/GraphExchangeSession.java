@@ -450,15 +450,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 // graph provided until date does not have time part, get value from startDate
                 String untilDateTime = date + startDateDateTime.substring(10);
 
-                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                parser.setTimeZone(DateUtil.getTimeZone(startDateTimeZone));
-                try {
-                    result = formatter.format(parser.parse(untilDateTime));
-                } catch (ParseException e) {
-                    throw new DavMailException("EXCEPTION_INVALID_DATE", date);
-                }
+                result = DateUtil.convertDate(untilDateTime, "yyyy-MM-dd'T'HH:mm:ss", DateUtil.getTimeZone(startDateTimeZone),
+                        "yyyyMMdd'T'HHmmss'Z'", DateUtil.UTC);
             }
             return result;
         }
@@ -467,14 +460,7 @@ public class GraphExchangeSession extends ExchangeSession {
             String result = originalStart;
             // originalStart is in ISO8601 format, convert if not already zulu
             if (originalStart != null && !originalStart.endsWith("Z")) {
-                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                try {
-                    result = formatter.format(parser.parse(originalStart));
-                } catch (ParseException e) {
-                    throw new DavMailException("EXCEPTION_INVALID_DATE", originalStart);
-                }
+                result = DateUtil.convertISO8601ToZulu(originalStart);
             }
             return result;
         }
