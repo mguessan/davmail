@@ -1326,14 +1326,11 @@ public class GraphExchangeSession extends ExchangeSession {
             if (originalStartTimeZone != null && !timeZone.equals(originalStartTimeZone)) {
                 LOGGER.debug("originalStartTimeZone different from requested timeZone: " + originalStartTimeZone + " vs " + timeZone);
                 // convert to original timezone to preserve time over DST
-                SimpleDateFormat parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
-                parser.setTimeZone(DateUtil.getTimeZone(timeZone));
-                formatter.setTimeZone(DateUtil.getTimeZone(originalStartTimeZone));
+
                 try {
-                    dateTime = formatter.format(parser.parse(dateTime));
+                    dateTime = DateUtil.convertDate(dateTime, "yyyyMMdd'T'HHmmss", timeZone, "yyyyMMdd'T'HHmmss", originalStartTimeZone);
                     timeZone = originalStartTimeZone;
-                } catch (ParseException e) {
+                } catch (DavMailException e) {
                     LOGGER.warn("Unable to convert to original timezone: " + dateTime + ", " + originalStartTimeZone);
                 }
             }
