@@ -993,24 +993,17 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         private String convertUntilToEndDate(String until, String timeZone) throws DavMailException {
-            try {
-                SimpleDateFormat parser;
+                String convertTimeZone = timeZone;
+                String parseFormat = null;
                 if (until.length() == 8) {
-                    parser = new SimpleDateFormat("yyyyMMdd");
-                    parser.setTimeZone(DateUtil.getTimeZone(timeZone));
+                    parseFormat = "yyyyMMdd";
                 } else if (until.endsWith("Z")) {
-                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-                    parser.setTimeZone(DateUtil.getTimeZone(timeZone));
+                    parseFormat ="yyyyMMdd'T'HHmmss'Z'";
+                    convertTimeZone = "UTC";
                 } else {
-                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
-                    parser.setTimeZone(DateUtil.getTimeZone(timeZone));
+                    parseFormat ="yyyyMMdd'T'HHmmss";
                 }
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-                formatter.setTimeZone(DateUtil.getTimeZone(timeZone));
-                return formatter.format(parser.parse(until));
-            } catch (ParseException e) {
-                throw new DavMailException("EXCEPTION_INVALID_DATE", until);
-            }
+                return DateUtil.convertDate(until, parseFormat, convertTimeZone, "yyyy-MM-dd", convertTimeZone);
         }
 
         private String getDayOfWeek(String date) throws DavMailException {

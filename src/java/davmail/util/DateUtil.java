@@ -22,6 +22,8 @@ package davmail.util;
 import davmail.exception.DavMailException;
 import org.apache.log4j.Logger;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -35,10 +37,13 @@ import java.util.TimeZone;
  */
 public class DateUtil {
 
-    protected static final Logger LOGGER = Logger.getLogger("davmail.util.DateUtil");
+    protected static final Logger LOGGER = Logger.getLogger(DateUtil.class);
 
     public static final String GRAPH_DATE_TIME = "yyyy-MM-dd'T'HH:mm:ss";
     public static final String CALDAV_DATE_TIME = "yyyyMMdd'T'HHmmss";
+
+    public static final String YYYY_MM_DDTHH_MM_SS_SSSSSSS = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSS";
+
 
     /**
      * Standard to Exchange timezone mapping
@@ -58,7 +63,9 @@ public class DateUtil {
      * @return exchange timezone or null if unknown
      */
     public static String getExchangeTimeZone(String timezoneId) {
-        if (EXCHANGE_TO_STD_TZ.containsKey(timezoneId)) {
+        if (timezoneId == null) {
+            return null;
+        } else if (EXCHANGE_TO_STD_TZ.containsKey(timezoneId)) {
             return timezoneId;
         } else if (STD_TO_EXCHANGE_TZ.containsKey(timezoneId)) {
             return STD_TO_EXCHANGE_TZ.getString(timezoneId);
@@ -78,7 +85,9 @@ public class DateUtil {
      * @return standard timezone or null if unknown
      */
     public static String getStandardTimeZone(String timezoneId) {
-        if (STD_TO_EXCHANGE_TZ.containsKey(timezoneId)) {
+        if (timezoneId == null) {
+            return null;
+        } else if (STD_TO_EXCHANGE_TZ.containsKey(timezoneId)) {
             return timezoneId;
         } else if (EXCHANGE_TO_STD_TZ.containsKey(timezoneId)) {
             return EXCHANGE_TO_STD_TZ.getString(timezoneId);
@@ -108,7 +117,28 @@ public class DateUtil {
         }
     }
 
-    public static String convertDateFormat(String sourceDate, String sourceFormat, String targetFormat) throws DavMailException {
+    public static String convertDate(String sourceDate, String sourceFormat, String sourceTimezone,
+                                           String targetFormat, String targetTimezone) throws DavMailException {
+        return convertDate(sourceDate, sourceFormat, getTimeZone(sourceTimezone), targetFormat, getTimeZone(targetTimezone));
+    }
+
+    public static String convertDate(String sourceDate, String sourceFormat, TimeZone sourceTimezone,
+                                     String targetFormat, TimeZone targetTimezone) throws DavMailException {
+        String targetDate = null;
+        SimpleDateFormat parser = new SimpleDateFormat(sourceFormat);
+        parser.setTimeZone(sourceTimezone);
+        SimpleDateFormat formatter = new SimpleDateFormat(targetFormat);
+        formatter.setTimeZone(targetTimezone);
+        try {
+            targetDate = formatter.format(parser.parse(sourceDate));
+        } catch (ParseException e) {
+            LOGGER.error("Error converting date: " + sourceDate + " from " + sourceFormat + " to " + targetFormat, e);
+            throw new DavMailException("EXCEPTION_INVALID_DATE", sourceDate);
+        }
+        return targetDate;
+    }
+
+     public static String convertDateFormat(String sourceDate, String sourceFormat, String targetFormat) throws DavMailException {
         String targetDate = null;
         if (sourceDate != null) {
             try {
