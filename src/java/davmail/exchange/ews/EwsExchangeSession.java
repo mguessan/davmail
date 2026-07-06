@@ -54,6 +54,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * EWS Exchange adapter.
@@ -3248,6 +3249,8 @@ public class EwsExchangeSession extends ExchangeSession {
         return dateFormatter.format(date);
     }
 
+    private static final Pattern BASE64_EML_PATTERN = Pattern.compile("^([A-Za-z0-9\\-_]{4})*([A-Za-z0-9\\-_]{4}|[A-Za-z0-9\\-_]{3}=|[A-Za-z0-9\\-_]{2}==)\\.EML$");
+
     /**
      * Check if the itemName is long and base64 encoded.
      * User generated item names are usually short
@@ -3258,7 +3261,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected static boolean isItemId(String itemName) {
         return itemName.length() >= 140
                 // item name is base64url
-                && itemName.matches("^([A-Za-z0-9-_]{4})*([A-Za-z0-9-_]{4}|[A-Za-z0-9-_]{3}=|[A-Za-z0-9-_]{2}==)\\.EML$")
+                && BASE64_EML_PATTERN.matcher(itemName).matches()
                 && itemName.indexOf(' ') < 0;
     }
 
