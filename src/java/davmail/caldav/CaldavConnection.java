@@ -197,7 +197,7 @@ public class CaldavConnection extends AbstractConnection {
         } catch (SocketException e) {
             DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
         } catch (Exception e) {
-            if (!(e instanceof HttpNotFoundException)) {
+            if (!(e instanceof HttpResponseException)) {
                 DavGatewayTray.log(e);
             }
             try {
@@ -1179,10 +1179,8 @@ public class CaldavConnection extends AbstractConnection {
         if (message == null) {
             message = e.toString();
         }
-        if (e instanceof HttpNotFoundException) {
-            sendErr(HttpStatus.SC_NOT_FOUND, message);
-        } else if (e instanceof HttpPreconditionFailedException) {
-            sendErr(HttpStatus.SC_PRECONDITION_FAILED, message);
+        if (e instanceof HttpResponseException) {
+            sendErr(((HttpResponseException)e).getStatusCode(), ((HttpResponseException)e).getReasonPhrase());
         } else {
             // workaround for Lightning bug: sleep for 1 second
             try {

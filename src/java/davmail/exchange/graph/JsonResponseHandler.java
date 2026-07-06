@@ -19,6 +19,7 @@
 
 package davmail.exchange.graph;
 
+import davmail.exception.HttpBadRequestException;
 import davmail.exception.HttpConflictException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
@@ -95,6 +96,9 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
             }
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new HttpPreconditionFailedException(errorMessage);
+            }
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
+                throw new HttpBadRequestException(errorMessage);
             }
             throw new IOException(errorMessage);
         }
