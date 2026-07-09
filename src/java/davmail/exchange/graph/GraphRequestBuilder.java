@@ -50,13 +50,9 @@ public class GraphRequestBuilder {
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.graph.GraphRequestBuilder");
 
     String method = "POST";
+    String url;
 
     String contentType = "application/json";
-
-    /**
-     * Overrides all other parameters.
-     */
-    String path;
 
     String baseUrl = Settings.getGraphUrl();
     String version = Settings.getProperty("davmail.graphVersion", "beta");
@@ -132,8 +128,8 @@ public class GraphRequestBuilder {
         return this;
     }
 
-    public GraphRequestBuilder setPath(String path) {
-        this.path = path;
+    public GraphRequestBuilder setUrl(String url) {
+        this.url = url;
         return this;
     }
 
@@ -258,10 +254,6 @@ public class GraphRequestBuilder {
      * @return request path
      */
     protected String buildPath() {
-        if (path != null) {
-            return path;
-        }
-
         StringBuilder buffer = new StringBuilder();
         buffer.append("/").append(version);
         if ("orgcontacts".equals(objectType)) {
@@ -366,39 +358,44 @@ public class GraphRequestBuilder {
      */
     public HttpRequestBase build() throws IOException {
         try {
-            URIBuilder uriBuilder = new URIBuilder(baseUrl).setPath(buildPath());
-            if (select != null) {
-                uriBuilder.addParameter("$select", select);
-            }
+            // url overrides everything else
+            String requestUrl = url;
+            if (requestUrl == null) {
+                URIBuilder uriBuilder = new URIBuilder(baseUrl).setPath(buildPath());
+                if (select != null) {
+                    uriBuilder.addParameter("$select", select);
+                }
 
-            if (selectFields != null) {
-                uriBuilder.addParameter("$expand", expand);
-            }
+                if (selectFields != null) {
+                    uriBuilder.addParameter("$expand", expand);
+                }
 
-            if (filter != null) {
-                uriBuilder.addParameter("$filter", filter);
-            }
+                if (filter != null) {
+                    uriBuilder.addParameter("$filter", filter);
+                }
 
-            if (search != null) {
-                uriBuilder.addParameter("$search", "\""+ StringUtil.escapeDoubleQuotes(search)+"\"");
-            }
+                if (search != null) {
+                    uriBuilder.addParameter("$search", "\"" + StringUtil.escapeDoubleQuotes(search) + "\"");
+                }
 
-            if (startDateTime != null) {
-                uriBuilder.addParameter("startDateTime", startDateTime);
-            }
+                if (startDateTime != null) {
+                    uriBuilder.addParameter("startDateTime", startDateTime);
+                }
 
-            if (endDateTime != null) {
-                uriBuilder.addParameter("endDateTime", endDateTime);
-            }
+                if (endDateTime != null) {
+                    uriBuilder.addParameter("endDateTime", endDateTime);
+                }
 
-            if (sizeLimit != 0) {
-                uriBuilder.addParameter("$top", String.valueOf(sizeLimit));
+                if (sizeLimit != 0) {
+                    uriBuilder.addParameter("$top", String.valueOf(sizeLimit));
+                }
+                requestUrl = uriBuilder.toString();
             }
 
             HttpRequestBase httpRequest;
 
             if ("POST".equals(method)) {
-                httpRequest = new HttpPost(uriBuilder.build());
+                httpRequest = new HttpPost(requestUrl);
                 if (mimeContent != null) {
                     ((HttpPost) httpRequest).setEntity(new ByteArrayEntity(mimeContent));
                 } else if (jsonBody != null) {
@@ -406,20 +403,20 @@ public class GraphRequestBuilder {
                 }
             } else if (HttpPut.METHOD_NAME.equals(method)) {
                 // contact picture
-                httpRequest = new HttpPut(uriBuilder.build());
+                httpRequest = new HttpPut(requestUrl);
                 if (mimeContent != null) {
                     ((HttpPut) httpRequest).setEntity(new ByteArrayEntity(mimeContent));
                 }
             } else if (HttpPatch.METHOD_NAME.equals(method)) {
-                httpRequest = new HttpPatch(uriBuilder.build());
+                httpRequest = new HttpPatch(requestUrl);
                 if (jsonBody != null) {
                     ((HttpPatch) httpRequest).setEntity(new ByteArrayEntity(IOUtil.convertToBytes(jsonBody)));
                 }
             } else if ("DELETE".equals(method)) {
-                httpRequest = new HttpDelete(uriBuilder.build());
+                httpRequest = new HttpDelete(requestUrl);
             } else {
                 // default to GET request
-                httpRequest = new HttpGet(uriBuilder.build());
+                httpRequest = new HttpGet(requestUrl);
             }
             httpRequest.setHeader("Content-Type", contentType);
             httpRequest.setHeader("Authorization", "Bearer " + accessToken);

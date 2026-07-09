@@ -3996,7 +3996,7 @@ public class GraphExchangeSession extends ExchangeSession {
             LOGGER.debug("GET " + nextLink);
             GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
-                    .setPath(nextLink);
+                    .setUrl(nextLink);
 
             jsonObject = executeJsonRequest(graphRequestBuilder);
             nextLink = jsonObject.optString("@odata.nextLink", null);
