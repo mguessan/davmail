@@ -753,7 +753,6 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectType("todo/lists")
                         .setObjectId(folderId.id)
                         .setChildType("tasks")
-                        .setChildId(currentItemId)
                         .setJsonBody(jsonTask);
             } else {
                 graphRequestBuilder
@@ -887,7 +886,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 if ("DAILY".equals(frequency)) {
                     pattern.put("type", "daily").put("dayOfMonth", 0);
                 } else if ("WEEKLY".equals(frequency)) {
-                    pattern.put("type", "weekly").put("daysOfWeek", byDay != null ? convertByDayToArray(byDay) : new JSONArray().put(getDayOfWeek(startDate)));
+                    pattern.put("type", "weekly").put("daysOfWeek", byDay != null ? convertByDayToArray(byDay) : new JSONArray().put(DateUtil.getDayOfWeek(startDate)));
                     if (wkst != null) { // TODO is this mandatory ?
                         pattern.put("firstDayOfWeek", convertCaldavDayToGraph(wkst));
                     }
@@ -991,21 +990,6 @@ public class GraphExchangeSession extends ExchangeSession {
                     parseFormat ="yyyyMMdd'T'HHmmss";
                 }
                 return DateUtil.convertDate(until, parseFormat, convertTimeZone, "yyyy-MM-dd", convertTimeZone);
-        }
-
-        private String getDayOfWeek(String date) throws DavMailException {
-            if (date != null) {
-                try {
-                    SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd");
-                    parser.setTimeZone(TimeZone.getTimeZone("UTC"));
-                    SimpleDateFormat formatter = new SimpleDateFormat("EEEE", Locale.ENGLISH);
-                    formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                    return formatter.format(parser.parse(date));
-                } catch (ParseException e) {
-                    throw new DavMailException("EXCEPTION_INVALID_DATE", date);
-                }
-            }
-            return null;
         }
 
         private void handleModifiedOccurrences(VCalendar vCalendar, JSONObject existingJsonEvent) throws IOException, JSONException {
@@ -4017,20 +4001,18 @@ public class GraphExchangeSession extends ExchangeSession {
 
         private void fetchNextPage() throws IOException {
             LOGGER.debug("GET " + nextLink);
-            HttpGet request = new HttpGet(nextLink);
-            request.setHeader("Authorization", "Bearer " + token.getAccessToken());
-            try (
-                    CloseableHttpResponse response = httpClient.execute(request)
-            ) {
-                jsonObject = new JsonResponseHandler().handleResponse(response);
-                nextLink = jsonObject.optString("@odata.nextLink", null);
-                // workaround for people search bug
-                if (nextLink != null && nextLink.endsWith("skip=0")) {
-                    nextLink = null;
-                }
-                values = jsonObject.optJSONArray("value");
-                index = 0;
+            GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setPath(nextLink);
+
+            jsonObject = executeJsonRequest(graphRequestBuilder);
+            nextLink = jsonObject.optString("@odata.nextLink", null);
+            // workaround for people search bug
+            if (nextLink != null && nextLink.endsWith("skip=0")) {
+                nextLink = null;
             }
+            values = jsonObject.optJSONArray("value");
+            index = 0;
         }
     }
 

@@ -29,6 +29,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
 
@@ -157,6 +158,21 @@ public class DateUtil {
             throw new DavMailException("EXCEPTION_INVALID_DATE", sourceDate);
         }
         return targetDate;
+    }
+
+    public static  String getDayOfWeek(String date) throws DavMailException {
+        if (date != null) {
+            try {
+                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd");
+                parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+                SimpleDateFormat formatter = new SimpleDateFormat("EEEE", Locale.ENGLISH);
+                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+                return formatter.format(parser.parse(date));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", date);
+            }
+        }
+        return null;
     }
 
     public static String convertDateFormat(String sourceDate, String sourceFormat, String targetFormat) throws DavMailException {

@@ -52,6 +52,12 @@ public class GraphRequestBuilder {
     String method = "POST";
 
     String contentType = "application/json";
+
+    /**
+     * Overrides all other parameters.
+     */
+    String path;
+
     String baseUrl = Settings.getGraphUrl();
     String version = Settings.getProperty("davmail.graphVersion", "beta");
     String mailbox;
@@ -123,6 +129,11 @@ public class GraphRequestBuilder {
             headerMap = new HashMap<>();
         }
         headerMap.put(name, value);
+        return this;
+    }
+
+    public GraphRequestBuilder setPath(String path) {
+        this.path = path;
         return this;
     }
 
@@ -247,6 +258,10 @@ public class GraphRequestBuilder {
      * @return request path
      */
     protected String buildPath() {
+        if (path != null) {
+            return path;
+        }
+
         StringBuilder buffer = new StringBuilder();
         buffer.append("/").append(version);
         if ("orgcontacts".equals(objectType)) {
