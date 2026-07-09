@@ -96,7 +96,6 @@ public class GraphExchangeSession extends ExchangeSession {
     protected static final int PAGE_SIZE = 500;
 
     static final Map<String, String> partstatToResponseMap = new HashMap<>();
-    static final Map<String, String> responseTypeToPartstatMap = new HashMap<>();
     static final Map<String, String> statusToBusyStatusMap = new HashMap<>();
 
     static {
@@ -104,13 +103,6 @@ public class GraphExchangeSession extends ExchangeSession {
         partstatToResponseMap.put("TENTATIVE", "tentativelyAccepted");
         partstatToResponseMap.put("DECLINED", "declined");
         partstatToResponseMap.put("NEEDS-ACTION", "notResponded");
-
-        responseTypeToPartstatMap.put("accepted", "ACCEPTED");
-        responseTypeToPartstatMap.put("organizer", "ACCEPTED");
-        responseTypeToPartstatMap.put("tentativelyAccepted", "TENTATIVE");
-        responseTypeToPartstatMap.put("declined", "DECLINED");
-        responseTypeToPartstatMap.put("none", "NEEDS-ACTION");
-        responseTypeToPartstatMap.put("notResponded", "NEEDS-ACTION");
 
         statusToBusyStatusMap.put("TENTATIVE", "Tentative");
         statusToBusyStatusMap.put("CONFIRMED", "Busy");
@@ -550,7 +542,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
                 String myResponseType = currentItem.optString("responseStatus", "response");
 
-                String currentAttendeeStatus = responseTypeToPartstatMap.get(myResponseType);
+                String currentAttendeeStatus = responseTypeToPartstat(myResponseType);
                 String newAttendeeStatus = vCalendar.getAttendeeStatus();
 
                 isOrganizer = currentItem.optBoolean("isOrganizer");
@@ -979,17 +971,17 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         private String convertUntilToEndDate(String until, String timeZone) throws DavMailException {
-                String convertTimeZone = timeZone;
-                String parseFormat = null;
-                if (until.length() == 8) {
-                    parseFormat = "yyyyMMdd";
-                } else if (until.endsWith("Z")) {
-                    parseFormat ="yyyyMMdd'T'HHmmss'Z'";
-                    convertTimeZone = "UTC";
-                } else {
-                    parseFormat ="yyyyMMdd'T'HHmmss";
-                }
-                return DateUtil.convertDate(until, parseFormat, convertTimeZone, "yyyy-MM-dd", convertTimeZone);
+            String convertTimeZone = timeZone;
+            String parseFormat = null;
+            if (until.length() == 8) {
+                parseFormat = "yyyyMMdd";
+            } else if (until.endsWith("Z")) {
+                parseFormat = "yyyyMMdd'T'HHmmss'Z'";
+                convertTimeZone = "UTC";
+            } else {
+                parseFormat = "yyyyMMdd'T'HHmmss";
+            }
+            return DateUtil.convertDate(until, parseFormat, convertTimeZone, "yyyy-MM-dd", convertTimeZone);
         }
 
         private void handleModifiedOccurrences(VCalendar vCalendar, JSONObject existingJsonEvent) throws IOException, JSONException {
@@ -3128,6 +3120,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public int updateFolder(String folderName, Map<String, String> properties) throws IOException {
+        LOGGER.info("updateFolder not implemented");
         return 0;
     }
 
@@ -3231,7 +3224,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void moveItem(String sourcePath, String targetPath) throws IOException {
-
+        LOGGER.info("moveItem not implemented");
     }
 
     @Override
