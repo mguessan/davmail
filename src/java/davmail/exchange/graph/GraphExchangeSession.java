@@ -3959,11 +3959,13 @@ public class GraphExchangeSession extends ExchangeSession {
         private JSONObject jsonObject;
         private JSONArray values;
         private String nextLink;
+        private String deltaLink;
         private int index;
 
         public GraphIterator(JSONObject jsonObject) throws JSONException {
             this.jsonObject = jsonObject;
             nextLink = jsonObject.optString("@odata.nextLink", null);
+            deltaLink = jsonObject.optString("@odata.deltaLink", null);
             values = jsonObject.optJSONArray("value");
         }
 
@@ -3976,6 +3978,10 @@ public class GraphExchangeSession extends ExchangeSession {
             } else {
                 return false;
             }
+        }
+
+        public String getDeltaLink() {
+            return deltaLink;
         }
 
         public JSONObject next() throws IOException {
@@ -4000,6 +4006,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
             jsonObject = executeJsonRequest(graphRequestBuilder);
             nextLink = jsonObject.optString("@odata.nextLink", null);
+            deltaLink = jsonObject.optString("@odata.deltaLink", null);
             // workaround for people search bug
             if (nextLink != null && nextLink.endsWith("skip=0")) {
                 nextLink = null;
