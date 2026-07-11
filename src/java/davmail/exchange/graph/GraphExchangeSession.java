@@ -69,7 +69,6 @@ import java.net.NoRouteToHostException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,7 +82,6 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -972,7 +970,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         private String convertUntilToEndDate(String until, String timeZone) throws DavMailException {
             String convertTimeZone = timeZone;
-            String parseFormat = null;
+            String parseFormat;
             if (until.length() == 8) {
                 parseFormat = "yyyyMMdd";
             } else if (until.endsWith("Z")) {
@@ -2026,7 +2024,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)));
     }
 
-    public ExchangeSession.Message getMessage(FolderId folderId, String messageId) throws IOException {
+    protected ExchangeSession.Message getMessage(FolderId folderId, String messageId) throws IOException {
         return buildMessage(executeJsonRequest(new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
                 .setObjectType("messages")
