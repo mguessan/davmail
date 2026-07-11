@@ -1234,6 +1234,10 @@ public abstract class ExchangeSession {
         public void loadMessages() throws IOException {
             messages = ExchangeSession.this.searchMessages(folderPath, null);
             fixUids(messages);
+            computeAttributes();
+        }
+
+        protected void computeAttributes() {
             recent = 0;
             for (Message message : messages) {
                 if (message.recent) {

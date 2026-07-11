@@ -110,6 +110,13 @@ public class GraphExchangeSession extends ExchangeSession {
     protected Map<String, String> urlcompnameToIdMap = new HashMap<>();
 
     /**
+     * Extend message list to support delta sync
+     */
+    protected class MessageList extends ExchangeSession.MessageList {
+        String deltaLink;
+    }
+
+    /**
      * Graph folder is identified by mailbox and id
      */
     protected class Folder extends ExchangeSession.Folder {
@@ -137,6 +144,23 @@ public class GraphExchangeSession extends ExchangeSession {
                 return specialFlag + "\\HasNoChildren";
             }
         }
+
+        @Override
+        public void loadMessages() throws IOException {
+            super.loadMessages();
+        }
+
+        @Override
+        public void refreshMessages() throws IOException {
+            if (((MessageList)messages).deltaLink == null) {
+                loadMessages();
+            } else {
+                // use delta sync
+                updateMessageList(folderId, (MessageList) messages);
+                computeAttributes();
+            }
+        }
+
     }
 
     protected class Event extends ExchangeSession.Event {
@@ -2024,7 +2048,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)));
     }
 
-    protected ExchangeSession.Message getMessage(FolderId folderId, String messageId) throws IOException {
+    protected Message getMessage(FolderId folderId, String messageId) throws IOException {
         return buildMessage(executeJsonRequest(new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
                 .setObjectType("messages")
@@ -2342,6 +2366,10 @@ public class GraphExchangeSession extends ExchangeSession {
     public MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException {
         MessageList messageList = new MessageList();
         FolderId folderId = getFolderId(folderName);
+
+        if (Settings.getBooleanProperty("davmail.graph.deltaSync", false) && condition == null) {
+            messageList.deltaLink = getDeltaLink(folderId);
+        }
 
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
@@ -2901,6 +2929,61 @@ public class GraphExchangeSession extends ExchangeSession {
             graphIterator.next();
         }
         return graphIterator.getDeltaLink();
+    }
+
+    /**
+     * Leverage delta sync to only load modified messages
+     * @param messageList current messages
+     * @throws IOException on error
+     */
+    protected void updateMessageList(FolderId folderId, MessageList messageList) throws IOException {
+        LOGGER.debug("Initiate delta sync on " + folderId.getMailboxName() + " " + folderId.id);
+        try {
+            GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setUrl(messageList.deltaLink);
+            GraphExchangeSession.GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+            while (graphIterator.hasNext()) {
+                JSONObject deltaMessage = graphIterator.next();
+
+                String id = null;
+                id = deltaMessage.getString("id");
+                if (deltaMessage.has("@removed")) {
+                    // message deleted
+                    for (ExchangeSession.Message message : messageList) {
+                        if (((GraphExchangeSession.Message) message).id.equals(id)) {
+                            LOGGER.debug("Removing message " + message.imapUid);
+                            messageList.remove(message);
+                            break;
+                        }
+                    }
+                } else {
+                    // insert or update
+                    ExchangeSession.Message currentMessage = null;
+                    for (ExchangeSession.Message message : messageList) {
+                        if (((GraphExchangeSession.Message) message).id.equals(id)) {
+                            currentMessage = message;
+                            LOGGER.debug("Found message " + message.imapUid);
+                            messageList.remove(message);
+                            break;
+                        }
+                    }
+                    // fetch new message
+                    Message newMessage = getMessage(folderId, id);
+                    // restore imap uid
+                    if (currentMessage != null) {
+                        LOGGER.debug("Restoring imapUid " + newMessage.imapUid + " -> " + currentMessage.imapUid);
+                        newMessage.imapUid = currentMessage.imapUid;
+                    }
+                    newMessage.messageList = messageList;
+                    newMessage.folderId = folderId;
+                    messageList.add(newMessage);
+                }
+            }
+            Collections.sort(messageList);
+            messageList.deltaLink = graphIterator.getDeltaLink();
+            LOGGER.debug("Delta sync complete");
+        } catch (JSONException e) {
+            throw new IOException(e);
+        }
     }
 
     protected static final String USERS_ROOT = "/users/";
