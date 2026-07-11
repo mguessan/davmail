@@ -72,7 +72,12 @@ public class GraphRequestBuilder {
 
     String filter;
     String search;
+    // sets $top parameter
     int sizeLimit;
+    // only for messages, sets Prefer: odata.maxpagesize
+    int maxPageSize;
+
+    String deltaToken;
 
     String startDateTime;
     String endDateTime;
@@ -249,6 +254,17 @@ public class GraphRequestBuilder {
         return this;
     }
 
+    public GraphRequestBuilder setMaxPageSize(int maxPageSize) {
+        this.maxPageSize = maxPageSize;
+        return this;
+    }
+
+    public GraphRequestBuilder setDeltaToken(String deltaToken) {
+        this.deltaToken = deltaToken;
+        return this;
+    }
+
+
     /**
      * Build request path based on version, username, object type and object id.
      * @return request path
@@ -366,7 +382,7 @@ public class GraphRequestBuilder {
                     uriBuilder.addParameter("$select", select);
                 }
 
-                if (selectFields != null) {
+                if (expand != null && !expand.isEmpty()) {
                     uriBuilder.addParameter("$expand", expand);
                 }
 
@@ -388,6 +404,9 @@ public class GraphRequestBuilder {
 
                 if (sizeLimit != 0) {
                     uriBuilder.addParameter("$top", String.valueOf(sizeLimit));
+                }
+                if (deltaToken != null) {
+                    uriBuilder.addParameter("$deltatoken", deltaToken);
                 }
                 requestUrl = uriBuilder.toString();
             }
@@ -426,6 +445,10 @@ public class GraphRequestBuilder {
                 for (Map.Entry<String, String> header : headerMap.entrySet()) {
                     httpRequest.addHeader(header.getKey(), header.getValue());
                 }
+            }
+
+            if (maxPageSize != 0) {
+                httpRequest.addHeader("Prefer", "odata.maxpagesize=" + maxPageSize);
             }
 
             if (timeZone != null) {
