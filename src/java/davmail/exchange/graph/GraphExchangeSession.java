@@ -1678,6 +1678,17 @@ public class GraphExchangeSession extends ExchangeSession {
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("outlookmessageclass"));
     }
 
+    protected static final HashSet<GraphField> IMAP_MESSAGE_DELTA_ATTRIBUTES = new HashSet<>();
+
+    static {
+        IMAP_MESSAGE_DELTA_ATTRIBUTES.add(GraphField.get("changeKey"));
+        IMAP_MESSAGE_DELTA_ATTRIBUTES.add(GraphField.get("isDraft"));
+        IMAP_MESSAGE_DELTA_ATTRIBUTES.add(GraphField.get("isRead"));
+        IMAP_MESSAGE_DELTA_ATTRIBUTES.add(GraphField.get("receivedDateTime"));
+        IMAP_MESSAGE_DELTA_ATTRIBUTES.add(GraphField.get("lastModifiedDateTime"));
+        IMAP_MESSAGE_DELTA_ATTRIBUTES.add(GraphField.get("keywords"));
+    }
+
     protected static final HashSet<GraphField> CONTACT_ATTRIBUTES = new HashSet<>();
 
     static {
@@ -2012,6 +2023,15 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("messages")
                 .setMailbox(folderId.mailbox)
                 .setObjectId(graphResponse.optString("id"))
+                .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)));
+    }
+
+    public ExchangeSession.Message getMessage(FolderId folderId, String messageId) throws IOException {
+        return buildMessage(executeJsonRequest(new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setObjectType("messages")
+                .setMailbox(folderId.mailbox)
+                .setObjectId(messageId)
                 .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)));
     }
 
@@ -2852,12 +2872,37 @@ public class GraphExchangeSession extends ExchangeSession {
      * @param folderPath folder name (path)
      * @return folder id
      */
-    private FolderId getFolderId(String folderPath) throws IOException {
+    protected FolderId getFolderId(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
         if (folderId == null) {
             throw new HttpNotFoundException("Folder '" + folderPath + "' not found");
         }
         return folderId;
+    }
+
+    /**
+     * Get deltaLink on folder for delta synchronization.
+     * @param folderId folder id
+     * @return delta link
+     * @throws IOException on error
+     */
+    public String getDeltaLink(FolderId folderId) throws IOException {
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(folderId.mailbox)
+                .setObjectType("mailFolders")
+                .setObjectId(folderId.id)
+                .setChildType("messages")
+                .setSelectFields(IMAP_MESSAGE_DELTA_ATTRIBUTES) // only fetch id
+                .setAction("delta") // initiate delta sync
+                .setMaxPageSize(Settings.getIntProperty("davmail.folderFetchPageSize", GraphExchangeSession.PAGE_SIZE));
+
+        GraphExchangeSession.GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+        // need to consume the iterator to get the delta link
+        while (graphIterator.hasNext()) {
+            graphIterator.next();
+        }
+        return graphIterator.getDeltaLink();
     }
 
     protected static final String USERS_ROOT = "/users/";
@@ -3954,7 +3999,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("mailboxSettings"));
     }
 
-    class GraphIterator {
+    protected class GraphIterator {
 
         private JSONObject jsonObject;
         private JSONArray values;
@@ -4016,7 +4061,7 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
-    private GraphIterator executeSearchRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
+    protected GraphIterator executeSearchRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         try {
             return new GraphIterator(executeJsonRequest(httpRequestBuilder));
         } catch (JSONException e) {
