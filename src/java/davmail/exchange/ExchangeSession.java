@@ -930,7 +930,7 @@ public abstract class ExchangeSession {
             if (newFolder.uidNext > currentFolder.uidNext) {
                 currentFolder.uidNext = newFolder.uidNext;
             }
-            currentFolder.loadMessages();
+            currentFolder.refreshMessages();
             return true;
         } else {
             return false;
@@ -1247,6 +1247,10 @@ public abstract class ExchangeSession {
             if (computedUidNext > uidNext) {
                 uidNext = computedUidNext;
             }
+        }
+
+        public void refreshMessages() throws IOException {
+            loadMessages();
         }
 
         /**
