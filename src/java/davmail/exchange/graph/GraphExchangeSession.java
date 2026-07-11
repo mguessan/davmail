@@ -2383,12 +2383,12 @@ public class GraphExchangeSession extends ExchangeSession {
         if (maxCount == 0) {
             maxCount = Integer.MAX_VALUE;
         }
+        int pageSize = Math.min(maxCount, Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE));
         // set paging to folderFetchPageSize
-        httpRequestBuilder.setSizeLimit(Math.min(maxCount,
-                Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE)
-                ));
+        httpRequestBuilder.setSizeLimit(pageSize);
+        httpRequestBuilder.setMaxPageSize(pageSize);
 
-        LOGGER.debug("searchMessages " + folderId.getMailboxName() + " " + folderName);
+        LOGGER.debug("searchMessages " + folderId.getMailboxName() + " " + folderName+" pageSize: " + pageSize);
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext() && messageList.size() < maxCount) {
@@ -4082,6 +4082,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
     protected class GraphIterator {
 
+        private int count = 0;
         private JSONObject jsonObject;
         private JSONArray values;
         private String nextLink;
@@ -4111,6 +4112,7 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         public JSONObject next() throws IOException {
+            count++;
             if (values == null || !hasNext()) {
                 throw new NoSuchElementException();
             }
@@ -4125,10 +4127,13 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         private void fetchNextPage() throws IOException {
-            LOGGER.debug("GET " + nextLink);
+            LOGGER.debug("fetchNextPage " + count);
             GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
                     .setUrl(nextLink);
+
+            // set paging to folderFetchPageSize
+            graphRequestBuilder.setMaxPageSize(Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE));
 
             jsonObject = executeJsonRequest(graphRequestBuilder);
             nextLink = jsonObject.optString("@odata.nextLink", null);
