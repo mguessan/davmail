@@ -943,9 +943,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     pattern.put("type", "daily").put("dayOfMonth", 0);
                 } else if ("WEEKLY".equals(frequency)) {
                     pattern.put("type", "weekly").put("daysOfWeek", byDay != null ? convertByDayToArray(byDay) : new JSONArray().put(DateUtil.getDayOfWeek(startDate)));
-                    if (wkst != null) { // TODO is this mandatory ?
-                        pattern.put("firstDayOfWeek", convertCaldavDayToGraph(wkst));
-                    }
+                    // firstDayOfWeek is required for weekly patterns in Graph
+                    pattern.put("firstDayOfWeek", wkst != null ? convertCaldavDayToGraph(wkst) : "monday");
                 } else if ("MONTHLY".equals(frequency)) {
                     if (byDay != null) {
                         pattern.put("type", "relativeMonthly");
