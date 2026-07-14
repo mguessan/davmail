@@ -40,6 +40,7 @@ import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -83,6 +84,9 @@ import java.util.MissingResourceException;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
@@ -116,6 +120,10 @@ public class GraphExchangeSession extends ExchangeSession {
         String deltaLink;
     }
 
+    private final ConcurrentHashMap<String, ReentrantLock> messagesLockMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ExchangeSession.MessageList> messagesListMap = new ConcurrentHashMap<>();
+
+
     /**
      * Graph folder is identified by mailbox and id
      */
@@ -147,18 +155,52 @@ public class GraphExchangeSession extends ExchangeSession {
 
         @Override
         public void loadMessages() throws IOException {
-            super.loadMessages();
+            // init lock if not exist
+            ReentrantLock lock = messagesLockMap.computeIfAbsent(folderId.id, k -> new ReentrantLock());
+
+            // Attempt to acquire the lock within the timeout window
+            try {
+                if (lock.tryLock(5, TimeUnit.MINUTES)) {
+                    try {
+                        // get message list from map
+                        if (messagesListMap.containsKey(folderId.id)) {
+                            messages = messagesListMap.get(folderId.id);
+                            // update using delta sync
+                            try {
+                                updateMessageList(folderId, (MessageList) messages);
+                            } catch (HttpResponseException e) {
+                                LOGGER.info("Delta sync update failed for folder " + folderPath, e);
+                                messagesListMap.remove(folderId.id);
+                                messages = null;
+                            }
+                        }
+                        if (messages == null) {
+                            messages = GraphExchangeSession.this.searchMessages(folderPath);
+                            fixUids(messages);
+                            // store in map if delta sync is active
+                            if (((MessageList) messages).deltaLink != null) {
+                                messagesListMap.put(folderId.id, messages);
+                            }
+                        }
+
+                    } finally {
+                        lock.unlock(); // Always unlock inside finally
+                    }
+                } else {
+                    throw new IOException("Timeout waiting for lock on folder " + folderPath);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted waiting for lock on folder " + folderPath, e);
+            }
+
+            // refresh folder level attributes
+            computeAttributes();
         }
 
         @Override
         public void refreshMessages() throws IOException {
-            if (((MessageList)messages).deltaLink == null) {
-                loadMessages();
-            } else {
-                // use delta sync
-                updateMessageList(folderId, (MessageList) messages);
-                computeAttributes();
-            }
+            loadMessages();
         }
 
     }
@@ -2969,7 +3011,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     // fetch new message
                     Message newMessage = getMessage(folderId, id);
                     // restore imap uid
-                    if (currentMessage != null) {
+                    if (currentMessage != null  && newMessage.imapUid != currentMessage.imapUid) {
                         LOGGER.debug("Restoring imapUid " + newMessage.imapUid + " -> " + currentMessage.imapUid);
                         newMessage.imapUid = currentMessage.imapUid;
                     }
