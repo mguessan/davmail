@@ -116,7 +116,7 @@ public class GraphExchangeSession extends ExchangeSession {
     /**
      * Extend message list to support delta sync
      */
-    protected class MessageList extends ExchangeSession.MessageList {
+    protected static class MessageList extends ExchangeSession.MessageList {
         String deltaLink;
     }
 
@@ -2128,7 +2128,7 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
-    class Message extends ExchangeSession.Message {
+    protected class Message extends ExchangeSession.Message {
         protected FolderId folderId;
         protected String id;
         protected String changeKey;
@@ -2404,7 +2404,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException {
+    public ExchangeSession.MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException {
         MessageList messageList = new MessageList();
         FolderId folderId = getFolderId(folderName);
 
@@ -2953,7 +2953,7 @@ public class GraphExchangeSession extends ExchangeSession {
      * @return delta link
      * @throws IOException on error
      */
-    public String getDeltaLink(FolderId folderId) throws IOException {
+    protected String getDeltaLink(FolderId folderId) throws IOException {
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(folderId.mailbox)
@@ -2985,8 +2985,7 @@ public class GraphExchangeSession extends ExchangeSession {
             while (graphIterator.hasNext()) {
                 JSONObject deltaMessage = graphIterator.next();
 
-                String id = null;
-                id = deltaMessage.getString("id");
+                String id = deltaMessage.getString("id");
                 if (deltaMessage.has("@removed")) {
                     // message deleted
                     for (ExchangeSession.Message message : messageList) {
@@ -3075,7 +3074,6 @@ public class GraphExchangeSession extends ExchangeSession {
             folderNames = folderPath.substring(INBOX.length()).split("/");
         } else if (isSubFolderOf(folderPath, CALENDAR)) {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.calendar, FolderId.IPF_APPOINTMENT);
-            // TODO subfolders not supported with graph
             folderNames = folderPath.substring(CALENDAR.length()).split("/");
         } else if (isSubFolderOf(folderPath, TASKS)) {
             currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.tasks);
@@ -3935,7 +3933,8 @@ public class GraphExchangeSession extends ExchangeSession {
         contact.setName(response.optString("id"));
         contact.put("imapUid", response.optString("id"));
         contact.put("uid", response.optString("id"));
-        Iterator keysIterator = response.keys();
+        @SuppressWarnings("unchecked")
+        Iterator<String> keysIterator = response.keys();
         while (keysIterator.hasNext()) {
             String key = (String) keysIterator.next();
             String attributeName = key;
