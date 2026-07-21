@@ -3,7 +3,6 @@
     <property name="version" value="6.8.1"/>
 
     <path id="classpath">
-        <pathelement location="classes"/>
         <fileset dir="lib">
             <include name="*.jar"/>
             <!-- make sure we compile with swt gtk 64 -->
@@ -45,7 +44,7 @@
     </condition>
 
     <!-- recent debian jdk with OpenJFX -->
-    <condition property="is.debian">
+    <condition property="is.debian.javafx">
         <and>
             <available file="/usr/share/java/javafx-base.jar"/>
             <matches string="${ant.java.version}" pattern="1[1-9]|[2-9][0-9]"/>
@@ -54,7 +53,7 @@
 
     <condition property="is.java11">
         <and>
-            <isfalse value="${is.debian}"/>
+            <isfalse value="${is.debian.javafx}"/>
             <matches string="${ant.java.version}" pattern="1[1-9]|[2-9][0-9]"/>
         </and>
     </condition>
@@ -106,7 +105,7 @@
         <mkdir dir="target/classes"/>
     </target>
 
-    <target name="compile-debian" if="is.debian">
+    <target name="compile-debian" if="is.debian.javafx">
         <mkdir dir="target/classes"/>
         <echo level="info" message="Compile on debian with openjfx"/>
         <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8"
@@ -127,7 +126,7 @@
     <target name="compile-java11" if="is.java11">
         <mkdir dir="target/classes"/>
         <echo level="info" message="Compile java 11 or later"/>
-        <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8" source="11" target="11"
+        <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8" source="11" target="11" debug="on"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
             <compilerarg value="--add-exports"/>
@@ -166,7 +165,7 @@
 
     <target name="test-compile" depends="compile">
         <mkdir dir="target/test-classes"/>
-        <javac srcdir="src/test" destdir="target/test-classes"  source="1.8" target="1.8" debug="on" encoding="UTF-8"
+        <javac srcdir="src/test" destdir="target/test-classes" debug="on" encoding="UTF-8"
                includeantruntime="false">
             <classpath>
                 <path refid="classpath"/>
@@ -455,7 +454,6 @@
                 <exclude name="svnant/**"/>
                 <exclude name="user.properties"/>
                 <exclude name="src/winrun4j/**"/>
-                <exclude name="src/osx/**"/>
                 <exclude name="src/osx/**"/>
                 <exclude name="src/contribs/**"/>
                 <exclude name="*.nsi"/>
