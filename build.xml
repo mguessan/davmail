@@ -128,7 +128,9 @@
         <echo level="info" message="Compile java 11 or later"/>
         <javac srcdir="src/java" destdir="target/classes" encoding="UTF-8" source="11" target="11" debug="on"
                includeantruntime="false">
-            <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
+            <!-- exclude OpenJFX based interactive authentication only -->
+            <exclude name="davmail/exchange/auth/O365InteractiveAuthenticatorFrame*" unless="is.javafx"/>
+            <exclude name="davmail/exchange/auth/O365InteractiveJSLogger*" unless="is.javafx"/>
             <compilerarg value="--add-exports"/>
             <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED"/>
             <compilerarg value="--add-exports"/>
