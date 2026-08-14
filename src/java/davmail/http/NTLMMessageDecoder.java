@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Date;
 
+@SuppressWarnings({"unused", "SpellCheckingInspection"})
 public class NTLMMessageDecoder {
     static final int NTLMSSP_KEY_56 = 0x80000000;
     static final int NTLMSSP_KEY_EXCHANGE = 0x40000000;
@@ -302,11 +303,13 @@ public class NTLMMessageDecoder {
 
     public String toHexString(byte[] data) {
         StringBuilder buffer = new StringBuilder();
-        for (byte b : data) {
-            if ((b & 0xF0) == 0) {
-                buffer.append('0');
+        if (data != null) {
+            for (byte b : data) {
+                if ((b & 0xF0) == 0) {
+                    buffer.append('0');
+                }
+                buffer.append(Integer.toHexString(b & 0xFF));
             }
-            buffer.append(Integer.toHexString(b & 0xFF));
         }
         return buffer.toString();
     }
