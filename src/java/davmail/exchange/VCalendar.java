@@ -172,7 +172,6 @@ public class VCalendar extends VObject {
 
         // iCal 4 global X-CALENDARSERVER-ACCESS
         String calendarServerAccess = getPropertyValue("X-CALENDARSERVER-ACCESS");
-        String now = ExchangeSession.getZuluDateFormat().format(new Date());
 
         // fix method from iPhone
         if (!fromServer && getPropertyValue("METHOD") == null) {
@@ -571,7 +570,7 @@ public class VCalendar extends VObject {
     }
 
     private boolean isCurrentUser(VProperty property) {
-        return property.getValue().equalsIgnoreCase("mailto:" + email);
+        return property.getValue() != null && property.getValue().equalsIgnoreCase("mailto:" + email);
     }
 
     /**
