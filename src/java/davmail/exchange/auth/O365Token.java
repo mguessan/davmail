@@ -134,7 +134,7 @@ public class O365Token {
 
                 throw new DavMailAuthenticationException("LOG_MESSAGE", jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
             }
-            scope = jsonToken.optString("scope");
+            scope = jsonToken.optString("scope", null);
             LOGGER.debug("Obtained token for scopes: " + scope);
             // access token expires after one hour
             accessToken = jsonToken.getString("access_token");
