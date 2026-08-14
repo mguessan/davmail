@@ -160,6 +160,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
             // Attempt to acquire the lock within the timeout window
             try {
+                LOGGER.debug("Acquire lock on folder "+folderPath);
                 if (lock.tryLock(5, TimeUnit.MINUTES)) {
                     try {
                         // get message list from map
