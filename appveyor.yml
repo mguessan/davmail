@@ -38,7 +38,7 @@ install:
   - cmd: copy /y C:\projects\davmail\nsis\* "C:\Program Files (x86)\NSIS\Plugins\x86-ansi"
   - cmd: copy /y C:\projects\davmail\nsis\* "C:\Program Files (x86)\NSIS\Plugins\x86-unicode"
 build_script:
-  - IF "%JAVA_HOME%" == "C:\Program Files\Java\jdk25" copy /y C:\openjfx\javafx-sdk-25\lib\* lib
+  - IF "%JAVA_HOME%" == "C:\Program Files\Java\jdk25" copy /y C:\openjfx\javafx-sdk-25.0.4\lib\* lib
   - ant dist
   - IF "%JAVA_HOME%" == "C:\Program Files\Java\jdk25" ant sonar -Dsonar.token=%SONAR_LOGIN%
   - IF not "%JAVA_HOME%" == "C:\Program Files\Java\jdk1.8.0" echo remove artifacts && del /s /q dist
