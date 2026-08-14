@@ -59,6 +59,7 @@ public class GraphField {
         addFieldMap("isRead", PropertyType.Boolean);
         addFieldMap("isDraft");
         addFieldMap("receivedDateTime", PropertyType.SystemTime);
+        addFieldMap("datereceived", "receivedDateTime", PropertyType.SystemTime);
         addFieldMap("date", "receivedDateTime", PropertyType.SystemTime);
         // addFieldMap("date", 0x0e06, PropertyType.SystemTime);  // PidTagOriginalDeliveryTime
         addFieldMap("lastmodified", "lastModifiedDateTime", PropertyType.SystemTime);
