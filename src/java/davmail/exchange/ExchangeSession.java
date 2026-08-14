@@ -2659,20 +2659,6 @@ public abstract class ExchangeSession {
     private static int dumpIndex;
 
     /**
-     * Replace iCal4 (Snow Leopard) principal paths with mailto expression
-     *
-     * @param value attendee value or ics line
-     * @return fixed value
-     */
-    protected String replaceIcal4Principal(String value) {
-        if (value != null && value.contains("/principals/__uuids__/")) {
-            return value.replaceAll("/principals/__uuids__/([^/]*)__AT__([^/]*)/", "mailto:$1@$2");
-        } else {
-            return value;
-        }
-    }
-
-    /**
      * Event result object to hold HTTP status and event etag from an event creation/update.
      */
     public static class ItemResult {
@@ -3145,7 +3131,7 @@ public abstract class ExchangeSession {
      */
     public FreeBusy getFreebusy(String attendee, String startDateValue, String endDateValue) throws IOException {
         // replace ical encoded attendee name
-        attendee = replaceIcal4Principal(attendee);
+        attendee = VCalendar.replaceIcal4Principal(attendee);
 
         // then check that email address is valid to avoid InvalidSmtpAddress error
         if (attendee == null || attendee.indexOf('@') < 0 || attendee.charAt(attendee.length() - 1) == '@') {

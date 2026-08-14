@@ -532,7 +532,7 @@ public class VCalendar extends VObject {
      * @param value attendee value or ics line
      * @return fixed value
      */
-    protected String replaceIcal4Principal(String value) {
+    protected static String replaceIcal4Principal(String value) {
         final String principalPrefix = "/principals/__uuids__/";
         final String principalAt = "__AT__";
         if (value.contains(principalPrefix) && value.contains(principalAt)) {
