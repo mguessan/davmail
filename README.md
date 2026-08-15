@@ -1,16 +1,15 @@
 # DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway
 
 [![Build status: Windows](https://ci.appveyor.com/api/projects/status/d7tx645gwqvprd4g?svg=true)](https://ci.appveyor.com/project/mguessan/davmail)
-[![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://img.shields.io/sourceforge/dm/davmail.svg)](https://sourceforge.net/projects/davmail/files/latest/download)
-[![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://img.shields.io/sourceforge/dt/davmail.svg)](https://sourceforge.net/projects/davmail/files/latest/download)
+[![Monthly Downloads DavMail POP/IMAP/SMTP/CalDAV to Exchange](https://img.shields.io/sourceforge/dm/davmail.svg)](https://sourceforge.net/projects/davmail/files/latest/download)
+[![Total Downloads DavMail POP/IMAP/SMTP/CalDAV to Exchange](https://img.shields.io/sourceforge/dt/davmail.svg)](https://sourceforge.net/projects/davmail/files/latest/download)
 
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=alert_status)](https://sonarcloud.io/project/overview?id=mguessan_davmail)
 [![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=bugs)](https://sonarcloud.io/project/overview?id=mguessan_davmail)
 [![SonarCloud Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=vulnerabilities)](https://sonarcloud.io/project/overview?id=mguessan_davmail)
 
-**_Security note:_** DavMail does not depend on Log4J2 and is thus not vulnerable to [CVE-2021-44228](https://github.com/advisories/GHSA-jfh8-c2jp-5v3q)
-
-Ever wanted to get rid of Outlook? DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway allowing users to use any mail client with Exchange, even from the internet through Outlook Web Access on any platform, tested on macOS, Linux and Windows
+Ever wanted to get rid of Outlook? DavMail is a POP/IMAP/SMTP/CalDAV/CardDAV/LDAP gateway allowing users to use any 
+mail client with Exchange and Office 365. Packages are available for macOS, Linux and Windows.
 
 ![DavMail Architecture](src/site/resources/images/davmailArchitecture.png)
 
@@ -55,7 +54,8 @@ The latest working builds are now available on Appveyor:
 * Debian package [davmail_6.8.1-trunk-1_all.deb](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail_6.8.1-trunk-1_all.deb?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 * OSX application [DavMail-MacOSX-6.8.1-trunk.app.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2FDavMail-MacOSX-6.8.1-trunk.app.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
-Note: Windows packages have an embedded Java Runtime Environment.
+Note: Windows packages have an embedded Java Runtime Environment, Debian package has a dependency on OpenJDK,
+Azul JDK is preferred on macOS, see [DavMail Setup on macOS](https://davmail.sourceforge.net/macosxsetup.html).
 
 ## Getting started
 
