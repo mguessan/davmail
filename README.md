@@ -44,20 +44,26 @@ If your distribution supports Flatpak:
 
 Docker images are available on GitHub Container Registry:
 
-[![label=Docker](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2Fmguessan%2Fdavmail%2Fdavmail&query=downloadCount&logo=docker&label=GitHub%20Docker%20Pulls&color=2496ed)](https://github.com/mguessan/davmail/tree/master/src/docker/README.md)
-
+[![GitHub Docker Pulls](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2Fmguessan%2Fdavmail%2Fdavmail&query=downloadCount&logo=docker&label=GitHub%20Docker%20Pulls&color=2496ed)](https://github.com/mguessan/davmail/tree/master/src/docker/README.md)
 
 ## Trunk builds
 The latest working builds are now available on Appveyor:
 
 * Windows 64 bits setup [davmail-6.8.1-trunk-setup64.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.8.1-trunk-setup64.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-* Windows standalone (with embedded Azul JRE-FX) package [davmail-6.8.1-trunk-windows-standalone.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.8.1-trunk-windows-standalone.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-
+* Windows standalone package [davmail-6.8.1-trunk-windows-standalone.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.8.1-trunk-windows-standalone.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 * Platform independent package [davmail-6.8.1-trunk.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.8.1-trunk.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-
 * Debian package [davmail_6.8.1-trunk-1_all.deb](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail_6.8.1-trunk-1_all.deb?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-
 * OSX application [DavMail-MacOSX-6.8.1-trunk.app.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2FDavMail-MacOSX-6.8.1-trunk.app.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+
+Note: Windows packages have an embedded Java Runtime Environment.
+
+## Getting started
+
+See [Getting Started](https://davmail.sourceforge.net/getting-started.html).
+
+## What's new
+
+See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 ## Contribute
 Contributions are welcome, you can either [submit a patch](https://sourceforge.net/p/davmail/patches/) or create a [GitHub pull request](https://github.com/mguessan/davmail/pulls).
