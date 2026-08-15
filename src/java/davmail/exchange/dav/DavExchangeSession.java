@@ -2974,7 +2974,7 @@ public class DavExchangeSession extends ExchangeSession {
         String fixedurl = URIUtil.encodePath(url);
         // sometimes permanenturis inside items are wrong after an Exchange version migration
         // need to restore base uri to actual public Exchange uri
-        if (restoreHostName && fixedurl.startsWith("http")) {
+        if (restoreHostName && fixedurl != null && fixedurl.startsWith("http")) {
             try {
                 return URIUtils.rewriteURI(new java.net.URI(fixedurl), URIUtils.extractHost(httpClientAdapter.getUri())).toString();
             } catch (URISyntaxException e) {
