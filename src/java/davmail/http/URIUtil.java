@@ -309,6 +309,9 @@ public class URIUtil {
      * @throws IOException on error
      */
     public static String decode(String escaped) throws IOException {
+        if (escaped == null) {
+            return null;
+        }
         try {
             return getString(URLCodec.decodeUrl(getAsciiBytes(escaped)));
         } catch (DecoderException e) {
@@ -322,6 +325,9 @@ public class URIUtil {
      * @return escaped path
      */
     public static String encodePath(String unescaped) {
+        if (unescaped == null) {
+            return null;
+        }
         return encode(unescaped, allowed_abs_path);
     }
 
@@ -332,6 +338,9 @@ public class URIUtil {
      * @return encoded string
      */
     public static String encode(String unescaped, BitSet allowed) {
+        if (unescaped == null) {
+            return null;
+        }
         return getAsciiString(URLCodec.encodeUrl(allowed, getBytes(unescaped)));
     }
 
@@ -341,6 +350,9 @@ public class URIUtil {
      * @return encoded string query string
      */
     public static String encodeWithinQuery(String unescaped) {
+        if (unescaped == null) {
+            return null;
+        }
         return encode(unescaped, allowed_within_query);
     }
 
@@ -350,6 +362,9 @@ public class URIUtil {
      * @return encoded string path and query string
      */
     public static String encodePathQuery(String unescaped){
+        if (unescaped == null) {
+            return null;
+        }
         int at = unescaped.indexOf('?');
         if (at < 0) {
             return encode(unescaped, allowed_abs_path);
@@ -361,7 +376,7 @@ public class URIUtil {
 
     public static byte[] getBytes(final String value) {
         if (value == null) {
-            throw new IllegalArgumentException("Parameter may not be null");
+            return null;
         }
 
         return value.getBytes(Consts.UTF_8);
@@ -369,7 +384,7 @@ public class URIUtil {
 
     public static byte[] getAsciiBytes(final String value) {
         if (value == null) {
-            throw new IllegalArgumentException("Parameter may not be null");
+            return null;
         }
 
         return value.getBytes(Consts.ASCII);
@@ -382,7 +397,7 @@ public class URIUtil {
      */
     public static String getAsciiString(final byte[] bytes) {
         if (bytes == null) {
-            throw new IllegalArgumentException("Parameter may not be null");
+            return null;
         }
 
         return new String(bytes, Consts.ASCII);
@@ -395,7 +410,7 @@ public class URIUtil {
      */
     public static String getString(final byte[] bytes) {
         if (bytes == null) {
-            throw new IllegalArgumentException("Parameter may not be null");
+            return null;
         }
 
         return new String(bytes, Consts.UTF_8);
