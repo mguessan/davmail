@@ -14,7 +14,7 @@ Ever wanted to get rid of Outlook? DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDA
 
 ![DavMail Architecture](src/site/resources/images/davmailArchitecture.png)
 
-The main project site is still on Sourceforge at http://davmail.sourceforge.net/.
+The main project site is still on Sourceforge at https://davmail.sourceforge.net/.
 
 This git repository is synchronized with the subversion repository in order to make contributions easier for GitHub users.
 
@@ -64,3 +64,7 @@ Contributions are welcome, you can either [submit a patch](https://sourceforge.n
 
 In case you are looking for tasks to work on, please check our current
 [Backlog](https://sourceforge.net/p/davmail/feature-requests/milestone/Backlog/).
+
+## License
+
+DavMail is licensed under the [GNU General Public License v2.0](LICENSE).
