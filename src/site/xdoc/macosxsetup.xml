@@ -23,13 +23,13 @@ sdk install java 25.0.3.fx-zulu
 ]]></code>
             </p>
             <p>Next download
-                <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip</a>
+                <a href="https://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip</a>
             </p>
             <div style="width: 100%;text-align: center">
                 <img src="images/osxdownload.png" alt="OSX Download"/>
             </div>
 
-            <p>DavMail is opensourc and the application bundle is built from publicly available source.
+            <p>DavMail is opensource and the application bundle is built from publicly available source.
                 However, to avoid the apple tax, the package is not signed.
                 On recent macOS versions (e.g. macOS Tahoe) you will get a security warning and a suggestion to move
                 application to trash. Open settings / Privacy &amp; Security, find the message:
@@ -57,7 +57,6 @@ sdk install java 25.0.3.fx-zulu
             <div style="width: 100%;text-align: center">
                 <img src="images/osxdesktop.jpg" alt="OSX Desktop"/>
             </div>
-            <p>Growl is no longer supported.</p>
             <p>Next step is to adjust DavMail settings:
                 <a href="gettingstarted.html">Getting started</a>
             </p>
