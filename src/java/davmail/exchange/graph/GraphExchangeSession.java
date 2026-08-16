@@ -2401,7 +2401,7 @@ public class GraphExchangeSession extends ExchangeSession {
         MessageList messageList = new MessageList();
         FolderId folderId = getFolderId(folderName);
 
-        if (Settings.getBooleanProperty("davmail.graph.deltaSync", false) && condition == null) {
+        if (Settings.getBooleanProperty("davmail.graph.deltaSync", true) && condition == null) {
             messageList.deltaLink = getDeltaLink(folderId);
         }
 
