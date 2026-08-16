@@ -1295,22 +1295,14 @@ public class GraphExchangeSession extends ExchangeSession {
 
     /**
      * Override isExpired check.
-     * @return true if session / token is expired
+     * @return false, token is automatically refreshed over Graph
      * @throws NoRouteToHostException on network error
      * @throws UnknownHostException on network error
      */
     @Override
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
-        boolean isExpired = false;
-        try {
-            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setObjectType("mailFolders").setSelect("id"));
-        } catch (UnknownHostException | NoRouteToHostException exc) {
-            throw exc;
-        } catch (IOException e) {
-            isExpired = true;
-        }
-
-        return isExpired;
+        // access token is automatically refreshed to avoid expiration
+        return false;
     }
 
     private String convertHtmlToText(String htmlText) {
