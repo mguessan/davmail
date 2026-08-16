@@ -59,7 +59,7 @@ Azul JDK is preferred on macOS, see [DavMail Setup on macOS](https://davmail.sou
 
 ## Getting started
 
-See [Getting Started](https://davmail.sourceforge.net/getting-started.html).
+See [Getting Started](https://davmail.sourceforge.net/gettingstarted.html).
 
 ## What's new
 
