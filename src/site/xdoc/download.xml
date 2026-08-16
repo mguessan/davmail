@@ -15,9 +15,14 @@
                 deployment (server or workstation).
             </p>
             <p>Please consider making a donation to help this project at
-                <a href="https://sourceforge.net/donate/index.php?group_id=184600"
+                <a href="https://www.paypal.com/cgi-bin/webscr?item_name=Donation+to+DavMail+POP%2FIMAP%2FSMTP%2FCaldav+to+Exchange&amp;cmd=_donations&amp;business=mguessan%40free.fr&amp;lc=US"
                    title="Donate">
-                    SourceForge Donation page
+                    <img alt="Donate dollars" src="https://img.shields.io/badge/paypal-donate-green.svg"/>
+                </a>
+
+                <a href="https://www.paypal.com/cgi-bin/webscr?item_name=Donation+to+DavMail+POP%2FIMAP%2FSMTP%2FCaldav+to+Exchange&amp;cmd=_donations&amp;business=mguessan%40free.fr&amp;lc=US&amp;currency_code=EUR"
+                   title="Donate">
+                    <img alt="Donate euros" src="https://img.shields.io/badge/paypal-donate-green.svg"/>
                 </a>
             </p>
 
@@ -31,28 +36,51 @@
                         <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-standalone.zip
                         </a>
                         which now both include Azul JDK, and follow instructions at
-                        <a href="windowssetup.html">DavMail Setup on windows</a>
+                        <a href="windowssetup.html">DavMail Setup on Windows</a>
                     </li>
                     <li>
-                        <strong>MacOS:</strong>
-                        Either setup Java 7/8 from <a href="https://www.java.com">Oracle Java page</a> or use Apple provided Java 6 at
-                        <a href="https://support.apple.com/kb/DL1572">Java for OS X 2014-001</a>, then download
-                        <a href="https://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
-                        </a>
+                        <strong>macOS:</strong>
+                        Setup Azul JDK FX from <a href="https://www.azul.com/downloads/?os=macos&amp;package=jdk-fx">Azul Downloads</a>,
+                        then download
+                        <a href="https://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip</a>
                         <br/>
                         and follow instructions at
                         <a href="macosxsetup.html">DavMail Setup on macOS</a><br/>
-                        In both cases you will need to disable Gatekeeper on first downloaded application launch.
-                        If you don't you will get a warning or OSX will pretend the <code>application is damaged and can’t be opened</code>.
                     </li>
                     <li>
-                        <strong>Debian Linux (Ubuntu):</strong>
+                        <strong>Linux Flatpak:</strong>
+                        DavMail can be installed as a Flatpak:
+
+                        <a href="https://flathub.org/en/apps/org.davmail.DavMail">DavMail Flatpak package</a>
+                    </li>
+                    <li>
+                        <strong>Linux OpenSUSE:</strong>
+                        RPM packages are available from OpenSUSE build service:
+
+                        <a href="https://software.opensuse.org/download.html?project=home%3Amguessan%3Adavmail&package=davmail">OpenSUSE DavMail Package</a>
+                    </li>
+                    <li>
+                        <strong>Linux Fedora and RedHat:</strong>
+                        DavMail Fedora packages are available on COPR:
+
+                        <a href="https://copr.fedorainfracloud.org/coprs/mguessan/davmail">Fedora DavMail package</a>
+                    </li>
+                    <li>
+                        <strong>Debian Linux (and Debian-based distributions like Ubuntu):</strong>
                         Download debian package
                         <a href="https://sourceforge.net/projects/davmail/files/">davmail_<em>version</em>-1_all.deb
                         </a>
                         <br/>
                         and follow instructions at
-                        <a href="linuxsetup.html">DavMail Setup on linux</a>
+                        <a href="linuxsetup.html">DavMail Setup on Linux</a>
+                    </li>
+                    <li>
+                        <strong>Docker:</strong>
+                        Docker images are available on GitHub Container Registry:
+                        <a href="https://github.com/mguessan/davmail/pkgs/container/davmail">DavMail Docker image</a>
+
+                        More details at:
+                        <a href="https://github.com/mguessan/davmail/tree/master/src/docker/README.md">DavMail Docker instructions</a>
                     </li>
                     <li>
                         <strong>Other:</strong>
@@ -74,9 +102,10 @@
                         </a>
                         or platform independent package for other operating systems:
                         <a href="https://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.zip
-                        </a>
+                        </a>.
+                        Docker packages are also available, see above.
                         <br/>
-                        and follow instructions at
+                        Follow server mode setup instructions at
                         <a href="serversetup.html">DavMail Setup as a standalone server</a>
                         <br/>
                 </p>
