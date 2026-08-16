@@ -97,7 +97,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
     /**
      * Various OTP (one time password) fields found on custom Exchange authentication forms.
-     * Used to open OTP dialog
+     * Used to open an OTP dialog
      */
     protected static final Set<String> TOKEN_FIELDS = new HashSet<>();
 
@@ -111,7 +111,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
      * User provided username.
      * Old preauth syntax: preauthusername"username
      * Windows authentication with domain: domain\\username
-     * Note that OSX Mail.app does not support backslash in username, set default domain in DavMail settings instead
+     * Note that OSX Mail.app does not support backslash in username, set the default domain in DavMail settings instead
      */
     private String username;
     /**
@@ -127,7 +127,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
      */
     private HttpClientAdapter httpClientAdapter;
     /**
-     * A OTP pre-auth page may require a different username.
+     * An OTP pre-auth page may require a different username.
      */
     private String preAuthusername;
 
@@ -179,10 +179,10 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
             boolean isHttpAuthentication = isHttpAuthentication(httpClientAdapter, url);
 
             // The user may have configured an OTP pre-auth username. It is processed
-            // so early because OTP pre-auth may disappear in the Exchange LAN and this
-            // helps the user to not change is account settings in mail client at each network change.
+            // so early because OTP pre-auth may disappear in the Exchange LAN, and this
+            // helps the user to not change his account settings in the mail client at each network change.
             if (preAuthusername == null) {
-                // Searches for the delimiter in configured username for the pre-auth user.
+                // Searches for the delimiter in the configured username for the pre-auth user.
                 // The double-quote is not allowed inside email addresses anyway.
                 int doubleQuoteIndex = this.username.indexOf('"');
                 if (doubleQuoteIndex > 0) {
@@ -211,7 +211,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     } else if (status != HttpStatus.SC_OK) {
                         throw HttpClientAdapter.buildHttpResponseException(getRequest, getRequest.getHttpResponse());
                     }
-                    // workaround for basic authentication on /exchange and form based authentication at /owa
+                    // workaround for basic authentication on /exchange and form-based authentication at /owa
                     if ("/owa/auth/logon.aspx".equals(getRequest.getURI().getPath())) {
                         formLogin(httpClientAdapter, getRequest, password);
                     }
@@ -241,7 +241,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
     }
 
     /**
-     * Test authentication mode : form based or basic.
+     * Test authentication mode: form-based or basic.
      *
      * @param url        exchange base URL
      * @param httpClient httpClientAdapter instance
@@ -303,7 +303,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
     }
 
     /**
-     * Try to find logon method path from logon form body.
+     * Try to find the logon method path from the logon form body.
      *
      * @param httpClient      httpClientAdapter instance
      * @param responseWrapper init request response wrapper
@@ -317,7 +317,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         // In the federated auth flow, an input field may contain a saml xml assertion with > characters
         cleaner.getProperties().setAllowHtmlInsideAttributes(true);
 
-        // A OTP token authentication form in a previous page could have username fields with different names
+        // An OTP token authentication form in a previous page could have username fields with different names
         usernameInputs.clear();
 
         try {
@@ -359,12 +359,12 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     if ("hidden".equalsIgnoreCase(type) && name != null && value != null) {
                         // decode XML SAML assertion correctly from hidden field value
                         if ("wresult".equals(name)) {
-                            String decoded = value.replaceAll("&quot;","\"").replaceAll("&lt;","<");
+                            String decoded = value.replace("&quot;","\"").replace("&lt;","<");
                             logonMethod.setParameter(name, decoded);
                             // The OWA accepting this assertion needs the Referer set, but it can be anything
                             logonMethod.setRequestHeader("Referer", url);
                         } else if ("wctx".equals(name)) {
-                            String decoded = value.replaceAll("&amp;","&");
+                            String decoded = value.replace("&amp;","&");
                             logonMethod.setParameter(name, decoded);
                         } else {
                             logonMethod.setParameter(name, value);
@@ -379,7 +379,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                         // this is not a logon form but a redirect form
                         logonMethod = buildLogonMethod(httpClient, httpClient.executeFollowRedirect(logonMethod));
                     } else if (TOKEN_FIELDS.contains(name)) {
-                        // one time password, ask it to the user
+                        // one-time password, request it to the user
                         logonMethod.setParameter(name, DavGatewayOTPPrompt.getOneTimePassword());
                     } else if ("otc".equals(name)) {
                         // captcha image, get image and ask user
@@ -407,7 +407,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                         logonMethod = buildLogonMethod(httpClient, httpClient.executeFollowRedirect(new GetRequest(src)));
                     }
                 } else {
-                    // another failover for script based logon forms (Exchange 2007)
+                    // another failover for script-based logon forms (Exchange 2007)
                     List<? extends TagNode> scriptList = node.getElementListByName("script", true);
                     for (TagNode script : scriptList) {
                         List<? extends BaseToken> contents = script.getAllChildren();
@@ -458,20 +458,20 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
         ResponseWrapper resultRequest = httpClient.executeFollowRedirect(logonMethod);
 
-        // test form based authentication
+        // test-form-based authentication
         checkFormLoginQueryString(resultRequest);
 
-        // workaround for post logon script redirect
+        // workaround for post-logon script redirect
         if (!isAuthenticated(resultRequest)) {
-            // try to get new method from script based redirection
+            // try to get new method from script-based redirection
             logonMethod = buildLogonMethod(httpClient, resultRequest);
 
             if (logonMethod != null) {
                 if (otpPreAuthFound && otpPreAuthRetries < MAX_OTP_RETRIES) {
-                    // A OTP pre-auth page has been found, it is needed to restart the login process.
+                    // An OTP pre-auth page has been found, it is required to restart the login process.
                     // This applies to both the case the user entered a good OTP code (the usual login process
-                    // takes place) and the case the user entered a wrong OTP code (another code will be asked to him).
-                    // The user has up to MAX_OTP_RETRIES chances to input a valid OTP key.
+                    // takes place) and the case the user entered a wrong OTP code (another code will be requested from him).
+                    // The user has up to MAX_OTP_RETRIES times to input a valid OTP key.
                     return postLogonMethod(httpClient, logonMethod, password);
                 }
 
@@ -583,7 +583,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         ((PostRequest) logonMethod).removeParameter("flags");
 
         if (passwordInput == null) {
-            // This is a OTP pre-auth page. A different username may be required.
+            // This is an OTP pre-auth page. A different username may be required.
             otpPreAuthFound = true;
             otpPreAuthRetries++;
             ((PostRequest) logonMethod).setParameter(usernameInput, preAuthusername);
@@ -665,7 +665,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
     }
 
     /**
-     * Get current Exchange alias name from login name
+     * Get the current Exchange alias name from the login name
      *
      * @return user name
      */
@@ -724,7 +724,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
     /**
      * Actual username.
-     * may be different from input username with preauth
+     * can be different from the input username with preauth
      *
      * @return username
      */
