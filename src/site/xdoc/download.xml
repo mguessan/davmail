@@ -57,7 +57,7 @@
                         <strong>Linux OpenSUSE:</strong>
                         RPM packages are available from OpenSUSE build service:
 
-                        <a href="https://software.opensuse.org/download.html?project=home%3Amguessan%3Adavmail&package=davmail">OpenSUSE DavMail Package</a>
+                        <a href="https://software.opensuse.org/download.html?project=home%3Amguessan%3Adavmail&amp;package=davmail">OpenSUSE DavMail Package</a>
                     </li>
                     <li>
                         <strong>Linux Fedora and RedHat:</strong>
