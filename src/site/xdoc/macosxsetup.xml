@@ -10,7 +10,7 @@
 
     <body>
 
-        <section name="DavMail Setup on Mac OS X">
+        <section name="DavMail Setup on macOS">
             <p>DavMail requires a recent Java JRE, with OpenJFX support for O365Interactive authentication.</p>
             <p>Recommended source is Azul at: <a
                     href="https://www.azul.com/downloads/?version=java-25-lts&amp;os=macos&amp;package=jdk-fx#zulu">Download

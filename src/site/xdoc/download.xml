@@ -34,14 +34,14 @@
                         <a href="windowssetup.html">DavMail Setup on windows</a>
                     </li>
                     <li>
-                        <strong>Mac OS X:</strong>
+                        <strong>MacOS:</strong>
                         Either setup Java 7/8 from <a href="https://www.java.com">Oracle Java page</a> or use Apple provided Java 6 at
                         <a href="https://support.apple.com/kb/DL1572">Java for OS X 2014-001</a>, then download
                         <a href="https://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
                         </a>
                         <br/>
                         and follow instructions at
-                        <a href="macosxsetup.html">DavMail Setup on Mac OS X</a><br/>
+                        <a href="macosxsetup.html">DavMail Setup on macOS</a><br/>
                         In both cases you will need to disable Gatekeeper on first downloaded application launch.
                         If you don't you will get a warning or OSX will pretend the <code>application is damaged and can’t be opened</code>.
                     </li>
