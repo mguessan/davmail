@@ -20,7 +20,7 @@ This git repository is synchronized with the subversion repository in order to m
 ## Donate
 
 Donations are welcome to help support DavMail development, in dollars 
-[![Donate dollars](https://img.shields.io/badge/paypal-donate-green.svg)](https://www.paypal.com/donate/?business=UWPTTD99YF6D6&no_recurring=0&item_name=DavMail+POP%2FIMAP%2FSMTP%2FCalDAV%2FCardDAV%2FLDAP+Exchange+and+Office+365+Gateway)
+[![Donate dollars](https://img.shields.io/badge/paypal-donate-green.svg)](https://www.paypal.com/donate/?business=UWPTTD99YF6D6&no_recurring=0&item_name=DavMail+POP%2FIMAP%2FSMTP%2FCalDAV%2FCardDAV%2FLDAP+Exchange+and+Office+365+Gateway&currency_code=USD)
 or Euros
 [![Donate euros](https://img.shields.io/badge/paypal-donate-green.svg)](https://www.paypal.com/donate/?business=UWPTTD99YF6D6&no_recurring=0&item_name=DavMail+POP%2FIMAP%2FSMTP%2FCalDAV%2FCardDAV%2FLDAP+Exchange+and+Office+365+Gateway&currency_code=EUR)
 
