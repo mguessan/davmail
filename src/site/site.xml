@@ -20,8 +20,8 @@
         <href>#</href>
     </bannerRight>
     <poweredBy>
-        <logo name="Donate" href="https://sourceforge.net/donate/index.php?group_id=184600"
-              img="https://sourceforge.net/images/project-support.jpg"/>
+        <logo name="Donate" href="https://www.paypal.com/donate/?business=UWPTTD99YF6D6&amp;no_recurring=0&amp;item_name=DavMail+POP%2FIMAP%2FSMTP%2FCalDAV%2FCardDAV%2FLDAP+Exchange+and+Office+365+Gateway"
+              img="https://img.shields.io/badge/paypal-donate-green.svg"/>
     </poweredBy>
     <skin>
         <groupId>org.apache.maven.skins</groupId>
