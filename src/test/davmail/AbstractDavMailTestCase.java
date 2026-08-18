@@ -19,7 +19,6 @@
 package davmail;
 
 import davmail.exchange.ExchangeSession;
-import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import junit.framework.TestCase;
 import org.apache.log4j.Level;
 
@@ -55,6 +54,7 @@ public abstract class AbstractDavMailTestCase extends TestCase {
                     throw new IOException("Please create a test.properties file with davmail.username and davmail.password");
                 }
                 Settings.setDefaultSettings();
+                Settings.setConfigFilePath("test.properties");
                 Settings.setProperty("davmail.server", "true");
                 try (FileInputStream fis = new FileInputStream(testFile)) {
                     Settings.load(fis);
