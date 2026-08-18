@@ -21,6 +21,7 @@ package davmail.exchange;
 import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.http.URIUtil;
 import davmail.ui.NotificationDialog;
@@ -2698,6 +2699,9 @@ public abstract class ExchangeSession {
      */
     public ItemResult createOrUpdateItem(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
         if (itemBody.startsWith("BEGIN:VCALENDAR")) {
+            if (Settings.getBooleanProperty("davmail.caldavReadonly", false)) {
+                throw new HttpForbiddenException("Calendar is read-only");
+            }
             return internalCreateOrUpdateEvent(folderPath, itemName, "urn:content-classes:appointment", itemBody, etag, noneMatch);
         } else if (itemBody.startsWith("BEGIN:VCARD")) {
             return createOrUpdateContact(folderPath, itemName, itemBody, etag, noneMatch);
