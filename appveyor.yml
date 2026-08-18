@@ -34,7 +34,7 @@ install:
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
         (new-object System.Net.WebClient).DownloadFile(
-        'https://davmail.sourceforge.net/jacoco.xml', 'jacoco.xml'
+        'https://davmail.sourceforge.net/jacoco.xml', 'target/jacoco.xml'
         )
   - cmd: SET PATH=C:\ant\apache-ant-1.10.14\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
