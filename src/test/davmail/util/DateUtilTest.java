@@ -22,6 +22,24 @@ package davmail.util;
 import junit.framework.TestCase;
 
 public class DateUtilTest extends TestCase {
+    public void testGetDayOfWeek() throws Exception {
+        assertEquals("Monday", DateUtil.getDayOfWeek("2026-07-13"));
+        assertEquals("Tuesday", DateUtil.getDayOfWeek("2026-07-14"));
+        assertEquals("Wednesday", DateUtil.getDayOfWeek("2026-07-15"));
+        assertEquals("Thursday", DateUtil.getDayOfWeek("2026-07-16"));
+        assertEquals("Friday", DateUtil.getDayOfWeek("2026-07-17"));
+        assertEquals("Saturday", DateUtil.getDayOfWeek("2026-07-18"));
+        assertEquals("Sunday", DateUtil.getDayOfWeek("2026-07-19"));
+        assertNull(DateUtil.getDayOfWeek(null));
+
+        try {
+            DateUtil.getDayOfWeek("invalid");
+            fail("Expected DavMailException");
+        } catch (davmail.exception.DavMailException e) {
+            // expected
+        }
+    }
+
     public void testGetTimeZone() {
         // standard to standard
         assertEquals("America/New_York", DateUtil.getTimeZone("America/New_York").getID());
