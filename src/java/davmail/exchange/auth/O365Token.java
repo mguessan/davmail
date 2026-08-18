@@ -21,6 +21,7 @@ package davmail.exchange.auth;
 
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
+import davmail.exchange.NetworkDownException;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.RestRequest;
 import davmail.util.IOUtil;
@@ -262,7 +263,13 @@ public class O365Token {
             tokenRequest.setRequestHeader("Origin", origin);
         }
 
-        executeRequest(tokenRequest);
+        try {
+            executeRequest(tokenRequest);
+        } catch (UnknownHostException e) {
+            // unknown host on refresh means network is down
+            LOGGER.debug("refresh token failed " + e.getMessage());
+            throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
+        }
 
         // persist provided new refresh token
         persistToken();
@@ -311,7 +318,6 @@ public class O365Token {
                     throw e;
                 } catch (IOException e) {
                     LOGGER.error("refresh token failed " + e.getMessage());
-                    // TODO detect network down and rethrow exception
                 }
             }
         }
