@@ -598,7 +598,14 @@ public class GraphExchangeSession extends ExchangeSession {
             boolean isMeeting = false;
 
             JSONObject existingJsonEvent = getEventIfExists(folderId, itemName);
-            if (existingJsonEvent != null) {
+            if (existingJsonEvent == null) {
+                isMeeting = vCalendar.isMeeting();
+                isOrganizer = vCalendar.isOrganizer();
+                String newAttendeeStatus = vCalendar.getAttendeeStatus();
+                if (isMeeting && newAttendeeStatus != null && !isOrganizer) {
+                    throw new IOException("Detected meeting response, but event does not exist, aborting");
+                }
+            } else if (existingJsonEvent != null) {
                 isExistingEvent = true;
 
                 GraphObject currentItem = new GraphObject(existingJsonEvent);

@@ -864,6 +864,11 @@ public class VCalendar extends VObject {
         return attendeeStatus;
     }
 
+    public boolean isOrganizer() {
+        String organizer = getEmailValue(getFirstVeventProperty("ORGANIZER"));
+        return email.equalsIgnoreCase(organizer);
+    }
+
     /**
      * Get first VEvent
      *
