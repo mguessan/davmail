@@ -1934,7 +1934,14 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
             EWSMethod.Item currentItem = getEwsItem(folderPath, itemName, itemRequestProperties);
-            if (currentItem != null) {
+            if (currentItem == null) {
+                boolean isMeeting = vCalendar.isMeeting();
+                boolean isOrganizer = vCalendar.isOrganizer();
+                String newAttendeeStatus = vCalendar.getAttendeeStatus();
+                if (isMeeting && newAttendeeStatus != null && !isOrganizer) {
+                    throw new IOException("Detected meeting response, but event does not exist, aborting");
+                }
+            } else {
                 currentItemId = new ItemId(currentItem);
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
                 String currentAttendeeStatus = responseTypeToPartstatMap.get(currentItem.get(Field.get("myresponsetype").getResponseName()));
