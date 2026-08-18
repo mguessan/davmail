@@ -19,6 +19,7 @@
 package davmail;
 
 import davmail.exchange.ExchangeSession;
+import davmail.http.DavGatewaySSLSocketFactory;
 import junit.framework.TestCase;
 import org.apache.log4j.Level;
 
@@ -80,7 +81,6 @@ public abstract class AbstractDavMailTestCase extends TestCase {
                 System.setProperty("java.security.krb5.kdc", Settings.getProperty("java.security.krb5.kdc"));
             }
 
-            DavGatewaySSLProtocolSocketFactory.register();
             // force server mode
             Settings.setProperty("davmail.server", "true");
         }
