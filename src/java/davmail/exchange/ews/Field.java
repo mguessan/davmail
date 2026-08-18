@@ -45,6 +45,7 @@ public final class Field {
 
         FIELD_MAP.put("hassubs", new ExtendedFieldURI(0x360a, ExtendedFieldURI.PropertyType.Boolean)); // PR_SUBFOLDERS
         FIELD_MAP.put("folderDisplayName", new UnindexedFieldURI("folder:DisplayName"));
+        FIELD_MAP.put("parentfolderid", new UnindexedFieldURI("folder:ParentFolderId"));
 
         FIELD_MAP.put("uidNext", new ExtendedFieldURI(0x6751, ExtendedFieldURI.PropertyType.Integer)); // PR_ARTICLE_NUM_NEXT
         FIELD_MAP.put("highestUid", new ExtendedFieldURI(0x6752, ExtendedFieldURI.PropertyType.Integer)); // PR_IMAP_LAST_ARTICLE_ID
@@ -64,11 +65,11 @@ public final class Field {
         FIELD_MAP.put("uid", new ExtendedFieldURI(0x0FF9, ExtendedFieldURI.PropertyType.Binary));
         FIELD_MAP.put("messageFlags", new ExtendedFieldURI(0x0e07, ExtendedFieldURI.PropertyType.Integer));//PR_MESSAGE_FLAGS
         FIELD_MAP.put("imapUid", new ExtendedFieldURI(0x0e23, ExtendedFieldURI.PropertyType.Integer));
-        FIELD_MAP.put("flagStatus", new ExtendedFieldURI(0x1090, ExtendedFieldURI.PropertyType.Integer));
-        FIELD_MAP.put("lastVerbExecuted", new ExtendedFieldURI(0x1081, ExtendedFieldURI.PropertyType.Integer));
+        FIELD_MAP.put("flagStatus", new ExtendedFieldURI(0x1090, ExtendedFieldURI.PropertyType.Integer)); // PidTagFlagStatus
+        FIELD_MAP.put("lastVerbExecuted", new ExtendedFieldURI(0x1081, ExtendedFieldURI.PropertyType.Integer)); // PR_ACTION_FLAG
         FIELD_MAP.put("read", new UnindexedFieldURI("message:IsRead", "isRead"));
         FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x0e08, ExtendedFieldURI.PropertyType.Integer));
-        FIELD_MAP.put("date", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("date", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime)); // PidTagOriginalDeliveryTime
         // always empty on Exchange 2007
         //FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x6746, ExtendedFieldURI.PropertyType.Integer)); // PR_MIME_SIZE
         //FIELD_MAP.put("date", new ExtendedFieldURI(0x65f5, ExtendedFieldURI.PropertyType.SystemTime)); // PR_IMAP_INTERNAL_DATE

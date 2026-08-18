@@ -1048,6 +1048,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     static {
         FOLDER_PROPERTIES.add(Field.get("urlcompname"));
+        FOLDER_PROPERTIES.add(Field.get("parentfolderid"));
         FOLDER_PROPERTIES.add(Field.get("folderDisplayName"));
         FOLDER_PROPERTIES.add(Field.get("lastmodified"));
         FOLDER_PROPERTIES.add(Field.get("folderclass"));
@@ -1096,6 +1097,16 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void appendSubFolders(List<ExchangeSession.Folder> folders,
                                     String parentFolderPath, FolderId parentFolderId,
                                     Condition condition, boolean recursive) throws IOException {
+        if (recursive) {
+            appendSubFoldersDeep(folders, parentFolderPath, parentFolderId, condition);
+        } else {
+            appendSubFoldersShallow(folders, parentFolderPath, parentFolderId, condition);
+        }
+    }
+
+    protected void appendSubFoldersShallow(List<ExchangeSession.Folder> folders,
+                                           String parentFolderPath, FolderId parentFolderId,
+                                           Condition condition) throws IOException {
         int resultCount = 0;
         FindFolderMethod findFolderMethod;
         do {
@@ -1117,11 +1128,76 @@ public class EwsExchangeSession extends ExchangeSession {
                     folder.folderPath = folder.displayName;
                 }
                 folders.add(folder);
-                if (recursive && folder.hasChildren) {
-                    appendSubFolders(folders, folder.folderPath, folder.folderId, condition, true);
-                }
             }
         } while (!(findFolderMethod.includesLastItemInRange));
+    }
+
+    protected void appendSubFoldersDeep(List<ExchangeSession.Folder> folders,
+                                        String parentFolderPath, FolderId parentFolderId,
+                                        Condition condition) throws IOException {
+        Map<String, String> parentByFolderId = new HashMap<>();
+        List<Folder> deepFolders = new ArrayList<>();
+        int resultCount = 0;
+        FindFolderMethod findFolderMethod;
+        do {
+            findFolderMethod = new FindFolderMethod(FolderQueryTraversal.DEEP,
+                    BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition, resultCount, getPageSize());
+            executeMethod(findFolderMethod);
+            for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
+                resultCount++;
+                Folder folder = buildFolder(item);
+                deepFolders.add(folder);
+                parentByFolderId.put(folder.folderId.value, item.get("ParentFolderId"));
+            }
+        } while (!(findFolderMethod.includesLastItemInRange));
+
+        // Build a map of parent -> children for top-down traversal
+        Map<String, List<Folder>> childrenByParentId = new HashMap<>();
+        for (Folder folder : deepFolders) {
+            String parentId = parentByFolderId.get(folder.folderId.value);
+            childrenByParentId.computeIfAbsent(parentId, k -> new ArrayList<>()).add(folder);
+        }
+
+        // Iterate from root, assigning paths top-down
+        String rootId = parentFolderId.value;
+        // if root is a DistinguishedFolderId, need to fetch actual id for parent id mapping
+        if (parentFolderId instanceof DistinguishedFolderId) {
+            rootId = internalGetFolder(parentFolderId, parentFolderPath).folderId.value;
+        }
+
+        Deque<Map.Entry<String, String>> queue = new ArrayDeque<>();
+        // Seed: children of the root folder
+        queue.add(new AbstractMap.SimpleEntry<>(rootId, parentFolderPath));
+
+        while (!queue.isEmpty()) {
+            Map.Entry<String, String> entry = queue.poll();
+            String currentParentId = entry.getKey();
+            String currentParentPath = entry.getValue();
+
+            List<Folder> children = childrenByParentId.get(currentParentId);
+            if (children != null) {
+                for (Folder childFolder : children) {
+                    String childFolderId = childFolder.folderId.value;
+
+                    // Determine child folder path
+                    if (folderIdMap.get(childFolderId) != null) {
+                        // use special foldes name
+                        childFolder.folderPath = folderIdMap.get(childFolderId);
+                    } else if (currentParentPath.isEmpty()) {
+                        childFolder.folderPath = childFolder.displayName;
+                    } else if (currentParentPath.endsWith("/")) {
+                        childFolder.folderPath = currentParentPath + childFolder.displayName;
+                    } else {
+                        childFolder.folderPath = currentParentPath + '/' + childFolder.displayName;
+                    }
+                    folders.add(childFolder);
+
+                    // Enqueue this folder so its children get the correct prefix
+                    queue.add(new AbstractMap.SimpleEntry<>(childFolderId, childFolder.folderPath));
+                }
+            }
+        }
+
     }
 
     /**
@@ -1134,6 +1210,10 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     protected EwsExchangeSession.Folder internalGetFolder(String folderPath) throws IOException {
         FolderId folderId = getFolderId(folderPath);
+        return internalGetFolder(folderId, folderPath);
+    }
+
+    protected EwsExchangeSession.Folder internalGetFolder(FolderId folderId, String folderPath) throws IOException {
         GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, folderId, FOLDER_PROPERTIES);
         executeMethod(getFolderMethod);
         EWSMethod.Item item = getFolderMethod.getResponseItem();
