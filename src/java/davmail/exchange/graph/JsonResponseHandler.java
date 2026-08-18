@@ -24,6 +24,7 @@ import davmail.exception.HttpConflictException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.HttpPreconditionFailedException;
+import davmail.exception.HttpTokenExpiredException;
 import davmail.http.HttpClientAdapter;
 import davmail.util.IOUtil;
 import org.apache.http.Header;
@@ -68,15 +69,18 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
             }
         }
         // check http error code
-        if (response.getStatusLine().getStatusCode() >= 400) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode >= 400) {
             String errorMessage = null;
+            String errorCode = null;
             if (jsonResponse != null && jsonResponse.optJSONObject("error") != null) {
                 try {
                     JSONObject jsonError = jsonResponse.getJSONObject("error");
-                    errorMessage = jsonError.optString("code") + " " + jsonError.optString("message");
+                    errorCode = jsonError.optString("code", null);
+                    errorMessage = errorCode + " " + jsonError.optString("message");
 
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(response.getStatusLine().getStatusCode()+" "+response.getStatusLine().getReasonPhrase()+" " + jsonError);
+                        LOGGER.debug(statusCode+" "+response.getStatusLine().getReasonPhrase()+" " + jsonError);
                     }
                 } catch (JSONException e) {
                     // ignore
@@ -85,19 +89,22 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
             if (errorMessage == null) {
                 errorMessage = response.getStatusLine().getReasonPhrase();
             }
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_FORBIDDEN) {
+            if (statusCode == HttpStatus.SC_UNAUTHORIZED && "InvalidAuthenticationToken".equals(errorCode)) {
+                throw new HttpTokenExpiredException(errorMessage);
+            }
+            if (statusCode == HttpStatus.SC_FORBIDDEN) {
                 throw new HttpForbiddenException(errorMessage);
             }
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+            if (statusCode == HttpStatus.SC_NOT_FOUND) {
                 throw new HttpNotFoundException(errorMessage);
             }
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_CONFLICT) {
+            if (statusCode == HttpStatus.SC_CONFLICT) {
                 throw new HttpConflictException(errorMessage);
             }
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_PRECONDITION_FAILED) {
+            if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new HttpPreconditionFailedException(errorMessage);
             }
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
+            if (statusCode == HttpStatus.SC_BAD_REQUEST) {
                 throw new HttpBadRequestException(errorMessage);
             }
             throw new IOException(errorMessage);
