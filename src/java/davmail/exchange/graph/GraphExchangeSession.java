@@ -272,7 +272,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("TITLE", graphObject.optString("summary"));
                     vTodo.setPropertyValue("SUMMARY", graphObject.optString("summary"));
 
-                    vTodo.addProperty(convertBodyToVproperty("DESCRIPTION", graphObject));
+                    vTodo.addProperty(convertBodyToVproperty(graphObject));
 
                     vTodo.setPropertyValue("PRIORITY", graphObject.getTaskPriority());
                     // not supported over graph
@@ -366,7 +366,7 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.setPropertyValue("UID", iCalUId);
             vEvent.setPropertyValue("SUMMARY", jsonEvent.optString("subject"));
 
-            vEvent.addProperty(convertBodyToVproperty("DESCRIPTION", jsonEvent));
+            vEvent.addProperty(convertBodyToVproperty(jsonEvent));
 
             vEvent.setPropertyValue("LAST-MODIFIED", jsonEvent.optString("lastModifiedDateTime"));
             vEvent.setPropertyValue("DTSTAMP", jsonEvent.optString("lastModifiedDateTime"));
@@ -591,11 +591,10 @@ public class GraphExchangeSession extends ExchangeSession {
             String currentEtag = null;
             boolean isExistingEvent = false;
             boolean isMeetingResponse = false;
-            boolean isMozSendInvitations = false;
             boolean isMozDismiss = false;
 
-            boolean isOrganizer = false;
-            boolean isMeeting = false;
+            boolean isOrganizer;
+            boolean isMeeting;
 
             JSONObject existingJsonEvent = getEventIfExists(folderId, itemName);
             if (existingJsonEvent == null) {
@@ -605,7 +604,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (isMeeting && newAttendeeStatus != null && !isOrganizer) {
                     throw new IOException("Detected meeting response, but event does not exist, aborting");
                 }
-            } else if (existingJsonEvent != null) {
+            } else {
                 isExistingEvent = true;
 
                 GraphObject currentItem = new GraphObject(existingJsonEvent);
@@ -635,8 +634,6 @@ public class GraphExchangeSession extends ExchangeSession {
                 String currentmozsnoozetime = currentItem.optString("xmozsnoozetime");
                 boolean ismozsnooze = newmozsnoozetime != null && !newmozsnoozetime.equals(currentmozsnoozetime);
 
-                isMozSendInvitations = (newmozlastack == null && newmozsnoozetime == null) // not thunderbird
-                        || !(ismozack || ismozsnooze);
                 isMozDismiss = ismozack || ismozsnooze;
 
                 LOGGER.debug("Existing item found with etag: " + currentEtag + " client etag: " + etag + " id: " + currentItemId);
@@ -1328,7 +1325,8 @@ public class GraphExchangeSession extends ExchangeSession {
         return builder.toString();
     }
 
-    private VProperty convertBodyToVproperty(String propertyName, GraphObject graphObject) {
+    private VProperty convertBodyToVproperty(GraphObject graphObject) {
+        String propertyName = "DESCRIPTION";
         JSONObject jsonBody = graphObject.optJSONObject("body");
 
         if (jsonBody == null) {
@@ -3933,7 +3931,7 @@ public class GraphExchangeSession extends ExchangeSession {
         @SuppressWarnings("unchecked")
         Iterator<String> keysIterator = response.keys();
         while (keysIterator.hasNext()) {
-            String key = (String) keysIterator.next();
+            String key = keysIterator.next();
             String attributeName = key;
             // special handling for email addresses
             if ("emailAddresses".equals(key)) {
