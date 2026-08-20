@@ -25,7 +25,6 @@ import davmail.exception.DavMailAuthenticationException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
-import davmail.exchange.auth.HC4ExchangeFormAuthenticator;
 
 import java.io.IOException;
 import java.util.List;
@@ -45,7 +44,7 @@ public class TestDavSessionExchange2007 extends AbstractExchange2007TestCase {
         authenticator.authenticate();
         assertEquals("https://" + server + "/owa/", authenticator.getExchangeUri().toString());
         // create session
-        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClient(),
+        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClientAdapter(),
                 authenticator.getExchangeUri(), authenticator.getUsername());
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
@@ -75,7 +74,7 @@ public class TestDavSessionExchange2007 extends AbstractExchange2007TestCase {
         authenticator.setPassword(password);
         authenticator.authenticate();
         // create session
-        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClient(),
+        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClientAdapter(),
                 authenticator.getExchangeUri(), authenticator.getUsername());
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
@@ -90,7 +89,7 @@ public class TestDavSessionExchange2007 extends AbstractExchange2007TestCase {
         authenticator.setPassword(password);
         authenticator.authenticate();
         // create session
-        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClient(),
+        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClientAdapter(),
                 authenticator.getExchangeUri(), authenticator.getUsername());
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
@@ -105,7 +104,7 @@ public class TestDavSessionExchange2007 extends AbstractExchange2007TestCase {
         authenticator.setPassword(password);
         authenticator.authenticate();
         // create session
-        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClient(),
+        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClientAdapter(),
                 authenticator.getExchangeUri(), authenticator.getUsername());
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
@@ -126,7 +125,7 @@ public class TestDavSessionExchange2007 extends AbstractExchange2007TestCase {
         authenticator.setPassword(password);
         authenticator.authenticate();
         // create session
-        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClient(),
+        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClientAdapter(),
                 authenticator.getExchangeUri(), authenticator.getUsername());
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
@@ -141,7 +140,7 @@ public class TestDavSessionExchange2007 extends AbstractExchange2007TestCase {
 
     public void testHC4OWAFormAuthenticator() throws IOException {
         String url = "https://" + server + "/owa";
-        HC4ExchangeFormAuthenticator authenticator = new HC4ExchangeFormAuthenticator();
+        ExchangeFormAuthenticator authenticator = new ExchangeFormAuthenticator();
         authenticator.setUrl(url);
         authenticator.setUsername(username);
         authenticator.setPassword(password);
@@ -154,7 +153,7 @@ public class TestDavSessionExchange2007 extends AbstractExchange2007TestCase {
 
         //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
         // create session
-        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClient(),
+        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClientAdapter(),
                 authenticator.getExchangeUri(), authenticator.getUsername());
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());

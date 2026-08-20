@@ -20,7 +20,7 @@
 package davmail.exchange.dav;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.property.DavProperty;
 
@@ -41,7 +41,7 @@ public class TestDavExchangeSessionOther extends AbstractDavExchangeSessionTestC
         Set<String> attributes = new HashSet<>();
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.CategoryList")), HC4DavExchangeSession.FolderQueryTraversal.Shallow, 0);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.CategoryList")), DavExchangeSession.FolderQueryTraversal.Shallow, 0);
         String value = (String) responses[0].getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream")).getValue();
         String propertyList = new String(Base64.decodeBase64(value.getBytes()), StandardCharsets.UTF_8);
         System.out.println(propertyList);
@@ -59,7 +59,7 @@ public class TestDavExchangeSessionOther extends AbstractDavExchangeSessionTestC
         attributes.add("roamingxmlstream");
         attributes.add("displayname");
 
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + '/', attributes, davSession.and(davSession.isTrue("ishidden")), HC4DavExchangeSession.FolderQueryTraversal.Deep, 0);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + '/', attributes, davSession.and(davSession.isTrue("ishidden")), DavExchangeSession.FolderQueryTraversal.Deep, 0);
         for (MultiStatusResponse response : responses) {
             System.out.println(response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("messageclass")).getValue() + ": "
                     + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("displayname")).getValue());
@@ -85,7 +85,7 @@ public class TestDavExchangeSessionOther extends AbstractDavExchangeSessionTestC
         attributes.add("roamingdictionary");
         attributes.add("displayname");
 
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/non_ipm_subtree", attributes, davSession.and(davSession.isTrue("ishidden")), HC4DavExchangeSession.FolderQueryTraversal.Deep, 0);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/non_ipm_subtree", attributes, davSession.and(davSession.isTrue("ishidden")), DavExchangeSession.FolderQueryTraversal.Deep, 0);
         for (MultiStatusResponse response : responses) {
             System.out.println(response.getHref() + ' ' + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("messageclass")).getValue() + ": "
                     + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("displayname")).getValue());
@@ -108,9 +108,13 @@ public class TestDavExchangeSessionOther extends AbstractDavExchangeSessionTestC
 
     public void testEncodeAndFixUrl() throws IOException {
         String testUrl = "https://invalid.server.name/space plus+star*dash-slash/ampersand&";
-        ((HC4DavExchangeSession)session).restoreHostName = true;
+        ((DavExchangeSession)session).restoreHostName = true;
         assertEquals("https://"+server+"/space%20plus%2Bstar*dash-slash/ampersand&",
-                ((HC4DavExchangeSession)session).encodeAndFixUrl(testUrl));
+                ((DavExchangeSession)session).encodeAndFixUrl(testUrl));
+    }
+
+    public void testPublicPath() {
+        assertEquals("https://" + server + "/public/", ((DavExchangeSession) session).getCmdBasePath());
     }
 
 }
