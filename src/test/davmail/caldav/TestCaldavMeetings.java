@@ -21,8 +21,11 @@ package davmail.caldav;
 
 import davmail.AbstractDavMailTestCase;
 import davmail.Settings;
-import davmail.exchange.*;
-import davmail.exchange.ews.EwsExchangeSession;
+import davmail.exchange.ExchangeSession;
+import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.VCalendar;
+import davmail.exchange.VObject;
+import davmail.exchange.VProperty;
 
 import java.io.FileInputStream;
 import java.io.IOException;

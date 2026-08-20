@@ -36,7 +36,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.DavMethods;
-import org.apache.jackrabbit.webdav.DavServletResponse;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.BaseDavRequest;
@@ -263,7 +262,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
 
         HttpGet getRequest = new HttpGet(uri);
         CloseableHttpResponse getResponse = httpClient.execute(getRequest);
-        assertEquals(org.apache.commons.httpclient.HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
+        assertEquals(HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
     }
 
     public void testPropfindPrincipal() throws IOException {
@@ -309,7 +308,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         HttpPropfind method = new HttpPropfind("/.well-known/caldav", davPropertyNameSet, 0) {
             @Override
             public boolean succeeded(HttpResponse response) {
-                return response.getStatusLine().getStatusCode() == DavServletResponse.SC_MOVED_PERMANENTLY;
+                return response.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_PERMANENTLY;
             }
         };
         httpClient.executeDavRequest(method);
