@@ -200,13 +200,15 @@
                 </classpath>
                 <formatter type="brief" usefile="false"/>
                 <batchtest>
-                    <!--fileset dir="src/test" includes="**/Test*.java"/-->
+                    <!--fileset dir="src/test" includes="**/Test*.java"/>
                     <fileset dir="src/test" includes="**/TestDoubleDotInputStream.java"/>
                     <fileset dir="src/test" includes="davmail/caldav/TestCaldavHttpClient4.java"/>
                     <fileset dir="src/test" includes="davmail/util/*.java"/>
                     <fileset dir="src/test" includes="davmail/smtp/*.java"/>
                     <fileset dir="src/test" includes="davmail/ldap/*.java"/>
-                    <fileset dir="src/test" includes="davmail/imap/*.java"/>
+                    <fileset dir="src/test" includes="davmail/imap/*.java"/-->
+                    <fileset dir="src/test" includes="davmail/exchange/TestExchangeSessionContact.java"/>
+                    <fileset dir="src/test" includes="davmail/util/*.java"/>
                 </batchtest>
             </junit>
         </coverage>
@@ -217,14 +219,10 @@
             </executiondata>
             <structure name="DavMail">
                 <classfiles>
-                    <fileset dir="target/classes">
-                        <exclude name="**/StreamScanner.class"/>
-                    </fileset>
+                    <fileset dir="target/classes"/>
                 </classfiles>
                 <sourcefiles encoding="UTF-8">
-                    <fileset dir="src/java">
-                        <exclude name="**/StreamScanner.java"/>
-                    </fileset>
+                    <fileset dir="src/java"/>
                 </sourcefiles>
             </structure>
             <html destdir="target/jacocoreport"/>
@@ -374,7 +372,7 @@
         </jar>
     </target>
 
-    <target name="prepare-dist" depends="init,jar">
+    <target name="prepare-dist" depends="init,jar,test-compile">
         <echo file="dist/version.txt" message="${release}"/>
         <copy todir="dist/lib">
             <fileset dir="lib">
