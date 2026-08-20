@@ -284,7 +284,6 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertNull(contact.get("businesshomepage"));
         assertNull(contact.get("title"));
-        //assertNull(contact.get("description")); // TODO
 
         assertNull(contact.get("extensionattribute1"));
         assertNull(contact.get("extensionattribute2"));
@@ -312,7 +311,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertTrue(contact.get("haspicture") == null || "false".equals(contact.get("haspicture")));
 
         // fails over Graph
-        //assertNull(session.getContactPhoto(contact));
+        assertNull(session.getContactPhoto(contact));
     }
 
 
@@ -648,6 +647,29 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         VProperty property = new VProperty("ADR;TYPE=WORK:;;via 25 aprile\\, 25;Lallio;BG;24048;Italia");
         assertEquals("via 25 aprile, 25", property.getValues().get(2));
     }
+
+    public void testEraseDescription() throws IOException {
+        String itemName = UUID.randomUUID() + ".vcf";
+
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.appendProperty("NOTE", "description");
+        vCardWriter.endCard();
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), null, null);
+        assertEquals(201, result.status);
+
+        vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.endCard();
+
+        result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), null, null);
+
+        System.out.println(result);
+        ExchangeSession.Contact contact = getCurrentContact(itemName);
+        assertNull(contact.get("description"));
+    }
+
 
     /* Huge contact folder creation
     public void testJohnDoes() throws IOException {
