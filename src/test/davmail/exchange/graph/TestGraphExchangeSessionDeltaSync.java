@@ -43,7 +43,7 @@ public class TestGraphExchangeSessionDeltaSync extends AbstractExchangeSessionTe
 
         String initialDeltaLink = session.getDeltaLink(session.getFolderId(folderPath));
 
-        GraphExchangeSession.MessageList messages = session.searchMessages(folderPath);
+        GraphExchangeSession.MessageList messages = (GraphExchangeSession.MessageList) session.searchMessages(folderPath);
 
         String deltaLink = initialDeltaLink;
 
