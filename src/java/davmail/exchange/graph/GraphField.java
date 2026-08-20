@@ -173,13 +173,19 @@ public class GraphField {
         addFieldMap("namesuffix", "generation");
         addFieldMap("nickname", "nickName");
         addFieldMap("mobile", 0x3A1C, PropertyType.String);
-        addFieldMap("telephoneNumber", 0x3A08, PropertyType.String);
+        addFieldMap("telephoneNumber", 0x3A08, PropertyType.String); // PidTagBusinessTelephoneNumber
+
+        addFieldMap("otherBusinessTelephoneNumber", 0x3A1B, PropertyType.String); // PidTagBusiness2TelephoneNumber
+
         addFieldMap("facsimiletelephonenumber", 0x3A24, PropertyType.String);
         addFieldMap("pager", 0x3A21, PropertyType.String);
 
         addFieldMap("homeCity", 0x3A59, PropertyType.String);
         addFieldMap("homeCountry", 0x3A5A, PropertyType.String);
         addFieldMap("homePhone", 0x3A09, PropertyType.String);
+
+        addFieldMap("otherHomePhone", 0x3A2F, PropertyType.String); // PidTagHome2TelephoneNumber
+
         addFieldMap("homePostalCode", 0x3A5B, PropertyType.String);
         addFieldMap("homeState", 0x3A5C, PropertyType.String);
         addFieldMap("homeStreet", 0x3A5D, PropertyType.String);
@@ -237,7 +243,10 @@ public class GraphField {
         addFieldMap("profession"); // MAPI addFieldMap("profession", 0x3A46, PropertyType.String);
 
         addFieldMap("othermobile", 0x3A1E, PropertyType.String); // PidTagCarTelephoneNumber
-        addFieldMap("otherTelephone", 0x3A21, PropertyType.String); // PidTagPagerTelephoneNumber
+        addFieldMap("otherTelephone", 0x3A1F, PropertyType.String); // PidTagOtherTelephoneNumber
+
+        addFieldMap("homefax", 0x3A25, PropertyType.String); // PidTagHomeFaxNumber
+        addFieldMap("internationalisdnnumber", 0x3A2D, PropertyType.String); // PidTagIsdnNumber
 
         addFieldMap("gender");// MAPI addFieldMap("gender", 0x3A4D, PropertyType.Short);
 

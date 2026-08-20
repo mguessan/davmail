@@ -1526,20 +1526,12 @@ public class GraphExchangeSession extends ExchangeSession {
                     } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")
                             && !"usersmimecertificate".equals(entry.getKey()) // not supported over Graph
                             && !"msexchangecertificate".equals(entry.getKey()) // not supported over Graph
-                            && !"pager".equals(entry.getKey()) && !"otherTelephone".equals(entry.getKey()) // see below
                             && !"fileas".equals(entry.getKey()) && !"outlookmessageclass".equals(entry.getKey())
                             && !"subject".equals(entry.getKey())
                     ) {
                         graphObject.put(entry.getKey(), entry.getValue());
                     }
                 }
-
-                // pager and otherTelephone is a single field
-                String pager = get("pager");
-                if (pager == null) {
-                    pager = get("otherTelephone");
-                }
-                graphObject.put("pager", pager);
 
                 // force urlcompname
                 graphObject.put("urlcompname", convertItemNameToEML(itemName));
@@ -1824,6 +1816,11 @@ public class GraphExchangeSession extends ExchangeSession {
         // certificates not supported over graph
         // CONTACT_ATTRIBUTES.add(GraphField.get("msexchangecertificate"));
         // CONTACT_ATTRIBUTES.add(GraphField.get("usersmimecertificate"));
+
+        CONTACT_ATTRIBUTES.add(GraphField.get("homefax"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("internationalisdnnumber"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("otherHomePhone"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("otherBusinessTelephoneNumber"));
     }
 
     private static final Set<GraphField> TODO_PROPERTIES = new HashSet<>();

@@ -2007,6 +2007,9 @@ public abstract class ExchangeSession {
             writer.appendProperty("TEL;TYPE=isdn", get("internationalisdnnumber"));
             writer.appendProperty("TEL;TYPE=msg", get("otherTelephone"));
 
+            writer.appendProperty("TEL;TYPE=work", get("otherBusinessTelephoneNumber"));
+            writer.appendProperty("TEL;TYPE=home", get("otherHomePhone"));
+
             // The structured type value corresponds, in sequence, to the post office box; the extended address;
             // the street address; the locality (e.g., city); the region (e.g., state or province);
             // the postal code; the country name
@@ -2749,9 +2752,28 @@ public abstract class ExchangeSession {
                     if (property.hasParam("TYPE", "cell") || property.hasParam("X-GROUP", "cell")) {
                         properties.put("mobile", property.getValue());
                     } else if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "work")) {
-                        properties.put("telephoneNumber", property.getValue());
+                        if (properties.containsKey("telephoneNumber")) {
+                            if (properties.containsKey("otherBusinessTelephoneNumber")) {
+                                LOGGER.warn("Ignore third work phone  " + property.getValue());
+                            } else {
+                                // secondary business phone
+                                properties.put("otherBusinessTelephoneNumber", property.getValue());
+                            }
+                        } else {
+                            properties.put("telephoneNumber", property.getValue());
+                        }
                     } else if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "home")) {
-                        properties.put("homePhone", property.getValue());
+                        if (properties.containsKey("homePhone")) {
+                            if (properties.containsKey("otherHomePhone")) {
+                                LOGGER.warn("Ignore third home phone  " + property.getValue());
+                            } else {
+                                // secondary home phone
+                                properties.put("otherHomePhone", property.getValue());
+                            }
+                        } else {
+                            properties.put("homePhone", property.getValue());
+                        }
+
                     } else if (property.hasParam("TYPE", "fax")) {
                         if (property.hasParam("TYPE", "home")) {
                             properties.put("homefax", property.getValue());
@@ -3038,8 +3060,10 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("smtpemail3");
         CONTACT_ATTRIBUTES.add("facsimiletelephonenumber");
         CONTACT_ATTRIBUTES.add("givenName");
+        CONTACT_ATTRIBUTES.add("internationalisdnnumber");
         CONTACT_ATTRIBUTES.add("homeCity");
         CONTACT_ATTRIBUTES.add("homeCountry");
+        CONTACT_ATTRIBUTES.add("homefax");
         CONTACT_ATTRIBUTES.add("homePhone");
         CONTACT_ATTRIBUTES.add("homePostalCode");
         CONTACT_ATTRIBUTES.add("homeState");
@@ -3077,6 +3101,8 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("haspicture");
         CONTACT_ATTRIBUTES.add("keywords");
         CONTACT_ATTRIBUTES.add("othermobile");
+        CONTACT_ATTRIBUTES.add("otherBusinessTelephoneNumber");
+        CONTACT_ATTRIBUTES.add("otherHomePhone");
         CONTACT_ATTRIBUTES.add("otherTelephone");
         CONTACT_ATTRIBUTES.add("gender");
         CONTACT_ATTRIBUTES.add("private");

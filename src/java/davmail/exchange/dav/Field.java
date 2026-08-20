@@ -294,8 +294,11 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "othermobile"); // PR_CAR_TELEPHONE_NUMBER 0x3A1E String
         createField(URN_SCHEMAS_CONTACTS, "internationalisdnnumber"); // PR_ISDN_NUMBER 0x3A2D String        
 
-        createField(URN_SCHEMAS_CONTACTS, "otherTelephone"); // PR_OTHER_TELEPHONE_NUMBER 0x3A21 String
+        createField(URN_SCHEMAS_CONTACTS, "otherTelephone"); // PR_OTHER_TELEPHONE_NUMBER 0x3A1F String
         createField(URN_SCHEMAS_CONTACTS, "homefax"); // PR_HOME_FAX_NUMBER 0x3A25 String
+
+        createField("otherBusinessTelephoneNumber", URN_SCHEMAS_CONTACTS,  "telephonenumber2"); // PR_BUSINESS2_TELEPHONE_NUMBER 0x3A1B String
+        createField("otherHomePhone", URN_SCHEMAS_CONTACTS, "homephone2"); // PR_HOME2_TELEPHONE_NUMBER 0x3A2F String
 
         createField(URN_SCHEMAS_CONTACTS, "otherstreet"); // PR_OTHER_ADDRESS_STREET 0x3A63 String
         createField(URN_SCHEMAS_CONTACTS, "otherstate"); // PR_OTHER_ADDRESS_STATE_OR_PROVINCE 0x3A62 String

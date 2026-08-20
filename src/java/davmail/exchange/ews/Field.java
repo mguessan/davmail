@@ -160,6 +160,9 @@ public final class Field {
         FIELD_MAP.put("homeCity", new ExtendedFieldURI(0x3A59, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("homeCountry", new ExtendedFieldURI(0x3A5A, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("homePhone", new ExtendedFieldURI(0x3A09, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("otherHomePhone", new ExtendedFieldURI(0x3A2F, ExtendedFieldURI.PropertyType.String)); // PidTagHome2TelephoneNumber
+
         FIELD_MAP.put("homePostalCode", new ExtendedFieldURI(0x3A5B, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("homeState", new ExtendedFieldURI(0x3A5C, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("homeStreet", new ExtendedFieldURI(0x3A5D, ExtendedFieldURI.PropertyType.String));
@@ -181,14 +184,17 @@ public final class Field {
         FIELD_MAP.put("spousecn", new ExtendedFieldURI(0x3A48, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("st", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8047, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("street", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8045, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("telephoneNumber", new ExtendedFieldURI(0x3A08, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("telephoneNumber", new ExtendedFieldURI(0x3A08, ExtendedFieldURI.PropertyType.String)); // PidTagBusinessTelephoneNumber
+
+        FIELD_MAP.put("otherBusinessTelephoneNumber", new ExtendedFieldURI(0x3A1B, ExtendedFieldURI.PropertyType.String)); // PidTagBusiness2TelephoneNumber
+
         FIELD_MAP.put("title", new ExtendedFieldURI(0x3A17, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("im", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8062, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("othermobile", new ExtendedFieldURI(0x3A1E, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("internationalisdnnumber", new ExtendedFieldURI(0x3A2D, ExtendedFieldURI.PropertyType.String));
 
-        FIELD_MAP.put("otherTelephone", new ExtendedFieldURI(0x3A21, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("otherTelephone", new ExtendedFieldURI(0x3A1F, ExtendedFieldURI.PropertyType.String)); // PidTagOtherTelephoneNumber
         FIELD_MAP.put("homefax", new ExtendedFieldURI(0x3A25, ExtendedFieldURI.PropertyType.String));
 
         FIELD_MAP.put("otherstreet", new ExtendedFieldURI(0x3A63, ExtendedFieldURI.PropertyType.String));
