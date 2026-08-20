@@ -25,8 +25,8 @@ import davmail.exchange.auth.O365Authenticator;
 import davmail.exchange.ews.BaseShape;
 import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
-import davmail.http.DavGatewayHttpClientFacade;
-import org.apache.commons.httpclient.HttpClient;
+import davmail.http.HttpClientAdapter;
+import org.apache.http.client.methods.CloseableHttpResponse;
 
 import java.io.IOException;
 
@@ -38,20 +38,19 @@ public class TestO365Authenticator extends AbstractDavMailTestCase {
         authenticator.authenticate();
 
         // switch to EWS url
-        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getExchangeUri().toString());
-        DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
+        HttpClientAdapter httpClientAdapter = new HttpClientAdapter(authenticator.getExchangeUri(), true);
 
         int i = 0;
         while (i++ < 12 * 60 * 2) {
             GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
-            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
-            try {
+            checkMethod.setHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
+            try (
+                    CloseableHttpResponse response = httpClientAdapter.execute(checkMethod);
+            ) {
+                checkMethod.handleResponse(response);
                 //checkMethod.setServerVersion(serverVersion);
-                httpClient.executeMethod(checkMethod);
 
                 checkMethod.checkSuccess();
-            } finally {
-                checkMethod.releaseConnection();
             }
             System.out.println("Retrieved folder id " + checkMethod.getResponseItem().get("FolderId"));
             Thread.sleep(5000);
