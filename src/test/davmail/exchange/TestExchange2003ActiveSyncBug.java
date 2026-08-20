@@ -28,7 +28,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Test Exchange 2003 ActiveSync bug.
@@ -43,13 +43,12 @@ public class TestExchange2003ActiveSyncBug extends TestCase {
         mimeMessage.setSubject("Test subject ");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         mimeMessage.writeTo(baos);
-        byte[] content = baos.toByteArray();
-        return content;
+        return baos.toByteArray();
 
     }
     public void testMailFrom() throws IOException, MessagingException {
         byte[] mimeBody = buildContent();
-        mimeBody = ("MAIL FROM: test \r\n\r\n"+new String(mimeBody)).getBytes("UTF-8");
+        mimeBody = ("MAIL FROM: test \r\n\r\n"+new String(mimeBody)).getBytes(StandardCharsets.UTF_8);
         System.out.println(new String(mimeBody));
         System.out.println("******************************");
 
@@ -61,7 +60,7 @@ public class TestExchange2003ActiveSyncBug extends TestCase {
             int offset = mimeBody.length - mimeBodyCopy.length;
             System.arraycopy(mimeBody, offset, mimeBodyCopy, 0, mimeBodyCopy.length);
             mimeBody = mimeBodyCopy;
-            mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(mimeBody));
+            new MimeMessage(null, new SharedByteArrayInputStream(mimeBody));
             System.out.println(new String(mimeBody));
         }
     }

@@ -20,9 +20,9 @@ package davmail.exchange;
 
 import davmail.Settings;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
+import davmail.exchange.auth.ExchangeFormAuthenticator;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
-import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import junit.framework.TestCase;
 import org.apache.log4j.Level;
 
@@ -42,17 +42,16 @@ public class TestExchangeAdapter extends TestCase {
         if (davSession == null) {
             Settings.setConfigFilePath("davmail.properties");
             Settings.load();
-            DavGatewaySSLProtocolSocketFactory.register();
             ExchangeFormAuthenticator exchangeFormAuthenticator = new ExchangeFormAuthenticator();
             exchangeFormAuthenticator.setUsername(Settings.getProperty("davmail.username"));
             exchangeFormAuthenticator.setPassword(Settings.getProperty("davmail.password"));
             exchangeFormAuthenticator.setUrl(Settings.getProperty("davmail.url"));
             exchangeFormAuthenticator.authenticate();
 
-            davSession = new DavExchangeSession(exchangeFormAuthenticator.getHttpClient(),
+            davSession = new DavExchangeSession(exchangeFormAuthenticator.getHttpClientAdapter(),
                     exchangeFormAuthenticator.getExchangeUri(),
                     exchangeFormAuthenticator.getUsername());
-            ewsSession = new EwsExchangeSession(exchangeFormAuthenticator.getHttpClient(),
+            ewsSession = new EwsExchangeSession(exchangeFormAuthenticator.getHttpClientAdapter(),
                     exchangeFormAuthenticator.getExchangeUri(),
                     exchangeFormAuthenticator.getUsername());
             Settings.setLoggingLevel("httpclient.wire", Level.INFO);
