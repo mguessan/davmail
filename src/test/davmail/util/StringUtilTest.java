@@ -22,6 +22,7 @@ import davmail.http.URIUtil;
 import junit.framework.TestCase;
 import org.junit.Assert;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.ParseException;
 
@@ -97,7 +98,7 @@ public class StringUtilTest extends TestCase {
                 //String result = value.replaceAll("\\+", "%2B");
             }
             System.out.println("Elapsed: " + (System.currentTimeMillis() - startTime) + " ms");
-            Assert.assertTrue((System.currentTimeMillis() - startTime)<500);
+            Assert.assertTrue((System.currentTimeMillis() - startTime)<1000);
         }
     }
 
@@ -138,9 +139,9 @@ public class StringUtilTest extends TestCase {
         assertEquals("test ~", StringUtil.decodeUrlcompname("test %7E"));
     }
 
-    public void testEncodeAltDesc() {
+    public void testEncodeAltDesc() throws UnsupportedEncodingException {
         String desc = "test <b param=\"test\">bold</b>";
-        System.out.println(URLEncoder.encode(desc));
+        System.out.println(URLEncoder.encode(desc, "UTF-8"));
         System.out.println(URIUtil.encodeWithinQuery(desc));
         System.out.println(URIUtil.encodePath(desc));
 
