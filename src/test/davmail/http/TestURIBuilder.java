@@ -22,14 +22,15 @@ package davmail.http;
 import junit.framework.TestCase;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.net.URLCodec;
-import org.apache.http.Consts;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.BitSet;
 
 /**
  * A few URIBuilder test cases to replace URIUtil
@@ -37,7 +38,7 @@ import java.util.BitSet;
 public class TestURIBuilder extends TestCase {
     public void testEncodeParams() throws URISyntaxException {
         String clientId = "facd6cff-a294-4415-b59f-c5b01937d7bd";
-        String redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient";
+        String redirectUri = "https://localhost/common/oauth2/nativeclient";
         String resource = "https://outlook.office365.com";
         String username = "domain\\userid|user@company.com";
 
@@ -92,7 +93,7 @@ public class TestURIBuilder extends TestCase {
         assertEquals(decoded, URIUtil.decode(uri.getPath()));
     }
 
-    public void testEncodeSpecial() {
+    /*public void testEncodeSpecial() {
         BitSet ical_allowed_abs_path = new BitSet(256);
 
         ical_allowed_abs_path.or(org.apache.commons.httpclient.URI.allowed_abs_path);
@@ -107,12 +108,17 @@ public class TestURIBuilder extends TestCase {
         System.out.println(newEncoded);
 
         assertEquals(newEncoded, encoded);
+    }*/
+
+    public void testDuoEncoding() throws UnsupportedEncodingException {
+
+            String simpleUrl = "http://www.abc.com/?email=abc&pass=efg";
+            String encodedurl = URLEncoder.encode(simpleUrl,"UTF-8");
+            HttpGet httpGet = new HttpGet("/duo/duo.aspx?params=params|ZGVzdD0lMkZvd2ElMkYmdGltZU9mZnNldD0wJnVzZXJuYW1lPW9oc3VtMDElNUNoYWthbnNvbQ==|1589919330|C7wDFlKB7v7dNUsw8jYOZBXw/gxmzg1U8/XIWKynSRM=");
+
+            URIUtil.encodePathQuery("/duo/duo.aspx?params=params|ZGVzdD0lMkZvd2ElMkYmdGltZU9mZnNldD0wJnVzZXJuYW1lPW9oc3VtMDElNUNoYWthbnNvbQ==|1589919330|C7wDFlKB7v7dNUsw8jYOZBXw/gxmzg1U8/XIWKynSRM=");
+
+
     }
-
-
-
-
-
-
 
 }

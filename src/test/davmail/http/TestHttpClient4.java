@@ -62,6 +62,18 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
         }
     }
 
+    public void testTls13Request() throws IOException {
+        HttpClientBuilder clientBuilder = HttpClientBuilder.create();
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
+            HttpGet httpget = new HttpGet("https://tls13.akamai.io/");
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
+                String responseString = new BasicResponseHandler().handleResponse(response);
+                System.out.println(responseString);
+            }
+        }
+    }
+
+
     public void testConnectionPooling() throws IOException {
         PoolingHttpClientConnectionManager poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
         poolingHttpClientConnectionManager.setDefaultMaxPerRoute(5);
@@ -148,7 +160,7 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
         int proxyPort = Settings.getIntProperty("davmail.proxyPort");
         HttpHost proxy = new HttpHost(proxyHost, proxyPort);
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-        clientBuilder.setProxy(proxy).setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT);
+        clientBuilder.setProxy(proxy).setUserAgent(Settings.EDGE_USER_AGENT);
 
         clientBuilder.setDefaultCredentialsProvider(getProxyCredentialProvider());
 
@@ -347,7 +359,7 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
 
         try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url, userid, password)) {
             AutoDiscoverMethod autoDiscoverRequest = new AutoDiscoverMethod(url, userEmail);
-            try (CloseableHttpResponse httpResponse = httpClientAdapter.executeFollowRedirects(autoDiscoverRequest)) {
+            try (CloseableHttpResponse httpResponse = httpClientAdapter.execute(autoDiscoverRequest)) {
                 ewsUrl = (String) autoDiscoverRequest.handleResponse(httpResponse);
             }
         }
