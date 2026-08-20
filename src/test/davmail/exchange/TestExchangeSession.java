@@ -1,7 +1,6 @@
 package davmail.exchange;
 
 import davmail.Settings;
-import davmail.http.DavGatewaySSLProtocolSocketFactory;
 
 /**
  *  Test Exchange session
@@ -20,8 +19,6 @@ public class TestExchangeSession {
         int currentArg = 0;
         Settings.setConfigFilePath(argv[currentArg++]);
         Settings.load();
-
-        DavGatewaySSLProtocolSocketFactory.register();
 
         ExchangeSession session;
         // test auth
