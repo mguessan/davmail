@@ -28,7 +28,7 @@ import java.io.IOException;
  * Parent DavExchangeSession Test case.
  */
 public abstract class AbstractDavExchangeSessionTestCase extends AbstractExchange2007TestCase {
-    HC4DavExchangeSession davSession;
+    DavExchangeSession davSession;
 
     /**
      * @inheritDoc
@@ -42,7 +42,7 @@ public abstract class AbstractDavExchangeSessionTestCase extends AbstractExchang
         if (session == null) {
             session = ExchangeSessionFactory.getInstance(url, username, password);
         }
-        davSession = (HC4DavExchangeSession) session;
+        davSession = (DavExchangeSession) session;
 
         assertEquals(username, davSession.getAlias());
         assertEquals(email, davSession.getEmail());
