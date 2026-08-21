@@ -657,9 +657,9 @@ public class GraphExchangeSession extends ExchangeSession {
             try {
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
 
-                if (isExistingEvent && !responseStatusUpdates.isEmpty()) {
+                if (isExistingEvent && responseStatusUpdates != null && !responseStatusUpdates.isEmpty()) {
                     // iterate over status updated, should be only one entry
-                    for (Map.Entry<String, String> entry:responseStatusUpdates.entrySet() ) {
+                    for (Map.Entry<String, String> entry : responseStatusUpdates.entrySet()) {
                         String instanceId = entry.getKey();
                         String attendeeStatus = entry.getValue();
                         // trigger meeting response action, there is no way to disable notifications over graph
@@ -798,7 +798,7 @@ public class GraphExchangeSession extends ExchangeSession {
             String masterEventId = existingJsonEvent.optString("id");
 
             if (!attendeeOccurrenceStatusMap.isEmpty()) {
-                for (Map.Entry<String, String> entry:attendeeOccurrenceStatusMap.entrySet() ) {
+                for (Map.Entry<String, String> entry : attendeeOccurrenceStatusMap.entrySet()) {
                     String instanceId = entry.getKey();
                     String attendeeStatus = entry.getValue();
                     JSONObject occurrence;
@@ -809,12 +809,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                     if (occurrence != null) {
                         String occurrenceId = occurrence.optString("id");
-                        String currentAttendeeStatus = responseTypeToPartstat(occurrence.optJSONObject("responseStatus").optString("response"));
+                        JSONObject responseStatus = occurrence.optJSONObject("responseStatus");
+                        String currentAttendeeStatus = responseTypeToPartstat(
+                                responseStatus != null ? responseStatus.optString("response") : null);
                         if (!attendeeStatus.equals(currentAttendeeStatus)) {
-                            LOGGER.debug("Attendee status "+currentAttendeeStatus+" => "+attendeeStatus+" on instance "+instanceId);
+                            LOGGER.debug("Attendee status " + currentAttendeeStatus + " => " + attendeeStatus + " on instance " + instanceId);
                             responseStatusUpdates.put(occurrenceId, attendeeStatus);
                         } else {
-                            LOGGER.debug("Attendee status unchanged "+currentAttendeeStatus+" on instance "+instanceId);
+                            LOGGER.debug("Attendee status unchanged " + currentAttendeeStatus + " on instance " + instanceId);
                         }
                     } else {
                         throw new IOException("Unable to find occurrence for id " + instanceId);
@@ -1944,7 +1946,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("xmozsnoozetime"));
     }
 
-    protected class FolderId {
+    protected static class FolderId {
         protected static final String IPF_NOTE = "IPF.Note";
         protected static final String IPF_CONTACT = "IPF.Contact";
         protected static final String IPF_APPOINTMENT = "IPF.Appointment";
