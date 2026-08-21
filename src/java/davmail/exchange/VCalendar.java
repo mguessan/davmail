@@ -864,6 +864,35 @@ public class VCalendar extends VObject {
         return attendeeStatus;
     }
 
+    public HashMap<String, String> getAttendeeOccurrenceStatusMap() throws IOException {
+        HashMap<String, String> attendeeStatusMap = new HashMap<>();
+        // iterate over all Vevents to detect meeting response
+        for (VObject vObject : vObjects) {
+            if ("VEVENT".equals(vObject.type)) {
+                List<VProperty> attendeeProperties = vObject.getProperties("ATTENDEE");
+                if (attendeeProperties != null) {
+                    for (VProperty property : attendeeProperties) {
+                        if (email.equalsIgnoreCase(getEmailValue(property))) {
+                            String status = property.getParamValue("PARTSTAT");
+                            if (!"NEEDS-ACTION".equals(status)) {
+                                VProperty recurrenceIdProperty = vObject.getProperty("RECURRENCE-ID");
+                                if (recurrenceIdProperty != null) {
+                                    String originalDateZulu = convertCalendarDateToExchangeZulu(
+                                            recurrenceIdProperty.getValue(), recurrenceIdProperty.getParamValue("TZID"));
+                                    attendeeStatusMap.put(originalDateZulu, status);
+                                } else {
+                                    // this is master vEvent
+                                    attendeeStatusMap.put("master", status);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return attendeeStatusMap;
+    }
+
     public boolean isOrganizer() {
         String organizer = getEmailValue(getFirstVeventProperty("ORGANIZER"));
         return email.equalsIgnoreCase(organizer);

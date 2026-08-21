@@ -540,14 +540,15 @@ public class GraphExchangeSession extends ExchangeSession {
 
                     // The response type. Possible values are: none, organizer, tentativelyAccepted, accepted, declined, notResponded.
                     String responseType = attendee.getJSONObject("status").optString("response");
-                    String myResponseType = graphObject.optString("responseStatus", "response");
+                    attendeeProperty.addParam("PARTSTAT", responseTypeToPartstat(responseType));
+                    //String myResponseType = graphObject.optString("responseStatus", "response");
 
-                    // TODO Test if applicable
-                    if (email.equalsIgnoreCase(emailAddress.optString("address")) && myResponseType != null) {
+                    // TODO Remove
+                    /*if (getCurrentEmail().equalsIgnoreCase(emailAddress.optString("address")) && myResponseType != null) {
                         attendeeProperty.addParam("PARTSTAT", responseTypeToPartstat(myResponseType));
                     } else {
                         attendeeProperty.addParam("PARTSTAT", responseTypeToPartstat(responseType));
-                    }
+                    }*/
                     // the attendee type: required, optional, resource.
                     String type = attendee.optString("type");
                     if ("required".equals(type)) {
@@ -596,6 +597,8 @@ public class GraphExchangeSession extends ExchangeSession {
             boolean isOrganizer;
             boolean isMeeting;
 
+            HashMap<String, String> responseStatusUpdates = null;
+
             JSONObject existingJsonEvent = getEventIfExists(folderId, itemName);
             if (existingJsonEvent == null) {
                 isMeeting = vCalendar.isMeeting();
@@ -611,19 +614,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 currentItemId = existingJsonEvent.optString("id", null);
                 currentEtag = new GraphObject(existingJsonEvent).optString("changeKey");
 
-                String myResponseType = currentItem.optString("responseStatus", "response");
-
-                String currentAttendeeStatus = responseTypeToPartstat(myResponseType);
-                String newAttendeeStatus = vCalendar.getAttendeeStatus();
+                responseStatusUpdates = buildResponseStatusUpdates(existingJsonEvent, vCalendar);
 
                 isOrganizer = currentItem.optBoolean("isOrganizer");
                 isMeeting = currentItem.optJSONArray("attendees") != null;
 
-                isMeetingResponse = vCalendar.isMeeting() && !isOrganizer
-                        && newAttendeeStatus != null
-                        && !newAttendeeStatus.equals(currentAttendeeStatus)
-                        // avoid nullpointerexception on unknown status
-                        && partstatToResponseMap.get(newAttendeeStatus) != null;
+                isMeetingResponse = vCalendar.isMeeting() && !isOrganizer && !responseStatusUpdates.isEmpty();
 
                 // Check mozilla last ack and snooze
                 String newmozlastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
@@ -657,12 +653,19 @@ public class GraphExchangeSession extends ExchangeSession {
             }
 
             VObject vEvent = vCalendar.getFirstVevent();
-            GraphObject graphResponse;
+            GraphObject graphResponse = null;
             try {
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
 
-                if (isExistingEvent && isMeetingResponse) {
-                    graphResponse = sendMeetingResponse(currentItemId);
+                if (isExistingEvent && !responseStatusUpdates.isEmpty()) {
+                    // iterate over status updated, should be only one entry
+                    for (Map.Entry<String, String> entry:responseStatusUpdates.entrySet() ) {
+                        String instanceId = entry.getKey();
+                        String attendeeStatus = entry.getValue();
+                        // trigger meeting response action, there is no way to disable notifications over graph
+                        graphResponse = sendMeetingResponse(instanceId, attendeeStatus);
+                    }
+
                 } else if (isExistingEvent && isMozDismiss) {
                     graphResponse = mozDismissEvent(currentItemId);
                 } else if (folderId.isTask()) {
@@ -788,6 +791,39 @@ public class GraphExchangeSession extends ExchangeSession {
             return itemResult;
         }
 
+        private HashMap<String, String> buildResponseStatusUpdates(JSONObject existingJsonEvent, VCalendar vCalendar) throws IOException {
+            // retrieve all response status values, including on master
+            HashMap<String, String> attendeeOccurrenceStatusMap = vCalendar.getAttendeeOccurrenceStatusMap();
+            HashMap<String, String> responseStatusUpdates = new HashMap<>();
+            String masterEventId = existingJsonEvent.optString("id");
+
+            if (!attendeeOccurrenceStatusMap.isEmpty()) {
+                for (Map.Entry<String, String> entry:attendeeOccurrenceStatusMap.entrySet() ) {
+                    String instanceId = entry.getKey();
+                    String attendeeStatus = entry.getValue();
+                    JSONObject occurrence;
+                    if ("master".equals(instanceId)) {
+                        occurrence = existingJsonEvent;
+                    } else {
+                        occurrence = findOccurrence(masterEventId, instanceId);
+                    }
+                    if (occurrence != null) {
+                        String occurrenceId = occurrence.optString("id");
+                        String currentAttendeeStatus = responseTypeToPartstat(occurrence.optJSONObject("responseStatus").optString("response"));
+                        if (!attendeeStatus.equals(currentAttendeeStatus)) {
+                            LOGGER.debug("Attendee status "+currentAttendeeStatus+" => "+attendeeStatus+" on instance "+instanceId);
+                            responseStatusUpdates.put(occurrenceId, attendeeStatus);
+                        } else {
+                            LOGGER.debug("Attendee status unchanged "+currentAttendeeStatus+" on instance "+instanceId);
+                        }
+                    } else {
+                        throw new IOException("Unable to find occurrence for id " + instanceId);
+                    }
+                }
+            }
+            return responseStatusUpdates;
+        }
+
         private GraphObject updateReminder(String currentItemId) throws JSONException, IOException {
             LOGGER.debug("Update on existing meeting, not organizer, not a meeting response or dismiss: allow reminder updates only");
 
@@ -845,7 +881,7 @@ public class GraphExchangeSession extends ExchangeSession {
             return executeGraphRequest(graphRequestBuilder);
         }
 
-        protected GraphObject sendMeetingResponse(String currentItemId) throws IOException {
+        protected GraphObject sendMeetingResponse(String occurrenceId, String attendeeStatus) throws IOException {
             // over graph always assume server side calendar management
             String body = null;
             boolean sendResponse = true;
@@ -856,8 +892,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     vEventSubject = BundleMessage.format("MEETING_REQUEST");
                 }
 
-                String status = vCalendar.getAttendeeStatus();
-                String notificationSubject = (status != null) ? (BundleMessage.format(status) + vEventSubject) : subject;
+                String notificationSubject = (attendeeStatus != null) ? (BundleMessage.format(attendeeStatus) + vEventSubject) : subject;
 
                 NotificationDialog notificationDialog = new NotificationDialog(notificationSubject, "");
                 if (!notificationDialog.getSendNotification()) {
@@ -875,7 +910,6 @@ public class GraphExchangeSession extends ExchangeSession {
                     jsonBody.put("comment", body);
                 }
                 String action = "accept";
-                String attendeeStatus = vCalendar.getAttendeeStatus();
                 if ("ACCEPTED".equals(attendeeStatus)) {
                     action = "accept";
                 } else if ("DECLINED".equals(attendeeStatus)) {
@@ -884,10 +918,11 @@ public class GraphExchangeSession extends ExchangeSession {
                     action = "tentativelyAccept";
                 }
 
+                LOGGER.debug("Send meeting response: " + action+" for instance "+occurrenceId);
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("events")
-                        .setObjectId(currentItemId)
+                        .setObjectId(occurrenceId)
                         .setAction(action)
                         .setJsonBody(jsonBody);
 
@@ -1078,7 +1113,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                 }
                 if (!occurrenceFound) {
-                    createNewModifiedOccurrence(modifiedOccurrence, existingJsonEvent, originalDateZulu);
+                    createNewModifiedOccurrence(modifiedOccurrence, existingJsonEvent.optString("id"), originalDateZulu);
                 }
             }
         }
@@ -1086,12 +1121,12 @@ public class GraphExchangeSession extends ExchangeSession {
         /**
          * Create a new modified occurrence on event.
          * @param modifiedOccurrence modified occurrence vEvent
-         * @param existingJsonEvent master graph event
+         * @param masterEventId master graph event id
          * @param originalDateZulu original date in zulu format
          * @throws IOException on error
          * @throws JSONException on error
          */
-        private void createNewModifiedOccurrence(VObject modifiedOccurrence, JSONObject existingJsonEvent, String originalDateZulu) throws IOException, JSONException {
+        private void createNewModifiedOccurrence(VObject modifiedOccurrence, String masterEventId, String originalDateZulu) throws IOException, JSONException {
             // assume instance is on same day in UTC timezone
             String startDateTime = originalDateZulu.substring(0, 10) + "T00:00:00.0000000";
             String endDateTime = originalDateZulu.substring(0, 10) + "T23:59:59.9999999";
@@ -1099,7 +1134,7 @@ public class GraphExchangeSession extends ExchangeSession {
             GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("events")
-                    .setObjectId(existingJsonEvent.optString("id"))
+                    .setObjectId(masterEventId)
                     .setChildType("instances")
                     .setStartDateTime(startDateTime)
                     .setEndDateTime(endDateTime));
@@ -1116,6 +1151,27 @@ public class GraphExchangeSession extends ExchangeSession {
             } else {
                 LOGGER.warn("No occurrence found for " + originalDateZulu);
             }
+        }
+
+        private JSONObject findOccurrence(String masterEventId, String originalDateZulu) throws IOException {
+            String startDateTime = originalDateZulu.substring(0, 10) + "T00:00:00.0000000";
+            String endDateTime = originalDateZulu.substring(0, 10) + "T23:59:59.9999999";
+
+            GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("events")
+                    .setObjectId(masterEventId)
+                    .setChildType("instances")
+                    .setStartDateTime(startDateTime)
+                    .setEndDateTime(endDateTime));
+
+            JSONArray occurrences = graphResponse.optJSONArray("value");
+            if (occurrences != null && occurrences.length() > 0) {
+                return occurrences.optJSONObject(0);
+            }
+            LOGGER.warn("No occurrence found for " + originalDateZulu);
+            return null;
         }
 
         private void updateExceptionOccurrence(VObject modifiedOccurrence, String exceptionOccurrenceId) throws IOException, JSONException {
@@ -1888,7 +1944,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("xmozsnoozetime"));
     }
 
-    protected static class FolderId {
+    protected class FolderId {
         protected static final String IPF_NOTE = "IPF.Note";
         protected static final String IPF_CONTACT = "IPF.Contact";
         protected static final String IPF_APPOINTMENT = "IPF.Appointment";
@@ -2804,7 +2860,6 @@ public class GraphExchangeSession extends ExchangeSession {
                     } else {
                         folder.folderPath = parentFolderPath + '/' + folder.displayName;
                     }
-                    // TODO folderIdMap?
                 } else {
                     folder.folderPath = folder.displayName;
                 }
