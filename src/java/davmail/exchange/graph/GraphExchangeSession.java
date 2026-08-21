@@ -603,8 +603,7 @@ public class GraphExchangeSession extends ExchangeSession {
             if (existingJsonEvent == null) {
                 isMeeting = vCalendar.isMeeting();
                 isOrganizer = vCalendar.isOrganizer();
-                String newAttendeeStatus = vCalendar.getAttendeeStatus();
-                if (isMeeting && newAttendeeStatus != null && !isOrganizer) {
+                if (isMeeting && !isOrganizer) {
                     throw new IOException("Detected meeting response, but event does not exist, aborting");
                 }
             } else {
