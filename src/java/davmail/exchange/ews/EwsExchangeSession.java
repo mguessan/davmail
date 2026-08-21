@@ -1928,30 +1928,29 @@ public class EwsExchangeSession extends ExchangeSession {
             boolean isMozSendInvitations = true;
             boolean isMozDismiss = false;
 
+            HashMap<ItemId, String> responseStatusUpdates = null;
+
             HashSet<String> itemRequestProperties = CALENDAR_ITEM_REQUEST_PROPERTIES;
             if (vCalendar.isTodo()) {
                 itemRequestProperties = EVENT_REQUEST_PROPERTIES;
             }
 
+            boolean isOrganizer = vCalendar.isOrganizer();
+
             EWSMethod.Item currentItem = getEwsItem(folderPath, itemName, itemRequestProperties);
             if (currentItem == null) {
                 boolean isMeeting = vCalendar.isMeeting();
-                boolean isOrganizer = vCalendar.isOrganizer();
-                String newAttendeeStatus = vCalendar.getAttendeeStatus();
-                if (isMeeting && newAttendeeStatus != null && !isOrganizer) {
+                if (isMeeting && !isOrganizer) {
                     throw new IOException("Detected meeting response, but event does not exist, aborting");
                 }
             } else {
                 currentItemId = new ItemId(currentItem);
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
-                String currentAttendeeStatus = responseTypeToPartstatMap.get(currentItem.get(Field.get("myresponsetype").getResponseName()));
-                String newAttendeeStatus = vCalendar.getAttendeeStatus();
 
-                isMeetingResponse = vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()
-                        && newAttendeeStatus != null
-                        && !newAttendeeStatus.equals(currentAttendeeStatus)
-                        // avoid nullpointerexception on unknown status
-                        && partstatToResponseMap.get(newAttendeeStatus) != null;
+                responseStatusUpdates = buildResponseStatusUpdates(currentItem, vCalendar);
+
+                isMeetingResponse = vCalendar.isMeeting() && !isOrganizer && !responseStatusUpdates.isEmpty();
+
 
                 // Check mozilla last ack and snooze
                 String newmozlastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
@@ -2051,6 +2050,15 @@ public class EwsExchangeSession extends ExchangeSession {
                         // meeting response with server managed notifications
                         SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                         MessageDisposition messageDisposition = MessageDisposition.SendAndSaveCopy;
+
+                        if (responseStatusUpdates.isEmpty()) {
+                            throw new IOException("No response status updates found");
+                        }
+                        // assume a single meeting response
+                        Map.Entry<ItemId, String> responseStatusUpdate = responseStatusUpdates.entrySet().iterator().next();
+                        String attendeeStatus = responseStatusUpdate.getValue();
+                        ItemId instanceItemId = responseStatusUpdate.getKey();
+
                         String body = null;
                         // This is a meeting response, let user edit notification message
                         if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
@@ -2059,8 +2067,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 vEventSubject = BundleMessage.format("MEETING_REQUEST");
                             }
 
-                            String status = vCalendar.getAttendeeStatus();
-                            String notificationSubject = (status != null) ? (BundleMessage.format(status) + vEventSubject) : subject;
+                            String notificationSubject = (attendeeStatus != null) ? (BundleMessage.format(attendeeStatus) + vEventSubject) : subject;
 
                             NotificationDialog notificationDialog = new NotificationDialog(notificationSubject, "");
                             if (!notificationDialog.getSendNotification()) {
@@ -2073,8 +2080,8 @@ public class EwsExchangeSession extends ExchangeSession {
                         }
                         EWSMethod.Item item = new EWSMethod.Item();
 
-                        item.type = partstatToResponseMap.get(vCalendar.getAttendeeStatus());
-                        item.referenceItemId = new ItemId("ReferenceItemId", currentItemId.id, currentItemId.changeKey);
+                        item.type = partstatToResponseMap.get(attendeeStatus);
+                        item.referenceItemId = new ItemId("ReferenceItemId", instanceItemId.id, instanceItemId.changeKey);
                         if (body != null && !body.isEmpty()) {
                             item.put("Body", body);
                         }
@@ -2233,7 +2240,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     itemResult.status = HttpStatus.SC_CREATED;
                     LOGGER.debug("Created event " + getHref());
                 } else {
-                    LOGGER.warn("Overwritten event " + getHref());
+                    LOGGER.warn("Updated event " + getHref());
                 }
             }
 
@@ -2256,6 +2263,37 @@ public class EwsExchangeSession extends ExchangeSession {
 
             return itemResult;
 
+        }
+
+        private HashMap<ItemId, String> buildResponseStatusUpdates(EWSMethod.Item masterEvent, VCalendar vCalendar) throws IOException {
+            HashMap<String, String> attendeeOccurrenceStatusMap = vCalendar.getAttendeeOccurrenceStatusMap();
+            HashMap<ItemId, String> responseStatusUpdates = new HashMap<>();
+
+            if (!attendeeOccurrenceStatusMap.isEmpty()) {
+                for (Map.Entry<String, String> entry : attendeeOccurrenceStatusMap.entrySet()) {
+                    String instanceId = entry.getKey();
+                    String attendeeStatus = entry.getValue();
+                    EWSMethod.Item occurrence;
+                    if ("master".equals(instanceId)) {
+                        occurrence = masterEvent;
+                    } else {
+                        occurrence = findOccurrenceItemId(new ItemId(masterEvent), instanceId);
+                    }
+                    if (occurrence != null) {
+                        ItemId occurrenceId = new ItemId(occurrence);
+                        String currentAttendeeStatus = responseTypeToPartstatMap.get(occurrence.get("MyResponseType"));
+                        if (!attendeeStatus.equals(currentAttendeeStatus)) {
+                            LOGGER.debug("Attendee status " + currentAttendeeStatus + " => " + attendeeStatus + " on instance " + instanceId);
+                            responseStatusUpdates.put(occurrenceId, attendeeStatus);
+                        } else {
+                            LOGGER.debug("Attendee status unchanged " + currentAttendeeStatus + " on instance " + instanceId);
+                        }
+                    } else {
+                        throw new IOException("Unable to find occurrence for id " + instanceId);
+                    }
+                }
+            }
+            return responseStatusUpdates;
         }
 
         @Override
@@ -2433,6 +2471,32 @@ public class EwsExchangeSession extends ExchangeSession {
 
     private boolean isExchange2013OrLater() {
         return "Exchange2013".compareTo(serverVersion) <= 0;
+    }
+
+    private EWSMethod.Item findOccurrenceItemId(ItemId masterItemId, String originalDateZulu) throws IOException {
+        int instanceIndex = 0;
+        while (true) {
+            instanceIndex++;
+            try {
+                GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY,
+                        new OccurrenceItemId(masterItemId.id, instanceIndex), false);
+                getItemMethod.addAdditionalProperty(Field.get("originalstart"));
+                getItemMethod.addAdditionalProperty(Field.get("myresponsetype"));
+                executeMethod(getItemMethod);
+                if (getItemMethod.getResponseItem() != null) {
+                    String itemOriginalStart = getItemMethod.getResponseItem().get(
+                            Field.get("originalstart").getResponseName());
+                    if (originalDateZulu.equals(itemOriginalStart)) {
+                        return getItemMethod.getResponseItem();
+                    } else if (originalDateZulu.compareTo(itemOriginalStart) < 0) {
+                        break; // past the target date
+                    }
+                }
+            } catch (IOException e) {
+                break; // beyond recurrence end
+            }
+        }
+        return null;
     }
 
     /**
@@ -2860,9 +2924,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 timezoneId = "GMT Standard Time";
             }
 
-            // delete existing temp folder first to avoid errors
-            deleteFolder("davmailtemp");
-            createCalendarFolder("davmailtemp", null);
             EWSMethod.Item item = new EWSMethod.Item();
             item.type = "CalendarItem";
             if (!"Exchange2007_SP1".equals(serverVersion)) {
@@ -2876,7 +2937,7 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
                 item.put("MeetingTimeZone", timezoneId);
             }
-            CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId("davmailtemp"), item);
+            CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId("calendar"), item);
             executeMethod(createItemMethod);
             item = createItemMethod.getResponseItem();
             if (item == null) {
@@ -2884,8 +2945,9 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             VCalendar vCalendar = new VCalendar(getContent(new ItemId(item)), email, null);
             this.vTimezone = vCalendar.getVTimezone();
-            // delete temporary folder
-            deleteFolder("davmailtemp");
+            // delete temporary item
+            DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
+            executeMethod(deleteItemMethod);
         } catch (IOException e) {
             LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
         }
