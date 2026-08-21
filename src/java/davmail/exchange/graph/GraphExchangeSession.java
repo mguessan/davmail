@@ -1851,7 +1851,7 @@ public class GraphExchangeSession extends ExchangeSession {
         CONTACT_ATTRIBUTES.add(GraphField.get("street"));
         CONTACT_ATTRIBUTES.add(GraphField.get("telephoneNumber"));
         CONTACT_ATTRIBUTES.add(GraphField.get("title"));
-        CONTACT_ATTRIBUTES.add(GraphField.get("description"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("personalnotes"));
         CONTACT_ATTRIBUTES.add(GraphField.get("im"));
         CONTACT_ATTRIBUTES.add(GraphField.get("middlename"));
         CONTACT_ATTRIBUTES.add(GraphField.get("lastmodified"));
@@ -2682,13 +2682,23 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         @Override
-        public void appendTo(StringBuilder buffer) {
-            int actualConditionCount = 0;
+        public boolean isEmpty() {
+            return getActualConditionCount() == 0;
+        }
+
+        protected int getActualConditionCount() {
+            int count = 0;
             for (Condition condition : conditions) {
                 if (!condition.isEmpty()) {
-                    actualConditionCount++;
+                    count++;
                 }
             }
+            return count;
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            int actualConditionCount = getActualConditionCount();
             if (actualConditionCount > 0) {
                 boolean isFirst = true;
 
@@ -3494,6 +3504,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectId(folderId.id)
                 .setChildType("contacts")
                 .setSelectFields(CONTACT_ATTRIBUTES)
+                .setSizeLimit(100) // override page size
                 .setFilter(condition);
         LOGGER.debug("searchContacts " + folderId.getMailboxName() + "/" + folderPath + " " + httpRequestBuilder.select);
 

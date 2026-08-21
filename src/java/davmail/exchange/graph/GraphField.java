@@ -168,7 +168,9 @@ public class GraphField {
         addFieldMap("personaltitle", "title"); // MAPI addFieldMap("personaltitle", 0x3A45, PropertyType.String);
         addFieldMap("title", "jobTitle"); // MAPI /addFieldMap("title", 0x3A17, PropertyType.String);
 
-        addFieldMap("description", "personalNotes");
+        // map description to PR_BODY and personalnotes to native personalNotes
+        addFieldMap("description", 0x1000, PropertyType.String);
+        addFieldMap("personalnotes", "personalNotes");
 
         addFieldMap("namesuffix", "generation");
         addFieldMap("nickname", "nickName");

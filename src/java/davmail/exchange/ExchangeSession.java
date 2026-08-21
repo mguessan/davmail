@@ -2028,7 +2028,7 @@ public abstract class ExchangeSession {
             writer.appendProperty("URL;TYPE=work", get("businesshomepage"));
             writer.appendProperty("URL;TYPE=home", get("personalHomePage"));
             writer.appendProperty("TITLE", get("title"));
-            writer.appendProperty("NOTE", get("description"));
+            writer.appendProperty("NOTE", get("personalnotes"));
 
             writer.appendProperty("CUSTOM1", get("extensionattribute1"));
             writer.appendProperty("CUSTOM2", get("extensionattribute2"));
@@ -2822,7 +2822,7 @@ public abstract class ExchangeSession {
                 } else if ("TITLE".equals(property.getKey())) {
                     properties.put("title", property.getValue());
                 } else if ("NOTE".equals(property.getKey())) {
-                    properties.put("description", property.getValue());
+                    properties.put("personalnotes", property.getValue());
                 } else if ("CUSTOM1".equals(property.getKey())) {
                     properties.put("extensionattribute1", property.getValue());
                 } else if ("CUSTOM2".equals(property.getKey())) {
@@ -3089,6 +3089,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("telephoneNumber");
         CONTACT_ATTRIBUTES.add("title");
         CONTACT_ATTRIBUTES.add("description");
+        CONTACT_ATTRIBUTES.add("personalnotes");
         CONTACT_ATTRIBUTES.add("im");
         CONTACT_ATTRIBUTES.add("middlename");
         CONTACT_ATTRIBUTES.add("lastmodified");
