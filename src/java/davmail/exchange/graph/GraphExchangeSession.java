@@ -656,7 +656,7 @@ public class GraphExchangeSession extends ExchangeSession {
             try {
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
 
-                if (isExistingEvent && responseStatusUpdates != null && !responseStatusUpdates.isEmpty()) {
+                if (isExistingEvent && !responseStatusUpdates.isEmpty()) {
                     // iterate over status updated, should be only one entry
                     for (Map.Entry<String, String> entry : responseStatusUpdates.entrySet()) {
                         String instanceId = entry.getKey();
@@ -1876,23 +1876,6 @@ public class GraphExchangeSession extends ExchangeSession {
         CONTACT_ATTRIBUTES.add(GraphField.get("internationalisdnnumber"));
         CONTACT_ATTRIBUTES.add(GraphField.get("otherHomePhone"));
         CONTACT_ATTRIBUTES.add(GraphField.get("otherBusinessTelephoneNumber"));
-    }
-
-    private static final Set<GraphField> TODO_PROPERTIES = new HashSet<>();
-
-    static {
-        // Task properties https://learn.microsoft.com/en-us/graph/api/resources/todotask
-        TODO_PROPERTIES.add(GraphField.get("id"));
-        TODO_PROPERTIES.add(GraphField.get("summary"));
-        TODO_PROPERTIES.add(GraphField.get("body"));
-        TODO_PROPERTIES.add(GraphField.get("lastModifiedDateTime"));
-        TODO_PROPERTIES.add(GraphField.get("createdDateTime"));
-        TODO_PROPERTIES.add(GraphField.get("importance"));
-        TODO_PROPERTIES.add(GraphField.get("status"));
-        TODO_PROPERTIES.add(GraphField.get("dueDateTime"));
-        TODO_PROPERTIES.add(GraphField.get("startDateTime"));
-        TODO_PROPERTIES.add(GraphField.get("completedDateTime"));
-        TODO_PROPERTIES.add(GraphField.get("categories"));
     }
 
     /**
