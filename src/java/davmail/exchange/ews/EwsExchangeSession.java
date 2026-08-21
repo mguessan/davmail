@@ -757,12 +757,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         public void appendTo(StringBuilder buffer) {
-            int actualConditionCount = 0;
-            for (Condition condition : conditions) {
-                if (!condition.isEmpty()) {
-                    actualConditionCount++;
-                }
-            }
+            int actualConditionCount = getActualConditionCount();
             if (actualConditionCount > 0) {
                 if (actualConditionCount > 1) {
                     buffer.append("<t:").append(operator.toString()).append('>');

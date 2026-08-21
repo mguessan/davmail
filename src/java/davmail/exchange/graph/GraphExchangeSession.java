@@ -2665,21 +2665,6 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         @Override
-        public boolean isEmpty() {
-            return getActualConditionCount() == 0;
-        }
-
-        protected int getActualConditionCount() {
-            int count = 0;
-            for (Condition condition : conditions) {
-                if (!condition.isEmpty()) {
-                    count++;
-                }
-            }
-            return count;
-        }
-
-        @Override
         public void appendTo(StringBuilder buffer) {
             int actualConditionCount = getActualConditionCount();
             if (actualConditionCount > 0) {

@@ -473,15 +473,19 @@ public abstract class ExchangeSession {
             }
         }
 
+        @Override
         public boolean isEmpty() {
-            boolean isEmpty = true;
+            return getActualConditionCount() == 0;
+        }
+
+        protected int getActualConditionCount() {
+            int count = 0;
             for (Condition condition : conditions) {
                 if (!condition.isEmpty()) {
-                    isEmpty = false;
-                    break;
+                    count++;
                 }
             }
-            return isEmpty;
+            return count;
         }
 
         public boolean isMatch(ExchangeSession.Contact contact) {
