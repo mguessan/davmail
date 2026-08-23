@@ -384,7 +384,7 @@ public class URIUtil {
 
     public static byte[] getAsciiBytes(final String value) {
         if (value == null) {
-            return null;
+            return new byte[0];
         }
 
         return value.getBytes(Consts.ASCII);
