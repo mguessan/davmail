@@ -230,6 +230,7 @@ public final class Field {
         FIELD_MAP.put("appointmentstate", new UnindexedFieldURI("calendar:AppointmentState"));
         // isorganizer is Exchange 2013 and later only
         FIELD_MAP.put("isorganizer", new UnindexedFieldURI("calendar:IsOrganizer"));
+        FIELD_MAP.put("organizer", new UnindexedFieldURI("calendar:Organizer"));
 
         FIELD_MAP.put("calendaruid", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:uid", ExtendedFieldURI.PropertyType.String));
 

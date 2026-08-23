@@ -2404,6 +2404,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 getOccurrenceMethod.addAdditionalProperty(Field.get("optionalattendees"));
                                 getOccurrenceMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
                                 getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
+                                getOccurrenceMethod.addAdditionalProperty(Field.get("organizer"));
                                 executeMethod(getOccurrenceMethod);
                                 fixAttendees(getOccurrenceMethod, modifiedOccurrence);
                                 // LAST-MODIFIED is missing in event content
@@ -2447,6 +2448,15 @@ public class EwsExchangeSession extends ExchangeSession {
             if (getItemMethod.getResponseItem() != null) {
                 List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
                 if (attendees != null && vEvent.getProperties("ATTENDEE") == null) {
+                    String organizerEmail = getItemMethod.getResponseItem().get("EmailAddress");
+                    String organizerName = getItemMethod.getResponseItem().get("Organizer");
+                    if (vEvent.getProperties("ORGANIZER") == null && organizerEmail != null) {
+                        // organizer is missing from event master or instance, rebuild
+                        VProperty organizerProperty = new VProperty("ORGANIZER", "mailto:" + organizerEmail);
+                        organizerProperty.addParam("CN", organizerName);
+                        vEvent.addProperty(organizerProperty);
+                    }
+
                     // Exchange did not provide attendees, rebuild from item attendees
                     for (EWSMethod.Attendee attendee : attendees) {
                         VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
