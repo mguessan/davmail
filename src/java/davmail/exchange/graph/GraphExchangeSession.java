@@ -541,14 +541,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     // The response type. Possible values are: none, organizer, tentativelyAccepted, accepted, declined, notResponded.
                     String responseType = attendee.getJSONObject("status").optString("response");
                     attendeeProperty.addParam("PARTSTAT", responseTypeToPartstat(responseType));
-                    //String myResponseType = graphObject.optString("responseStatus", "response");
 
-                    // TODO Remove
-                    /*if (getCurrentEmail().equalsIgnoreCase(emailAddress.optString("address")) && myResponseType != null) {
-                        attendeeProperty.addParam("PARTSTAT", responseTypeToPartstat(myResponseType));
-                    } else {
-                        attendeeProperty.addParam("PARTSTAT", responseTypeToPartstat(responseType));
-                    }*/
                     // the attendee type: required, optional, resource.
                     String type = attendee.optString("type");
                     if ("required".equals(type)) {
@@ -4140,8 +4133,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 LOGGER.warn("Unable to get VTIMEZONE: " + e, e);
             }
         }
-        // unsupported timezone, return user default timezone
-        return getVTimezone();
+        // unsupported timezone, return UTC timezone
+        return getVTimezone("UTC");
     }
 
     private JSONObject getMailboxSettings() throws IOException {
