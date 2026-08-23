@@ -31,6 +31,7 @@ import davmail.exchange.auth.O365Token;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.GetRequest;
 import davmail.ui.NotificationDialog;
+import davmail.util.DateUtil;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.http.HttpStatus;
@@ -2901,16 +2902,21 @@ public class EwsExchangeSession extends ExchangeSession {
         try {
             String timezoneId;
             timezoneId = Settings.getProperty("davmail.timezoneId");
-            if (timezoneId == null && !"Exchange2007_SP1".equals(serverVersion)) {
-                // On Exchange 2010, get user timezone from server
-                GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
-                executeMethod(getUserConfigurationMethod);
-                EWSMethod.Item item = getUserConfigurationMethod.getResponseItem();
-                if (item != null) {
-                    timezoneId = item.get("timezone");
+            if (timezoneId != null) {
+                // Check user provided a standard timezone, convert to Exchange
+                timezoneId = DateUtil.getExchangeTimeZone(timezoneId);
+            } else {
+                if (!"Exchange2007_SP1".equals(serverVersion)) {
+                    // On Exchange 2010, get user timezone from server
+                    GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
+                    executeMethod(getUserConfigurationMethod);
+                    EWSMethod.Item item = getUserConfigurationMethod.getResponseItem();
+                    if (item != null) {
+                        timezoneId = item.get("timezone");
+                    }
+                } else if (!directEws) {
+                    timezoneId = getTimezoneidFromOptions();
                 }
-            } else if (!directEws) {
-                timezoneId = getTimezoneidFromOptions();
             }
             // failover: use timezone id from settings file
             // last failover: use GMT
