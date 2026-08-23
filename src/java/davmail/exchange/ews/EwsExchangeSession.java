@@ -2447,16 +2447,11 @@ public class EwsExchangeSession extends ExchangeSession {
             if (getItemMethod.getResponseItem() != null) {
                 List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
                 if (attendees != null && vEvent.getProperties("ATTENDEE") == null) {
+                    // Exchange did not provide attendees, rebuild from item attendees
                     for (EWSMethod.Attendee attendee : attendees) {
                         VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
                         attendeeProperty.addParam("CN", attendee.name);
-                        String myResponseType = getItemMethod.getResponseItem().get(Field.get("myresponsetype").getResponseName());
-                        if (email.equalsIgnoreCase(attendee.email) && myResponseType != null) {
-                            attendeeProperty.addParam("PARTSTAT", EWSMethod.responseTypeToPartstat(myResponseType));
-                        } else {
-                            attendeeProperty.addParam("PARTSTAT", attendee.partstat);
-                        }
-                        //attendeeProperty.addParam("RSVP", "TRUE");
+                        attendeeProperty.addParam("PARTSTAT", attendee.partstat);
                         attendeeProperty.addParam("ROLE", attendee.role);
                         vEvent.addProperty(attendeeProperty);
                     }
@@ -2469,7 +2464,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return "Exchange2013".compareTo(serverVersion) <= 0;
     }
 
-    private EWSMethod.Item findOccurrenceItemId(ItemId masterItemId, String originalDateZulu) throws IOException {
+    private EWSMethod.Item findOccurrenceItemId(ItemId masterItemId, String originalDateZulu) {
         int instanceIndex = 0;
         while (true) {
             instanceIndex++;
