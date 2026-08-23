@@ -408,15 +408,7 @@ public final class Settings {
             ArrayList<String> lines = new ArrayList<>();
 
             // try to make .davmail.properties file readable by user only on create
-            Path path = Paths.get(configFilePath);
-            if (!Files.exists(path) && isUnix()) {
-                FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"));
-                try {
-                    Files.createFile(path, permissions);
-                } catch (IOException e) {
-                    LOGGER.error(e.getMessage());
-                }
-            }
+            createPrivateFile(configFilePath);
 
             readLines(lines, properties);
 
@@ -438,6 +430,23 @@ public final class Settings {
             }
         }
         updateLoggingConfig();
+    }
+
+    private static void createPrivateFile(String filePath) {
+        Path path = Paths.get(filePath);
+        if (!Files.exists(path)) {
+            try {
+                if (isUnix() || isOSX()) {
+                    FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"));
+                    Files.createFile(path, permissions);
+                } else {
+                    Files.createFile(path);
+                }
+                LOGGER.info("Created file " + filePath);
+            } catch (IOException e) {
+                LOGGER.error(e.getMessage());
+            }
+        }
     }
 
     private static void readLines(ArrayList<String> lines, Properties properties) {
@@ -686,11 +695,8 @@ public final class Settings {
         File parentFile = file.getParentFile();
         if (parentFile != null && (parentFile.mkdirs())) {
             LOGGER.info("Created token file directory " + parentFile.getAbsolutePath());
-
         }
-        if (file.createNewFile()) {
-            LOGGER.info("Created token file " + tokenFilePath);
-        }
+        createPrivateFile(tokenFilePath);
     }
 
     /**
