@@ -172,9 +172,9 @@ public class CaldavConnection extends AbstractConnection {
                 } else if (!headers.containsKey("authorization")) {
                     sendUnauthorized();
                 } else {
-                    decodeCredentials(headers.get("authorization"));
                     // need to check session on each request, credentials may have changed or session expired
                     try {
+                        decodeCredentials(headers.get("authorization"));
                         session = ExchangeSessionFactory.getInstance(userName, password);
                         logConnection("LOGON", userName);
                         handleRequest(command, path, headers, content);
@@ -1354,7 +1354,7 @@ public class CaldavConnection extends AbstractConnection {
         if (index > 0) {
             String mode = authorization.substring(0, index).toLowerCase();
             if (!"basic".equals(mode)) {
-                throw new DavMailException("EXCEPTION_UNSUPPORTED_AUTHORIZATION_MODE", mode);
+                throw new DavMailAuthenticationException("EXCEPTION_UNSUPPORTED_AUTHORIZATION_MODE", mode);
             }
             String encodedCredentials = authorization.substring(index + 1);
             String decodedCredentials = IOUtil.decodeBase64AsString(encodedCredentials);
@@ -1363,10 +1363,10 @@ public class CaldavConnection extends AbstractConnection {
                 userName = decodedCredentials.substring(0, index);
                 password = decodedCredentials.substring(index + 1);
             } else {
-                throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
+                throw new DavMailAuthenticationException("EXCEPTION_INVALID_CREDENTIALS");
             }
         } else {
-            throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
+            throw new DavMailAuthenticationException("EXCEPTION_INVALID_CREDENTIALS");
         }
 
     }
