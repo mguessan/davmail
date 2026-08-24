@@ -2326,6 +2326,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("reminderset"));
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                     getItemMethod.addAdditionalProperty(Field.get("myresponsetype"));
+                    getItemMethod.addAdditionalProperty(Field.get("organizer"));
                     getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
                     getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
                     getItemMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
