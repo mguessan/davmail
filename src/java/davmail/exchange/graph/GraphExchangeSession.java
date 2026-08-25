@@ -97,15 +97,9 @@ public class GraphExchangeSession extends ExchangeSession {
 
     protected static final int PAGE_SIZE = 500;
 
-    static final Map<String, String> partstatToResponseMap = new HashMap<>();
     static final Map<String, String> statusToBusyStatusMap = new HashMap<>();
 
     static {
-        partstatToResponseMap.put("ACCEPTED", "accepted");
-        partstatToResponseMap.put("TENTATIVE", "tentativelyAccepted");
-        partstatToResponseMap.put("DECLINED", "declined");
-        partstatToResponseMap.put("NEEDS-ACTION", "notResponded");
-
         statusToBusyStatusMap.put("TENTATIVE", "Tentative");
         statusToBusyStatusMap.put("CONFIRMED", "Busy");
         // Unable to map CANCELLED: cancelled events are directly deleted on Exchange
@@ -160,7 +154,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
             // Attempt to acquire the lock within the timeout window
             try {
-                LOGGER.debug("Acquire lock on folder "+folderPath);
+                LOGGER.debug("Acquire lock on folder " + folderPath);
                 if (lock.tryLock(5, TimeUnit.MINUTES)) {
                     try {
                         // get message list from map
@@ -912,7 +906,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     action = "tentativelyAccept";
                 }
 
-                LOGGER.debug("Send meeting response: " + action+" for instance "+occurrenceId);
+                LOGGER.debug("Send meeting response: " + action + " for instance " + occurrenceId);
                 GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
                         .setObjectType("events")
@@ -2465,7 +2459,7 @@ public class GraphExchangeSession extends ExchangeSession {
         httpRequestBuilder.setSizeLimit(pageSize);
         httpRequestBuilder.setMaxPageSize(pageSize);
 
-        LOGGER.debug("searchMessages " + folderId.getMailboxName() + " " + folderName+" pageSize: " + pageSize);
+        LOGGER.debug("searchMessages " + folderId.getMailboxName() + " " + folderName + " pageSize: " + pageSize);
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext() && messageList.size() < maxCount) {
@@ -3039,7 +3033,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     // fetch new message
                     Message newMessage = getMessage(folderId, id);
                     // restore imap uid
-                    if (currentMessage != null  && newMessage.imapUid != currentMessage.imapUid) {
+                    if (currentMessage != null && newMessage.imapUid != currentMessage.imapUid) {
                         LOGGER.debug("Restoring imapUid " + newMessage.imapUid + " -> " + currentMessage.imapUid);
                         newMessage.imapUid = currentMessage.imapUid;
                     }
