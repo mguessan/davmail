@@ -1355,8 +1355,16 @@ public class GraphExchangeSession extends ExchangeSession {
      */
     @Override
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
-        // access token is automatically refreshed to avoid expiration
-        return false;
+        boolean isExpired = false;
+        try {
+            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setObjectType("mailFolders").setSelect("id"));
+        } catch (UnknownHostException | NoRouteToHostException exc) {
+            throw exc;
+        } catch (IOException e) {
+            isExpired = true;
+        }
+
+        return isExpired;
     }
 
     private String convertHtmlToText(String htmlText) {
@@ -1921,7 +1929,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("xmozsnoozetime"));
     }
 
-    protected static class FolderId {
+    protected class FolderId {
         protected static final String IPF_NOTE = "IPF.Note";
         protected static final String IPF_CONTACT = "IPF.Contact";
         protected static final String IPF_APPOINTMENT = "IPF.Appointment";
@@ -1960,7 +1968,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         public String getMailboxName() {
             if (mailbox == null) {
-                return "me";
+                return email;
             } else {
                 return mailbox;
             }
