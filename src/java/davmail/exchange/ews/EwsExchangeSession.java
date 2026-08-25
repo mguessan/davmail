@@ -1230,10 +1230,18 @@ public class EwsExchangeSession extends ExchangeSession {
     public int createFolder(String folderPath, String folderClass, Map<String, String> properties) throws IOException {
         FolderPath path = new FolderPath(folderPath);
         EWSMethod.Item folder = new EWSMethod.Item();
-        folder.type = "Folder";
-        folder.put("FolderClass", folderClass);
+        if ("IPF.Contact".equals(folderClass)) {
+            folder.type = "ContactsFolder";
+        } else if ("IPF.Appointment".equals(folderClass)) {
+            folder.type = "CalendarFolder";
+        } else if ("IPF.Task".equals(folderClass)) {
+            folder.type = "TasksFolder";
+        } else {
+            folder.put("FolderClass", folderClass);
+            folder.type = "Folder";
+        }
         folder.put("DisplayName", decodeFolderName(path.folderName));
-        // TODO: handle properties
+
         CreateFolderMethod createFolderMethod = new CreateFolderMethod(getFolderId(path.parentPath), folder);
         executeMethod(createFolderMethod);
         return HttpStatus.SC_CREATED;
@@ -1515,7 +1523,7 @@ public class EwsExchangeSession extends ExchangeSession {
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
             if (itemResult.status == HttpURLConnection.HTTP_OK) {
                 //noinspection VariableNotUsedInsideIf
-                if (etag == null) {
+                if (currentItemId == null) {
                     itemResult.status = HttpStatus.SC_CREATED;
                     LOGGER.debug("Created contact " + getHref());
                 } else {
@@ -2707,11 +2715,11 @@ public class EwsExchangeSession extends ExchangeSession {
         executeMethod(getItemMethod);
         EWSMethod.Item item = getItemMethod.getResponseItem();
         if (item == null) {
-            throw new IOException("Missing contact picture");
+            return null;
         }
         FileAttachment attachment = item.getAttachmentByName("ContactPicture.jpg");
         if (attachment == null) {
-            throw new IOException("Missing contact picture");
+            return null;
         }
         // get attachment content
         GetAttachmentMethod getAttachmentMethod = new GetAttachmentMethod(attachment.attachmentId);
@@ -2732,7 +2740,7 @@ public class EwsExchangeSession extends ExchangeSession {
     public ContactPhoto getADPhoto(String email) {
         ContactPhoto contactPhoto = null;
 
-        if (email != null) {
+        if (email != null && !email.isEmpty()) {
             try {
                 GetUserPhotoMethod userPhotoMethod = new GetUserPhotoMethod(email, GetUserPhotoMethod.SizeRequested.HR240x240);
                 executeMethod(userPhotoMethod);
