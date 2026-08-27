@@ -45,6 +45,10 @@ public abstract class AbstractDavMailTestCase extends TestCase {
 
     @Override
     public void setUp() throws IOException {
+        loadConfig();
+    }
+
+    public void loadConfig() throws IOException {
         if (!loaded) {
             loaded = true;
 
@@ -84,6 +88,17 @@ public abstract class AbstractDavMailTestCase extends TestCase {
             // force server mode
             Settings.setProperty("davmail.server", "true");
         }
+    }
+
+    public void switchToExchangeEWS() {
+        Settings.setProperty("davmail.mode", "ExchangeEWS");
+
+        String url = "https://"+Settings.getProperty("davmail.exchange2007.server")+"/EWS/Exchange.asmx";
+        Settings.setProperty("davmail.server.certificate.hash", Settings.getProperty("davmail.exchange2007.server.certificate.hash"));
+        Settings.setProperty("davmail.url", url);
+        Settings.setProperty("davmail.username", Settings.getProperty("davmail.exchange2007.username"));
+        Settings.setProperty("davmail.password", Settings.getProperty("davmail.exchange2007.password"));
+
     }
 
     /**
