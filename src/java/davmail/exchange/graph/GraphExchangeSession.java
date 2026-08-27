@@ -1777,10 +1777,6 @@ public class GraphExchangeSession extends ExchangeSession {
         // OSX IMAP requests content-class
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("contentclass"));
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("keywords"));
-
-        // experimental, retrieve message headers
-        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("messageheaders"));
-        IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("outlookmessageclass"));
     }
 
     protected static final HashSet<GraphField> IMAP_MESSAGE_DELTA_ATTRIBUTES = new HashSet<>();
@@ -2161,7 +2157,6 @@ public class GraphExchangeSession extends ExchangeSession {
     protected class Message extends ExchangeSession.Message {
         protected FolderId folderId;
         protected String id;
-        protected String changeKey;
 
         @Override
         public String getPermanentId() {
@@ -2213,7 +2208,6 @@ public class GraphExchangeSession extends ExchangeSession {
         try {
             // get item id
             message.id = graphResponse.getString("id");
-            message.changeKey = graphResponse.getString("changeKey");
 
             message.read = graphResponse.getBoolean("isRead");
             message.draft = graphResponse.getBoolean("isDraft");
@@ -2293,7 +2287,6 @@ public class GraphExchangeSession extends ExchangeSession {
                 buffer.append(" uid: ").append(message.uid);
             }
             buffer.append(" ItemId: ").append(message.id);
-            buffer.append(" ChangeKey: ").append(message.changeKey);
             LOGGER.debug(buffer.toString());
         }
 
