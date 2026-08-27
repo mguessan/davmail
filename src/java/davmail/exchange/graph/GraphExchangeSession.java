@@ -1459,12 +1459,9 @@ public class GraphExchangeSession extends ExchangeSession {
             etag = response.optString("@odata.etag");
 
             displayName = response.optString("displayname");
-            // prefer urlcompname (client provided item name) for contacts
-            itemName = StringUtil.decodeUrlcompname(response.optString("urlcompname"));
-            // if urlcompname is empty, contact was created on the server side
-            if (itemName == null) {
-                itemName = StringUtil.base64ToUrl(id) + ".EML";
-            }
+            // drop urlcompname (client provided item name) for contacts, prefer more reliable id
+            // we already have the id map as a workaround when client immediately requests with urlcompname
+            itemName = StringUtil.base64ToUrl(id) + ".EML";
             put("uid", response.optString("uid"));
 
             for (GraphField attribute : CONTACT_ATTRIBUTES) {
@@ -1842,7 +1839,7 @@ public class GraphExchangeSession extends ExchangeSession {
         CONTACT_ATTRIBUTES.add(GraphField.get("street"));
         CONTACT_ATTRIBUTES.add(GraphField.get("telephoneNumber"));
         CONTACT_ATTRIBUTES.add(GraphField.get("title"));
-        CONTACT_ATTRIBUTES.add(GraphField.get("personalnotes"));
+        CONTACT_ATTRIBUTES.add(GraphField.get("personalNotes"));
         CONTACT_ATTRIBUTES.add(GraphField.get("im"));
         CONTACT_ATTRIBUTES.add(GraphField.get("middlename"));
         CONTACT_ATTRIBUTES.add(GraphField.get("lastmodified"));

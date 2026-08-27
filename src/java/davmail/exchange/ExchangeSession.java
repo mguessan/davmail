@@ -2032,7 +2032,7 @@ public abstract class ExchangeSession {
             writer.appendProperty("URL;TYPE=work", get("businesshomepage"));
             writer.appendProperty("URL;TYPE=home", get("personalHomePage"));
             writer.appendProperty("TITLE", get("title"));
-            writer.appendProperty("NOTE", get("personalnotes"));
+            writer.appendProperty("NOTE", get("personalNotes"));
 
             writer.appendProperty("CUSTOM1", get("extensionattribute1"));
             writer.appendProperty("CUSTOM2", get("extensionattribute2"));
@@ -2826,7 +2826,7 @@ public abstract class ExchangeSession {
                 } else if ("TITLE".equals(property.getKey())) {
                     properties.put("title", property.getValue());
                 } else if ("NOTE".equals(property.getKey())) {
-                    properties.put("personalnotes", property.getValue());
+                    properties.put("personalNotes", property.getValue());
                 } else if ("CUSTOM1".equals(property.getKey())) {
                     properties.put("extensionattribute1", property.getValue());
                 } else if ("CUSTOM2".equals(property.getKey())) {
@@ -3093,7 +3093,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("telephoneNumber");
         CONTACT_ATTRIBUTES.add("title");
         CONTACT_ATTRIBUTES.add("description");
-        CONTACT_ATTRIBUTES.add("personalnotes");
+        CONTACT_ATTRIBUTES.add("personalNotes");
         CONTACT_ATTRIBUTES.add("im");
         CONTACT_ATTRIBUTES.add("middlename");
         CONTACT_ATTRIBUTES.add("lastmodified");
@@ -3115,21 +3115,6 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("fburl");
         CONTACT_ATTRIBUTES.add("msexchangecertificate");
         CONTACT_ATTRIBUTES.add("usersmimecertificate");
-    }
-
-    public static final Set<String> ORG_CONTACT_ATTRIBUTES = new HashSet<>();
-    static {
-        // org contact attributes
-        ORG_CONTACT_ATTRIBUTES.add("birthday");
-        ORG_CONTACT_ATTRIBUTES.add("fileAs");
-        ORG_CONTACT_ATTRIBUTES.add("displayName");
-        ORG_CONTACT_ATTRIBUTES.add("initials");
-        ORG_CONTACT_ATTRIBUTES.add("middleName");
-        ORG_CONTACT_ATTRIBUTES.add("surname");
-        ORG_CONTACT_ATTRIBUTES.add("jobTitle");
-        ORG_CONTACT_ATTRIBUTES.add("companyName");
-        ORG_CONTACT_ATTRIBUTES.add("officeLocation");
-        ORG_CONTACT_ATTRIBUTES.add("personalNotes");
     }
 
     protected static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<>();
