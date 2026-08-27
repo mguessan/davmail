@@ -208,6 +208,7 @@
                     <fileset dir="src/test" includes="davmail/ldap/*.java"/>
                     <fileset dir="src/test" includes="davmail/imap/*.java"/-->
                     <fileset dir="src/test" includes="davmail/exchange/TestExchangeSessionContact.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/TestO365EWSExchangeSessionContact.java"/>
                     <fileset dir="src/test" includes="davmail/util/*.java"/>
                 </batchtest>
             </junit>
@@ -424,6 +425,7 @@
                 <exclude name="lib/hamcrest-core-*.jar"/>
             </fileset>
         </zip>
+        <antcall target="dist-nsis"/>
         <antcall target="dist-nsis"/>
         <antcall target="dist-deb"/>
         <antcall target="dist-osx"/>
