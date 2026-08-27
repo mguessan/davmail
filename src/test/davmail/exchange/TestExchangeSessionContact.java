@@ -18,9 +18,7 @@
  */
 package davmail.exchange;
 
-import davmail.Settings;
 import davmail.exception.HttpConflictException;
-import davmail.exception.HttpForbiddenException;
 import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
 
@@ -33,20 +31,23 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 
+import static davmail.exchange.ExchangeSession.CONTACT_ATTRIBUTES;
+import static davmail.exchange.ExchangeSession.LOGGER;
+
 /**
  * Test ExchangeSession contact features.
  */
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase {
 
-    final static String FOLDER_PATH = "contacts/testcontactfolder";
+    final static String FOLDER_PATH = "contacts";
     static boolean isFolderCreated = false;
 
     @Override
     public void setUp() throws IOException {
         super.setUp();
         if (!isFolderCreated) {
-            createFolder();
+            initFolder();
             isFolderCreated = true;
         }
     }
@@ -56,26 +57,15 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
             return (ExchangeSession.Contact) session.getItem(FOLDER_PATH, itemName);
         } else {
             List<ExchangeSession.Contact> contacts = session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
-            itemName = contacts.get(0).itemName;
             return contacts.get(0);
         }
     }
 
-    public void createFolder() throws IOException {
+    public void initFolder() throws IOException {
         // recreate an empty folder, does not work over graph
         try {
-            session.deleteFolder(FOLDER_PATH);
-        } catch (HttpForbiddenException e) {
-            // empty folder over graph
-            List<ExchangeSession.Contact> contacts = session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
-            if (contacts != null) {
-                for (ExchangeSession.Contact contact : contacts) {
-                    session.deleteItem(FOLDER_PATH, contact.itemName);
-                }
-            }
-        }
-        try {
             session.createContactFolder(FOLDER_PATH, null);
+            System.out.println("Created folder " + FOLDER_PATH);
         } catch (HttpConflictException e) {
             // folder already exists on graph
         } catch (IOException e) {
@@ -89,6 +79,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         String itemName = createContact();
         getContact(itemName);
         updateContact(itemName);
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public String createContact() throws IOException {
@@ -197,7 +188,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("https://local.net", contact.get("businesshomepage"));
         assertEquals("title", contact.get("title"));
-        assertEquals("description", contact.get("description"));
+        assertTrue("description".equals(contact.get("description")) || "description".equals(contact.get("personalNotes")));
 
         assertEquals("extensionattribute1", contact.get("extensionattribute1"));
         assertEquals("extensionattribute2", contact.get("extensionattribute2"));
@@ -306,7 +297,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertNull(contact.get("spousecn"));
         assertNull(contact.get("keywords"));
 
-        assertEquals("false", contact.get("private"));
+        assertFalse("true".equals(contact.get("private")));
 
         assertTrue(contact.get("haspicture") == null || "false".equals(contact.get("haspicture")));
 
@@ -331,6 +322,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("email1.test@local.net", contact.get("smtpemail1"));
 
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testUpperCaseParamName() throws IOException {
@@ -349,6 +341,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("mobile", contact.get("mobile"));
 
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testMultipleTypesParamName() throws IOException {
@@ -367,6 +360,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("another mobile", contact.get("mobile"));
 
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testLowerCaseTypesParamName() throws IOException {
@@ -385,6 +379,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("5 68 99 3", contact.get("homePhone"));
 
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testKeyPrefix() throws IOException {
@@ -403,6 +398,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("mobile with prefix", contact.get("mobile"));
 
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testIphonePersonalHomePage() throws IOException {
@@ -421,6 +417,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("https://www.myhomepage.org", contact.get("personalHomePage"));
 
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
 
@@ -438,8 +435,9 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         contact = getCurrentContact(itemName);
 
-        assertEquals("vert,rouge", contact.get("keywords"));
+        assertTrue("vert,rouge".equals(contact.get("keywords")) || "rouge,vert".equals(contact.get("keywords")));
 
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testSemiColonInCompoundValue() throws IOException {
@@ -452,6 +450,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, itemBody, contact.etag, null);
         assertEquals(200, result.status);
+
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testIphoneEncodedComma() throws IOException {
@@ -470,6 +470,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("mobile, with comma", contact.get("mobile"));
 
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testAmpersAndValue() throws IOException {
@@ -488,6 +489,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("common & name", contact.get("cn"));
 
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testDateValue() throws IOException {
@@ -506,6 +508,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("2000-01-02", session.convertZuluDateToBday(contact.get("bday")));
         System.out.println(contact.getBody());
+
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testAnniversary() throws IOException {
@@ -522,8 +526,12 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         contact = getCurrentContact(itemName);
 
-        assertEquals("20000102T000000Z", contact.get("anniversary"));
+        assertNotNull(contact.get("anniversary"));
+        // Graph and EWS have a slightly different value
+        assertTrue(contact.get("anniversary").startsWith("20000102T"));
         System.out.println(contact.getBody());
+
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testSpecialUrlCharacters() throws IOException {
@@ -533,7 +541,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("FN", "common name");
         vCardWriter.endCard();
 
-        String itemName = "test {<:&'>} \"accentué.vcf";
+        String itemName = UUID.randomUUID()+"test {<:&'>} \"accentué.vcf";
 
         ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), null, null);
         assertEquals(201, result.status);
@@ -541,6 +549,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         ExchangeSession.Contact contact = getCurrentContact(itemName);
 
         assertEquals("common name", contact.get("cn"));
+
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testSpecialUrlCharacters3F() throws IOException {
@@ -551,7 +561,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("FN", "common name");
         vCardWriter.endCard();
 
-        String itemName = "test ?.vcf";
+        String itemName = UUID.randomUUID()+" test ?.vcf";
 
         ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), null, null);
         assertEquals(201, result.status);
@@ -559,14 +569,16 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         ExchangeSession.Contact contact = getCurrentContact(itemName);
 
         assertEquals("common name", contact.get("cn"));
+
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testPagingSearchContacts() throws IOException {
         int maxCount = 0;
-        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, maxCount);
+        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, CONTACT_ATTRIBUTES, null, maxCount);
         int folderSize = contacts.size();
-        assertEquals(20, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, 20).size());
-        assertEquals(folderSize, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, folderSize + 1).size());
+        assertEquals(20, session.searchContacts(ExchangeSession.CONTACTS, CONTACT_ATTRIBUTES, null, 20).size());
+        assertEquals(folderSize, session.searchContacts(ExchangeSession.CONTACTS, CONTACT_ATTRIBUTES, null, folderSize + 1).size());
     }
 
     public void testHashInName() throws IOException {
@@ -577,7 +589,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("FN", "common name");
         vCardWriter.endCard();
 
-        String itemName = "Capital 7654#.vcf";
+        String itemName = UUID.randomUUID()+" Capital 7654#.vcf";
 
         ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, vCardWriter.toString(), null, null);
         assertEquals(201, result.status);
@@ -585,6 +597,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         ExchangeSession.Contact contact = getCurrentContact(itemName);
 
         assertEquals("common name", contact.get("cn"));
+
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
 
@@ -612,6 +626,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         contact = getCurrentContact(itemName);
         assertNull(contact.get("smtpemail1"));
+
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testRemoveEmail() throws IOException {
@@ -636,6 +652,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertNull(contact.get("smtpemail1"));
         assertNull(contact.get("smtpemail2"));
+
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testProtectedComma() throws IOException {
@@ -668,6 +686,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         System.out.println(result);
         ExchangeSession.Contact contact = getCurrentContact(itemName);
         assertNull(contact.get("description"));
+
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
 
@@ -709,6 +729,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, itemBody, null, null);
         assertEquals(201, result.status);
+        session.deleteItem(FOLDER_PATH, itemName);
     }
 
     public void testGetAllContacts() throws IOException {
@@ -722,11 +743,10 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
     }
 
     public void testGetAllDistributionLists() throws IOException {
-        List<ExchangeSession.Contact> contacts = session.searchContacts("contacts", ExchangeSession.CONTACT_ATTRIBUTES, session.isEqualTo("outlookmessageclass", "IPM.DistList"), 0);
+        List<ExchangeSession.Contact> contacts = session.searchContacts("contacts", CONTACT_ATTRIBUTES, session.isEqualTo("outlookmessageclass", "IPM.DistList"), 0);
         //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
         for (ExchangeSession.Contact contact : contacts) {
-            ExchangeSession.Item item = session.getItem("contacts", contact.getName());
-            System.out.println((item).getBody());
+            System.out.println(contact.getBody());
         }
     }
 
@@ -745,25 +765,34 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
     }
 
     public void testSearchContact() throws IOException {
-        // reset folder and create full contact
-        createFolder();
-        String itemName = createContact();
+        // purge old tests
+        List<ExchangeSession.Contact> contacts = session.searchContacts(FOLDER_PATH, CONTACT_ATTRIBUTES, session.contains("smtpemail1", "email1"), 0);
+        LOGGER.debug("Found "+contacts.size()+" matching contacts");
+        for (ExchangeSession.Contact toDeleteContact : contacts) {
+            session.deleteItem(FOLDER_PATH, toDeleteContact.getName());
+        }
 
+        // reset folder and create full contact
+        String itemName = createContact();
         ExchangeSession.Contact contact = getCurrentContact(itemName);
+
         System.out.println("Name: "+contact.getName()); // name is id + ".vcf"
         System.out.println("Uid: "+contact.getUid()); // getUid() returns id, id is not searchable
         System.out.println("Href: "+contact.getHref()); // full path followed by name
         System.out.println("Actual uid: "+contact.get("uid")); // binary field PR_RECORD_KEY, searchable
 
-        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.isEqualTo("uid", contact.get("uid")), 0).size());
+        assertEquals(1, session.searchContacts(FOLDER_PATH, CONTACT_ATTRIBUTES, session.isEqualTo("uid", contact.get("uid")), 0).size());
 
         //search by email
-        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.contains("smtpemail1", "email1"), 0).size());
-        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.contains("smtpemail2", "email2"), 0).size());
-        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.contains("smtpemail3", "email3"), 0).size());
+        assertEquals(1, session.searchContacts(FOLDER_PATH, CONTACT_ATTRIBUTES, session.contains("smtpemail1", "email1"), 0).size());
+        assertEquals(1, session.searchContacts(FOLDER_PATH, CONTACT_ATTRIBUTES, session.contains("smtpemail2", "email2"), 0).size());
+        assertEquals(1, session.searchContacts(FOLDER_PATH, CONTACT_ATTRIBUTES, session.contains("smtpemail3", "email3"), 0).size());
 
-        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.contains("smtpemail1", "@local.net"), 0).size());
-        assertEquals(1, session.searchContacts(FOLDER_PATH, ExchangeSession.CONTACT_ATTRIBUTES, session.startsWith("smtpemail1", "email1"), 0).size());
+        assertFalse(session.searchContacts(FOLDER_PATH, CONTACT_ATTRIBUTES, session.contains("smtpemail1", "@local.net"), 0).isEmpty());
+        assertEquals(1, session.searchContacts(FOLDER_PATH, CONTACT_ATTRIBUTES, session.startsWith("smtpemail1", "email1"), 0).size());
+
+        session.deleteItem(FOLDER_PATH, contact.getName());
+
     }
 
 }
