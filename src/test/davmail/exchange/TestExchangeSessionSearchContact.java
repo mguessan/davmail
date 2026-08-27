@@ -81,6 +81,19 @@ public class TestExchangeSessionSearchContact extends AbstractExchangeSessionTes
         }
     }
 
+    public void testSearchContactsByAttribute() throws IOException {
+        Set<String> attributes = new HashSet<String>();
+        attributes.add("uid");
+        assertTrue(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.isEqualTo("roomnumber", "roomnumber"), 0).size() > 0);
+
+        assertTrue(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.isEqualTo("smtpemail2", "email2@local.net"), 0).size() > 0);
+        assertTrue(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.contains("smtpemail2", "email2"), 0).size() > 0);
+
+        assertTrue(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.isEqualTo("smtpemail1", "email1@local.net"), 0).size() > 0);
+        assertTrue(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.contains("smtpemail1", "email1"), 0).size() > 0);
+    }
+
+
     public void testGalFind() throws IOException {
         // find a set of contacts
         Map<String, ExchangeSession.Contact> contacts = session.galFind(session.startsWith("cn", "a"), null, 100);
