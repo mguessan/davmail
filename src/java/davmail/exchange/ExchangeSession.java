@@ -2887,7 +2887,7 @@ public abstract class ExchangeSession {
             LOGGER.debug("Create or update contact " + itemName + ": " + properties);
             // reset missing properties to null
             for (String key : CONTACT_ATTRIBUTES) {
-                if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
+                if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key) && !"uid".equals(key)
                         && !"lastmodified".equals(key) && !"sensitivity".equals(key)
                         && !"haspicture".equals(key)
                         && !"usersmimecertificate".equals(key) && !"msexchangecertificate".equals(key)
