@@ -3044,6 +3044,7 @@ public abstract class ExchangeSession {
     public static final Set<String> CONTACT_ATTRIBUTES = new HashSet<>();
 
     static {
+        CONTACT_ATTRIBUTES.add("uid");
         CONTACT_ATTRIBUTES.add("imapUid");
         CONTACT_ATTRIBUTES.add("etag");
         CONTACT_ATTRIBUTES.add("urlcompname");
