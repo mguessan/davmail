@@ -737,8 +737,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         List<ExchangeSession.Contact> contacts = session.searchContacts("contacts", ExchangeSession.CONTACT_ATTRIBUTES, session.isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
         //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
         for (ExchangeSession.Contact contact : contacts) {
-            ExchangeSession.Item item = session.getItem("contacts", contact.getName());
-            System.out.println((item).getBody());
+            //ExchangeSession.Item item = session.getItem("contacts", contact.getName());
+            //System.out.println(contact.getBody());
         }
     }
 
@@ -746,7 +746,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         List<ExchangeSession.Contact> contacts = session.searchContacts("contacts", CONTACT_ATTRIBUTES, session.isEqualTo("outlookmessageclass", "IPM.DistList"), 0);
         //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
         for (ExchangeSession.Contact contact : contacts) {
-            System.out.println(contact.getBody());
+            //System.out.println(contact.getBody());
         }
     }
 
