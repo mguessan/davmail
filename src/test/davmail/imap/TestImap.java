@@ -72,8 +72,10 @@ public class TestImap extends AbstractImapTestCase {
         resetTestFolder();
         appendMessage();
         writeLine(". UID SEARCH UNDELETED");
+        assertFalse("* SEARCH".equals(readLine()));
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
         writeLine(". UID SEARCH NOT DELETED");
+        assertFalse("* SEARCH".equals(readLine()));
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
@@ -218,7 +220,7 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
 
         // check server side categories
-        ExchangeSession session = ExchangeSessionFactory.getInstance(username,password);
+        ExchangeSession session = ExchangeSessionFactory.getInstance(username, password);
         ExchangeSession.Folder folder = session.getFolder("testfolder");
         folder.loadMessages();
         assertEquals("To Do", folder.get(0).keywords);
@@ -289,7 +291,7 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". APPEND testfolder (\\Seen some_tag \\Draft $Label4) {" + content.length + '}');
         assertEquals("+ send literal data", readLine());
         writeLine(new String(content));
-        assertEquals(". OK APPEND completed", readFullAnswer("."));
+        assertEquals(". OK [APPENDUID 1 1] APPEND completed", readFullAnswer("."));
 
         writeLine(". NOOP");
         assertEquals(". OK NOOP completed", readFullAnswer("."));
@@ -380,6 +382,15 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testFetchRfc822Text() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID FETCH 1:* (UID RFC822.TEXT)");
+        //writeLine(". UID FETCH 1:* (UID BODY[TEXT])");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
     public void testThunderbirdHeaderFetch() throws IOException {
         resetTestFolder();
         appendMessage();
@@ -437,7 +448,7 @@ public class TestImap extends AbstractImapTestCase {
         resetTestFolder();
         appendMessage();
 
-        writeLine(". UID SEARCH CHARSET UTF-8 (HEADER SUBJECT testé)");
+        writeLine(". UID SEARCH CHARSET \"UTF-8\" (HEADER SUBJECT testé)");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
@@ -495,7 +506,7 @@ public class TestImap extends AbstractImapTestCase {
 
         writeLine(". UID SEARCH TO testto");
 
-        assertEquals("* SEARCH 1",  readLine());
+        assertEquals("* SEARCH 1", readLine());
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
@@ -505,7 +516,7 @@ public class TestImap extends AbstractImapTestCase {
 
         writeLine(". UID SEARCH CC testcc");
 
-        assertEquals("* SEARCH 1",  readLine());
+        assertEquals("* SEARCH 1", readLine());
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
@@ -534,7 +545,7 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
         assertEquals("+ send literal data", readLine());
         writeLine(new String(content));
-        assertEquals(". OK APPEND completed", readFullAnswer("."));
+        assertEquals(". OK", readFullAnswer(".").substring(0, 4));
 
         writeLine(". UID SEARCH UNDELETED (HEADER Message-ID " + mimeMessage.getMessageID().substring(1, mimeMessage.getMessageID().length() - 1) + ")");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
@@ -586,7 +597,7 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
         assertEquals("+ send literal data", readLine());
         writeLine(new String(content));
-        assertEquals(". OK APPEND completed", readFullAnswer("."));
+        assertEquals(". OK [APPENDUID 1 1] APPEND completed", readFullAnswer("."));
         writeLine(". NOOP");
         assertEquals(". OK NOOP completed", readFullAnswer("."));
 
@@ -637,7 +648,6 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". UID FETCH " + messageUid + ":* (INTERNALDATE UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (date subject from to cc message-id in-reply-to references x-priority x-uniform-type-identifier x-universally-unique-identifier received-spf x-spam-status x-spam-flag)])");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
-
 
 
     public void testAnotherFetch() throws IOException {
@@ -739,7 +749,7 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
 
         writeLine(". UID COPY " + messageUid + " Missing");
-        assertEquals(". NO [TRYCREATE] Folder 'Missing' not found", readFullAnswer("."));
+        assertEquals(". NO [TRYCREATE] status code: 404, reason phrase: Folder 'Missing' not found", readFullAnswer("."));
 
     }
 
@@ -751,4 +761,59 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals("* SEARCH", readLine());
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
+
+    public void testSearchUid() throws IOException {
+        resetTestFolder();
+        appendMessage();
+        writeLine(". SELECT testfolder");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+
+        writeLine(". UID SEARCH UID 1");
+        assertEquals("* SEARCH 1", readLine());
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+    public void testSelectInbox() throws IOException {
+        //enableWireDebugLogging();
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". FETCH 1:* (UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (From To Cc Bcc Subject Date Message-ID Priority X-Priority References Newsgroups In-Reply-To Content-Type)])");
+        assertEquals(". OK FETCH completed", readFullAnswer("."));
+    }
+
+    public void testSearchInbox() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+
+        writeLine(". UID SEARCH HEADER TO invalid");
+        // expect empty result
+        assertEquals("* SEARCH", readLine());
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+
+        writeLine(". UID SEARCH HEADER TO " + Settings.getProperty("davmail.username"));
+        // inbox should contain username as recipient
+        assertFalse("* SEARCH".equals(readLine()));
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+
+        writeLine(". uid SEARCH UNDELETED SENTON 10-Apr-2026");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+
+    }
+
+    public void testSearchInboxSentOn() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+
+        writeLine(". uid SEARCH UNDELETED NOT TO \"test\"");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+    public void testInboxFetchFlagsRfc822Header() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+
+        writeLine(". UID FETCH 1:* (UID FLAGS FLAGS RFC822.HEADER)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
 }
