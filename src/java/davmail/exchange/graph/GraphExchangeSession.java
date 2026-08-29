@@ -3002,24 +3002,10 @@ public class GraphExchangeSession extends ExchangeSession {
                 String id = deltaMessage.getString("id");
                 if (deltaMessage.has("@removed")) {
                     // message deleted
-                    for (ExchangeSession.Message message : messageList) {
-                        if (((GraphExchangeSession.Message) message).id.equals(id)) {
-                            LOGGER.debug("Removing message " + message.imapUid);
-                            messageList.remove(message);
-                            break;
-                        }
-                    }
+                    removeMessageFromList(messageList, id);
                 } else {
-                    // insert or update
-                    ExchangeSession.Message currentMessage = null;
-                    for (ExchangeSession.Message message : messageList) {
-                        if (((GraphExchangeSession.Message) message).id.equals(id)) {
-                            currentMessage = message;
-                            LOGGER.debug("Found message " + message.imapUid);
-                            messageList.remove(message);
-                            break;
-                        }
-                    }
+                    // insert or update, first remove from list
+                    ExchangeSession.Message currentMessage = removeMessageFromList(messageList, id);
                     // fetch new message
                     Message newMessage = getMessage(folderId, id);
                     // restore imap uid
@@ -3029,6 +3015,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                     newMessage.messageList = messageList;
                     newMessage.folderId = folderId;
+                    LOGGER.debug("Inserting message " + newMessage.imapUid+" "+newMessage.date);
                     messageList.add(newMessage);
                 }
             }
@@ -3038,6 +3025,22 @@ public class GraphExchangeSession extends ExchangeSession {
         } catch (JSONException e) {
             throw new IOException(e);
         }
+    }
+
+    private Message removeMessageFromList(MessageList messageList, String id) {
+        Message currentMessage = null;
+        for (ExchangeSession.Message message : messageList) {
+            if (((GraphExchangeSession.Message) message).id.equals(id)) {
+                currentMessage = (Message) message;
+                LOGGER.debug("Removing message " + message.imapUid+" "+message.date);
+                messageList.remove(message);
+                break;
+            }
+        }
+        if (currentMessage == null) {
+            LOGGER.warn("Message " + id + " not found in current message list");
+        }
+        return currentMessage;
     }
 
     protected static final String USERS_ROOT = "/users/";
