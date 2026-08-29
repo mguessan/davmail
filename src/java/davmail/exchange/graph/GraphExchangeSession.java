@@ -3193,7 +3193,7 @@ public class GraphExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected FolderId getSubFolderByName(FolderId currentFolderId, String folderName) throws IOException {
-        LOGGER.debug("getSubFolderByName " + currentFolderId.id + " " + folderName);
+        LOGGER.debug("getSubFolderByName " + currentFolderId.getMailboxName() + " " + folderName + " " + currentFolderId.id);
         GraphRequestBuilder httpRequestBuilder;
         if (currentFolderId.isCalendar()) {
             httpRequestBuilder = new GraphRequestBuilder()
