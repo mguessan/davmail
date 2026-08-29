@@ -207,6 +207,7 @@
                     <fileset dir="src/test" includes="davmail/smtp/*.java"/>
                     <fileset dir="src/test" includes="davmail/ldap/*.java"/>
                     <fileset dir="src/test" includes="davmail/imap/*.java"/-->
+                    <fileset dir="src/test" includes="davmail/imap/TestImap.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/TestExchangeSessionContact.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/TestO365EWSExchangeSessionContact.java"/>
                     <fileset dir="src/test" includes="davmail/util/*.java"/>
