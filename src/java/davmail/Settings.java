@@ -373,6 +373,22 @@ public final class Settings {
                     }
                     fileAppender.setFile(logFilePath, true, false, 8192);
                     Logger.getRootLogger().addAppender(fileAppender);
+
+                    if (Settings.getProperty("davmail.logConnectionFilePath", null) != null) {
+                        FileAppender connectionFileAppender = (FileAppender) Logger.getLogger("davmail.connection").getAppender("ConnectionAppender");
+                        if (connectionFileAppender == null) {
+                            connectionFileAppender = new RollingFileAppender();
+                            ((RollingFileAppender) connectionFileAppender).setMaxBackupIndex(0);
+                            ((RollingFileAppender) connectionFileAppender).setMaxFileSize("10MB");
+
+                            connectionFileAppender.setName("ConnectionAppender");
+                            connectionFileAppender.setEncoding("UTF-8");
+                            connectionFileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
+                        }
+                        connectionFileAppender.setFile(Settings.getProperty("davmail.logConnectionFilePath", null), true, false, 8192);
+
+                        Logger.getLogger("davmail.connection").addAppender(connectionFileAppender);
+                    }
                 }
             }
 
