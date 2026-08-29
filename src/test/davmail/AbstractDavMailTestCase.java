@@ -19,7 +19,6 @@
 package davmail;
 
 import davmail.exchange.ExchangeSession;
-import davmail.http.DavGatewaySSLSocketFactory;
 import junit.framework.TestCase;
 import org.apache.log4j.Level;
 
@@ -93,16 +92,15 @@ public abstract class AbstractDavMailTestCase extends TestCase {
     public void switchToExchangeEWS() {
         Settings.setProperty("davmail.mode", "ExchangeEWS");
 
-        String url = "https://"+Settings.getProperty("davmail.exchange2007.server")+"/EWS/Exchange.asmx";
         Settings.setProperty("davmail.server.certificate.hash", Settings.getProperty("davmail.exchange2007.server.certificate.hash"));
-        Settings.setProperty("davmail.url", url);
+        Settings.setProperty("davmail.url", "https://"+Settings.getProperty("davmail.exchange2007.server")+"/EWS/Exchange.asmx");
         Settings.setProperty("davmail.username", Settings.getProperty("davmail.exchange2007.username"));
         Settings.setProperty("davmail.password", Settings.getProperty("davmail.exchange2007.password"));
 
     }
 
     /**
-     * Create MIME message with default recipient
+     * Create a MIME message with a default recipient
      * @return mime message
      * @throws MessagingException on error
      */
@@ -111,7 +109,7 @@ public abstract class AbstractDavMailTestCase extends TestCase {
     }
 
     /**
-     * Create test MIME message
+     * Create a test MIME message
      * @param recipient to recipient
      * @return mime message
      * @throws MessagingException on error
@@ -125,7 +123,7 @@ public abstract class AbstractDavMailTestCase extends TestCase {
     }
 
     /**
-     * Convert MIME message to byte array.
+     * Convert a MIME message to a byte array.
      * @param mimeMessage mime message
      * @return content
      * @throws IOException on error
@@ -133,9 +131,9 @@ public abstract class AbstractDavMailTestCase extends TestCase {
      */
     @SuppressWarnings("unused")
     protected byte[] getMimeBody(MimeMessage mimeMessage) throws IOException, MessagingException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        mimeMessage.writeTo(baos);
-        return baos.toByteArray();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        mimeMessage.writeTo(byteArrayOutputStream);
+        return byteArrayOutputStream.toByteArray();
     }
 
     /**
