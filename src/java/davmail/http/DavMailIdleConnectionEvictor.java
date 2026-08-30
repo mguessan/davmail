@@ -22,84 +22,96 @@ package davmail.http;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.log4j.Logger;
 
-import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Single thread for all connection managers.
- * close idle connections
+ * Close idle connections
  */
 public class DavMailIdleConnectionEvictor {
-    static final Logger LOGGER = Logger.getLogger(DavMailIdleConnectionEvictor.class);
+    protected static final Logger LOGGER = Logger.getLogger(DavMailIdleConnectionEvictor.class);
 
-    // connection manager set
-    private static final HashSet<HttpClientConnectionManager> connectionManagers = new HashSet<>();
+    // Thread-safe set avoids needing coarse-grained synchronized blocks during socket cleanup
+    private static final Set<HttpClientConnectionManager> connectionManagers = ConcurrentHashMap.newKeySet();
 
     private static final long sleepTimeMs = 1000L * 60;
     private static final long maxIdleTimeMs = 1000L * 60 * 5;
 
     private static ScheduledExecutorService scheduler = null;
 
-    private static void initEvictorThread() {
-        synchronized (connectionManagers) {
-            if (scheduler == null) {
-                scheduler = Executors.newScheduledThreadPool(1, new ThreadFactory() {
-                    int count = 0;
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(r, "PoolEvictor-" + count++);
-                        thread.setDaemon(true);
-                        thread.setUncaughtExceptionHandler((t, e) -> LOGGER.error(e.getMessage(), e));
-                        return thread;
-                    }
-                });
-                scheduler.scheduleAtFixedRate(() -> {
-                    synchronized (connectionManagers) {
-                        // iterate over connection managers
-                        for (HttpClientConnectionManager connectionManager : connectionManagers) {
+    private static synchronized void initEvictorThread() {
+        if (scheduler == null) {
+            scheduler = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+                final AtomicInteger count = new AtomicInteger();
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread thread = new Thread(r, "PoolEvictor-" + count.getAndIncrement());
+                    thread.setDaemon(true);
+                    thread.setUncaughtExceptionHandler((t, e) -> LOGGER.error(e.getMessage(), e));
+                    return thread;
+                }
+            });
+
+            // use scheduleWithFixedDelay to avoid catchup wave on laptop wakeup from sleep
+            scheduler.scheduleWithFixedDelay(() -> {
+                // Make sure thread never exits on error
+                try {
+                    for (HttpClientConnectionManager connectionManager : connectionManagers) {
+                        try {
                             connectionManager.closeExpiredConnections();
                             if (maxIdleTimeMs > 0) {
                                 connectionManager.closeIdleConnections(maxIdleTimeMs, TimeUnit.MILLISECONDS);
                             }
+                        } catch (Exception e) {
+                            LOGGER.warn("Error closing idle connections on manager: " + e.getMessage(), e);
                         }
                     }
-                }, sleepTimeMs, sleepTimeMs, TimeUnit.MILLISECONDS);
-            }
+                } catch (Throwable t) {
+                    LOGGER.error("Unexpected error in connection pool evictor task", t);
+                }
+            }, sleepTimeMs, sleepTimeMs, TimeUnit.MILLISECONDS);
         }
     }
 
-    public static void shutdown() throws InterruptedException {
-        synchronized (connectionManagers) {
+    /**
+     * Shutdown the connection manager evictor thread.
+     * @throws InterruptedException on error
+     */
+    public static synchronized void shutdown() throws InterruptedException {
+        if (scheduler != null) {
             scheduler.shutdown();
             if (!scheduler.awaitTermination(sleepTimeMs, TimeUnit.MILLISECONDS)) {
                 LOGGER.warn("Timed out waiting for tasks to complete");
             }
+            // make sure we don't reuse old connection managers
+            connectionManagers.clear();
             scheduler = null;
         }
     }
 
     /**
-     * Add connection manager to evictor thread.
-     *
-     * @param connectionManager connection manager
+     * Add a connection manager to the eviction monitor set.
+     * @param connectionManager connection manager to monitor
      */
     public static void addConnectionManager(HttpClientConnectionManager connectionManager) {
-        synchronized (connectionManagers) {
+        if (connectionManager != null) {
             initEvictorThread();
             connectionManagers.add(connectionManager);
         }
     }
 
     /**
-     * Remove connection manager from evictor thread.
-     *
-     * @param connectionManager connection manager
+     * Remove the connection manager from the eviction monitor set.
+     * @param connectionManager connection manager to remove
      */
     public static void removeConnectionManager(HttpClientConnectionManager connectionManager) {
-        synchronized (connectionManagers) {
+        if (connectionManager != null) {
             connectionManagers.remove(connectionManager);
         }
     }
