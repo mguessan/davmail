@@ -37,6 +37,14 @@ import java.util.UUID;
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase {
 
+    @Override
+    public void setUp() throws IOException {
+        loadConfig();
+        //Settings.setProperty("davmail.mode", "O365EWS");
+        super.setUp();
+    }
+
+
     public void testGetVtimezone() {
         VObject timezone = session.getVTimezone();
         assertNotNull(timezone);
@@ -455,6 +463,20 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         List<ExchangeSession.Event> events;
         try {
             events = session.searchTasksOnly("/users/" + session.getEmail() + "/tasks");
+            for (ExchangeSession.Event event : events) {
+                System.out.println(event.getBody());
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            throw e;
+        }
+    }
+
+    public void testSearchTasksThroughCalendar() throws IOException {
+        List<ExchangeSession.Event> events;
+        try {
+            // vTodoOnly search on calendar path
+            events = session.searchTasksOnly("/users/" + session.getEmail() + "/calendar");
             for (ExchangeSession.Event event : events) {
                 System.out.println(event.getBody());
             }

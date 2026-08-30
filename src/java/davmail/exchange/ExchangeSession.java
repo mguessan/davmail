@@ -2553,7 +2553,12 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Event> searchTasksOnly(String folderPath) throws IOException {
-        return searchEvents(folderPath, and(isEqualTo("outlookmessageclass", "IPM.Task"),
+        // can be called with vTodoOnly condition on default calendar
+        String taskFolderPath = folderPath;
+        if (isMainCalendar(folderPath)) {
+            taskFolderPath = TASKS;
+        }
+        return searchEvents(taskFolderPath, and(isEqualTo("outlookmessageclass", "IPM.Task"),
                 or(isNull("datecompleted"), getPastDelayCondition("datecompleted"))));
     }
 
