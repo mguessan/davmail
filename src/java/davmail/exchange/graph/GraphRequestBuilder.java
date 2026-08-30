@@ -249,6 +249,11 @@ public class GraphRequestBuilder {
         return this;
     }
 
+    public GraphRequestBuilder setExpand(String expand) {
+        this.expand = expand;
+        return this;
+    }
+
     public GraphRequestBuilder setSizeLimit(int sizeLimit) {
         this.sizeLimit = sizeLimit;
         return this;

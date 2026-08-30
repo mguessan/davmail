@@ -1520,6 +1520,22 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                 }
             }
+
+            // distribution list members
+            JSONArray members = response.optJSONArray("members");
+            if (members != null) {
+                // this is a distribution list
+                itemName = "DistList."+itemName;
+                for (int i = 0; i < members.length(); i++) {
+                    JSONObject member = members.optJSONObject(i);
+                    if (member != null) {
+                        String email = member.optString("id");
+                        if (email != null && !email.isEmpty()) {
+                            addMember(email);
+                        }
+                    }
+                }
+            }
         }
 
         protected Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
@@ -3459,13 +3475,36 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     public List<ExchangeSession.Contact> getAllContacts(String folderPath, boolean includeDistList) throws IOException {
         List<ExchangeSession.Contact> contactList = new ArrayList<>();
-        if (includeDistList) {
-            // TODO: fetch distributionlist from beta endpoint, see https://learn.microsoft.com/en-us/graph/api/resources/distributionlist
+        if (includeDistList && isMainContactFolder(folderPath)) {
+            contactList.addAll(getAllDistributionLists(folderPath));
         }
         contactList.addAll(searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, null, 0));
         return contactList;
     }
 
+    public List<ExchangeSession.Contact> getAllDistributionLists(String folderPath) throws IOException {
+        ArrayList<ExchangeSession.Contact> contactList = new ArrayList<>();
+        FolderId folderId = getFolderId(folderPath);
+
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(folderId.mailbox)
+                .setObjectType("distributionlists")
+                .setExpand("members");
+
+        LOGGER.debug("getAllDistributionLists " + folderId.getMailboxName() + "/" + folderPath + " " + httpRequestBuilder.select);
+
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+
+        while (graphIterator.hasNext()) {
+            Contact contact = new Contact(new GraphObject(graphIterator.next()));
+            contact.folderPath = folderPath;
+            contact.folderId = folderId;
+            contactList.add(contact);
+        }
+
+        return contactList;
+    }
 
     @Override
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
@@ -3780,7 +3819,15 @@ public class GraphExchangeSession extends ExchangeSession {
 
     private JSONObject getContactIfExists(FolderId folderId, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
-        if (isItemId(urlcompname)) {
+        if (urlcompname.startsWith("DistList.")) {
+            return executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("distributionlists")
+                    .setChildId(convertItemNameToItemId(itemName.substring("DistList.".length())))
+                    .setExpand("members")
+            );
+        } else if (isItemId(urlcompname)) {
             // lookup item directly
             return executeJsonRequest(new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
@@ -3923,6 +3970,11 @@ public class GraphExchangeSession extends ExchangeSession {
     public boolean isMainCalendar(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
         return folderId.parentFolderId == null && WellKnownFolderName.calendar.name().equals(folderId.id);
+    }
+
+    public boolean isMainContactFolder(String folderPath) throws IOException {
+        FolderId folderId = getFolderIdIfExists(folderPath);
+        return folderId.parentFolderId == null && WellKnownFolderName.contacts.name().equals(folderId.id);
     }
 
     @Override
