@@ -3457,6 +3457,17 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public List<ExchangeSession.Contact> getAllContacts(String folderPath, boolean includeDistList) throws IOException {
+        List<ExchangeSession.Contact> contactList = new ArrayList<>();
+        if (includeDistList) {
+            // TODO: fetch distributionlist from beta endpoint, see https://learn.microsoft.com/en-us/graph/api/resources/distributionlist
+        }
+        contactList.addAll(searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, null, 0));
+        return contactList;
+    }
+
+
+    @Override
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
         ArrayList<ExchangeSession.Contact> contactList = new ArrayList<>();
         FolderId folderId = getFolderId(folderPath);
