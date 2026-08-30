@@ -36,4 +36,8 @@ public class GetItemMethod extends EWSMethod {
         this.includeMimeContent = includeMimeContent;
     }
 
+    public String getResponseItemFieldValue(String fieldName) throws EWSException {
+        return getResponseItem().get(Field.get(fieldName).getResponseName());
+    }
+
 }
