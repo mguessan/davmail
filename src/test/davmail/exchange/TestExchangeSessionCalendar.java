@@ -20,17 +20,19 @@ package davmail.exchange;
 
 import davmail.Settings;
 import davmail.exchange.ews.EwsExchangeSession;
-import davmail.exchange.ews.FolderQueryTraversal;
-import org.apache.log4j.Level;
+import davmail.exchange.graph.GraphExchangeSession;
 
-import javax.mail.MessagingException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.UUID;
 
 /**
- * Test Exchange session calendar features .
+ * Test Exchange session calendar features.
  */
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase {
@@ -41,75 +43,19 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         assertNotNull(timezone.getPropertyValue("TZID"));
     }
 
-    public void testDumpVtimezones() throws IOException {
-        Properties properties = new Properties() {
-            @Override
-            public synchronized Enumeration<Object> keys() {
-                Enumeration keysEnumeration = super.keys();
-                TreeSet<String> sortedKeySet = new TreeSet<String>();
-                while (keysEnumeration.hasMoreElements()) {
-                    sortedKeySet.add((String) keysEnumeration.nextElement());
-                }
-                final Iterator<String> sortedKeysIterator = sortedKeySet.iterator();
-                return new Enumeration<Object>() {
-
-                    public boolean hasMoreElements() {
-                        return sortedKeysIterator.hasNext();
-                    }
-
-                    public Object nextElement() {
-                        return sortedKeysIterator.next();
-                    }
-                };
-            }
-
-        };
-        @SuppressWarnings("Since15") Set<String> tzReference = ResourceBundle.getBundle("tzreference").keySet();
-        Set<String> timezoneids = ResourceBundle.getBundle("timezoneids").keySet();
-        Map<String,String> timezoneIndexToIdMap = new HashMap<String,String>();
-        for (String timezoneid:timezoneids) {
-            timezoneIndexToIdMap.put(ResourceBundle.getBundle("timezoneids").getString(timezoneid), timezoneid);
-        }
-        for (int i = 1; i < 120; i++) {
-            Settings.setProperty("davmail.timezoneId", String.valueOf(i));
-            VObject timezone = session.getVTimezone();
-            if (timezone != null && timezone.getProperty("TZID") != null) {
-                String value = timezone.getPropertyValue("TZID").replaceAll("\\\\", "");
-                properties.put(value, String.valueOf(i));
-                if (timezoneIndexToIdMap.get(String.valueOf(i)) != null) {
-                //properties.put(timezoneIndexToIdMap.get(String.valueOf(i)), ResourceBundle.getBundle("timezones").getString(value));
-                    System.out.println(timezoneIndexToIdMap.get(String.valueOf(i)).replaceAll(" ", "\\\\ ") + '=' + ResourceBundle.getBundle("timezones").getString(value));
-                } else {
-                    System.out.println("Missing timezone id: "+i+" "+value);
-                }
-                //noinspection Since15
-                if (!ResourceBundle.getBundle("timezones").keySet().contains(value)) {
-                    System.out.println("Missing timezone: "+value.replaceAll(" ", "\\\\ "));
-                }
-            }
-            session.vTimezone = null;
-        }
-        FileOutputStream fileOutputStream = null;
-        try {
-            fileOutputStream = new FileOutputStream("timezoneids.properties");
-            properties.store(fileOutputStream, "Timezone ids");
-        } finally {
-            if (fileOutputStream != null) {
-                try {
-                    fileOutputStream.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
-        }
-    }
 
     public void testSearchCalendar() throws IOException {
-        List<ExchangeSession.Event> events = null;
+        String folderPath = "/users/" + session.getEmail() + "/calendar";
+        Settings.setProperty("davmail.caldavPastDelay", "30");
+        List<ExchangeSession.Event> events;
         try {
-            events = session.getAllEvents("/users/" + session.getEmail() + "/calendar");
+            events = session.getAllEvents(folderPath);
+            assertNotNull(events);
             for (ExchangeSession.Event event : events) {
-                System.out.println(event.getBody());
+                // need per event request to retrieve full body
+                ExchangeSession.Item item = session.getItem(folderPath, event.getName());
+                System.out.println("retrieved "+event.getName());
+                System.out.println(item.getBody());
             }
         } catch (IOException e) {
             System.out.println(e.getMessage());
@@ -118,7 +64,7 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
     }
 
     public void testReportCalendar() throws IOException {
-        List<ExchangeSession.Event> events = null;
+        List<ExchangeSession.Event> events;
         try {
             events = session.getAllEvents("/users/" + session.getEmail() + "/calendar");
             for (ExchangeSession.Event event : events) {
@@ -132,7 +78,7 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         }
     }
 
-    public void testGetFreeBusyData() throws IOException, MessagingException {
+    public void testGetFreeBusyData() throws IOException {
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         cal.set(Calendar.MONTH, 7);
         cal.set(Calendar.DAY_OF_MONTH, 1);
@@ -160,6 +106,7 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
     }
 
     public void testCreateEvent() throws IOException {
+        String iCaluid = UUID.randomUUID().toString();
         String itemBody = "BEGIN:VCALENDAR\n" +
                 "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
                 "VERSION:2.0\n" +
@@ -183,19 +130,24 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "CREATED:20120611T113748Z\n" +
                 "LAST-MODIFIED:20120611T113823Z\n" +
                 "DTSTAMP:20120611T113823Z\n" +
-                "UID:040000008200E00074C5B7101A82E0080000000020EA852CF458CC0100000000000000001\n" +
-                " 000000011278A1693B8494C8592446E6E249BCF\n" +
+                "UID:"+iCaluid +"\n"+
                 "DTSTART;TZID=W. Europe Standard Time:20120926T100000\n" +
                 "DTEND;TZID=W. Europe Standard Time:20120926T120000\n" +
                 "END:VEVENT\n" +
                 "END:VCALENDAR\n";
-        String itemName = "test ok"/*UUID.randomUUID().toString()*/ + ".EML";
-        session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
-    }
+        String itemName = UUID.randomUUID() + ".EML";
+        ExchangeSession.ItemResult item = session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
+        assertNotNull(item);
+        assertNotNull(item.itemName);
 
-    public void testGetEvent() throws IOException {
-        ExchangeSession.Item item = session.getItem("calendar", "19083675-f8ce-4d81-8ac8-096fa0bd0e13.EML");
-        item.getBody();
+        ExchangeSession.Item createdItem = session.getItem("calendar", item.itemName);
+        assertNotNull(createdItem);
+
+        VCalendar vCalendar = new VCalendar(createdItem.getBody(), session.getEmail(), session.getVTimezone());
+
+        assertEquals(iCaluid, vCalendar.getFirstVeventPropertyValue("UID"));
+
+        session.deleteItem("calendar", itemName);
     }
 
     public void testGetInbox() throws IOException {
@@ -211,17 +163,23 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         properties.add("isrecurring");
         properties.add("recurrencestart");
         properties.add("recurrencetype");
-        Settings.setLoggingLevel("davmail", Level.WARN);
-        Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-        System.out.println("Item count: " + session.searchEvents("calendar", properties, null).size());
-        Settings.setLoggingLevel("httpclient.wire", Level.INFO);
+        //Settings.setLoggingLevel("davmail", Level.WARN);
+        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+        /*System.out.println("Item count: " + session.searchEvents("calendar", properties, null).size());
+        //Settings.setLoggingLevel("httpclient.wire", Level.INFO);
         System.out.println("InstanceType null: " + session.searchEvents("calendar", session.isNull("instancetype")).size());
-        System.out.println("InstanceType not null: " + session.searchEvents("calendar", session.not(session.isNull("instancetype"))).size());
+        //System.out.println("InstanceType not null: " + session.searchEvents("calendar", session.not(session.isNull("instancetype"))).size());
         System.out.println("InstanceType 0: " + session.searchEvents("calendar", session.isEqualTo("instancetype", 0)).size());
         System.out.println("InstanceType 1: " + session.searchEvents("calendar", session.isEqualTo("instancetype", 1)).size());
         System.out.println("InstanceType 2: " + session.searchEvents("calendar", session.isEqualTo("instancetype", 2)).size());
         System.out.println("InstanceType 3: " + session.searchEvents("calendar", session.isEqualTo("instancetype", 3)).size());
+*/
+        if (session instanceof GraphExchangeSession) {
+            System.out.println("Recurring: " + session.searchEvents("calendar", session.isTrue("isrecurring")).size());
+            System.out.println("Non recurring: " + session.searchEvents("calendar", session.isFalse("isrecurring")).size());
+            System.out.println("Null recurring: " + session.searchEvents("calendar", session.isNull("isrecurring")).size());
 
+        }
         if (session instanceof EwsExchangeSession) {
             System.out.println("Recurring: " + session.searchEvents("calendar", session.isTrue("isrecurring")).size());
             System.out.println("Non recurring: " + session.searchEvents("calendar", session.isFalse("isrecurring")).size());
@@ -233,10 +191,6 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
             //System.out.println("recurring master: " + session.searchEvents("calendar", session.isTrue("recurring")).size());
             System.out.println("recurrencetype 2: " + session.searchEvents("calendar", session.isEqualTo("recurrencetype", 2)).size());
             System.out.println("recurrencetype 0: " + session.searchEvents("calendar", session.isEqualTo("recurrencetype", 0)).size());
-
-
-
-
         }
 
     }
@@ -265,7 +219,6 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "END:STANDARD\n" +
                 "END:VTIMEZONE\n" +
                 "BEGIN:VEVENT\n" +
-                "UID:1BDEA2053DF34221AAD74B15755B6B89\n" +
                 "LAST-MODIFIED:20111205T102048Z\n" +
                 "SUMMARY:Roland Test\n" +
                 "DESCRIPTION:\n" +
@@ -278,8 +231,10 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
                 "END:VEVENT\n" +
                 "END:VCALENDAR";
-        String itemName = UUID.randomUUID().toString() + ".EML";
+        String itemName = UUID.randomUUID() + ".EML";
         session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
+
+        session.deleteItem("calendar", itemName);
     }
     
     public void testCreateEventBrokenTZ() throws IOException {
@@ -305,7 +260,6 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "END:DAYLIGHT\n" +
                 "END:VTIMEZONE\n" +
                 "BEGIN:VEVENT\n" +
-                "UID:20120920T061713Z-6599-1001-1-2\n" +
                 "DTSTAMP:20120920T061713Z\n" +
                 "DTSTART;TZID=\"Asia/Jerusalem\":2012092\n" +
                 " 0T093000\n" +
@@ -323,8 +277,10 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
                 "END:VEVENT\n" +
                 "END:VCALENDAR";
-        String itemName = UUID.randomUUID().toString() + ".EML";
+        String itemName = UUID.randomUUID() + ".EML";
         session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
+
+        session.deleteItem("calendar", itemName);
     }
 
     public void testCreateEventDuplicateTZ() throws IOException {
@@ -392,7 +348,6 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "BEGIN:VEVENT\n" +
                 "DTSTAMP:20180726T130457Z\n" +
                 "CREATED:20180726T130457Z\n" +
-                "UID:0b930f17-1d52-47ac-a9cd-d123dfb5cf0b\n" +
                 "LAST-MODIFIED:20180726T130457Z\n" +
                 "SUMMARY:tesssssss\n" +
                 "DTSTART;TZID=Central Europe Standard Time:20180726T161500\n" +
@@ -409,7 +364,7 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "END:VALARM\n" +
                 "END:VEVENT\n" +
                 "END:VCALENDAR\n";
-        String itemName = UUID.randomUUID().toString() + ".EML";
+        String itemName = UUID.randomUUID() + ".EML";
         session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
     }
 
@@ -439,7 +394,6 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "BEGIN:VEVENT\n" +
                 "DTSTAMP:20180726T130457Z\n" +
                 "CREATED:20180726T130457Z\n" +
-                "UID:0b930f17-1d52-47ac-a9cd-d123dfb5cf0b\n" +
                 "LAST-MODIFIED:20180726T130457Z\n" +
                 "SUMMARY:tesssssss\n" +
                 "DTSTART;TZID=Central Europe Standard Time:20180726T161500\n" +
@@ -456,8 +410,10 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "END:VALARM\n" +
                 "END:VEVENT\n" +
                 "END:VCALENDAR\n";
-        String itemName = UUID.randomUUID().toString() + ".EML";
+        String itemName = UUID.randomUUID() + ".EML";
         session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
+
+        session.deleteItem("calendar", itemName);
     }
 
     public void testMissingTimeZone() throws IOException {
@@ -496,7 +452,7 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
 
 
     public void testSearchTasks() throws IOException {
-        List<ExchangeSession.Event> events = null;
+        List<ExchangeSession.Event> events;
         try {
             events = session.searchTasksOnly("/users/" + session.getEmail() + "/tasks");
             for (ExchangeSession.Event event : events) {
@@ -506,12 +462,6 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
             System.out.println(e.getMessage());
             throw e;
         }
-    }
-
-    public void testGetVTimezone() throws IOException {
-        // first create an invalid temp folder
-        session.createMessageFolder("davmailtemp");
-        assertNotNull(session.getVTimezone());
     }
 
     public void testInvalidRrule() throws IOException {
@@ -539,7 +489,6 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "BEGIN:VEVENT\n" +
                 "LAST-MODIFIED:20190109T121039Z\n" +
                 "DTSTAMP:20190109T121039Z\n" +
-                "UID:ba509d7e-31d4-4a6e-a32f-bf9859e56710\n" +
                 "SUMMARY:test rrule\n" +
                 "PRIORITY:5\n" +
                 "STATUS:CONFIRMED\n" +
@@ -560,12 +509,49 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
                 "ORGANIZER:MAILTO:"+session.getEmail()+"\n" +
                 "END:VEVENT\n" +
                 "END:VCALENDAR";
-        String itemName = UUID.randomUUID().toString() + ".EML";
+        String itemName = UUID.randomUUID() + ".EML";
         session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
         VCalendar vCalendar = new VCalendar(itemBody, session.getEmail(), session.getVTimezone());
         vCalendar.getFirstVevent().setPropertyValue("RRULE","FREQ=MONTHLY");
         session.createOrUpdateItem("calendar", itemName, vCalendar.toString(), null, null);
+
+        session.deleteItem("calendar", itemName);
     }
+
+    public void testCreateZuluEvent() throws IOException {
+        String iCaluid = UUID.randomUUID().toString();
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
+                "VERSION:2.0\n" +
+                "METHOD:PUBLISH\n" +
+                "BEGIN:VEVENT\n" +
+                "CREATED:20260721T100000Z\n" +
+                "LAST-MODIFIED:20260721T100000Z\n" +
+                "DTSTAMP:20260721T100000Z\n" +
+                "UID:"+iCaluid +"\n"+
+                "DTSTART:20260721T100000Z\n" +
+                "DTEND:20260721T110000Z\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR\n";
+        String itemName = UUID.randomUUID() + ".EML";
+        ExchangeSession.ItemResult item = session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
+        assertNotNull(item);
+        assertNotNull(item.itemName);
+
+        ExchangeSession.Item createdItem = session.getItem("calendar", item.itemName);
+        assertNotNull(createdItem);
+
+        VCalendar vCalendar = new VCalendar(createdItem.getBody(), session.getEmail(), session.getVTimezone());
+
+        assertEquals(iCaluid, vCalendar.getFirstVeventPropertyValue("UID"));
+
+        // update with original content
+        item = session.createOrUpdateItem("calendar", item.itemName, itemBody, null, null);
+        System.out.println(item.status);
+
+        session.deleteItem("calendar", itemName);
+    }
+
 
 }
 
