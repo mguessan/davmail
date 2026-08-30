@@ -2370,8 +2370,16 @@ public class EwsExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("PERCENT-COMPLETE", getItemMethod.getResponseItem().get(Field.get("percentcomplete").getResponseName()));
                     vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getItemMethod.getResponseItem().get(Field.get("taskstatus").getResponseName())));
 
-                    vTodo.setPropertyValue("DUE;VALUE=DATE", convertDateFromExchangeToTaskDate(getItemMethod.getResponseItem().get(Field.get("duedate").getResponseName())));
-                    vTodo.setPropertyValue("DTSTART;VALUE=DATE", convertDateFromExchangeToTaskDate(getItemMethod.getResponseItem().get(Field.get("startdate").getResponseName())));
+                    String taskDueDate = convertDateFromExchangeToTaskDate(getItemMethod.getResponseItem().get(Field.get("duedate").getResponseName()));
+                    String taskStartDate = convertDateFromExchangeToTaskDate(getItemMethod.getResponseItem().get(Field.get("startdate").getResponseName()));
+
+                    vTodo.setPropertyValue("DUE;VALUE=DATE", taskDueDate);
+
+                    if (taskDueDate != null && taskStartDate != null && taskStartDate.compareTo(taskDueDate) > 0) {
+                        LOGGER.warn("Task start date " + taskStartDate + " is after due date " + taskDueDate);
+                    } else {
+                        vTodo.setPropertyValue("DTSTART;VALUE=DATE", taskStartDate);
+                    }
                     vTodo.setPropertyValue("COMPLETED;VALUE=DATE", convertDateFromExchangeToTaskDate(getItemMethod.getResponseItem().get(Field.get("datecompleted").getResponseName())));
 
                     vTodo.setPropertyValue("CATEGORIES", getItemMethod.getResponseItem().get(Field.get("keywords").getResponseName()));
@@ -2687,7 +2695,9 @@ public class EwsExchangeSession extends ExchangeSession {
             if (item == null) {
                 throw new HttpNotFoundException(itemName + " not found in " + folderPath);
             }
-            return new Contact(item);
+            Contact contact = new Contact(item);
+            contact.folderPath = folderPath;
+            return contact;
         } else if ("CalendarItem".equals(itemType)
                 || "MeetingMessage".equals(itemType)
                 || "MeetingRequest".equals(itemType)

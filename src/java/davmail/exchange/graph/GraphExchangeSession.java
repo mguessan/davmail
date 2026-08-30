@@ -263,7 +263,6 @@ public class GraphExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("CREATED", graphObject.optString("createdDateTime"));
                     // use item id as uid
                     vTodo.setPropertyValue("UID", graphObject.optString("id"));
-                    vTodo.setPropertyValue("TITLE", graphObject.optString("summary"));
                     vTodo.setPropertyValue("SUMMARY", graphObject.optString("summary"));
 
                     vTodo.addProperty(convertBodyToVproperty(graphObject));
@@ -273,8 +272,17 @@ public class GraphExchangeSession extends ExchangeSession {
                     //vTodo.setPropertyValue("PERCENT-COMPLETE", );
                     vTodo.setPropertyValue("STATUS", graphObject.getVTodoStatusFromTask());
 
-                    vTodo.setPropertyValue("DUE;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("dueDateTime")));
-                    vTodo.setPropertyValue("DTSTART;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("startDateTime")));
+                    String taskDueDate = convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("dueDateTime"));
+                    String taskStartDate = convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("startDateTime"));
+
+                    vTodo.setPropertyValue("DUE;VALUE=DATE", taskDueDate);
+
+                    if (taskDueDate != null && taskStartDate != null && taskStartDate.compareTo(taskDueDate) > 0) {
+                        LOGGER.warn("Task start date " + taskStartDate + " is after due date " + taskDueDate);
+                    } else {
+                        vTodo.setPropertyValue("DTSTART;VALUE=DATE", taskStartDate);
+                    }
+
                     vTodo.setPropertyValue("COMPLETED;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("completedDateTime")));
 
                     vTodo.setPropertyValue("CATEGORIES", graphObject.optString("categories"));
