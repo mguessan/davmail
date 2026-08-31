@@ -3191,7 +3191,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 String id = deltaMessage.getString("id");
                 if (deltaMessage.has("@removed")) {
                     // message deleted
-                    removeMessageFromList(messageList, id);
+                    Message deletedMessage = removeMessageFromList(messageList, id);
+                    if (deletedMessage == null) {
+                        LOGGER.warn("Message " + id + " not found in message list");
+                    } else {
+                        LOGGER.debug("Removed message UID " + deletedMessage.imapUid+" FLAGS("+deletedMessage.getImapFlags()+") "+deletedMessage.date);
+                    }
                 } else {
                     // insert or update, first remove from list
                     ExchangeSession.Message currentMessage = removeMessageFromList(messageList, id);
@@ -3204,13 +3209,17 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
                     newMessage.messageList = messageList;
                     newMessage.folderId = folderId;
-                    LOGGER.debug("Inserting message " + newMessage.imapUid+" "+newMessage.date);
                     messageList.add(newMessage);
+                    if (currentMessage == null) {
+                        LOGGER.debug("Inserted message UID " + newMessage.imapUid + " FLAGS (" + newMessage.getImapFlags()+") " + newMessage.date);
+                    } else {
+                        LOGGER.debug("Updated message UID " + newMessage.imapUid + " FLAGS (" + newMessage.getImapFlags()+") " + newMessage.date);
+                    }
                 }
             }
             Collections.sort(messageList);
             messageList.deltaLink = graphIterator.getDeltaLink();
-            LOGGER.debug("Delta sync complete");
+            LOGGER.debug("Delta sync complete "+messageList.size()+" messages in list");
         } catch (JSONException e) {
             throw new IOException(e);
         }
@@ -3221,13 +3230,9 @@ public class GraphExchangeSession extends ExchangeSession {
         for (ExchangeSession.Message message : messageList) {
             if (((GraphExchangeSession.Message) message).id.equals(id)) {
                 currentMessage = (Message) message;
-                LOGGER.debug("Removing message " + message.imapUid+" "+message.date);
                 messageList.remove(message);
                 break;
             }
-        }
-        if (currentMessage == null) {
-            LOGGER.warn("Message " + id + " not found in current message list");
         }
         return currentMessage;
     }
