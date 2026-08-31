@@ -704,7 +704,7 @@ public class CaldavConnection extends AbstractConnection {
         List<ExchangeSession.Folder> folderList = null;
         if (request.getDepth() == 1) {
             if (folder.isContact()) {
-                contacts = session.getAllContacts(folderPath, !isOldCardavClient(request));
+                contacts = session.getAllContacts(folderPath, !isOldCardavClient(request) && !request.isLightning());
             } else if (folder.isCalendar() || folder.isTask()) {
                 events = session.getAllEvents(folderPath);
                 if (!folderPath.startsWith("/public")) {
