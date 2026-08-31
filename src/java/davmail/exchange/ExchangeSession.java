@@ -1256,6 +1256,8 @@ public abstract class ExchangeSession {
             if (computedUidNext > uidNext) {
                 uidNext = computedUidNext;
             }
+            // make sure message count matches current list count
+            messageCount = messages.size();
         }
 
         public void refreshMessages() throws IOException {
