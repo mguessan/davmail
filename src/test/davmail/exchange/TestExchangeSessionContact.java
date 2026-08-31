@@ -18,6 +18,7 @@
  */
 package davmail.exchange;
 
+import davmail.Settings;
 import davmail.exception.HttpConflictException;
 import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
@@ -45,6 +46,9 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
     @Override
     public void setUp() throws IOException {
+        loadConfig();
+        //Settings.setProperty("davmail.mode", "O365Graph");
+        //Settings.setProperty("davmail.mode", "O365EWS");
         super.setUp();
         if (!isFolderCreated) {
             initFolder();
@@ -733,12 +737,12 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
     }
 
     public void testGetAllContacts() throws IOException {
-        // session.getAllContacts("contacts");
-        List<ExchangeSession.Contact> contacts = session.searchContacts("contacts", ExchangeSession.CONTACT_ATTRIBUTES, session.isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
-        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+        List<ExchangeSession.Contact> contacts = session.getAllContacts("contacts", true);
+
         for (ExchangeSession.Contact contact : contacts) {
-            //ExchangeSession.Item item = session.getItem("contacts", contact.getName());
-            //System.out.println(contact.getBody());
+            ExchangeSession.Item item = session.getItem("contacts", contact.getName());
+            System.out.println(item.getName());
+            System.out.println(item.getBody());
         }
     }
 
@@ -749,6 +753,45 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
             //System.out.println(contact.getBody());
         }
     }
+
+    public void testCreateDistList() throws IOException {
+        String itemName = UUID.randomUUID() + ".vcf";
+
+        String itemBody = "BEGIN:VCARD\n" +
+                "VERSION:3.0\n" +
+                "FN:Test Dist List\n" +
+                "NOTE:Test note\n" +
+                "KIND:group\n" +
+                "MEMBER:mailto:"+Settings.getProperty("davmail.to")+"\n" +
+                "END:VCARD";
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact(FOLDER_PATH, itemName, itemBody, null, null);
+        assertEquals(201, result.status);
+
+        // update item name from result, Graph only
+        if (result.itemName != null) {
+            itemName = result.itemName;
+        }
+
+        // try to retrieve item with new item name
+        ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("contacts", itemName);
+
+        itemBody = "BEGIN:VCARD\n" +
+                "VERSION:3.0\n" +
+                "FN:Test Dist List Updated\n" +
+                "NOTE:Updated test note\n" +
+                "KIND:group\n" +
+                "MEMBER:mailto:"+Settings.getProperty("davmail.to")+"\n" +
+                "MEMBER:mailto:"+Settings.getProperty("davmail.shared")+"\n" +
+                "END:VCARD";
+        session.createOrUpdateContact(FOLDER_PATH, itemName, itemBody, contact.etag, null);
+
+        System.out.println(contact.getBody());
+
+        session.deleteItem(FOLDER_PATH, itemName);
+    }
+
+
 
     public void testMultilineProperty() {
         VCardWriter vCardWriter = new VCardWriter();
