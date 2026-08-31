@@ -172,6 +172,10 @@ public class GraphField {
         addFieldMap("description", 0x1000, PropertyType.String);
         addFieldMap("personalNotes");
 
+        // for distribution lists
+        addFieldMap("notes");
+        addFieldMap("displayName");
+
         addFieldMap("namesuffix", "generation");
         addFieldMap("nickname", "nickName");
         addFieldMap("mobile", 0x3A1C, PropertyType.String);

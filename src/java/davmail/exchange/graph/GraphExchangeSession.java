@@ -1479,6 +1479,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 itemName = "DistList."+itemName;
 
                 put("cn", response.optString("displayName"));
+                // map distribution list notes to personalNotes
                 put("personalNotes", response.optString("notes"));
 
                 for (int i = 0; i < members.length(); i++) {
@@ -1743,7 +1744,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 displayName = get("displayname");
                 GraphObject graphObject = new GraphObject();
                 graphObject.put("displayname", displayName);
-                graphObject.put("personalNotes", get("personalNotes"));
+                graphObject.put("notes", get("personalNotes"));
 
                 if (distListId == null) {
                     // create distribution list
@@ -3654,6 +3655,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setMethod(HttpGet.METHOD_NAME)
                 .setMailbox(folderId.mailbox)
                 .setObjectType("distributionlists")
+                //.setSizeLimit(100) // override page size
+                .setSelect("id,displayName,notes")
                 .setExpand("members");
 
         LOGGER.debug("getAllDistributionLists " + folderId.getMailboxName() + "/" + folderPath + " " + httpRequestBuilder.select);
@@ -3989,6 +3992,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMailbox(folderId.mailbox)
                     .setObjectType("distributionlists")
                     .setChildId(convertItemNameToItemId(itemName.substring("DistList.".length())))
+                    .setSelect("displayName,notes") // notes not returned by default
                     .setExpand("members")
             );
         } else if (isItemId(urlcompname)) {
@@ -4419,7 +4423,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         public GraphIterator(JSONObject jsonObject) throws JSONException {
             this.jsonObject = jsonObject;
-            nextLink = jsonObject.optString("@odata.nextLink", null);
+            nextLink = fixNextLink(jsonObject.optString("@odata.nextLink", null));
             deltaLink = jsonObject.optString("@odata.deltaLink", null);
             values = jsonObject.optJSONArray("value");
         }
@@ -4464,7 +4468,7 @@ public class GraphExchangeSession extends ExchangeSession {
             graphRequestBuilder.setMaxPageSize(Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE));
 
             jsonObject = executeJsonRequest(graphRequestBuilder);
-            nextLink = jsonObject.optString("@odata.nextLink", null);
+            nextLink = fixNextLink(jsonObject.optString("@odata.nextLink", null));
             deltaLink = jsonObject.optString("@odata.deltaLink", null);
             // workaround for people search bug
             if (nextLink != null && nextLink.endsWith("skip=0")) {
@@ -4473,6 +4477,19 @@ public class GraphExchangeSession extends ExchangeSession {
             values = jsonObject.optJSONArray("value");
             index = 0;
         }
+
+        /**
+         * Workaround for bug on the distribution list beta endpoint
+         * @param nextLink paging next link
+         * @return fixed link
+         */
+        private String fixNextLink(String nextLink) {
+            if (nextLink != null && nextLink.contains("/PersonalDistributionLists?")) {
+                nextLink = nextLink.replace("/PersonalDistributionLists?", "/distributionLists?");
+            }
+            return nextLink;
+        }
+
     }
 
     protected GraphIterator executeSearchRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
