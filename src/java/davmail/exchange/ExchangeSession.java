@@ -2744,6 +2744,7 @@ public abstract class ExchangeSession {
         if ("group".equalsIgnoreCase(vcard.getPropertyValue("KIND"))) {
             properties.put("outlookmessageclass", "IPM.DistList");
             properties.put("displayname", vcard.getPropertyValue("FN"));
+            properties.put("personalNotes", vcard.getPropertyValue("NOTE"));
         } else {
             properties.put("outlookmessageclass", "IPM.Contact");
 

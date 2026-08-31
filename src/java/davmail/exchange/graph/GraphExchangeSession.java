@@ -77,6 +77,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1470,6 +1471,28 @@ public class GraphExchangeSession extends ExchangeSession {
             // drop urlcompname (client provided item name) for contacts, prefer more reliable id
             // we already have the id map as a workaround when client immediately requests with urlcompname
             itemName = StringUtil.base64ToUrl(id) + ".EML";
+
+            // distribution list members
+            JSONArray members = response.optJSONArray("members");
+            if (members != null) {
+                // this is a distribution list
+                itemName = "DistList."+itemName;
+
+                put("cn", response.optString("displayName"));
+                put("personalNotes", response.optString("notes"));
+
+                for (int i = 0; i < members.length(); i++) {
+                    JSONObject member = members.optJSONObject(i);
+                    if (member != null) {
+                        String email = member.optString("id");
+                        if (email != null && !email.isEmpty()) {
+                            addMember("mailto:"+email);
+                        }
+                    }
+                }
+                return;
+            }
+
             put("uid", response.optString("uid"));
 
             for (GraphField attribute : CONTACT_ATTRIBUTES) {
@@ -1521,21 +1544,6 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
             }
 
-            // distribution list members
-            JSONArray members = response.optJSONArray("members");
-            if (members != null) {
-                // this is a distribution list
-                itemName = "DistList."+itemName;
-                for (int i = 0; i < members.length(); i++) {
-                    JSONObject member = members.optJSONObject(i);
-                    if (member != null) {
-                        String email = member.optString("id");
-                        if (email != null && !email.isEmpty()) {
-                            addMember(email);
-                        }
-                    }
-                }
-            }
         }
 
         protected Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
@@ -1558,6 +1566,9 @@ public class GraphExchangeSession extends ExchangeSession {
         @Override
         public ItemResult createOrUpdate() throws IOException {
 
+            if ("IPM.DistList".equals(get("outlookmessageclass"))) {
+                return createOrUpdateDistList();
+            }
             FolderId folderId = getFolderId(folderPath);
             String id = null;
             String currentEtag = null;
@@ -1677,6 +1688,159 @@ public class GraphExchangeSession extends ExchangeSession {
                 LOGGER.debug("Updated contact " + getHref());
             }
 
+            return itemResult;
+        }
+
+        /**
+         * Create or update a distribution list over Graph API.
+         * <a href="https://learn.microsoft.com/en-us/graph/api/resources/distributionlist">distributionList</a>
+         *
+         * @return action result
+         * @throws IOException on error
+         */
+        private ItemResult createOrUpdateDistList() throws IOException {
+            FolderId folderId = getFolderId(folderPath);
+            String distListId = null;
+            String currentEtag = null;
+            Set<String> existingMembers = new HashSet<>();
+
+            // strip DistList. prefix for the lookup
+            JSONObject jsonDistList = getDistListIfExists(folderId, itemName);
+            if (jsonDistList != null) {
+                distListId = jsonDistList.optString("id", null);
+                currentEtag = jsonDistList.optString("changeKey", null);
+                // collect existing member emails (id field = key used in addMembers)
+                JSONArray existingMembersArray = jsonDistList.optJSONArray("members");
+                if (existingMembersArray != null) {
+                    for (int i = 0; i < existingMembersArray.length(); i++) {
+                        JSONObject member = existingMembersArray.optJSONObject(i);
+                        if (member != null) {
+                            String memberKey = member.optString("id");
+                            if (memberKey != null && !memberKey.isEmpty()) {
+                                existingMembers.add(memberKey);
+                            }
+                        }
+                    }
+                }
+            }
+
+            ItemResult itemResult = new ItemResult();
+            if ("*".equals(noneMatch)) {
+                // create requested but already exists
+                if (distListId != null) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            } else if (etag != null) {
+                // update requested
+                if (distListId == null || !etag.equals(currentEtag)) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            }
+
+            try {
+                displayName = get("displayname");
+                GraphObject graphObject = new GraphObject();
+                graphObject.put("displayname", displayName);
+                graphObject.put("personalNotes", get("personalNotes"));
+
+                if (distListId == null) {
+                    // create distribution list
+                    GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder()
+                            .setMethod(HttpPost.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("distributionlists")
+                            .setJsonBody(graphObject));
+                    itemResult.status = graphResponse.statusCode;
+                    if (itemResult.status != HttpStatus.SC_CREATED) {
+                        return itemResult;
+                    }
+                    distListId = graphResponse.optString("id");
+                    LOGGER.debug("Created distribution list " + getHref());
+                } else {
+                    // update displayName and notes
+                    GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder()
+                            .setMethod(HttpPatch.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("distributionlists")
+                            .setObjectId(distListId)
+                            .setJsonBody(graphObject));
+                    itemResult.status = graphResponse.statusCode;
+                    if (itemResult.status != HttpStatus.SC_OK) {
+                        return itemResult;
+                    }
+                    LOGGER.debug("Updated distribution list " + getHref());
+                }
+
+                // compute desired members from mailto: URIs
+                Set<String> desiredMembers = new LinkedHashSet<>();
+                if (distributionListMembers != null) {
+                    for (String member : distributionListMembers) {
+                        String email = member;
+                        if (email.startsWith("mailto:")) {
+                            email = email.substring(7);
+                        }
+                        if (!email.isEmpty()) {
+                            desiredMembers.add(email);
+                        }
+                    }
+                }
+
+                // remove members no longer in the list
+                Set<String> membersToRemove = new HashSet<>(existingMembers);
+                membersToRemove.removeAll(desiredMembers);
+                if (!membersToRemove.isEmpty()) {
+                    JSONArray removeMembersArray = new JSONArray();
+                    for (String email : membersToRemove) {
+                        JSONObject memberObj = new JSONObject();
+                        memberObj.put("key", email);
+                        memberObj.put("type", "mailbox");
+                        removeMembersArray.put(memberObj);
+                    }
+                    JSONObject removeBody = new JSONObject();
+                    removeBody.put("members", removeMembersArray);
+                    executeJsonRequest(new GraphRequestBuilder()
+                            .setMethod(HttpPost.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("distributionlists")
+                            .setObjectId(distListId)
+                            .setAction("deleteMembers")
+                            .setJsonBody(removeBody));
+                }
+
+                // add new members
+                Set<String> membersToAdd = new LinkedHashSet<>(desiredMembers);
+                membersToAdd.removeAll(existingMembers);
+                if (!membersToAdd.isEmpty()) {
+                    JSONArray addMembersArray = new JSONArray();
+                    for (String email : membersToAdd) {
+                        JSONObject memberObj = new JSONObject();
+                        memberObj.put("key", email);
+                        memberObj.put("type", "mailbox");
+                        addMembersArray.put(memberObj);
+                    }
+                    JSONObject addBody = new JSONObject();
+                    addBody.put("members", addMembersArray);
+                    executeJsonRequest(new GraphRequestBuilder()
+                            .setMethod(HttpPost.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("distributionlists")
+                            .setObjectId(distListId)
+                            .setAction("addMembers")
+                            .setJsonBody(addBody));
+                }
+
+                itemResult.itemName = "DistList."+ StringUtil.base64ToUrl(distListId)+".EML";
+                // reload to get latest etag
+                JSONObject reloaded = getDistListIfExists(folderId, itemResult.itemName);
+                if (reloaded != null) {
+                    itemResult.etag = reloaded.optString("changeKey", null);
+                }
+
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
             return itemResult;
         }
 
@@ -3861,6 +4025,30 @@ public class GraphExchangeSession extends ExchangeSession {
         return null;
     }
 
+    protected JSONObject getDistListIfExists(FolderId folderId, String itemName) throws IOException {
+        String urlcompname = convertItemNameToEML(itemName);
+        if (urlcompname.startsWith("DistList.")) {
+            return executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("distributionlists")
+                    .setChildId(convertItemNameToItemId(urlcompname.substring("DistList.".length())))
+                    .setExpand("members")
+            );
+        } else if (isItemId(urlcompname)) {
+            // lookup item directly
+            return executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("distributionlists")
+                    .setChildId(convertItemNameToItemId(itemName))
+                    .setExpand("members")
+            );
+
+        }
+        return null;
+    }
+
     @Override
     public ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         // don't fetch if haspicture flag is false
@@ -3902,15 +4090,26 @@ public class GraphExchangeSession extends ExchangeSession {
     public void deleteItem(String folderPath, String itemName) throws IOException {
         Item item = getItem(folderPath, itemName);
         if (item instanceof GraphExchangeSession.Contact) {
-            FolderId folderId = ((Contact) item).folderId;
-            executeJsonRequest(new GraphRequestBuilder()
-                    .setMethod(HttpDelete.METHOD_NAME)
-                    .setMailbox(folderId.mailbox)
-                    .setObjectType("contactFolders")
-                    .setObjectId(folderId.id)
-                    .setChildType("contacts")
-                    .setChildId(((Contact) item).id)
-            );
+            Contact contact = (Contact) item;
+            FolderId folderId = contact.folderId;
+            if (contact.getName() != null && contact.getName().startsWith("DistList.")) {
+                // delete distribution list
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpDelete.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("distributionlists")
+                        .setObjectId(contact.id)
+                );
+            } else {
+                executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpDelete.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("contactFolders")
+                        .setObjectId(folderId.id)
+                        .setChildType("contacts")
+                        .setChildId(contact.id)
+                );
+            }
         } else if (item instanceof GraphExchangeSession.Event) {
             FolderId folderId = ((Event) item).folderId;
 
