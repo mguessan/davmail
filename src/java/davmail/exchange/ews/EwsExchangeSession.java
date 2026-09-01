@@ -2050,6 +2050,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 // update existing item
                 if (currentItemId != null) {
+                    boolean isShared = !email.equalsIgnoreCase(vCalendar.getCalendarEmail());
                     if (isMeetingResponse && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                         // meeting response with server managed notifications
                         SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
@@ -2094,6 +2095,12 @@ public class EwsExchangeSession extends ExchangeSession {
                                 getFolderId(SENT),
                                 item
                         );
+
+                        // Send a meeting response on a shared calendar, ensure we impersonate shared mailbox
+                        if (isShared) {
+                            createOrUpdateItemMethod.mailbox = vCalendar.getCalendarEmail();
+                        }
+
                     } else if (Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                         // other changes with server side managed notifications
                         MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
@@ -2107,7 +2114,6 @@ public class EwsExchangeSession extends ExchangeSession {
                                 sendMeetingInvitationsOrCancellations,
                                 currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent(), isMozDismiss));
 
-                        boolean isShared = !email.equalsIgnoreCase(vCalendar.getCalendarEmail());
                         // set mailbox on request when impersonate is enabled
                         if (isShared && Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
                             createOrUpdateItemMethod.mailbox = vCalendar.getCalendarEmail();
