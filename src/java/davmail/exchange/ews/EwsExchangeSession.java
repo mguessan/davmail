@@ -2097,7 +2097,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         );
 
                         // Send a meeting response on a shared calendar, ensure we impersonate shared mailbox
-                        if (isShared) {
+                        if (isShared && Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
                             createOrUpdateItemMethod.mailbox = vCalendar.getCalendarEmail();
                         }
 
