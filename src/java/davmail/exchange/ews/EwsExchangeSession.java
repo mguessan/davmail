@@ -2354,6 +2354,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 executeMethod(getItemMethod);
                 if ("Task".equals(type)) {
                     VCalendar localVCalendar = new VCalendar();
+                    localVCalendar.setPropertyValue("VERSION", "2.0");
                     VObject vTodo = new VObject();
                     vTodo.type = "VTODO";
                     localVCalendar.setTimezone(getVTimezone());

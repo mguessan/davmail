@@ -257,6 +257,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     return vCalendar.toString().getBytes(StandardCharsets.UTF_8);
                 } else if (folderId.isTask()) {
                     VCalendar localVCalendar = new VCalendar();
+                    localVCalendar.setPropertyValue("VERSION", "2.0");
                     VObject vTodo = new VObject();
                     vTodo.type = "VTODO";
                     localVCalendar.setTimezone(getVTimezone());
@@ -297,6 +298,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     // so implementation is based on graph and mapi (extended) properties
 
                     VCalendar localVCalendar = new VCalendar();
+                    localVCalendar.setPropertyValue("VERSION", "2.0");
                     // set email on vcalendar object for shared calendars
                     localVCalendar.setEmail(getCalendarEmail(folderPath));
                     // set timezone based on start date timezone
