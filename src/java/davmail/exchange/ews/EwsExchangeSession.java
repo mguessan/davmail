@@ -1940,6 +1940,9 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
             boolean isOrganizer = vCalendar.isOrganizer();
+            if (isOrganizer) {
+                LOGGER.debug(email +" is meeting organizer");
+            }
 
             EWSMethod.Item currentItem = getEwsItem(folderPath, itemName, itemRequestProperties);
             if (currentItem == null) {
@@ -2401,7 +2404,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     if (!"CalendarItem".equals(type)) {
                         content = getICS(new SharedByteArrayInputStream(content));
                     }
-                    VCalendar localVCalendar = new VCalendar(content, email, getVTimezone());
+                    VCalendar localVCalendar = new VCalendar(content, getCalendarEmail(folderPath), getVTimezone());
 
                     String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
 
@@ -2414,6 +2417,9 @@ public class EwsExchangeSession extends ExchangeSession {
                             localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
                         }
                     }
+                    // Exchange does not always set organizer property properly
+                    VProperty organizerProperty = fixOrganizer(getItemMethod, localVCalendar.getFirstVevent());
+
                     fixAttendees(getItemMethod, localVCalendar.getFirstVevent());
                     // fix UID and RECURRENCE-ID, broken at least on Exchange 2007
                     List<EWSMethod.Occurrence> occurrences = getItemMethod.getResponseItem().getOccurrences();
@@ -2430,6 +2436,10 @@ public class EwsExchangeSession extends ExchangeSession {
                                 getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
                                 getOccurrenceMethod.addAdditionalProperty(Field.get("organizer"));
                                 executeMethod(getOccurrenceMethod);
+                                if (organizerProperty != null && modifiedOccurrence.getProperties("ORGANIZER") == null) {
+                                    // ensure organizer is set on all occurrences
+                                    modifiedOccurrence.addProperty(organizerProperty);
+                                }
                                 fixAttendees(getOccurrenceMethod, modifiedOccurrence);
                                 // LAST-MODIFIED is missing in event content
                                 modifiedOccurrence.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getOccurrenceMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
@@ -2468,7 +2478,23 @@ public class EwsExchangeSession extends ExchangeSession {
             return content;
         }
 
-        protected void fixAttendees(GetItemMethod getItemMethod, VObject vEvent) throws EWSException {
+        protected VProperty fixOrganizer(GetItemMethod getItemMethod, VObject vEvent) throws IOException {
+            VProperty organizerProperty = null;
+            if (getItemMethod.getResponseItem() != null) {
+                String myResponseType = getItemMethod.getResponseItem().get("MyResponseType");
+                if ("Organizer".equals(myResponseType) && vEvent.getProperties("ORGANIZER") == null) {
+                    // user is organizer on event, but Organizer property is missing from event
+                    String calendarEmail = getCalendarEmail(folderPath);
+                    String organizerName = getItemMethod.getResponseItem().get("Organizer");
+                    organizerProperty = new VProperty("ORGANIZER", "mailto:" + calendarEmail);
+                    organizerProperty.addParam("CN", organizerName);
+                    vEvent.addProperty(organizerProperty);
+                }
+            }
+            return organizerProperty;
+        }
+
+        protected void fixAttendees(GetItemMethod getItemMethod, VObject vEvent) throws IOException {
             if (getItemMethod.getResponseItem() != null) {
                 List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
                 if (attendees != null && vEvent.getProperties("ATTENDEE") == null) {
