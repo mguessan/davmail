@@ -896,7 +896,7 @@ public final class Settings {
     }
 
     public static String getOauthScope() {
-        String defaultOauthScope = "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Tasks.ReadWrite Mail.Send People.Read";
+        String defaultOauthScope = "openid profile offline_access Mail.ReadWrite Calendars.ReadWrite Calendars.ReadWrite.Shared MailboxSettings.Read Mail.ReadWrite.Shared Contacts.ReadWrite Tasks.ReadWrite Mail.Send People.Read";
         if (Settings.getProperty("davmail.oauth.redirectUri","").startsWith("urn:")) {
             defaultOauthScope = "openid profile offline_access";
         }
