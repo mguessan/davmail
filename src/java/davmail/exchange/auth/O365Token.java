@@ -252,7 +252,7 @@ public class O365Token {
         parameters.add(new BasicNameValuePair("client_id", clientId));
 
         // resource is not relevant over OIDC
-        if (!Settings.getBooleanProperty("davmail.enableOidc", true)) {
+        if (!Settings.getBooleanProperty("davmail.enableOidc", Settings.isGraphEnabled())) {
             parameters.add(new BasicNameValuePair("resource", Settings.getOutlookUrl()));
         }
 

@@ -97,7 +97,7 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
         DeviceCode deviceCode;
         ArrayList<NameValuePair> parameters = new ArrayList<>();
         parameters.add(new BasicNameValuePair("client_id", clientId));
-        if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
+        if (Settings.getBooleanProperty("davmail.enableOidc", Settings.isGraphEnabled())) {
             url = Settings.getO365LoginUrl() + "/" + tenantId + "/oauth2/v2.0/devicecode";
             parameters.add(new BasicNameValuePair("scope", Settings.getOauthScope()));
         } else {
