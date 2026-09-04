@@ -21,6 +21,7 @@ package davmail.exchange.auth;
 
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
+import davmail.exception.DavMailException;
 import davmail.exchange.NetworkDownException;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.RestRequest;
@@ -204,7 +205,7 @@ public class O365Token {
 
 
         } catch (JSONException e) {
-            throw new IOException("Exception parsing token", e);
+            throw new DavMailException("LOG_MESSAGE", "Exception parsing token "+e.getMessage(), e);
         }
     }
 
