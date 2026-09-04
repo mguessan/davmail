@@ -213,6 +213,9 @@ public class GraphExchangeSession extends ExchangeSession {
             this.folderPath = folderPath;
             this.folderId = folderId;
 
+            id = graphObject.optString("id");
+            etag = graphObject.optString("changeKey");
+
             if (FolderId.IPF_TASK.equals(graphObject.optString("objecttype"))) {
                 // replace folder on task items requested as part of the default calendar
                 try {
@@ -222,18 +225,19 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
                 displayName = graphObject.optString("summary");
                 subject = graphObject.optString("summary");
+
+                // prefer id as itemName, insert prefix
+                itemName = "TODO."+StringUtil.base64ToUrl(id) + ".EML";
             } else {
                 displayName = graphObject.optString("subject");
                 subject = graphObject.optString("subject");
+                // prefer id as itemName
+                itemName = StringUtil.base64ToUrl(id) + ".EML";
             }
 
             this.graphObject = graphObject;
 
-            id = graphObject.optString("id");
-            etag = graphObject.optString("changeKey");
 
-            // prefer id as itemName
-            itemName = StringUtil.base64ToUrl(id) + ".EML";
         }
 
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
@@ -3745,9 +3749,17 @@ public class GraphExchangeSession extends ExchangeSession {
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
-        while (graphIterator.hasNext()) {
-            Event event = new Event(folderPath, folderId, new GraphObject(graphIterator.next()));
-            eventList.add(event);
+        try {
+
+            while (graphIterator.hasNext()) {
+                GraphObject graphEvent = new GraphObject(graphIterator.next());
+                graphEvent.put("objecttype", FolderId.IPF_TASK);
+                Event event = new Event(folderPath, folderId, graphEvent);
+                eventList.add(event);
+            }
+
+        } catch (JSONException e) {
+            throw new IOException(e.getMessage(), e);
         }
 
         return eventList;
@@ -3898,7 +3910,7 @@ public class GraphExchangeSession extends ExchangeSession {
             } else {
                 throw new IOException("Item " + folderPath + " " + itemName + " not found");
             }
-        } else if (folderId.isCalendar()) {
+        } else if (folderId.isCalendar() || folderId.isTask()) {
             JSONObject jsonResponse = getEventIfExists(folderId, itemName);
             if (jsonResponse != null) {
                 return new Event(folderPath, folderId, new GraphObject(jsonResponse));
@@ -3927,6 +3939,10 @@ public class GraphExchangeSession extends ExchangeSession {
     private JSONObject getEventIfExists(FolderId folderId, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
         String itemId = null;
+        if (urlcompname.startsWith("TODO.")) {
+            itemId = convertItemNameToItemId(urlcompname.substring(5));
+            return getTaskIfExists(folderId, itemId);
+        }
         if (isItemId(urlcompname)) {
             itemId = convertItemNameToItemId(urlcompname);
         } else {
@@ -3971,21 +3987,47 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setTimezone(getTimezoneId())
                 );
             } catch (HttpNotFoundException e) {
-                // this may be a task item
-                FolderId taskFolderId = getFolderId(TASKS);
-                try {
-                    return executeJsonRequest(new GraphRequestBuilder()
-                                    .setMethod(HttpGet.METHOD_NAME)
-                                    .setMailbox(folderId.mailbox)
-                                    .setObjectType("todo/lists")
-                                    .setObjectId(taskFolderId.id)
-                                    .setChildType("tasks")
-                                    .setChildId(itemId)
-                            //.setSelectFields(TODO_PROPERTIES) // bug on title breaks request
-                    ).put("objecttype", FolderId.IPF_TASK); // mark object as task item
-                } catch (JSONException jsonException) {
-                    throw new IOException(jsonException.getMessage(), jsonException);
+
+                // tasks not supported on shared folders, ignore
+                if (folderId.mailbox == null) {
+                    // this may be a task item
+                    FolderId taskFolderId = getFolderId(TASKS);
+                    try {
+                        return executeJsonRequest(new GraphRequestBuilder()
+                                        .setMethod(HttpGet.METHOD_NAME)
+                                        .setMailbox(folderId.mailbox)
+                                        .setObjectType("todo/lists")
+                                        .setObjectId(taskFolderId.id)
+                                        .setChildType("tasks")
+                                        .setChildId(itemId)
+                                //.setSelectFields(TODO_PROPERTIES) // bug on title breaks request
+                        ).put("objecttype", FolderId.IPF_TASK); // mark object as task item
+                    } catch (JSONException jsonException) {
+                        throw new IOException(jsonException.getMessage(), jsonException);
+                    }
                 }
+            }
+        }
+        return null;
+    }
+
+    private JSONObject getTaskIfExists(FolderId folderId, String itemId) throws IOException {
+        // tasks not supported on shared folders, ignore
+        if (folderId.mailbox == null) {
+            // this may be a task item
+            FolderId taskFolderId = getFolderId(TASKS);
+            try {
+                return executeJsonRequest(new GraphRequestBuilder()
+                                .setMethod(HttpGet.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("todo/lists")
+                                .setObjectId(taskFolderId.id)
+                                .setChildType("tasks")
+                                .setChildId(itemId)
+                        //.setSelectFields(TODO_PROPERTIES) // bug on title breaks request
+                ).put("objecttype", FolderId.IPF_TASK); // mark object as task item
+            } catch (JSONException jsonException) {
+                throw new IOException(jsonException.getMessage(), jsonException);
             }
         }
         return null;
