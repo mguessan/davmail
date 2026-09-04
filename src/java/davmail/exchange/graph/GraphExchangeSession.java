@@ -3736,6 +3736,11 @@ public class GraphExchangeSession extends ExchangeSession {
         ArrayList<ExchangeSession.Event> eventList = new ArrayList<>();
         FolderId folderId = getFolderId(folderPath);
 
+        // tasks not yet supported on shared folders
+        if (folderId.mailbox == null) {
+            return eventList;
+        }
+
         // GET /me/todo/lists/{todoTaskListId}/tasks
         GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
