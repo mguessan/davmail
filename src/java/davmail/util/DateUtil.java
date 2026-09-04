@@ -24,11 +24,13 @@ import org.apache.log4j.Logger;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.TextStyle;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
@@ -160,15 +162,12 @@ public class DateUtil {
         return targetDate;
     }
 
-    public static  String getDayOfWeek(String date) throws DavMailException {
+    public static String getDayOfWeek(String date) throws DavMailException {
         if (date != null) {
             try {
-                SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd");
-                parser.setTimeZone(TimeZone.getTimeZone("UTC"));
-                SimpleDateFormat formatter = new SimpleDateFormat("EEEE", Locale.ENGLISH);
-                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                return formatter.format(parser.parse(date));
-            } catch (ParseException e) {
+                LocalDate localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE);
+                return localDate.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toLowerCase();
+            } catch (DateTimeParseException e) {
                 throw new DavMailException("EXCEPTION_INVALID_DATE", date);
             }
         }
