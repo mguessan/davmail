@@ -293,7 +293,11 @@ public class GraphExchangeSession extends ExchangeSession {
 
                     vTodo.setPropertyValue("CATEGORIES", graphObject.optString("categories"));
 
-                    // handleRecurrence(localVCalendar, graphObject); does not yet work on microsoft side
+                    // experimental recurrence support
+                    JSONObject recurrence = graphObject.optJSONObject("recurrence");
+                    if (recurrence != null) {
+                        vTodo.setPropertyValue("RRULE", convertRecurrenceToRrule(recurrence));
+                    }
 
                     localVCalendar.addVObject(vTodo);
                     content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
@@ -427,86 +431,88 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         private void handleRecurrence(VCalendar localVCalendar, GraphObject graphObject) throws JSONException, DavMailException {
-
             JSONObject recurrence = graphObject.optJSONObject("recurrence");
             if (recurrence != null) {
-                StringBuilder rruleValue = new StringBuilder();
-                JSONObject pattern = recurrence.getJSONObject("pattern");
-                JSONObject range = recurrence.getJSONObject("range");
-                // daily, weekly, absoluteMonthly, relativeMonthly, absoluteYearly, relativeYearly
-                String patternType = pattern.getString("type");
-                int interval = pattern.getInt("interval");
-                //  first, second, third, fourth, last
-                String index = pattern.optString("index", null);
-                // convert index
-                if ("first".equals(index)) {
-                    index = "1";
-                } else if ("second".equals(index)) {
-                    index = "2";
-                } else if ("third".equals(index)) {
-                    index = "3";
-                } else if ("fourth".equals(index)) {
-                    index = "4";
-                } else if ("last".equals(index)) {
-                    index = "-1";
-                }
-                // The month in which the event occurs
-                String month = pattern.getString("month");
-                if ("0".equals(month)) {
-                    month = null;
-                }
-                // The first day of the week
-                String firstDayOfWeek = pattern.getString("firstDayOfWeek");
-                // The day of the month on which the event occurs
-                String dayOfMonth = pattern.getString("dayOfMonth");
-                if ("0".equals(dayOfMonth)) {
-                    dayOfMonth = null;
-                }
-                // A collection of the days of the week on which the event occurs
-                JSONArray daysOfWeek = pattern.optJSONArray("daysOfWeek");
-                String rangeType = range.getString("type");
-
-                rruleValue.append("FREQ=");
-                if (patternType.startsWith("absolute") || patternType.startsWith("relative")) {
-                    rruleValue.append(patternType.substring(8).toUpperCase());
-                } else {
-                    rruleValue.append(patternType.toUpperCase());
-                }
-                if (rangeType.equals("endDate")) {
-                    String endDate = buildUntilDate(range.getString("endDate"), graphObject.optJSONObject("start"));
-                    rruleValue.append(";UNTIL=").append(endDate);
-                } else if (rangeType.equals("numbered")) {
-                    int numberOfOccurrences = range.getInt("numberOfOccurrences");
-                    rruleValue.append(";COUNT=").append(numberOfOccurrences);
-                } // noEnd is third option
-                if (interval > 0) {
-                    rruleValue.append(";INTERVAL=").append(interval);
-                }
-                if (dayOfMonth != null && !dayOfMonth.isEmpty()) {
-                    rruleValue.append(";BYMONTHDAY=").append(dayOfMonth);
-                }
-                if (month != null && !month.isEmpty()) {
-                    rruleValue.append(";BYMONTH=").append(month);
-                }
-                if (daysOfWeek != null && daysOfWeek.length() > 0) {
-                    ArrayList<String> days = new ArrayList<>();
-                    for (int i = 0; i < daysOfWeek.length(); i++) {
-                        StringBuilder byDay = new StringBuilder();
-                        if (index != null && !"weekly".equals(patternType)) {
-                            byDay.append(index);
-                        }
-                        byDay.append(daysOfWeek.getString(i).substring(0, 2).toUpperCase());
-                        days.add(byDay.toString());
-                    }
-                    rruleValue.append(";BYDAY=").append(String.join(",", days));
-                }
-                // handle other frequencies
-                if ("weekly".equals(patternType) && firstDayOfWeek.length() >= 2) {
-                    rruleValue.append(";WKST=").append(firstDayOfWeek.substring(0, 2).toUpperCase());
-                }
-
-                localVCalendar.addFirstVeventProperty(new VProperty("RRULE", rruleValue.toString()));
+                localVCalendar.addFirstVeventProperty(new VProperty("RRULE", convertRecurrenceToRrule(recurrence)));
             }
+        }
+
+        private String convertRecurrenceToRrule(JSONObject recurrence) throws JSONException, DavMailException {
+            StringBuilder rruleValue = new StringBuilder();
+            JSONObject pattern = recurrence.getJSONObject("pattern");
+            JSONObject range = recurrence.getJSONObject("range");
+            // daily, weekly, absoluteMonthly, relativeMonthly, absoluteYearly, relativeYearly
+            String patternType = pattern.getString("type");
+            int interval = pattern.getInt("interval");
+            //  first, second, third, fourth, last
+            String index = pattern.optString("index", null);
+            // convert index
+            if ("first".equals(index)) {
+                index = "1";
+            } else if ("second".equals(index)) {
+                index = "2";
+            } else if ("third".equals(index)) {
+                index = "3";
+            } else if ("fourth".equals(index)) {
+                index = "4";
+            } else if ("last".equals(index)) {
+                index = "-1";
+            }
+            // The month in which the event occurs
+            String month = pattern.getString("month");
+            if ("0".equals(month)) {
+                month = null;
+            }
+            // The first day of the week
+            String firstDayOfWeek = pattern.getString("firstDayOfWeek");
+            // The day of the month on which the event occurs
+            String dayOfMonth = pattern.getString("dayOfMonth");
+            if ("0".equals(dayOfMonth)) {
+                dayOfMonth = null;
+            }
+            // A collection of the days of the week on which the event occurs
+            JSONArray daysOfWeek = pattern.optJSONArray("daysOfWeek");
+            String rangeType = range.getString("type");
+
+            rruleValue.append("FREQ=");
+            if (patternType.startsWith("absolute") || patternType.startsWith("relative")) {
+                rruleValue.append(patternType.substring(8).toUpperCase());
+            } else {
+                rruleValue.append(patternType.toUpperCase());
+            }
+            if (rangeType.equals("endDate")) {
+                String endDate = buildUntilDate(range.getString("endDate"), graphObject.optJSONObject("start"));
+                rruleValue.append(";UNTIL=").append(endDate);
+            } else if (rangeType.equals("numbered")) {
+                int numberOfOccurrences = range.getInt("numberOfOccurrences");
+                rruleValue.append(";COUNT=").append(numberOfOccurrences);
+            } // noEnd is third option
+            if (interval > 0) {
+                rruleValue.append(";INTERVAL=").append(interval);
+            }
+            if (dayOfMonth != null && !dayOfMonth.isEmpty()) {
+                rruleValue.append(";BYMONTHDAY=").append(dayOfMonth);
+            }
+            if (month != null && !month.isEmpty()) {
+                rruleValue.append(";BYMONTH=").append(month);
+            }
+            if (daysOfWeek != null && daysOfWeek.length() > 0) {
+                ArrayList<String> days = new ArrayList<>();
+                for (int i = 0; i < daysOfWeek.length(); i++) {
+                    StringBuilder byDay = new StringBuilder();
+                    if (index != null && !"weekly".equals(patternType)) {
+                        byDay.append(index);
+                    }
+                    byDay.append(daysOfWeek.getString(i).substring(0, 2).toUpperCase());
+                    days.add(byDay.toString());
+                }
+                rruleValue.append(";BYDAY=").append(String.join(",", days));
+            }
+            // handle other frequencies
+            if ("weekly".equals(patternType) && firstDayOfWeek.length() >= 2) {
+                rruleValue.append(";WKST=").append(firstDayOfWeek.substring(0, 2).toUpperCase());
+            }
+            return rruleValue.toString();
         }
 
         private String buildUntilDate(String date, JSONObject startDate) throws DavMailException {
@@ -842,8 +848,9 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         protected GraphObject createOrUpdateTask(String currentItemId) throws IOException, JSONException {
-            JSONObject jsonTask = buildJsonTask(vCalendar.getFirstVevent());
-            // handleRrule(jsonTask, vEvent.getProperty("RRULE")); does not yet work on microsoft side
+            GraphObject jsonTask = new GraphObject(buildJsonTask(vCalendar.getFirstVevent()));
+            // experimental recurrence support
+            convertRruleToGraph(jsonTask, vCalendar.getFirstVevent().getProperty("RRULE"));
             GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
 
             if (currentItemId == null) {
@@ -864,7 +871,9 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setChildId(currentItemId)
                         .setJsonBody(jsonTask);
             }
-            return executeGraphRequest(graphRequestBuilder);
+            GraphObject graphResponse = executeGraphRequest(graphRequestBuilder);
+            graphResponse.put("id", "TODO."+graphResponse.optString("id"));
+            return graphResponse;
         }
 
         private GraphObject mozDismissEvent(String currentItemId) throws IOException, JSONException {
@@ -3737,7 +3746,7 @@ public class GraphExchangeSession extends ExchangeSession {
         FolderId folderId = getFolderId(folderPath);
 
         // tasks not yet supported on shared folders
-        if (folderId.mailbox == null) {
+        if (folderId.mailbox != null) {
             return eventList;
         }
 
@@ -3944,6 +3953,10 @@ public class GraphExchangeSession extends ExchangeSession {
     private JSONObject getEventIfExists(FolderId folderId, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
         String itemId = null;
+        if (urlcompnameToIdMap.containsKey(urlcompname)) {
+            // client requested original item name, replace with item name based on item id
+            urlcompname = urlcompnameToIdMap.get(urlcompname)+".EML";
+        }
         if (urlcompname.startsWith("TODO.")) {
             itemId = convertItemNameToItemId(urlcompname.substring(5));
             return getTaskIfExists(folderId, itemId);
