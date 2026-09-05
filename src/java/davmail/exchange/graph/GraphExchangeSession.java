@@ -3721,9 +3721,37 @@ public class GraphExchangeSession extends ExchangeSession {
         return contactList;
     }
 
+    /**
+     * Search calendar events in provided folder.
+     *
+     * @param folderPath Exchange folder path
+     * @return list of calendar events
+     * @throws IOException on error
+     */
+    @Override
+    public List<ExchangeSession.Event> getAllEvents(String folderPath) throws IOException {
+        // list events with minimal information
+        List<ExchangeSession.Event> results = searchEvents(folderPath, false, getCalendarItemCondition(getPastDelayCondition("dtstart")));
+
+        if (!Settings.getBooleanProperty("davmail.caldavDisableTasks", false) && isMainCalendar(folderPath)) {
+            // retrieve tasks from main tasks folder
+            results.addAll(searchTasksOnly(TASKS));
+        }
+
+        return results;
+    }
+
+    /**
+     * Override getEventMessages to make sure we retrieve minimal information on items.
+     * Note: this is deprecated as auto scheduling is always enabled on O365
+     * @param folderPath Exchange folder path
+     * @return event messages from inbox
+     * @throws IOException on error
+     */
     @Override
     public List<ExchangeSession.Event> getEventMessages(String folderPath) throws IOException {
-        return searchEvents(folderPath, ITEM_PROPERTIES,
+        // retrieve event messages ids from inbox
+        return searchEvents(folderPath, false,
                 and(startsWith("outlookmessageclass", "IPM.Schedule.Meeting."),
                         or(isNull("processed"), isFalse("processed"))));
     }
@@ -3781,6 +3809,19 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
+        return searchEvents(folderPath, true, condition);
+    }
+
+    /**
+     * Graph implementation of event search, does not rely on provided attribute list.
+     * Based on fullEvent flag, will just list minimal information or return full event content
+     * @param folderPath folder path
+     * @param fullEvent retrieve full events body
+     * @param condition search condition
+     * @return event list
+     * @throws IOException on error
+     */
+    public List<ExchangeSession.Event> searchEvents(String folderPath, boolean fullEvent, Condition condition) throws IOException {
         ArrayList<ExchangeSession.Event> eventList = new ArrayList<>();
         FolderId folderId = getFolderId(folderPath);
 
@@ -3800,8 +3841,21 @@ public class GraphExchangeSession extends ExchangeSession {
             GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
             while (graphIterator.hasNext()) {
-                Event event = new Event(folderPath, folderId, new GraphObject(graphIterator.next()));
-                eventList.add(event);
+                GraphObject jsonEvent = new GraphObject(graphIterator.next());
+                if (fullEvent) {
+                    // full event requested, need to retrieve each event details, including exception occurrences
+                    JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                            .setMethod(HttpGet.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("events")
+                            .setObjectId(jsonEvent.optString("id"))
+                            .setSelectFields(EVENT_ATTRIBUTES)
+                            .setTimezone(getTimezoneId())
+                    );
+                    eventList.add(new Event(folderPath, folderId, new GraphObject(jsonResponse)));
+                } else {
+                    eventList.add(new Event(folderPath, folderId, jsonEvent));
+                }
             }
         } else {
             // event messages

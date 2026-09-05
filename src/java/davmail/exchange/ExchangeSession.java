@@ -2565,7 +2565,7 @@ public abstract class ExchangeSession {
     }
 
     /**
-     * Search calendar events in provided folder.
+     * Search calendar events in the provided folder.
      *
      * @param folderPath Exchange folder path
      * @param filter     search filter
