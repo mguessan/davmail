@@ -1742,14 +1742,11 @@ public class EwsExchangeSession extends ExchangeSession {
                     if (vEvent.getProperty("DTEND") != null) {
                         endtimezone = resolveCalendarTimezone(vEvent, "DTEND");
                     }
-                    // for some reason we are unable to update timezone on a shared calendar
-                    if (!isShared || Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
-                        if (starttimezone != null) {
-                            updates.add(Field.createFieldUpdate("starttimezone", starttimezone));
-                        }
-                        if (endtimezone != null) {
-                            updates.add(Field.createFieldUpdate("endtimezone", endtimezone));
-                        }
+                    if (starttimezone != null) {
+                        updates.add(Field.createFieldUpdate("starttimezone", starttimezone));
+                    }
+                    if (endtimezone != null) {
+                        updates.add(Field.createFieldUpdate("endtimezone", endtimezone));
                     }
                 }
 
@@ -1789,11 +1786,8 @@ public class EwsExchangeSession extends ExchangeSession {
                 MultiValuedFieldUpdate requiredAttendees = new MultiValuedFieldUpdate(Field.get("requiredattendees"));
                 MultiValuedFieldUpdate optionalAttendees = new MultiValuedFieldUpdate(Field.get("optionalattendees"));
 
-                // Set attendees only if we try to impersonate calendar identity
-                if (!isShared || Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
-                    updates.add(requiredAttendees);
-                    updates.add(optionalAttendees);
-                }
+                updates.add(requiredAttendees);
+                updates.add(optionalAttendees);
 
                 List<VProperty> attendees = vEvent.getProperties("ATTENDEE");
                 if (attendees != null) {
@@ -1941,7 +1935,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             boolean isOrganizer = vCalendar.isOrganizer();
             if (isOrganizer) {
-                LOGGER.debug(email +" is meeting organizer");
+                LOGGER.debug(vCalendar.getCalendarEmail() +" is meeting organizer");
             }
 
             EWSMethod.Item currentItem = getEwsItem(folderPath, itemName, itemRequestProperties);
@@ -2099,11 +2093,6 @@ public class EwsExchangeSession extends ExchangeSession {
                                 item
                         );
 
-                        // Send a meeting response on a shared calendar, ensure we impersonate shared mailbox
-                        if (isShared && Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
-                            createOrUpdateItemMethod.mailbox = vCalendar.getCalendarEmail();
-                        }
-
                     } else if (Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                         // other changes with server side managed notifications
                         MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
@@ -2117,10 +2106,6 @@ public class EwsExchangeSession extends ExchangeSession {
                                 sendMeetingInvitationsOrCancellations,
                                 currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent(), isMozDismiss));
 
-                        // set mailbox on request when impersonate is enabled
-                        if (isShared && Settings.getBooleanProperty("davmail.caldavImpersonate", false)) {
-                            createOrUpdateItemMethod.mailbox = vCalendar.getCalendarEmail();
-                        }
                         // force context Timezone on Exchange 2010 and 2013
                         if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                             createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
@@ -2252,8 +2237,10 @@ public class EwsExchangeSession extends ExchangeSession {
                 if (currentItemId == null) {
                     itemResult.status = HttpStatus.SC_CREATED;
                     LOGGER.debug("Created event " + getHref());
+                } else if (isMeetingResponse) {
+                    LOGGER.debug("Sent meeting response for event " + getHref());
                 } else {
-                    LOGGER.warn("Updated event " + getHref());
+                    LOGGER.debug("Updated event " + getHref());
                 }
             }
 

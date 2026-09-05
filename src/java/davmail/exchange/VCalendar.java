@@ -880,9 +880,11 @@ public class VCalendar extends VObject {
                                     String originalDateZulu = convertCalendarDateToExchangeZulu(
                                             recurrenceIdProperty.getValue(), recurrenceIdProperty.getParamValue("TZID"));
                                     attendeeStatusMap.put(originalDateZulu, status);
+                                    LOGGER.debug("Attendee status for " + email + " at " + originalDateZulu + ": " + status);
                                 } else {
                                     // this is master vEvent
                                     attendeeStatusMap.put("master", status);
+                                    LOGGER.debug("Attendee status for " + email + " on master event: " + status);
                                 }
                             }
                         }
