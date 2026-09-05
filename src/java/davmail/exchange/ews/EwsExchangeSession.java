@@ -2296,10 +2296,10 @@ public class EwsExchangeSession extends ExchangeSession {
                         ItemId occurrenceId = new ItemId(occurrence);
                         String currentAttendeeStatus = responseTypeToPartstatMap.get(occurrence.get("MyResponseType"));
                         if (!attendeeStatus.equals(currentAttendeeStatus)) {
-                            LOGGER.debug("Attendee status " + currentAttendeeStatus + " => " + attendeeStatus + " on instance " + instanceId);
+                            LOGGER.debug("Attendee " + vCalendar.getCalendarEmail() + " status " + currentAttendeeStatus + " => " + attendeeStatus + " on instance " + instanceId);
                             responseStatusUpdates.put(occurrenceId, attendeeStatus);
                         } else {
-                            LOGGER.debug("Attendee status unchanged " + currentAttendeeStatus + " on instance " + instanceId);
+                            LOGGER.debug("Attendee " + vCalendar.getCalendarEmail() + " status unchanged " + currentAttendeeStatus + " on instance " + instanceId);
                         }
                     } else {
                         throw new IOException("Unable to find occurrence for id " + instanceId);
