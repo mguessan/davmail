@@ -138,9 +138,9 @@ public final class DavGateway {
 
 
             if (Settings.getBooleanProperty("davmail.server")) {
-                LOGGER.debug("Start DavMail in server mode");
+                LOGGER.debug("Start DavMail headless " + Settings.getProperty("davmail.mode") + " " + Settings.getProperty("davmail.authentication"));
             } else {
-                LOGGER.debug("Start DavMail in GUI mode");
+                LOGGER.debug("Start DavMail with GUI " + Settings.getProperty("davmail.mode") + " " + Settings.getProperty("davmail.authentication"));
                 DavGatewayTray.init();
             }
 
