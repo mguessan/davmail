@@ -2484,7 +2484,14 @@ public class EwsExchangeSession extends ExchangeSession {
         protected void fixAttendees(GetItemMethod getItemMethod, VObject vEvent) throws IOException {
             if (getItemMethod.getResponseItem() != null) {
                 List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
-                if (attendees != null && vEvent.getProperties("ATTENDEE") == null) {
+                if (attendees != null) {
+                    if (vEvent.getProperties("ATTENDEE") != null) {
+                        // clear Exchange created attendees
+                        for (VProperty vAttendee : vEvent.getProperties("ATTENDEE")) {
+                            vEvent.removeProperty(vAttendee);
+                        }
+                    }
+                    // rebuild attendees from EWS information
                     String organizerEmail = getItemMethod.getResponseItem().get("EmailAddress");
                     String organizerName = getItemMethod.getResponseItem().get("Organizer");
                     if (vEvent.getProperties("ORGANIZER") == null && organizerEmail != null) {
