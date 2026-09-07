@@ -1715,7 +1715,9 @@ public class GraphExchangeSession extends ExchangeSession {
          * @throws IOException on error
          */
         private ItemResult createOrUpdateDistList() throws IOException {
-            FolderId folderId = getFolderId(folderPath);
+            // ensure folderId is set from folderPath
+            folderId = getFolderId(folderPath);
+
             String distListId = null;
             String currentEtag = null;
             Set<String> existingMembers = new HashSet<>();
