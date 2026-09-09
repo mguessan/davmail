@@ -3732,10 +3732,12 @@ public class GraphExchangeSession extends ExchangeSession {
      */
     @Override
     public List<ExchangeSession.Event> getAllEvents(String folderPath) throws IOException {
+        FolderId folderId = getFolderIdIfExists(folderPath);
         // list events with minimal information
         List<ExchangeSession.Event> results = searchEvents(folderPath, false, getCalendarItemCondition(getPastDelayCondition("dtstart")));
 
-        if (!Settings.getBooleanProperty("davmail.caldavDisableTasks", false) && isMainCalendar(folderPath)) {
+        if (!Settings.getBooleanProperty("davmail.caldavDisableTasks", false) && isMainCalendar(folderPath)
+            && folderId.mailbox == null) {
             // retrieve tasks from main tasks folder
             results.addAll(searchTasksOnly(TASKS));
         }
