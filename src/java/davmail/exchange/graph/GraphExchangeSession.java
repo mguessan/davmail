@@ -179,6 +179,8 @@ public class GraphExchangeSession extends ExchangeSession {
                             }
                         }
 
+                        // refresh folder level attributes before releasing lock
+                        computeAttributes();
                     } finally {
                         lock.unlock(); // Always unlock inside finally
                     }
@@ -190,8 +192,6 @@ public class GraphExchangeSession extends ExchangeSession {
                 throw new IOException("Interrupted waiting for lock on folder " + folderPath, e);
             }
 
-            // refresh folder level attributes
-            computeAttributes();
         }
 
         @Override

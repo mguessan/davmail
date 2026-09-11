@@ -1348,10 +1348,13 @@ public abstract class ExchangeSession {
         }
 
         public TreeMap<Long, String> buildImapFlagMap() {
-            imapFlagMap.clear();
+            int previousMessageCount = imapFlagMap.size();
+            // recreate an empty map to avoid erasing previous values in ImapConnection
+            imapFlagMap = new TreeMap<>();
             for (ExchangeSession.Message message : messages) {
                 imapFlagMap.put(message.getImapUid(), message.getImapFlags());
             }
+            LOGGER.debug("imapFlagMap size: " + previousMessageCount + " -> " + imapFlagMap.size());
             return imapFlagMap;
         }
 
