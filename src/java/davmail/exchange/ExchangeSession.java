@@ -1258,6 +1258,8 @@ public abstract class ExchangeSession {
             }
             // make sure message count matches current list count
             messageCount = messages.size();
+
+            buildImapFlagMap();
         }
 
         public void refreshMessages() throws IOException {
@@ -1334,13 +1336,19 @@ public abstract class ExchangeSession {
             return messages.get(index);
         }
 
+        private TreeMap<Long, String> imapFlagMap = new TreeMap<>();
+
         /**
          * Get current folder messages imap uids and flags
          *
          * @return imap uid list
          */
         public TreeMap<Long, String> getImapFlagMap() {
-            TreeMap<Long, String> imapFlagMap = new TreeMap<>();
+            return imapFlagMap;
+        }
+
+        public TreeMap<Long, String> buildImapFlagMap() {
+            imapFlagMap.clear();
             for (ExchangeSession.Message message : messages) {
                 imapFlagMap.put(message.getImapUid(), message.getImapFlags());
             }
