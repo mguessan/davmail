@@ -2233,7 +2233,8 @@ public class GraphExchangeSession extends ExchangeSession {
 
         // assume email is username
         email = userName;
-        alias = userName.substring(0, email.indexOf("@"));
+        int atIndex = email.indexOf("@");
+        alias = atIndex >= 0 ? userName.substring(0, atIndex) : userName;
 
         LOGGER.debug("Current user email is " + email + ", alias is " + alias);
     }
