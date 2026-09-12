@@ -2340,12 +2340,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 } else if ("answered".equals(entry.getKey())) {
                     graphResponse.put("lastVerbExecuted", entry.getValue());
                     if (REPLYTOSENDER.equals(entry.getValue())) {
-                        graphResponse.put("iconIndex", "261");
+                        graphResponse.put("iconIndex", REPLIED_ICON);
                     }
                 } else if ("forwarded".equals(entry.getKey())) {
                     graphResponse.put("lastVerbExecuted", entry.getValue());
                     if (FORWARD.equals(entry.getValue())) {
-                        graphResponse.put("iconIndex", "262");
+                        graphResponse.put("iconIndex", FORWARDED_ICON);
                     }
                 } else if ("deleted".equals(entry.getKey())) {
                     graphResponse.put(entry.getKey(), entry.getValue());

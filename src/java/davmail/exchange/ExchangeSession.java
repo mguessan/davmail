@@ -107,6 +107,9 @@ public abstract class ExchangeSession {
     protected static final String REPLYTOALL = "103";
     protected static final String FORWARD = "104";
 
+    protected static final String REPLIED_ICON = "261";
+    protected static final String FORWARDED_ICON = "262";
+
     static {
         // Adjust Mime decoder settings
         System.setProperty("mail.mime.ignoreunknownencoding", "true");
