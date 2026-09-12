@@ -221,7 +221,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 try {
                     this.folderId = getFolderId(TASKS);
                 } catch (IOException e) {
-                    LOGGER.warn("Unable to replace folder with tasks");
+                    LOGGER.warn("Unable to replace folder with tasks", e);
                 }
                 displayName = graphObject.optString("summary");
                 subject = graphObject.optString("summary");
@@ -2397,7 +2397,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     result = new ByteArrayInputStream(messageHeaders.getBytes(StandardCharsets.UTF_8));
                 }
             } catch (Exception e) {
-                LOGGER.warn(e.getMessage());
+                LOGGER.warn("Unable to get message headers: " + e.getMessage(), e);
             }
 
             return result;
@@ -2455,7 +2455,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
 
                 } catch (JSONException e) {
-                    LOGGER.warn("Error parsing json response value");
+                    LOGGER.warn("Error parsing json response value for message " + message.id, e);
                 }
             }
         }
@@ -2476,7 +2476,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
 
                 } catch (JSONException e) {
-                    LOGGER.warn("Error parsing json response value");
+                    LOGGER.warn("Error parsing json response value for message " + message.id, e);
                 }
             }
         }
