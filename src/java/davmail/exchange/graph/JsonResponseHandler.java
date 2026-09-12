@@ -109,6 +109,10 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
             }
             throw new IOException(errorMessage);
         }
+        // ensure non-null response
+        if (jsonResponse == null) {
+            jsonResponse = new JSONObject();
+        }
         return jsonResponse;
     }
 
