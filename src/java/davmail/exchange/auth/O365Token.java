@@ -138,6 +138,10 @@ public class O365Token {
             }
             scope = jsonToken.optString("scope", null);
             LOGGER.debug("Obtained token for scopes: " + scope);
+
+            if (Settings.isGraphEnabled() && scope != null && scope.contains("EWS.AccessAsUser.All")) {
+                throw new DavMailAuthenticationException("LOG_MESSAGE", "Received a token with EWS.AccessAsUser.All for a graph session");
+            }
             // access token expires after one hour
             accessToken = jsonToken.getString("access_token");
             // precious refresh token
