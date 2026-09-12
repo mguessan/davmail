@@ -4710,7 +4710,12 @@ public class GraphExchangeSession extends ExchangeSession {
             LOGGER.info("Detected throttling " + response.getStatusLine());
             Header retryAfter = response.getFirstHeader("Retry-After");
             if (retryAfter != null) {
-                retryDelay = Long.parseLong(retryAfter.getValue()) + 1;
+                try {
+                    retryDelay = Long.parseLong(retryAfter.getValue()) + 1;
+                } catch (NumberFormatException e) {
+                    LOGGER.debug("Unable to parse Retry-After value: " + retryAfter.getValue() + ", using default delay");
+                    retryDelay = 10;
+                }
                 waitRetryDelay(retryDelay);
             }
         } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_SERVICE_UNAVAILABLE) {
