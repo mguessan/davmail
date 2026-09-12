@@ -24,6 +24,9 @@ import davmail.exchange.graph.GraphExchangeSession;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -40,7 +43,7 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
     @Override
     public void setUp() throws IOException {
         loadConfig();
-        //Settings.setProperty("davmail.mode", "O365EWS");
+        Settings.setProperty("davmail.mode", "O365Graph");
         super.setUp();
     }
 
@@ -60,10 +63,43 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
             events = session.getAllEvents(folderPath);
             assertNotNull(events);
             for (ExchangeSession.Event event : events) {
+                if (!event.getName().startsWith("TODO.")) {
+                    // make sure we retrieved mimimal information only on events, excluding task items
+                    assertNull(event.subject);
+                }
                 // need per event request to retrieve full body
                 ExchangeSession.Item item = session.getItem(folderPath, event.getName());
                 System.out.println("retrieved "+event.getName());
-                System.out.println(item.getBody());
+                VObject vEvent = new VObject(item.getBody());
+                assertNotNull(vEvent.vObjects);
+                assertTrue(vEvent.vObjects.size() > 1);
+                assertNotNull(vEvent.vObjects.get(1).getProperties("UID"));
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            throw e;
+        }
+    }
+
+    public void testSearchCalendarTimeRange() throws IOException {
+        // time range search, retrieve event content
+        String endOfToday = LocalDate.now(ZoneOffset.UTC).plusDays(1)
+                .atStartOfDay()
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
+        String twoWeeksAgo = LocalDate.now(ZoneOffset.UTC).minusWeeks(2)
+                .atStartOfDay()
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
+
+        String folderPath = "/users/" + session.getEmail() + "/calendar";
+        List<ExchangeSession.Event> events;
+        try {
+            events = session.searchEvents(folderPath, endOfToday, twoWeeksAgo);
+            assertNotNull(events);
+            for (ExchangeSession.Event event : events) {
+                VObject vEvent = new VObject(event.getBody());
+                assertNotNull(vEvent.vObjects);
+                assertTrue(vEvent.vObjects.size() > 1);
+                assertNotNull(vEvent.vObjects.get(1).getProperties("UID"));
             }
         } catch (IOException e) {
             System.out.println(e.getMessage());
@@ -465,6 +501,9 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
             events = session.searchTasksOnly("/users/" + session.getEmail() + "/tasks");
             for (ExchangeSession.Event event : events) {
                 System.out.println(event.getBody());
+
+                // try to reload event
+                session.getItem("/users/" + session.getEmail() + "/tasks", event.getName());
             }
         } catch (IOException e) {
             System.out.println(e.getMessage());
@@ -573,7 +612,6 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
 
         session.deleteItem("calendar", itemName);
     }
-
 
 }
 

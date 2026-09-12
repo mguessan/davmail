@@ -47,8 +47,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
     @Override
     public void setUp() throws IOException {
         loadConfig();
-        //Settings.setProperty("davmail.mode", "O365Graph");
-        //Settings.setProperty("davmail.mode", "O365EWS");
+        Settings.setProperty("davmail.mode", "O365Graph");
         super.setUp();
         if (!isFolderCreated) {
             initFolder();
