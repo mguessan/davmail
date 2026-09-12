@@ -4298,12 +4298,12 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     public boolean isMainCalendar(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
-        return folderId.parentFolderId == null && WellKnownFolderName.calendar.name().equals(folderId.id);
+        return folderId != null && folderId.parentFolderId == null && WellKnownFolderName.calendar.name().equals(folderId.id);
     }
 
     public boolean isMainContactFolder(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
-        return folderId.parentFolderId == null && WellKnownFolderName.contacts.name().equals(folderId.id);
+        return folderId != null && folderId.parentFolderId == null && WellKnownFolderName.contacts.name().equals(folderId.id);
     }
 
     @Override
