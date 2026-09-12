@@ -525,6 +525,18 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         }
     }
 
+    public void testSearchSharedTasksThroughCalendar() throws IOException {
+        List<ExchangeSession.Event> events;
+        try {
+            // vTodoOnly search on calendar path
+            events = session.searchTasksOnly("/users/" + Settings.getProperty("davmail.shared") + "/calendar");
+            assertEquals(0, events.size());
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            throw e;
+        }
+    }
+
     public void testInvalidRrule() throws IOException {
         String itemBody = "BEGIN:VCALENDAR\n" +
                 "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
