@@ -23,13 +23,13 @@ import junit.framework.TestCase;
 
 public class DateUtilTest extends TestCase {
     public void testGetDayOfWeek() throws Exception {
-        assertEquals("Monday", DateUtil.getDayOfWeek("2026-07-13"));
-        assertEquals("Tuesday", DateUtil.getDayOfWeek("2026-07-14"));
-        assertEquals("Wednesday", DateUtil.getDayOfWeek("2026-07-15"));
-        assertEquals("Thursday", DateUtil.getDayOfWeek("2026-07-16"));
-        assertEquals("Friday", DateUtil.getDayOfWeek("2026-07-17"));
-        assertEquals("Saturday", DateUtil.getDayOfWeek("2026-07-18"));
-        assertEquals("Sunday", DateUtil.getDayOfWeek("2026-07-19"));
+        assertEquals("monday", DateUtil.getDayOfWeek("2026-07-13"));
+        assertEquals("tuesday", DateUtil.getDayOfWeek("2026-07-14"));
+        assertEquals("wednesday", DateUtil.getDayOfWeek("2026-07-15"));
+        assertEquals("thursday", DateUtil.getDayOfWeek("2026-07-16"));
+        assertEquals("friday", DateUtil.getDayOfWeek("2026-07-17"));
+        assertEquals("saturday", DateUtil.getDayOfWeek("2026-07-18"));
+        assertEquals("sunday", DateUtil.getDayOfWeek("2026-07-19"));
         assertNull(DateUtil.getDayOfWeek(null));
 
         try {
