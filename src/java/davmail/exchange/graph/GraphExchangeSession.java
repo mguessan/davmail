@@ -4656,6 +4656,9 @@ public class GraphExchangeSession extends ExchangeSession {
         if (isThrottled) {
             throw new HttpServerErrorException("Throttled and retry count exceeded");
         }
+        if (jsonResponse == null) {
+            jsonResponse = new JSONObject();
+        }
         return jsonResponse;
     }
 
@@ -4694,6 +4697,9 @@ public class GraphExchangeSession extends ExchangeSession {
         } while (isThrottled && retryCount < MAX_RETRIES);
         if (isThrottled) {
             throw new HttpServerErrorException("Throttled and retry count exceeded");
+        }
+        if (graphObject == null) {
+            graphObject = new GraphObject(new JSONObject());
         }
         return graphObject;
     }
