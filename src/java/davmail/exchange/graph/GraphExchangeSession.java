@@ -4570,14 +4570,11 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         public JSONObject next() throws IOException {
-            count++;
             if (values == null || !hasNext()) {
                 throw new NoSuchElementException();
             }
+            count++;
             try {
-                if (index >= values.length() && nextLink != null) {
-                    fetchNextPage();
-                }
                 return values.getJSONObject(index++);
             } catch (JSONException e) {
                 throw new IOException(e.getMessage(), e);
