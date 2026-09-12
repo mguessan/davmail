@@ -535,7 +535,7 @@ public class VCalendar extends VObject {
     protected static String replaceIcal4Principal(String value) {
         final String principalPrefix = "/principals/__uuids__/";
         final String principalAt = "__AT__";
-        if (value.contains(principalPrefix) && value.contains(principalAt)) {
+        if (value != null && value.contains(principalPrefix) && value.contains(principalAt)) {
             return "mailto:" +
                     value.substring(value.indexOf(principalPrefix) + principalPrefix.length(), value.indexOf(principalAt)) +
                     "@" +

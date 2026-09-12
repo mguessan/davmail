@@ -1130,8 +1130,8 @@ public abstract class ExchangeSession {
     protected String decodeKeyword(String keyword) {
         String result = keyword;
         if (keyword.contains("_x0028_") || keyword.contains("_x0029_")) {
-            result = result.replaceAll("_x0028_", "(")
-                    .replaceAll("_x0029_", ")");
+            result = result.replace("_x0028_", "(")
+                    .replace("_x0029_", ")");
         }
         return result;
     }
@@ -1347,7 +1347,7 @@ public abstract class ExchangeSession {
             return imapFlagMap;
         }
 
-        public TreeMap<Long, String> buildImapFlagMap() {
+        public void buildImapFlagMap() {
             int previousMessageCount = imapFlagMap.size();
             // recreate an empty map to avoid erasing previous values in ImapConnection
             imapFlagMap = new TreeMap<>();
@@ -1355,7 +1355,6 @@ public abstract class ExchangeSession {
                 imapFlagMap.put(message.getImapUid(), message.getImapFlags());
             }
             LOGGER.debug("imapFlagMap size: " + previousMessageCount + " -> " + imapFlagMap.size());
-            return imapFlagMap;
         }
 
         /**
