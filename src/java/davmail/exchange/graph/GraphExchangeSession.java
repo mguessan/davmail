@@ -106,7 +106,7 @@ public class GraphExchangeSession extends ExchangeSession {
         // Unable to map CANCELLED: cancelled events are directly deleted on Exchange
     }
 
-    protected Map<String, String> urlcompnameToIdMap = new HashMap<>();
+    protected Map<String, String> urlcompnameToIdMap = new ConcurrentHashMap<>();
 
     /**
      * Extend message list to support delta sync
@@ -3342,7 +3342,7 @@ public class GraphExchangeSession extends ExchangeSession {
         return currentFolderId;
     }
 
-    protected HashMap<String, FolderId> folderIdCache = new HashMap<>();
+    protected Map<String, FolderId> folderIdCache = new ConcurrentHashMap<>();
 
     /**
      * Build folderId for well-known folders.
