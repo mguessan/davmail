@@ -785,8 +785,11 @@ public class GraphExchangeSession extends ExchangeSession {
 
                 itemResult.etag = graphResponse.optString("changeKey");
 
-                // workaround for Thunderbird, keep a cache of itemName to id map
-                urlcompnameToIdMap.put(itemName, graphResponse.optString("id"));
+                // id is empty on meeting response
+                if (graphResponse.optString("id", null) != null) {
+                    // workaround for Thunderbird, keep a cache of itemName to id map
+                    urlcompnameToIdMap.put(itemName, graphResponse.optString("id"));
+                }
 
                 itemResult.itemName = itemName; // preserve requested itemName
                 itemResult.etag = graphResponse.optString("changeKey");
