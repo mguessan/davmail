@@ -2182,6 +2182,10 @@ public class GraphExchangeSession extends ExchangeSession {
         public boolean isTask() {
             return IPF_TASK.equals(folderClass);
         }
+
+        public boolean isShared() {
+            return mailbox != null && !mailbox.equalsIgnoreCase(email);
+        }
     }
 
     HttpClientAdapter httpClient;
@@ -3305,8 +3309,13 @@ public class GraphExchangeSession extends ExchangeSession {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.calendar, FolderId.IPF_APPOINTMENT);
             folderNames = folderPath.substring(CALENDAR.length()).split("/");
         } else if (isSubFolderOf(folderPath, TASKS)) {
-            currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.tasks);
-            folderNames = folderPath.substring(TASKS.length()).split("/");
+            if (mailbox == null || email.equals(mailbox)) {
+                currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.tasks);
+                folderNames = folderPath.substring(TASKS.length()).split("/");
+            } else {
+                LOGGER.warn("Shared tasks are not supported");
+                return null;
+            }
         } else if (isSubFolderOf(folderPath, CONTACTS)) {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.contacts, FolderId.IPF_CONTACT);
             folderNames = folderPath.substring(CONTACTS.length()).split("/");
@@ -3737,10 +3746,9 @@ public class GraphExchangeSession extends ExchangeSession {
         // list events with minimal information
         List<ExchangeSession.Event> results = searchEvents(folderPath, false, getCalendarItemCondition(getPastDelayCondition("dtstart")));
 
-        if (!Settings.getBooleanProperty("davmail.caldavDisableTasks", false) && isMainCalendar(folderPath)
-            && folderId.mailbox == null) {
+        if (!Settings.getBooleanProperty("davmail.caldavDisableTasks", false) && isMainCalendar(folderPath)) {
             // retrieve tasks from main tasks folder
-            results.addAll(searchTasksOnly(TASKS));
+            results.addAll(searchTasksOnly(folderPath));
         }
 
         return results;
@@ -3776,10 +3784,14 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     public List<ExchangeSession.Event> searchTasksOnly(String folderPath) throws IOException {
         ArrayList<ExchangeSession.Event> eventList = new ArrayList<>();
-        FolderId folderId = getFolderId(folderPath);
+        String taskFolderPath = folderPath;
+        if (isMainCalendar(folderPath)) {
+            taskFolderPath = TASKS;
+        }
+        FolderId folderId = getFolderIdIfExists(taskFolderPath);
 
         // tasks not yet supported on shared folders
-        if (folderId.mailbox != null) {
+        if (folderId == null || !folderId.isTask()) {
             return eventList;
         }
 
@@ -4298,12 +4310,12 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     public boolean isMainCalendar(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
-        return folderId != null && folderId.parentFolderId == null && WellKnownFolderName.calendar.name().equals(folderId.id);
+        return folderId != null && !folderId.isShared() && folderId.parentFolderId == null && WellKnownFolderName.calendar.name().equals(folderId.id);
     }
 
     public boolean isMainContactFolder(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
-        return folderId != null && folderId.parentFolderId == null && WellKnownFolderName.contacts.name().equals(folderId.id);
+        return folderId != null && !folderId.isShared() && folderId.parentFolderId == null && WellKnownFolderName.contacts.name().equals(folderId.id);
     }
 
     @Override

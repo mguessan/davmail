@@ -2500,7 +2500,7 @@ public abstract class ExchangeSession {
 
         if (!Settings.getBooleanProperty("davmail.caldavDisableTasks", false) && isMainCalendar(folderPath)) {
             // retrieve tasks from main tasks folder
-            results.addAll(searchTasksOnly(TASKS));
+            results.addAll(searchTasksOnly(folderPath));
         }
 
         return results;
