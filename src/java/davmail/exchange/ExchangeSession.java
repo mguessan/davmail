@@ -102,6 +102,11 @@ public abstract class ExchangeSession {
 
     protected static final List<String> SPECIAL = Arrays.asList(SENT, DRAFTS, TRASH, JUNK);
 
+    // see https://learn.microsoft.com/en-us/openspecs/exchange_server_protocols/ms-oxomsg/87a8b6b8-59a4-4859-9dcd-8b0f36e3d729
+    protected static final String REPLYTOSENDER = "102";
+    protected static final String REPLYTOALL = "103";
+    protected static final String FORWARD = "104";
+
     static {
         // Adjust Mime decoder settings
         System.setProperty("mail.mime.ignoreunknownencoding", "true");

@@ -2339,12 +2339,12 @@ public class GraphExchangeSession extends ExchangeSession {
                     graphResponse.put("flagStatus", entry.getValue());
                 } else if ("answered".equals(entry.getKey())) {
                     graphResponse.put("lastVerbExecuted", entry.getValue());
-                    if ("102".equals(entry.getValue())) {
+                    if (REPLYTOSENDER.equals(entry.getValue())) {
                         graphResponse.put("iconIndex", "261");
                     }
                 } else if ("forwarded".equals(entry.getKey())) {
                     graphResponse.put("lastVerbExecuted", entry.getValue());
-                    if ("104".equals(entry.getValue())) {
+                    if (FORWARD.equals(entry.getValue())) {
                         graphResponse.put("iconIndex", "262");
                     }
                 } else if ("deleted".equals(entry.getKey())) {
@@ -2442,8 +2442,8 @@ public class GraphExchangeSession extends ExchangeSession {
                         message.permanentUrl = responseValue.getString("value"); // always null
                     } else if (GraphField.getGraphId("lastVerbExecuted").equals(responseId)) {
                         String lastVerbExecuted = responseValue.getString("value");
-                        message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
-                        message.forwarded = "104".equals(lastVerbExecuted);
+                        message.answered = REPLYTOSENDER.equals(lastVerbExecuted) || REPLYTOALL.equals(lastVerbExecuted);
+                        message.forwarded = FORWARD.equals(lastVerbExecuted);
                     } else if (GraphField.getGraphId("contentclass").equals(responseId)) {
                         message.contentClass = responseValue.getString("value");
                     } else if (GraphField.getGraphId("junk").equals(responseId)) {
