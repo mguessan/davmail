@@ -74,6 +74,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -2285,9 +2286,13 @@ public class GraphExchangeSession extends ExchangeSession {
 
                 // unset draft flag on returned draft message properties
                 graphResponse.put("messageFlags", "4");
-                // clear read flag by default
-                graphResponse.put("read", false);
+                // read flag travels in the draft property (1 = read, see ImapConnection)
+                graphResponse.put("read", properties != null && "1".equals(properties.get("draft")));
                 applyMessageProperties(graphResponse, properties);
+                // the recreated message would otherwise carry the upload time and no
+                // Received: headers: Graph ignores receivedDateTime, sentDateTime and
+                // internetMessageHeaders on creation, but honours the MAPI properties
+                preserveMimeOrigin(graphResponse, mimeMessage, properties);
 
                 // now use this to recreate message in the right folder
                 graphResponse = executeGraphRequest(new GraphRequestBuilder()
@@ -2317,6 +2322,54 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setMailbox(folderId.mailbox)
                 .setObjectId(graphResponse.optString("id"))
                 .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)));
+    }
+
+    /**
+     * Copy delivery time, submit time and transport headers of an appended MIME message
+     * to the MAPI properties Graph accepts on creation, so the recreated message keeps
+     * its original Date, INTERNALDATE, Received: and threading headers.
+     *
+     * @param graphResponse message properties about to be posted
+     * @param mimeMessage   appended MIME message
+     * @param properties    IMAP APPEND properties (datereceived is the INTERNALDATE)
+     * @throws JSONException on JSON error
+     */
+    private void preserveMimeOrigin(GraphObject graphResponse, MimeMessage mimeMessage, Map<String, String> properties) throws JSONException {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
+        dateFormatter.setTimeZone(GMT_TIMEZONE);
+        try {
+            Date sentDate = mimeMessage.getSentDate();
+            String deliveryTime = properties == null ? null : properties.get("datereceived");
+            if (deliveryTime == null && sentDate != null) {
+                deliveryTime = dateFormatter.format(sentDate);
+            }
+            if (deliveryTime != null) {
+                graphResponse.put("deliverytime", deliveryTime);
+            }
+            if (sentDate != null) {
+                graphResponse.put("clientsubmittime", dateFormatter.format(sentDate));
+            }
+            StringBuilder headers = new StringBuilder();
+            Enumeration<?> headerLines = mimeMessage.getAllHeaderLines();
+            while (headerLines.hasMoreElements()) {
+                headers.append(headerLines.nextElement()).append("\r\n");
+            }
+            if (headers.length() > 0) {
+                graphResponse.put("transportheaders", headers.toString());
+            }
+            // threading headers are not among those Exchange rebuilds from the
+            // transport headers, but have MAPI properties of their own
+            String inReplyTo = mimeMessage.getHeader("In-Reply-To", " ");
+            if (inReplyTo != null) {
+                graphResponse.put("inreplyto", inReplyTo.trim());
+            }
+            String references = mimeMessage.getHeader("References", " ");
+            if (references != null) {
+                graphResponse.put("references", references.trim());
+            }
+        } catch (MessagingException e) {
+            LOGGER.warn("Unable to read headers of appended message: " + e.getMessage());
+        }
     }
 
     protected Message getMessage(FolderId folderId, String messageId) throws IOException {
