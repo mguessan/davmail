@@ -53,7 +53,7 @@ public class AbstractImapTestCase extends AbstractDavMailTestCase {
         return socketReader.readLine();
     }
 
-    protected String readFullAnswer(String prefix) throws IOException {
+    protected String readFullAnswer(@SuppressWarnings("SameParameterValue") String prefix) throws IOException {
         String line = socketReader.readLine();
         while (!line.startsWith(prefix)) {
             line = socketReader.readLine();
@@ -108,7 +108,7 @@ public class AbstractImapTestCase extends AbstractDavMailTestCase {
             writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
             assertEquals("+ send literal data", readLine());
             writeLine(new String(content));
-            assertEquals(". OK APPEND completed", readFullAnswer("."));
+            assertEquals(". OK [APPENDUID 1 1] APPEND completed", readFullAnswer("."));
 
             writeLine(". NOOP");
             assertEquals(". OK NOOP completed", readFullAnswer("."));

@@ -32,6 +32,9 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * IMAP tests, an instance of DavMail Gateway must be available
@@ -812,8 +815,126 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". SELECT INBOX");
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
 
-        writeLine(". UID FETCH 1:* (UID FLAGS FLAGS RFC822.HEADER)");
+        writeLine(". UID FETCH 1:* (UID FLAGS RFC822.HEADER)");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testAppendRoundTrip() throws IOException {
+        // Clean up any previous run
+        resetTestFolder();
+
+        String messageId = UUID.randomUUID().toString();
+
+        // Exact message body used by the Python repro
+        String msg =
+                "Received: from mail.example.org (mail.example.org [192.0.2.1]) by mx.example.net with ESMTPS; Thu, 15 Jan 2026 10:00:00 -0500\r\n"
+                        + "Received: from sender.example.org by mail.example.org; Thu, 15 Jan 2026 09:59:58 -0500\r\n"
+                        + "From: Example Sender <sender@example.org>\r\n"
+                        + "To: " + username + "\r\n"
+                        + "Subject: davmail IMAP APPEND repro\r\n"
+                        + "Date: Thu, 15 Jan 2026 09:59:58 -0500\r\n"
+                        + "Message-ID: " + messageId + "\r\n"
+                        + "X-Original-Test: preserved\r\n"
+                        + "In-Reply-To: <parent@example.org>\r\n"
+                        + "References: <root@example.org> <parent@example.org>\r\n"
+                        + "\r\n"
+                        + "Body.\r\n";
+
+        byte[] content = msg.getBytes(StandardCharsets.UTF_8);
+
+        // APPEND with \Seen flag and INTERNALDATE
+        // Syntax: APPEND mailbox [flags] [date-time] literal
+        String appendCmd = ". APPEND " + "testfolder"
+                + " (\\Seen)"
+                + " \"20-Jan-2026 12:00:00 -0500\""
+                + " {" + content.length + "}";
+        writeLine(appendCmd);
+        assertEquals("+ send literal data", readLine());
+
+        // Send the literal
+        write(new String(content, StandardCharsets.UTF_8));   // write() does not add CRLF
+        writeLine("");                         // terminate
+
+        String appendResp = readFullAnswer(".");
+        System.out.println("APPEND -> " + appendResp);
+
+        // Optional: extract APPENDUID if the server returns UIDPLUS
+        String appendUid = null;
+        Matcher m = Pattern.compile("APPENDUID \\d+ (\\d+)").matcher(appendResp);
+        if (m.find()) {
+            appendUid = m.group(1);
+        }
+
+        // Give Exchange / Graph a moment
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException ignored) {}
+
+        // Re-select to force a refresh
+        writeLine(". SELECT " + "testfolder");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+
+        // ----- Assertions matching the Python script -----
+
+        // 1. UID search
+        writeLine(". UID SEARCH ALL");
+        String searchLine = readLine();          // * SEARCH <uid>
+        String listedUid = null;
+        if (searchLine.startsWith("* SEARCH")) {
+            String[] parts = searchLine.split("\\s+");
+            if (parts.length > 2) {
+                listedUid = parts[2];
+            }
+        }
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+
+        if (appendUid != null) {
+            //assertEquals("APPENDUID matches listed UID", appendUid, listedUid);
+        }
+
+        // 2. FETCH metadata + headers
+        writeLine(". UID FETCH 1:* (UID FLAGS INTERNALDATE BODY.PEEK[HEADER])");
+        String metaLine = readLine();            // * 1 FETCH (...)
+
+        // The header block follows as a literal; read until the tagged OK
+        StringBuilder headerBuf = new StringBuilder();
+        String line;
+        while (!(line = readLine()).startsWith(". OK")) {
+            headerBuf.append(line).append("\n");
+        }
+
+        String headers = headerBuf.toString();
+
+        assertTrue("\\Seen kept", metaLine.contains("\\Seen"));
+
+        assertTrue("INTERNALDATE kept (20-Jan-2026)",
+                metaLine.contains("20-Jan-2026") || metaLine.toLowerCase().contains("20-jan-2026"));
+
+        assertTrue("Date: header kept (15 Jan 2026)",
+                headers.matches("(?ims).*?^Date:.*?15 Jan 2026.*"));
+
+        // Exactly two Received: lines
+        int receivedCount = 0;
+        for (String h : headers.split("\n")) {
+            if (h.toLowerCase().startsWith("received:")) {
+                receivedCount++;
+            }
+        }
+        assertEquals("Received: lines kept", 2, receivedCount);
+
+        assertTrue("In-Reply-To kept",
+                headers.matches("(?ims).*?^In-Reply-To: <parent@example.org>.*"));
+
+        assertTrue("References kept",
+                headers.matches("(?ims).*?^References: <root@example.org> <parent@example.org>.*"));
+
+        // Graph does not preserve custom headers
+        if (!Settings.isGraphEnabled()) {
+            assertTrue("X-Original-Test kept", headers.matches("(?ims).*?^X-Original-Test:.*"));
+        }
+
+        writeLine(". CLOSE");
+        readFullAnswer(".");
     }
 
 }
