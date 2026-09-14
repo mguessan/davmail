@@ -62,6 +62,13 @@ public class GraphField {
         addFieldMap("datereceived", "receivedDateTime", PropertyType.SystemTime);
         addFieldMap("date", "receivedDateTime", PropertyType.SystemTime);
         // addFieldMap("date", 0x0e06, PropertyType.SystemTime);  // PidTagOriginalDeliveryTime
+        // MAPI origin properties: Graph ignores receivedDateTime, sentDateTime and
+        // internetMessageHeaders when a message is created, but accepts these
+        addFieldMap("deliverytime", 0x0e06, PropertyType.SystemTime);    // PR_MESSAGE_DELIVERY_TIME
+        addFieldMap("clientsubmittime", 0x0039, PropertyType.SystemTime); // PR_CLIENT_SUBMIT_TIME
+        addFieldMap("transportheaders", 0x007d, PropertyType.String);     // PR_TRANSPORT_MESSAGE_HEADERS
+        addFieldMap("inreplyto", 0x1042, PropertyType.String);            // PR_IN_REPLY_TO_ID
+        addFieldMap("references", 0x1039, PropertyType.String);           // PR_INTERNET_REFERENCES
         addFieldMap("lastmodified", "lastModifiedDateTime", PropertyType.SystemTime);
 
         // message extended properties
