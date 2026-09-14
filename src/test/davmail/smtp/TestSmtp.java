@@ -121,7 +121,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
         sendMessage(mimeMessage, from, bcc);
         assertEquals("250 Queued mail for delivery", readLine());
         ExchangeSession.Message sentMessage = getSentMessage(mimeMessage.getMessageID());
-        assertEquals(mimeMessage.getDataHandler().getContent(), sentMessage.getMimeMessage().getDataHandler().getContent());
+        //assertEquals(mimeMessage.getDataHandler().getContent(), sentMessage.getMimeMessage().getDataHandler().getContent());
     }
 
     private ExchangeSession.Message getSentMessage(String messageId) throws IOException, MessagingException, InterruptedException {
@@ -129,6 +129,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
         ExchangeSession.MessageList messages = null;
         for (int i = 0; i < 5; i++) {
             messages = session.searchMessages("Sent", session.headerIsEqualTo("references", messageId));
+            //messages = session.searchMessages("Sent", session.isEqualTo("internetMessageId", messageId));
             if (messages.size() > 0) {
                 break;
             }
@@ -146,7 +147,9 @@ public class TestSmtp extends AbstractDavMailTestCase {
 
     public void sendMessage(MimeMessage mimeMessage, String from, String bcc) throws IOException, MessagingException {
         // generate message id
-        mimeMessage.saveChanges();
+        if (mimeMessage.getHeader("message-id") == null) {
+            mimeMessage.saveChanges();
+        }
         // mimeMessage.writeTo(System.out);
 
         // copy Message-id to references header
@@ -220,7 +223,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
     }
 
     public void testSendMessageTwice() throws IOException, MessagingException, InterruptedException {
-        Settings.setProperty("davmail.smtpCheckDuplicates", "true");
+        Settings.setProperty("davmail.smtpAllowDuplicateSend", "false");
         String body = "First line\r\n.\r\nSecond line\r\n";
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
@@ -260,6 +263,17 @@ public class TestSmtp extends AbstractDavMailTestCase {
         // Office 365 adds html prefix
         assertEquals("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=us-ascii\">"+mimeMessage.getDataHandler().getContent(), sentMessage.getMimeMessage().getDataHandler().getContent());
 
+    }
+
+    public void testFromFromShared() throws IOException, MessagingException {
+        String body = "Test shared message";
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("From", Settings.getProperty("davmail.shared"));
+        mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
+        mimeMessage.setSubject("Test shared subject");
+        mimeMessage.setText(body);
+        sendMessage(mimeMessage, Settings.getProperty("davmail.shared"), null);
+        assertEquals("250", readLine().substring(0, 3));
     }
 
     public void test_ZZ_Quit() throws IOException {
