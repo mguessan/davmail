@@ -2947,11 +2947,12 @@ public class GraphExchangeSession extends ExchangeSession {
             int actualConditionCount = getActualConditionCount();
             if (actualConditionCount > 0) {
                 boolean isFirst = true;
-
                 for (Condition condition : conditions) {
+                    if (condition.isEmpty()) {
+                        continue;
+                    }
                     if (isFirst) {
                         isFirst = false;
-
                     } else {
                         buffer.append(" ").append(operator.toString()).append(" ");
                     }
