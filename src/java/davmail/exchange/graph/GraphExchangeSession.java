@@ -3408,8 +3408,11 @@ public class GraphExchangeSession extends ExchangeSession {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.drafts);
             folderNames = folderPath.substring(DRAFTS.length()).split("/");
         } else if (isSubFolderOf(folderPath, TRASH)) {
-            currentFolderId = new FolderId(mailbox, WellKnownFolderName.deleteditems);
+            currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.deleteditems);
             folderNames = folderPath.substring(TRASH.length()).split("/");
+        } else if (isSubFolderOf(folderPath, WellKnownFolderName.deleteditems.name())) {
+            currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.deleteditems);
+            folderNames = folderPath.substring(WellKnownFolderName.deleteditems.name().length()).split("/");
         } else if (isSubFolderOf(folderPath, JUNK)) {
             currentFolderId = new FolderId(mailbox, WellKnownFolderName.junkemail);
             folderNames = folderPath.substring(JUNK.length()).split("/");
@@ -3824,7 +3827,6 @@ public class GraphExchangeSession extends ExchangeSession {
      */
     @Override
     public List<ExchangeSession.Event> getAllEvents(String folderPath) throws IOException {
-        FolderId folderId = getFolderIdIfExists(folderPath);
         // list events with minimal information
         List<ExchangeSession.Event> results = searchEvents(folderPath, false, getCalendarItemCondition(getPastDelayCondition("dtstart")));
 
