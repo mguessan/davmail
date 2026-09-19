@@ -55,6 +55,300 @@
   </developer>
   <content_rating type="oars-1.1" />
   <releases>
+      <release version="7.0.0" date="2026-09-19">
+          <description>
+              <p>Major release focused on Graph API stability and performance,
+                  implemented folder delta sync with caching for efficient IMAP synchronization,
+                  also added Distribution list support, improved recurrence handling on events including per-instance meeting response.
+                  Reworked attendee and organizer, shared calendar and exception occurrences handling in EWS backend.
+                  Introduced a new read-only mode (davmail.caldavReadonly) for calendars, fixed timezone and phone number mappings.
+              </p>
+              <p>Graph</p>
+              <ul>
+                  <li>Graph: implement maximum retry count on throttling</li>
+                  <li>Graph: in executeGraphRequest rebuild request on retry</li>
+                  <li>Graph: replace convertTimezoneFromExchange with DateUtil.getTimeZone</li>
+                  <li>Graph: refactor convertUntilToEndDate to use DateUtil.convertDate, implement test for conversion
+                  </li>
+                  <li>Graph: refactor date conversion methods buildUntilDate and convertOriginalStartDate</li>
+                  <li>Graph: more date refactoring on originalStartTimeZone conversion</li>
+                  <li>Graph: refactor isItemId to reuse compiled regex pattern</li>
+                  <li>Graph: some more refactoring and cleanup, make sure throttling is detected on paging requests</li>
+                  <li>Graph: remove responseTypeToPartstatMap in favor of responseTypeToPartstat method</li>
+                  <li>Graph: nextLink must not be reencoded, replaces all other GraphRequestBuilder inputs</li>
+                  <li>Graph: prepare delta synchronization, introduce deltaLink retrieval in GraphIterator</li>
+                  <li>Graph: implement maxPageSize and deltaToken parameters in GraphRequestBuilder</li>
+                  <li>Graph: implement getDeltaLink to retrieve current delta link value on folder, based on
+                      IMAP_MESSAGE_DELTA_ATTRIBUTES and getMessage to retrieve a message by id
+                  </li>
+                  <li>Graph: unit test for delta sync</li>
+                  <li>Graph: introduce refreshMessages to prepare delta sync</li>
+                  <li>Graph: initial implementation of folder delta sync support, enable with
+                      davmail.graph.deltaSync=true
+                  </li>
+                  <li>Graph: set both size limit ($top) and max page size (odata.maxpagesize) in searchMessages, log
+                      item count in fetchNextPage
+                  </li>
+                  <li>Graph: implement full folder caching on top of delta sync, based on ConcurrentHashMap and
+                      ReentrantLock
+                  </li>
+                  <li>Graph: improve recurrence handling, firstDayOfWeek is required for weekly patterns in Graph</li>
+                  <li>Graph: add missing datereceived mapping for receivedDateTime</li>
+                  <li>Graph: log Acquire lock on folder</li>
+                  <li>Graph: always return false in isExpired as access token is automatically refreshed</li>
+                  <li>Graph: switch delta sync on by default</li>
+                  <li>Graph: detect meeting response with missing event, abort to avoid creating an invalid duplicate
+                      event
+                  </li>
+                  <li>Graph: document davmail.graph.deltaSync in reference davmail.properties, even if it's now enabled
+                      by default
+                  </li>
+                  <li>Graph: Handle HttpTokenExpiredException error code with a specific exception</li>
+                  <li>Graph: switch contact description field to personalNotes instead of 0x1000 MAPI property</li>
+                  <li>Graph: add a test case on contact personalNotes</li>
+                  <li>Graph: fix delta sync test case</li>
+                  <li>Graph: refactor attendees status / send meeting response to properly handle individual occurrences
+                      response status update
+                  </li>
+                  <li>Graph: even more strict check on meeting response with missing event</li>
+                  <li>Graph: adjust recursive multicondition handling to detect inner empty conditions, map
+                      personalnotes to standard field and separate description field
+                  </li>
+                  <li>Graph: cleanup and avoid loop in getVTimezone</li>
+                  <li>Graph: restore isExpired check, helps detect network down issues before trying to actually calling
+                      graph
+                  </li>
+                  <li>Graph: cleanup partstatToResponseMap, remove unused map</li>
+                  <li>Graph: review attributes retrieved on messages, drop changeKey, messageheaders,
+                      outlookmessageclass, should help with https://github.com/mguessan/davmail/issues/509
+                  </li>
+                  <li>Graph: improve delta sync logging</li>
+                  <li>Graph: improve getSubFolderByName logging</li>
+                  <li>Graph: prepare distributionlist implementation</li>
+                  <li>Graph: initial distribution list implementation, retrieve VCARD entries with members as
+                      KIND:group
+                  </li>
+                  <li>Graph: implement distribution list lifecycle (create/update/delete), assume client takes into
+                      account returned item name
+                  </li>
+                  <li>Graph: review distribution list attribute mapping to match EWS, and workaround for bug on the
+                      distribution list beta endpoint
+                  </li>
+                  <li>Graph: make sure message count matches current list count</li>
+                  <li>Graph: add missing Calendars.ReadWrite.Shared scope to access shared folders over graph</li>
+                  <li>Graph: refactor task implementation to insert a TODO. prefix in item name and avoid not found /
+                      failover logic
+                  </li>
+                  <li>Graph: fix searchTasksOnly, return empty list on shared folders</li>
+                  <li>Graph: switch DateUtil to use java.time, make sure day is lower case</li>
+                  <li>Graph: experimental recurrence support on todo items, fix TODO. based itemId implementation</li>
+                  <li>Graph: fix https://github.com/mguessan/davmail/issues/515 Graph + O365DeviceCode: with
+                      davmail.enableOidc unset,
+                      device code requested on v1 endpoint but redeemed on v2 — no refresh_token, "Exception parsing
+                      token"
+                  </li>
+                  <li>Graph: refactor event search to return minimal information by default, but full event content on
+                      timerange search,
+                      fix for https://github.com/mguessan/davmail/issues/514
+                  </li>
+                  <li>Graph: do not search for tasks in shared folders</li>
+                  <li>Graph: build imapFlagMap as part of loadMessages/computeAttributes to avoid
+                      ConcurrentModificationException on
+                      multiple connections to same folder
+                  </li>
+                  <li>Graph: move computeAttributes to critical section to ensure imapFlagMap is properly refreshed</li>
+                  <li>Graph: protect against potential npe when extracting alias</li>
+                  <li>Graph: protect against potential npe in isMainCalendar and isMainContactFolder methods</li>
+                  <li>Graph: make urlcompnameToIdMap and folderIdCach thread safe</li>
+                  <li>Graph: handle malformed Retry-After header</li>
+                  <li>Graph: avoid potential npe in executeJsonRequest and executeGraphRequest methods</li>
+                  <li>Graph: adjust previous patch, make sure JsonResponseHandler never returns null</li>
+                  <li>Graph: improve error logging</li>
+                  <li>Graph: replace 102, 103, 104 with MAPI constants defined in ExchangeSession</li>
+                  <li>Graph: simplify GraphIterator, remove dead code</li>
+                  <li>Graph: introduce constants for 261, 262 replied and forwarded icons</li>
+                  <li>Graph: fix another edge case on search for shared tasks</li>
+                  <li>Graph: fix regression on urlcompnameToIdMap, id is null on meeting response and ConcurrentHashMap
+                      cannot store null values
+                  </li>
+                  <li>Graph: merge https://github.com/mguessan/davmail/pull/517 keep origin of appended messages (date,
+                      Received, threading, read flag)
+                  </li>
+                  <li>Graph: add unit test for https://github.com/mguessan/davmail/pull/517 keep origin of appended
+                      messages (date, Received, threading, read flag)
+                  </li>
+                  <li>Graph: fix DavMailAuthenticationException check in O365Token, fail when Mail.ReadWrite is missing
+                      instead of EWS.AccessAsUser.All present, see https://github.com/mguessan/davmail/issues/518
+                  </li>
+                  <li>Graph: fix https://github.com/mguessan/davmail/issues/519, property return well known folder id
+                      for deleted items
+                  </li>
+                  <li>Graph: fix https://github.com/mguessan/davmail/issues/518 skip empty condition to avoid invalid
+                      filter
+                  </li>
+              </ul>
+              <p>EWS</p>
+              <ul>
+                  <li>EWS: apply isItemId refactoring to EWS</li>
+                  <li>EWS: reimplement recursive search with deep folder traversal, based on user contribution, see
+                      https://sourceforge.net/p/davmail/patches/60/
+                  </li>
+                  <li>EWS: apply missing event over EWS, abort to avoid creating an invalid duplicate event</li>
+                  <li>EWS: port new individual occurrence meeting response to EWS, also drop the davmailtemp logic that
+                      is no longer working (create timezone event in normal calendar)
+                  </li>
+                  <li>EWS: map uid in default contact attributes</li>
+                  <li>EWS: do not try to erase uid on update</li>
+                  <li>EWS: convert user provided timezone id to Exchange</li>
+                  <li>EWS: do not try to force PARTSTAT when building attendees, use Exchange provided value</li>
+                  <li>EWS: Exchange does not properly build attendees on exception occurrences, it does not provide
+                      organizer either, rebuild both, see https://github.com/mguessan/davmail/issues/493
+                  </li>
+                  <li>EWS: make sure the organizer information is also retrieved on master event</li>
+                  <li>EWS: set folder type based on folderClass, adjust contact creation status handling, return null on
+                      empty contact
+                      photo retrieval, do not try to retrieve photo from AD with empty email
+                  </li>
+                  <li>EWS: prepare getResponseItemFieldValue method to simplify code</li>
+                  <li>EWS: impersonate only when caldavImpersonate is set, see
+                      https://github.com/mguessan/davmail/issues/512
+                  </li>
+                  <li>EWS: When sending a meeting response on a shared calendar, ensure we impersonate shared mailbox,
+                      see https://github.com/mguessan/davmail/issues/512
+                  </li>
+                  <li>EWS: Exchange does not properly set organizer property on shared calendars and exception
+                      occurrences, fix for https://github.com/mguessan/davmail/issues/512
+                  </li>
+                  <li>EWS: get rid of davmail.caldavImpersonate setting and improve meeting management logging</li>
+                  <li>EWS: change approach on attendees, do not trust Exchange created attendees, rebuild from EWS item
+                      information
+                  </li>
+                  <li>EWS: more logging on attendee status management</li>
+              </ul>
+
+              <p>O365</p>
+              <ul>
+                  <li>O365: fix scope check in O365Token, avoid resetting token when scope is null, see
+                      https://sourceforge.net/p/davmail/bugs/751/
+                  </li>
+                  <li>O365: remove main method from O365InteractiveAuthenticator now that we have the -token command
+                      line option to check embedded browser interaction
+                  </li>
+                  <li>O365: UnknownException means network is down in O365 refresh token handling</li>
+                  <li>O365: move multicondition logic back to ExchangeSession</li>
+                  <li>O365: make the decrypt token error more explicit, it's often a mismatch in passwords between
+                      CalDAV/CardDAV/IMAP clients
+                  </li>
+                  <li>O365: send DavMailException instead of generic IOException on token parsing error</li>
+                  <li>O365: force reauthentication after switching from EWS to Graph</li>
+              </ul>
+
+              <p>CalDAV</p>
+              <ul>
+                  <li>Caldav: review error handling, report 400 error codes to client instead of generic error</li>
+                  <li>Caldav: remove duplicate replaceIcal4Principal method</li>
+                  <li>Caldav: fix potential null pointer in VCalendar.isCurrentUser()</li>
+                  <li>CalDAV: add missing Europe/Amsterdam timezone mapping</li>
+                  <li>CalDAV: review and add additional missing timezone mappings</li>
+                  <li>Caldav: implement DavMail side Caldav read-only mode with davmail.caldavReadonly=true, see
+                      https://github.com/mguessan/davmail/issues/146
+                  </li>
+                  <li>Caldav: review phone numbers mapping to support otherHomePhone and otherBusinessTelephoneNumber
+                  </li>
+                  <li>Caldav: Remove obsolete TestCaldav unit tests</li>
+                  <li>Caldav: fix America/Bahia timezone mapping, see https://github.com/mguessan/davmail/issues/508
+                  </li>
+                  <li>Caldav: additional timezone mapping fixes</li>
+                  <li>CalDAV: properly detect and handle empty credentials</li>
+                  <li>CalDAV: fix searchTasksOnly on main calendar, should lookup in tasks folder, see
+                      https://github.com/mguessan/davmail/issues/511
+                  </li>
+                  <li>CalDav: fix https://github.com/mguessan/davmail/issues/511, warn if start date is after due date,
+                      ignore value for DTSTART
+                  </li>
+                  <li>Caldav: exclude distribution lists for Thunderbird, not yet supported</li>
+                  <li>Caldav: fix for https://github.com/mguessan/davmail/issues/513, missing VCalendar version
+                      property
+                  </li>
+                  <li>Caldav: improve log message when client requests non itemId based item name</li>
+              </ul>
+              <p>CardDAV</p>
+              <ul>
+                  <li>CardDAV: adjust test case for Graph</li>
+                  <li>CardDAV: refactor TestExchangeSessionContact unit tests</li>
+                  <li>Carddav: drop urlcompname (client provided item name) for contacts, prefer more reliable id,
+                      adjust personalNotes case
+                  </li>
+              </ul>
+              <p>Build</p>
+              <ul>
+                  <li>Build: exclude OpenJFX based interactive authentication only, SWT is still available</li>
+                  <li>Build: review debian javafx flag</li>
+                  <li>Build: switch Sonar scan to JDK25 in AppVeyor build script</li>
+                  <li>Build: fix javafx path in appveyor</li>
+                  <li>Build: fix appveyor javafx path check</li>
+                  <li>Build: adjust jacoco.xml path to match Sonar configuration</li>
+                  <li>Build: set sonar.java.test.binaries</li>
+                  <li>Build: remove woodstox StreamScanner exclusion from sonar configuration, we no longer provide a
+                      patched version of this class
+                  </li>
+              </ul>
+              <p>Documentation</p>
+              <ul>
+                  <li>Doc: fix getting started link in README.md</li>
+                  <li>Doc: add a SECURITY.md security policy</li>
+                  <li>Doc: additional README enhancements</li>
+                  <li>Doc: improve README with getting started and What's new sections</li>
+                  <li>Doc: improve README, fix url and add reference to license</li>
+                  <li>Doc: Remove remaining Mac OS X references</li>
+                  <li>Doc: update download instructions and remove outdated links</li>
+                  <li>Doc: update donation link</li>
+                  <li>Doc: fix Download page</li>
+                  <li>Doc: Review DavMail description in appdata.xml for clarity</li>
+                  <li>Doc: Update debian package description</li>
+                  <li>Doc: Update project description on POM</li>
+              </ul>
+              <p>Enhancements</p>
+              <ul>
+                  <li>Remove IllegalArgumentException from URIUtil</li>
+                  <li>Switch to curl user agent for version check, not blocked by Sourceforge</li>
+                  <li>Implement davmail.logConnectionFilePath to send connection logs to a separate file</li>
+                  <li>Refactor DavMailIdleConnectionEvictor to avoid CPU spike waking up from sleep/hibernate, use
+                      scheduleWithFixedDelay instead of fixedRate
+                  </li>
+                  <li>Log backend and authentication modes on startup</li>
+              </ul>
+              <p>Linux</p>
+              <ul>
+                  <li>Linux: improve security, create token file with private permissions</li>
+              </ul>
+              <p>Test</p>
+              <ul>
+                  <li>Test: use a separate test.properties file to provide credentials for unit tests</li>
+                  <li>Test: drop obsolete SSL socket factory</li>
+                  <li>Test: Additional testcase</li>
+                  <li>Test: DateUtilTest test cases</li>
+                  <li>Test: cleanup unit tests</li>
+                  <li>Test: fetch jacoco report</li>
+                  <li>Test: adjust target path for jacoco.xml download</li>
+                  <li>Test: cleanup old test case code</li>
+                  <li>Test: prepare automatic switch to ExchangeEWS mode</li>
+                  <li>Test: Add O365EWS contact tests</li>
+                  <li>Test: Adjust CardDav unit tests</li>
+                  <li>Test: Add EWS test to jacoco coverage report</li>
+                  <li>Test: update contact test case</li>
+                  <li>Test: additional IMAP test cases</li>
+                  <li>Test: include TestImap in jacoco report</li>
+                  <li>Test: Review calendar unit tests</li>
+                  <li>Test: add TestExchangeSessionCalendar to jacoco report</li>
+                  <li>Test: additional contact unit test on distribution list</li>
+                  <li>Test: force default unit tests to use O365Graph mode</li>
+                  <li>Test: Additional test case on searching shared tasks through calendar</li>
+                  <li>Test: Adjust testGetDayOfWeek to latest format change in DateUtil</li>
+                  <li>Test: review SMTP unit tests</li>
+              </ul>
+          </description>
+      </release>
       <release version="6.8.1" date="2026-06-30">
           <description>
               <p>Bugfix release with a fix for a long-standing bug on contact sync over EWS.

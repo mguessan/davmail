@@ -11,25 +11,28 @@
     <body>
 
         <section name="DavMail RoadMap">
-            <p>DavMail features are now almost complete, yet there remains a lot of place
-                for improvement. The following section lists the expected new features
+            <p>As EWS deprecation by Microsoft happens at the end of september 2026,
+                focus is on Graph backend implementation for release 7.0.0.
+                EWS will remain available for on prem Exchange.
+            </p>
+            <p>The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="6.8.2">
+            <subsection name="7.0.1">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
-                    <li>Bugfix release, fix as many reported bugs as possible</li>
+                    <li>Bugfix release, fix reported bugs on new Graph backend</li>
                 </ul>
             </subsection>
-            <subsection name="7.0.0">
+            <subsection name="7.1.0">
                 <p>
                     <strong>Next major release</strong>
                 </p>
                 <ul>
-                    <li>Complete implementation of Graph backend. EWS is deprecated and will eventually be removed by
-                    Microsoft. EWS will remain available for on prem Exchange</li>
+                    <li>Further improvements on Graph backend, align EWS implementation</li>
+                    <li>Deprecate WebDAV backend (not in use since Exchange 2003), remove in 8.0.0</li>
                 </ul>
             </subsection>
             <subsection name="Future">

@@ -27,7 +27,7 @@ or Euros
 ## Download
 Download latest DavMail release on Sourceforge
 
-[![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/davmail/files/davmail/6.8.1/)
+[![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/davmail/files/davmail/7.0.0/)
 
 RPM packages are available from OpenSuse build service:
 
@@ -48,11 +48,11 @@ Docker images are available on GitHub Container Registry:
 ## Trunk builds
 The latest working builds are now available on Appveyor:
 
-* Windows 64 bits setup [davmail-6.8.1-trunk-setup64.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.8.1-trunk-setup64.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-* Windows standalone package [davmail-6.8.1-trunk-windows-standalone.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.8.1-trunk-windows-standalone.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-* Platform independent package [davmail-6.8.1-trunk.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-6.8.1-trunk.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-* Debian package [davmail_6.8.1-trunk-1_all.deb](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail_6.8.1-trunk-1_all.deb?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-* OSX application [DavMail-MacOSX-6.8.1-trunk.app.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2FDavMail-MacOSX-6.8.1-trunk.app.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Windows 64 bits setup [davmail-7.0.0-trunk-setup64.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-7.0.0-trunk-setup64.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Windows standalone package [davmail-7.0.0-trunk-windows-standalone.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-7.0.0-trunk-windows-standalone.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Platform independent package [davmail-7.0.0-trunk.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-7.0.0-trunk.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Debian package [davmail_7.0.0-trunk-1_all.deb](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail_7.0.0-trunk-1_all.deb?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* OSX application [DavMail-MacOSX-7.0.0-trunk.app.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2FDavMail-MacOSX-7.0.0-trunk.app.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
 Note: Windows packages have an embedded Java Runtime Environment, Debian package has a dependency on OpenJDK,
 Azul JDK is preferred on macOS, see [DavMail Setup on macOS](https://davmail.sourceforge.net/macosxsetup.html).
