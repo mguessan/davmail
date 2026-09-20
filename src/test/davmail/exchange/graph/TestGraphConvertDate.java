@@ -94,4 +94,11 @@ public class TestGraphConvertDate extends junit.framework.TestCase {
         assertEquals("not (categories/any(a:a eq 'Paperless'))", buffer.toString());
     }
 
+    public void testSinceDateSearchExpression() {
+        ExchangeSession.Condition sinceCondition = new GraphExchangeSession.AttributeCondition("date", ExchangeSession.Operator.IsGreaterThanOrEqualTo, "2026-08-21T00:00:00Z");
+        StringBuilder buffer = new StringBuilder();
+        sinceCondition.appendTo(buffer);
+        assertEquals("receivedDateTime ge 2026-08-21T00:00:00Z", buffer.toString());
+    }
+
 }

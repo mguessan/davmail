@@ -1643,12 +1643,7 @@ public class ImapConnection extends AbstractConnection {
         } catch (ParseException e) {
             throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", dateToken);
         }
-        String searchAttribute;
-        if (token.startsWith("SENT")) {
-            searchAttribute = "date";
-        } else {
-            searchAttribute = "lastmodified";
-        }
+        String searchAttribute = "date";
 
         if (token.endsWith("ON")) {
             return session.and(session.gt(searchAttribute, session.formatSearchDate(startDate)),
