@@ -87,5 +87,16 @@ public class TestImapTokenizer extends TestCase {
         assertFalse(imapTokenizer.hasMoreTokens());
     }
 
+    public void testSearchUnkeyword() {
+        ImapConnection.ImapTokenizer imapTokenizer = new ImapConnection.ImapTokenizer(". UID SEARCH CHARSET UTF-8 UNKEYWORD Paperless");
+        assertEquals(".", imapTokenizer.nextQuotedToken());
+        assertEquals("UID", imapTokenizer.nextQuotedToken());
+        assertEquals("SEARCH", imapTokenizer.nextQuotedToken());
+        assertEquals("CHARSET", imapTokenizer.nextQuotedToken());
+        assertEquals("UTF-8", imapTokenizer.nextQuotedToken());
+        assertEquals("UNKEYWORD", imapTokenizer.nextQuotedToken());
+        assertEquals("Paperless", imapTokenizer.nextToken());
+        assertFalse(imapTokenizer.hasMoreTokens());
+    }
 
 }
