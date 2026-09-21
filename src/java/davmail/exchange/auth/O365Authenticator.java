@@ -544,6 +544,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
             LOGGER.info("Number matching value for " + username + ": " + entropy);
             if (!Settings.getBooleanProperty("davmail.server") && !GraphicsEnvironment.isHeadless()) {
                 numberMatchingFrame = new NumberMatchingFrame(entropy);
+            } else {
+                // headless mode, display entropy value
+                System.out.println("Number matching value for " + username + ": " + entropy);
             }
         }
 
