@@ -125,6 +125,15 @@ public class GraphObject {
         return value;
     }
 
+    public String getCalendarUid() {
+        String iCalUId = optString("calendaruid");
+        if (iCalUId == null) {
+            // default to O365 iCalUid
+            iCalUId = optString("iCalUId");
+        }
+        return iCalUId;
+    }
+
     public JSONArray optJSONArray(String key) {
         return jsonObject.optJSONArray(key);
     }

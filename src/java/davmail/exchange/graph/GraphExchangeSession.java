@@ -360,7 +360,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 for (int i = 0; i < exceptionOccurrences.length(); i++) {
                     GraphObject exceptionOccurrence = new GraphObject(exceptionOccurrences.optJSONObject(i)
                             // need to override uid, iCalUid is different for each occurrence on server
-                            .put("iCalUId", graphObject.optString("iCalUId")));
+                            .put("iCalUId", graphObject.getCalendarUid()));
                     VObject vEvent = buildVEvent(exceptionOccurrence);
                     vEvent.addProperty(exceptionOccurrence.getRecurrenceId());
                     localVCalendar.addVObject(vEvent);
@@ -371,13 +371,7 @@ public class GraphExchangeSession extends ExchangeSession {
         private VObject buildVEvent(GraphObject jsonEvent) throws DavMailException, JSONException {
             VObject vEvent = new VObject();
             vEvent.type = "VEVENT";
-            // fetch custom iCalUId from transactionId
-            String iCalUId = jsonEvent.optString("transactionId");
-            if (iCalUId == null) {
-                // default to O365 iCalUid
-                iCalUId = jsonEvent.optString("iCalUId");
-            }
-            vEvent.setPropertyValue("UID", iCalUId);
+            vEvent.setPropertyValue("UID", jsonEvent.getCalendarUid());
             vEvent.setPropertyValue("SUMMARY", jsonEvent.optString("subject"));
 
             vEvent.addProperty(convertBodyToVproperty(jsonEvent));
@@ -687,10 +681,12 @@ public class GraphExchangeSession extends ExchangeSession {
                     // set client provided itemName in extended property
                     newGraphEvent.put("urlcompname", convertItemNameToEML(itemName));
 
-                    // on event creation push iCalUId from event to transactionId
+                    // on event creation push iCalUId from event to transactionId and calendaruid
                     String iCalUId = vEvent.getPropertyValue("UID");
                     if (!isExistingEvent && iCalUId != null && !iCalUId.isEmpty()) {
                         newGraphEvent.put("transactionId", iCalUId);
+                        // also push to calendaruid for persistence
+                        newGraphEvent.put("calendaruid", iCalUId);
                     }
 
                     // handle reminder configuration
@@ -2101,6 +2097,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("hasAttachments"));
         EVENT_ATTRIBUTES.add(GraphField.get("iCalUId"));
         EVENT_ATTRIBUTES.add(GraphField.get("transactionId"));
+        EVENT_ATTRIBUTES.add(GraphField.get("calendaruid"));
         EVENT_ATTRIBUTES.add(GraphField.get("id"));
         EVENT_ATTRIBUTES.add(GraphField.get("importance"));
         EVENT_ATTRIBUTES.add(GraphField.get("isAllDay"));
