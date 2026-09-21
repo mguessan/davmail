@@ -1368,14 +1368,15 @@ public class LdapConnection extends AbstractConnection {
      */
     protected static String getContactAttributeName(String ldapAttributeName) {
         String contactAttributeName = null;
-        // first look in contact attributes
-        if (ExchangeSession.CONTACT_ATTRIBUTES.contains(ldapAttributeName)) {
-            contactAttributeName = ldapAttributeName;
-        } else if (LDAP_TO_CONTACT_ATTRIBUTE_MAP.containsKey(ldapAttributeName)) {
+        // first look in ldap to contact attribute map
+        if (LDAP_TO_CONTACT_ATTRIBUTE_MAP.containsKey(ldapAttributeName)) {
             String mappedAttribute = LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(ldapAttributeName);
             if (mappedAttribute != null) {
                 contactAttributeName = mappedAttribute;
             }
+        // then map contact attributes
+        } else if (ExchangeSession.CONTACT_ATTRIBUTES.contains(ldapAttributeName)) {
+            contactAttributeName = ldapAttributeName;
         } else if (!"hassubordinates".equals(ldapAttributeName)){
             DavGatewayTray.debug(new BundleMessage("UNKNOWN_ATTRIBUTE", ldapAttributeName));
         }
