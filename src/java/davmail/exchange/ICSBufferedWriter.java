@@ -42,28 +42,26 @@ public class ICSBufferedWriter {
      * @param line ics event line
      */
     public void writeLine(String line) {
-        writeLine(line, false);
-    }
-
-    /**
-     * Write line with or without continuation prefix.
-     *
-     * @param line   line content
-     * @param prefix continuation flag
-     */
-    public void writeLine(String line, boolean prefix) {
         int maxLength = 77;
-        if (prefix) {
-            maxLength--;
-            buffer.append(' ');
-        }
-        if (line.length() > maxLength) {
-            buffer.append(line, 0, maxLength);
-            newLine();
-            writeLine(line.substring(maxLength), true);
-        } else {
+        if (line.length() <= maxLength) {
             buffer.append(line);
             newLine();
+            return;
+        }
+
+        // first chunk, no space prefix
+        buffer.append(line, 0, maxLength);
+        newLine();
+        int offset = maxLength;
+
+        // continuation lines, prefixed with space
+        maxLength--;
+        while (offset < line.length()) {
+            buffer.append(' ');
+            int end = Math.min(offset + maxLength, line.length());
+            buffer.append(line, offset, end);
+            newLine();
+            offset = end;
         }
     }
 
@@ -91,7 +89,7 @@ public class ICSBufferedWriter {
      * @param propertyValue property value
      */
     public void appendProperty(String propertyName, String propertyValue) {
-        if ((propertyValue != null) && (propertyValue.length() > 0)) {
+        if ((propertyValue != null) && (!propertyValue.isEmpty())) {
             StringBuilder lineBuffer = new StringBuilder();
             lineBuffer.append(propertyName);
             lineBuffer.append(':');
