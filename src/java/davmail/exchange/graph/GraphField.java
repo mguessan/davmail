@@ -89,10 +89,16 @@ public class GraphField {
         addFieldMap("read", "isRead", PropertyType.Boolean);
         addFieldMap("messageheaders", 0x007D, PropertyType.String); // PR_TRANSPORT_MESSAGE_HEADERS
         addFieldMap("internetMessageHeaders");
+        addFieldMap("internetMessageId");
+        addFieldMap("message-id", "internetMessageId");
 
-        addFieldMap("to", DistinguishedPropertySetType.InternetHeaders, "to");
-        addFieldMap("cc", DistinguishedPropertySetType.InternetHeaders, "cc");
-        addFieldMap("from", DistinguishedPropertySetType.InternetHeaders, "from");
+        addFieldMap("from");
+        addFieldMap("to", 0x0E04, PropertyType.String); // PR_DISPLAY_TO
+        addFieldMap("cc", 0x0E03, PropertyType.String); // PR_DISPLAY_CC
+        addFieldMap("bcc", 0x0E02, PropertyType.String); // PR_DISPLAY_BCC
+        addFieldMap("displayto", 0x0E04, PropertyType.String); // PR_DISPLAY_TO
+        addFieldMap("displaycc", 0x0E03, PropertyType.String); // PR_DISPLAY_CC
+        addFieldMap("displaybcc", 0x0E02, PropertyType.String); // PR_DISPLAY_BCC
 
         addFieldMap("permanenturl", 0x670E, PropertyType.String); //PR_FLAT_URL_NAME
         addFieldMap("lastVerbExecuted", 0x1081, PropertyType.Integer); // PR_ACTION_FLAG
@@ -372,7 +378,11 @@ public class GraphField {
         this.extended = true;
 
         this.alias = alias;
-        this.propertyTag = "0x" + Integer.toHexString(intPropertyTag);
+        if (intPropertyTag > 0xFFFF) {
+            this.propertyTag = String.format("0x%08X", intPropertyTag);
+        } else {
+            this.propertyTag = String.format("0x%04X", intPropertyTag);
+        }
         this.propertyType = propertyType;
         this.graphId = buildGraphId();
     }

@@ -2205,6 +2205,9 @@ public class GraphExchangeSession extends ExchangeSession {
         FOLDER_PROPERTIES.add(GraphField.get("uidNext"));
     }
 
+    protected GraphExchangeSession() {
+    }
+
     public GraphExchangeSession(HttpClientAdapter httpClient, O365Token token, String userName) throws IOException {
         this.httpClient = httpClient;
         this.token = token;
@@ -2830,6 +2833,17 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
             } else if (field.isMultiValued()) {
                 buffer.append(graphId).append("/any(a:a ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
+            } else if ("from".equals(graphId)) {
+                if (Operator.Contains.equals(operator)) {
+                    buffer.append("(contains(from/emailAddress/address,'").append(StringUtil.escapeQuotes(value))
+                            .append("') or contains(from/emailAddress/name,'").append(StringUtil.escapeQuotes(value)).append("'))");
+                } else if (Operator.StartsWith.equals(operator)) {
+                    buffer.append("(startswith(from/emailAddress/address,'").append(StringUtil.escapeQuotes(value))
+                            .append("') or startswith(from/emailAddress/name,'").append(StringUtil.escapeQuotes(value)).append("'))");
+                } else {
+                    buffer.append("(from/emailAddress/address ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value))
+                            .append("' or from/emailAddress/name ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("')");
+                }
             } else if ("body".equals(graphId)) {
                 // only contains supported for body
                 buffer.append("contains(").append(graphId).append("/content,'").append(StringUtil.escapeQuotes(value)).append("')");
@@ -3006,6 +3020,17 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public Condition headerIsEqualTo(String headerName, String value) {
+        if (headerName != null) {
+            headerName = headerName.toLowerCase();
+            if ("from".equals(headerName)
+                    || "to".equals(headerName)
+                    || "cc".equals(headerName)
+                    || "bcc".equals(headerName)) {
+                return contains(headerName, value);
+            } else if ("message-id".equals(headerName)) {
+                return isEqualTo("internetMessageId", value);
+            }
+        }
         return new HeaderCondition(headerName, value);
     }
 

@@ -1542,7 +1542,7 @@ public class ImapConnection extends AbstractConnection {
             if ("DELETED".equals(nextToken)) {
                 // conditions.deleted = Boolean.FALSE;
                 return session.isNull("deleted");
-            } else if ("FROM".equals(nextToken) || "TO".equals(nextToken) || "CC".equals(nextToken)
+            } else if ("FROM".equals(nextToken) || "TO".equals(nextToken) || "CC".equals(nextToken) || "BCC".equals(nextToken)
                     || "SUBJECT".equals(nextToken) || "BODY".equals(nextToken) || "TEXT".equals(nextToken)
                     || "KEYWORD".equals(nextToken) || "LARGER".equals(nextToken) || "SMALLER".equals(nextToken)) {
                 return appendNotSearchParams(nextToken + " " + tokens.nextToken(), conditions);
@@ -1572,6 +1572,8 @@ public class ImapConnection extends AbstractConnection {
             return session.contains("to", tokens.nextToken());
         } else if ("CC".equals(token)) {
             return session.contains("cc", tokens.nextToken());
+        } else if ("BCC".equals(token)) {
+            return session.contains("bcc", tokens.nextToken());
         } else if ("LARGER".equals(token)) {
             return session.gte("messageSize", tokens.nextToken());
         } else if ("SMALLER".equals(token)) {
