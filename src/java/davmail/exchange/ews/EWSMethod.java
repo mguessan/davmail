@@ -806,6 +806,9 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
                     && !"ErrorItemNotFound".equals(errorDetail)
                     && !"ErrorCalendarOccurrenceIsDeletedFromRecurrence".equals(errorDetail)
             )) {
+                if (errorDetail.startsWith("Unexpected EOF in prolog")) {
+                    throw new EWSException("EWS not available");
+                }
                 throw new EWSException(errorDetail
                         + ' ' + ((errorDescription != null) ? errorDescription : "")
                         + ' ' + ((errorValue != null) ? errorValue : "")
