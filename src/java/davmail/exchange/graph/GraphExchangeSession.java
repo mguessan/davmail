@@ -681,12 +681,15 @@ public class GraphExchangeSession extends ExchangeSession {
                     // set client provided itemName in extended property
                     newGraphEvent.put("urlcompname", convertItemNameToEML(itemName));
 
-                    // on event creation push iCalUId from event to transactionId and calendaruid
                     String iCalUId = vEvent.getPropertyValue("UID");
+
+                    // always push UID to calendaruid for persistence
+                    if (iCalUId != null && !iCalUId.isEmpty()) {
+                        newGraphEvent.put("calendaruid", iCalUId);
+                    }
+                    // on event creation push UID from event to transactionId too
                     if (!isExistingEvent && iCalUId != null && !iCalUId.isEmpty()) {
                         newGraphEvent.put("transactionId", iCalUId);
-                        // also push to calendaruid for persistence
-                        newGraphEvent.put("calendaruid", iCalUId);
                     }
 
                     // handle reminder configuration
