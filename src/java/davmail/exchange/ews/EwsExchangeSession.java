@@ -2411,35 +2411,31 @@ public class EwsExchangeSession extends ExchangeSession {
                     // fix UID and RECURRENCE-ID, broken at least on Exchange 2007
                     List<EWSMethod.Occurrence> occurrences = getItemMethod.getResponseItem().getOccurrences();
                     if (occurrences != null) {
-                        Iterator<VObject> modifiedOccurrencesIterator = localVCalendar.getModifiedOccurrences().iterator();
-                        for (EWSMethod.Occurrence occurrence : occurrences) {
-                            if (modifiedOccurrencesIterator.hasNext()) {
-                                VObject modifiedOccurrence = modifiedOccurrencesIterator.next();
-                                // fix modified occurrences attendees
-                                GetItemMethod getOccurrenceMethod = new GetItemMethod(BaseShape.ID_ONLY, occurrence.itemId, false);
-                                getOccurrenceMethod.addAdditionalProperty(Field.get("requiredattendees"));
-                                getOccurrenceMethod.addAdditionalProperty(Field.get("optionalattendees"));
-                                getOccurrenceMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
-                                getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
-                                getOccurrenceMethod.addAdditionalProperty(Field.get("organizer"));
-                                executeMethod(getOccurrenceMethod);
-                                if (organizerProperty != null && modifiedOccurrence.getProperties("ORGANIZER") == null) {
-                                    // ensure organizer is set on all occurrences
-                                    modifiedOccurrence.addProperty(organizerProperty);
-                                }
-                                fixAttendees(getOccurrenceMethod, modifiedOccurrence);
-                                // LAST-MODIFIED is missing in event content
-                                modifiedOccurrence.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getOccurrenceMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
-
-                                // fix caldav uid, should be the same as main VEVENT
-                                if (calendaruid != null) {
-                                    modifiedOccurrence.setPropertyValue("UID", calendaruid);
-                                }
-
-                                VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
-                                if (recurrenceId != null) {
-                                    recurrenceId.removeParam("TZID");
-                                    recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
+                        String masterUid = localVCalendar.getFirstVevent().getPropertyValue("UID");
+                        List<VObject> modifiedOccurrences = localVCalendar.getModifiedOccurrences();
+                        if (isMimeModifiedOccurrencesConsistent(modifiedOccurrences, occurrences)) {
+                            Iterator<VObject> modifiedOccurrencesIterator = modifiedOccurrences.iterator();
+                            for (EWSMethod.Occurrence occurrence : occurrences) {
+                                GetItemMethod getOccurrenceMethod = getOccurrence(occurrence, false);
+                                fixModifiedOccurrence(modifiedOccurrencesIterator.next(), getOccurrenceMethod, occurrence, masterUid, organizerProperty);
+                            }
+                        } else {
+                            // Exchange MIME content is missing or has incomplete exceptions, rebuild them from occurrence items
+                            LOGGER.warn("Rebuilding " + occurrences.size() + " modified occurrences of " + masterUid
+                                    + ", MIME content has " + modifiedOccurrences.size() + " exceptions");
+                            localVCalendar.removeModifiedOccurrences();
+                            for (EWSMethod.Occurrence occurrence : occurrences) {
+                                GetItemMethod getOccurrenceMethod = getOccurrence(occurrence, true);
+                                byte[] occurrenceContent = getOccurrenceMethod.getMimeContent();
+                                VObject modifiedOccurrence = occurrenceContent == null ? null
+                                        : new VCalendar(occurrenceContent, getCalendarEmail(folderPath), getVTimezone()).getFirstVevent();
+                                if (modifiedOccurrence == null) {
+                                    LOGGER.warn("Unable to retrieve modified occurrence " + occurrence.originalStart + " of " + masterUid);
+                                } else {
+                                    modifiedOccurrence.removeProperty("RRULE");
+                                    modifiedOccurrence.removeProperty("EXDATE");
+                                    fixModifiedOccurrence(modifiedOccurrence, getOccurrenceMethod, occurrence, masterUid, organizerProperty);
+                                    localVCalendar.addVObject(modifiedOccurrence);
                                 }
                             }
                         }
@@ -2479,6 +2475,53 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
             return organizerProperty;
+        }
+
+        protected boolean isMimeModifiedOccurrencesConsistent(List<VObject> modifiedOccurrences, List<EWSMethod.Occurrence> occurrences) {
+            if (modifiedOccurrences.size() != occurrences.size()) {
+                return false;
+            }
+            for (VObject modifiedOccurrence : modifiedOccurrences) {
+                if (modifiedOccurrence.getProperty("RECURRENCE-ID") == null) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        protected GetItemMethod getOccurrence(EWSMethod.Occurrence occurrence, boolean includeMimeContent) throws IOException {
+            GetItemMethod getOccurrenceMethod = new GetItemMethod(BaseShape.ID_ONLY, occurrence.itemId, includeMimeContent);
+            getOccurrenceMethod.addAdditionalProperty(Field.get("requiredattendees"));
+            getOccurrenceMethod.addAdditionalProperty(Field.get("optionalattendees"));
+            getOccurrenceMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
+            getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
+            getOccurrenceMethod.addAdditionalProperty(Field.get("organizer"));
+            executeMethod(getOccurrenceMethod);
+            return getOccurrenceMethod;
+        }
+
+        protected void fixModifiedOccurrence(VObject modifiedOccurrence, GetItemMethod getOccurrenceMethod, EWSMethod.Occurrence occurrence,
+                                             String masterUid, VProperty organizerProperty) throws IOException {
+            if (organizerProperty != null && modifiedOccurrence.getProperties("ORGANIZER") == null) {
+                // ensure organizer is set on all occurrences
+                modifiedOccurrence.addProperty(organizerProperty);
+            }
+            fixAttendees(getOccurrenceMethod, modifiedOccurrence);
+            // LAST-MODIFIED is missing in event content
+            modifiedOccurrence.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getOccurrenceMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
+
+            // fix caldav uid, should be the same as main VEVENT
+            if (masterUid != null) {
+                modifiedOccurrence.setPropertyValue("UID", masterUid);
+            }
+
+            VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
+            if (recurrenceId != null) {
+                recurrenceId.removeParam("TZID");
+                recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
+            } else {
+                modifiedOccurrence.setPropertyValue("RECURRENCE-ID", convertDateFromExchange(occurrence.originalStart));
+            }
         }
 
         protected void fixAttendees(GetItemMethod getItemMethod, VObject vEvent) throws IOException {
