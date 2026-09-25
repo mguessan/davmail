@@ -929,6 +929,13 @@ public class VCalendar extends VObject {
         return results;
     }
 
+    /**
+     * Remove recurring VCalendar occurrence exceptions.
+     */
+    public void removeModifiedOccurrences() {
+        vObjects.removeAll(getModifiedOccurrences());
+    }
+
     public TimeZone getStandardTimezoneId(String tzid) {
         String convertedTzid;
         // convert Exchange TZID to standard timezone
