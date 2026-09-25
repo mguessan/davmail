@@ -1544,7 +1544,7 @@ public class ImapConnection extends AbstractConnection {
                 return session.isNull("deleted");
             } else if ("FROM".equals(nextToken) || "TO".equals(nextToken) || "CC".equals(nextToken)
                     || "SUBJECT".equals(nextToken) || "BODY".equals(nextToken) || "TEXT".equals(nextToken)
-                    || "KEYWORD".equals(nextToken) || "LARGER".equals(nextToken) || "SMALLER".equals(nextToken)) {
+                    || "KEYWORD".equals(nextToken) || "UNKEYWORD".equals(nextToken) || "LARGER".equals(nextToken) || "SMALLER".equals(nextToken)) {
                 return appendNotSearchParams(nextToken + " " + tokens.nextToken(), conditions);
             } else if ("UID".equals(nextToken)) {
                 conditions.notUidRange = tokens.nextToken();
@@ -1566,6 +1566,8 @@ public class ImapConnection extends AbstractConnection {
                     session.contains("cc", value));
         } else if ("KEYWORD".equals(token)) {
             return session.isEqualTo("keywords", session.convertFlagToKeyword(tokens.nextToken()));
+        } else if ("UNKEYWORD".equals(token)) {
+            return session.not(session.isEqualTo("keywords", session.convertFlagToKeyword(tokens.nextToken())));
         } else if ("FROM".equals(token)) {
             return session.contains("from", tokens.nextToken());
         } else if ("TO".equals(token)) {
@@ -1641,12 +1643,7 @@ public class ImapConnection extends AbstractConnection {
         } catch (ParseException e) {
             throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", dateToken);
         }
-        String searchAttribute;
-        if (token.startsWith("SENT")) {
-            searchAttribute = "date";
-        } else {
-            searchAttribute = "lastmodified";
-        }
+        String searchAttribute = "date";
 
         if (token.endsWith("ON")) {
             return session.and(session.gt(searchAttribute, session.formatSearchDate(startDate)),
