@@ -360,7 +360,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 for (int i = 0; i < exceptionOccurrences.length(); i++) {
                     GraphObject exceptionOccurrence = new GraphObject(exceptionOccurrences.optJSONObject(i)
                             // need to override uid, iCalUid is different for each occurrence on server
-                            .put("iCalUId", graphObject.getCalendarUid()));
+                            .put("iCalUId", graphObject.getCalendarUid(false)));
                     VObject vEvent = buildVEvent(exceptionOccurrence);
                     vEvent.addProperty(exceptionOccurrence.getRecurrenceId());
                     localVCalendar.addVObject(vEvent);
@@ -371,7 +371,7 @@ public class GraphExchangeSession extends ExchangeSession {
         private VObject buildVEvent(GraphObject jsonEvent) throws DavMailException, JSONException {
             VObject vEvent = new VObject();
             vEvent.type = "VEVENT";
-            vEvent.setPropertyValue("UID", jsonEvent.getCalendarUid());
+            vEvent.setPropertyValue("UID", jsonEvent.getCalendarUid(Settings.getBooleanProperty("davmail.caldavUIDFromTransactionId")));
             vEvent.setPropertyValue("SUMMARY", jsonEvent.optString("subject"));
 
             vEvent.addProperty(convertBodyToVproperty(jsonEvent));

@@ -219,6 +219,7 @@ public final class Settings {
         SETTINGS_PROPERTIES.put("davmail.sentKeepDelay", "0");
         SETTINGS_PROPERTIES.put("davmail.caldavPastDelay", "0");
         SETTINGS_PROPERTIES.put("davmail.caldavAutoSchedule", Boolean.TRUE.toString());
+        SETTINGS_PROPERTIES.put("davmail.caldavUIDFromTransactionId", Boolean.FALSE.toString());
         SETTINGS_PROPERTIES.put("davmail.imapIdleDelay", "");
         SETTINGS_PROPERTIES.put("davmail.folderSizeLimit", "");
         SETTINGS_PROPERTIES.put("davmail.enableKeepAlive", Boolean.FALSE.toString());
