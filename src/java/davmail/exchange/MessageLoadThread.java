@@ -15,7 +15,7 @@ import java.net.SocketException;
 public class MessageLoadThread extends Thread {
     private static final Logger LOGGER = Logger.getLogger(MessageLoadThread.class);
 
-    protected boolean isComplete = false;
+    protected volatile boolean isComplete = false;
     protected ExchangeSession.Message message;
     protected IOException ioException;
     protected MessagingException messagingException;
@@ -52,15 +52,16 @@ public class MessageLoadThread extends Thread {
             message.loadMimeMessage();
         } else {
             LOGGER.debug("Load large message " + (message.size / 1024) + "KB uid " + message.getUid() + " imapUid " + message.getImapUid() + " in a separate thread");
-                MessageLoadThread messageLoadThread = new MessageLoadThread(currentThread().getName(), message);
-                messageLoadThread.start();
-                while (!messageLoadThread.isComplete) {
-                    try {
-                        messageLoadThread.join(10000);
-                    } catch (InterruptedException e) {
-                        LOGGER.warn("Thread interrupted", e);
-                        Thread.currentThread().interrupt();
-                    }
+            MessageLoadThread messageLoadThread = new MessageLoadThread(currentThread().getName(), message);
+            messageLoadThread.start();
+            while (!messageLoadThread.isComplete) {
+                try {
+                    messageLoadThread.join(10000);
+                } catch (InterruptedException e) {
+                    LOGGER.warn("Thread interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
+                if (!messageLoadThread.isComplete) {
                     LOGGER.debug("Still loading uid " + message.getUid() + " imapUid " + message.getImapUid());
                     if (Settings.getBooleanProperty("davmail.enableKeepAlive", false)) {
                         try {
@@ -68,18 +69,24 @@ public class MessageLoadThread extends Thread {
                             outputStream.flush();
                         } catch (SocketException e) {
                             // client closed connection, stop thread
-                            message.dropMimeMessage();
                             messageLoadThread.interrupt();
+                            try {
+                                messageLoadThread.join(1000);
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                            }
+                            message.dropMimeMessage();
                             throw e;
                         }
                     }
                 }
-                if (messageLoadThread.ioException != null) {
-                    throw messageLoadThread.ioException;
-                }
-                if (messageLoadThread.messagingException != null) {
-                    throw messageLoadThread.messagingException;
-                }
+            }
+            if (messageLoadThread.ioException != null) {
+                throw messageLoadThread.ioException;
+            }
+            if (messageLoadThread.messagingException != null) {
+                throw messageLoadThread.messagingException;
+            }
         }
     }
 }
