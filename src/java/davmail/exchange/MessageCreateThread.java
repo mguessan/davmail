@@ -16,7 +16,7 @@ import java.util.HashMap;
 public class MessageCreateThread extends Thread {
     private static final Logger LOGGER = Logger.getLogger(MessageCreateThread.class);
 
-    boolean isComplete = false;
+    volatile boolean isComplete = false;
     ExchangeSession session;
     String folderPath;
     String messageName;
@@ -55,7 +55,6 @@ public class MessageCreateThread extends Thread {
      * @param mimeMessage  message content
      * @param outputStream output stream
      * @param capabilities IMAP capabilities
-     * @throws InterruptedException on error
      * @throws IOException          on error
      */
     public static ExchangeSession.Message createMessage(ExchangeSession session, String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage, OutputStream outputStream, String capabilities) throws IOException {
@@ -79,6 +78,11 @@ public class MessageCreateThread extends Thread {
                         outputStream.flush();
                     } catch (SocketException e) {
                         messageCreateThread.interrupt();
+                        try {
+                            messageCreateThread.join(1000);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
                         throw e;
                     }
                 }
