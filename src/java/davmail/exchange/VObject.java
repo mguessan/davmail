@@ -280,9 +280,11 @@ public class VObject {
      */
     public void removeProperty(String name) {
         if (properties != null) {
-            VProperty property = getProperty(name);
-            if (property != null) {
-                properties.remove(property);
+            List<VProperty> propertyList = getProperties(name);
+            if (propertyList != null) {
+                for (VProperty property : propertyList) {
+                    properties.remove(property);
+                }
             }
         }
     }
