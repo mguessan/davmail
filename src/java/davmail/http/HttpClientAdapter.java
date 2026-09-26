@@ -69,7 +69,7 @@ import java.io.IOException;
 import java.net.*;
 import java.security.Principal;
 import java.security.Security;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public class HttpClientAdapter implements Closeable {
@@ -296,7 +296,7 @@ public class HttpClientAdapter implements Closeable {
     }
 
     private RequestConfig getRequestConfig() {
-        HashSet<String> authSchemes = new HashSet<>();
+        LinkedHashSet<String> authSchemes = new LinkedHashSet<>();
         if (Settings.getBooleanProperty("davmail.enableKerberos")) {
             authSchemes.add(AuthSchemes.SPNEGO);
             authSchemes.add(AuthSchemes.KERBEROS);
