@@ -41,6 +41,7 @@ import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Create ExchangeSession instances.
@@ -73,7 +74,7 @@ public final class ExchangeSessionFactory {
 
         @Override
         public int hashCode() {
-            return url.hashCode() + userName.hashCode() + password.hashCode();
+            return Objects.hash(url, userName, password);
         }
     }
 
@@ -223,16 +224,22 @@ public final class ExchangeSessionFactory {
                         }
                     }
                 }
-                checkWhiteList(session.getEmail());
+                try {
+                    checkWhiteList(session.getEmail());
+                } catch (DavMailAuthenticationException e) {
+                    session.close();
+                    session = null;
+                    throw e;
+                }
                 ExchangeSession.LOGGER.debug("Created new session " + session + " for user " + poolKey.userName);
             }
             // successful login, put session in cache
             synchronized (LOCK) {
                 POOL_MAP.put(poolKey, session);
             }
-            // session opened, future failure will mean network down
+            // session opened; future failure will mean network down
             configChecked = true;
-            // Reset so next time a problem occurs message will be sent once
+            // Reset so next time a problem occurs message is sent once
             errorSent = false;
         } catch (DavMailException | IllegalStateException | NullPointerException exc) {
             throw exc;
@@ -269,7 +276,7 @@ public final class ExchangeSessionFactory {
 
     /**
      * Check if whitelist is empty or email is allowed.
-     * userWhiteList is a comma separated list of values.
+     * userWhiteList is a comma-separated list of values.
      * \@company.com means all domain users are allowed
      *
      * @param email user email
@@ -290,7 +297,7 @@ public final class ExchangeSessionFactory {
     }
 
     /**
-     * Get a non expired session.
+     * Get a non-expired session.
      * If the current session is not expired, return current session, else try to create a new session
      *
      * @param currentSession current session
@@ -345,9 +352,9 @@ public final class ExchangeSessionFactory {
                     && !HttpClientAdapter.isRedirect(status)) {
                 throw new DavMailException("EXCEPTION_CONNECTION_FAILED", url, status);
             }
-            // session opened, future failure will mean network down
+            // session opened; future failure will mean network down
             configChecked = true;
-            // Reset so next time a problem occurs message will be sent once
+            // Reset so next time a problem occurs message is sent once
             errorSent = false;
         } catch (Exception exc) {
             handleNetworkDown(exc);
@@ -381,21 +388,23 @@ public final class ExchangeSessionFactory {
     /**
      * Get user password from session pool for SASL authentication
      *
-     * @param userName Exchange user name
+     * @param userName Exchange username
      * @return user password
      */
     public static String getUserPassword(String userName) {
         String fullUserName = convertUserName(userName);
-        for (PoolKey poolKey : POOL_MAP.keySet()) {
-            if (poolKey.userName.equals(fullUserName)) {
-                return poolKey.password;
+        synchronized (LOCK) {
+            for (PoolKey poolKey : POOL_MAP.keySet()) {
+                if (poolKey.userName.equals(fullUserName)) {
+                    return poolKey.password;
+                }
             }
         }
         return null;
     }
 
     /**
-     * Check if at least one network interface is up and active (i.e. has an address)
+     * Check if at least one network interface is up and active (i.e., has an address)
      *
      * @return true if network available
      */
