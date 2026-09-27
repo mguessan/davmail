@@ -20,8 +20,17 @@
 package davmail.http;
 
 import davmail.Settings;
-import davmail.exception.*;
-import davmail.http.request.*;
+import davmail.exception.HttpForbiddenException;
+import davmail.exception.HttpNotFoundException;
+import davmail.exception.HttpPreconditionFailedException;
+import davmail.exception.HttpServerErrorException;
+import davmail.exception.LoginTimeoutException;
+import davmail.http.request.ExchangeDavRequest;
+import davmail.http.request.ExchangeSearchRequest;
+import davmail.http.request.GetRequest;
+import davmail.http.request.PostRequest;
+import davmail.http.request.ResponseWrapper;
+import davmail.http.request.RestRequest;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -66,10 +75,14 @@ import org.codehaus.jettison.json.JSONObject;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URI;
 import java.security.Principal;
 import java.security.Security;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public class HttpClientAdapter implements Closeable {
@@ -296,7 +309,7 @@ public class HttpClientAdapter implements Closeable {
     }
 
     private RequestConfig getRequestConfig() {
-        HashSet<String> authSchemes = new HashSet<>();
+        LinkedHashSet<String> authSchemes = new LinkedHashSet<>();
         if (Settings.getBooleanProperty("davmail.enableKerberos")) {
             authSchemes.add(AuthSchemes.SPNEGO);
             authSchemes.add(AuthSchemes.KERBEROS);
