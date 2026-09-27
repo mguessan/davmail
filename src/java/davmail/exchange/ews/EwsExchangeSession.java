@@ -1375,13 +1375,8 @@ public class EwsExchangeSession extends ExchangeSession {
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
-            // prefer urlcompname (client provided item name) for contacts
-            itemName = StringUtil.decodeUrlcompname(response.get(Field.get("urlcompname").getResponseName()));
-            // if urlcompname is empty, this is a server created item
-            // if urlcompname is an itemId, something went wrong, ignore
-            if (itemName == null || isItemId(itemName)) {
-                itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
-            }
+            // drop urlcompname (client provided item name) for contacts, prefer more reliable id
+            itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
                 if (value != null && !value.isEmpty()) {
