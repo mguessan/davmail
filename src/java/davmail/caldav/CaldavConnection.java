@@ -1522,7 +1522,9 @@ public class CaldavConnection extends AbstractConnection {
         protected boolean isIcal5() {
             return isUserAgent("CoreDAV/") || isUserAgent("iOS/")
                     // iCal 6
-                    || isUserAgent("Mac OS X/10.8");
+                    || isUserAgent("Mac OS X/10.8")
+                    // macOS 11 and later
+                    || isUserAgent("macOS/");
         }
 
         protected boolean isUserAgent(String key) {
