@@ -4170,31 +4170,33 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private JSONObject getEventByICalUidIfExists(FolderId folderId, String iCalUid) throws IOException {
+        if (iCalUid == null || iCalUid.isEmpty()) {
+            return null;
+        }
         String itemId = null;
-            try {
-                if (folderId.isCalendar()) {
-                    JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
-                            .setMethod(HttpGet.METHOD_NAME)
-                            .setMailbox(folderId.mailbox)
-                            .setObjectType("calendars")
-                            .setObjectId(folderId.id)
-                            .setChildType("events")
-                            .setFilter(new AttributeCondition("iCalUid", Operator.IsEqualTo, iCalUid))
-                            .setSelect("id") // retrieve id only
-                    );
+        try {
+            if (folderId.isCalendar()) {
+                JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                        .setMethod(HttpGet.METHOD_NAME)
+                        .setMailbox(folderId.mailbox)
+                        .setObjectType("calendars")
+                        .setObjectId(folderId.id)
+                        .setChildType("events")
+                        .setFilter(new AttributeCondition("iCalUid", Operator.IsEqualTo, iCalUid))
+                        .setSelect("id") // retrieve id only
+                );
 
-                    JSONArray values = jsonResponse.optJSONArray("value");
-                    if (values != null && values.length() > 0) {
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("Found event " + values.optJSONObject(0));
-                        }
-                        itemId = values.optJSONObject(0).optString("id");
+                JSONArray values = jsonResponse.optJSONArray("value");
+                if (values != null && values.length() > 0) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Found event " + values.optJSONObject(0));
                     }
+                    itemId = values.optJSONObject(0).optString("id");
                 }
-
-            } catch (HttpNotFoundException e) {
-                LOGGER.debug("No event found for iCalUid " + iCalUid);
             }
+        } catch (HttpNotFoundException e) {
+            LOGGER.debug("No event found for iCalUid " + iCalUid);
+        }
 
         // fetch item by id
         return getEventByIdIfExists(folderId, itemId);
