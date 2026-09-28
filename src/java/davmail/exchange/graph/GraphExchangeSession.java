@@ -72,6 +72,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
@@ -603,6 +604,10 @@ public class GraphExchangeSession extends ExchangeSession {
             HashMap<String, String> responseStatusUpdates = null;
 
             JSONObject existingJsonEvent = getEventIfExists(folderId, itemName);
+            if (existingJsonEvent == null) {
+                // let's try to find event by iCaluid, happens for meeting response when calendar is not synced yet
+                existingJsonEvent = getEventByICalUidIfExists(folderId, vCalendar.getFirstVeventPropertyValue("UID"));
+            }
             if (existingJsonEvent == null) {
                 isMeeting = vCalendar.isMeeting();
                 isOrganizer = vCalendar.isOrganizer();
@@ -2214,6 +2219,8 @@ public class GraphExchangeSession extends ExchangeSession {
         this.userName = userName;
 
         buildSessionInfo(httpClient.getUri());
+        // validate token is valid for graph
+        isExpired();
     }
 
     @Override
@@ -2843,7 +2850,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 buffer.append("startswith(").append(graphId).append(",'").append(StringUtil.escapeQuotes(value)).append("')");
             } else if (field.isDate() || field.isBoolean()) {
                 buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" ").append(value);
-            } else if ("start".equals(graphId) || "end".equals(graphId)) { // TODO check date value
+            } else if ("start".equals(graphId) || "end".equals(graphId) || "completedDateTime".equals(graphId)) {
+                // DateTimeTimeZone fields
                 buffer.append(graphId).append("/dateTime ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
             } else {
                 buffer.append(graphId).append(" ").append(convertOperator(operator)).append(" '").append(StringUtil.escapeQuotes(value)).append("'");
@@ -3886,9 +3894,17 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setMailbox(folderId.mailbox)
                 .setObjectType("todo/lists")
                 .setObjectId(folderId.id)
-                .setChildType("tasks")
-                //.setSelectFields(TODO_PROPERTIES)
-                ;
+                .setChildType("tasks");
+
+        // filter completed based on caldavPastDelay setting
+        int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
+        if (caldavPastDelay > 0) {
+            // show non-completed tasks and tasks completed within the past delay window
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DAY_OF_MONTH, -caldavPastDelay);
+            httpRequestBuilder.setFilter("status ne 'completed' or completedDateTime/dateTime ge '" + formatSearchDate(cal.getTime()) + "'");
+        }
+
         LOGGER.debug("searchTasksOnly " + folderId.getMailboxName() + " " + folderPath);
 
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
@@ -4106,7 +4122,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
 
-    private JSONObject getEventIfExists(FolderId folderId, String itemName) throws IOException {
+    protected JSONObject getEventIfExists(FolderId folderId, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
         String itemId = null;
         if (urlcompnameToIdMap.containsKey(urlcompname)) {
@@ -4150,6 +4166,41 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         }
         // fetch item by id
+        return getEventByIdIfExists(folderId, itemId);
+    }
+
+    private JSONObject getEventByICalUidIfExists(FolderId folderId, String iCalUid) throws IOException {
+        String itemId = null;
+            try {
+                if (folderId.isCalendar()) {
+                    JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                            .setMethod(HttpGet.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("calendars")
+                            .setObjectId(folderId.id)
+                            .setChildType("events")
+                            .setFilter(new AttributeCondition("iCalUid", Operator.IsEqualTo, iCalUid))
+                            .setSelect("id") // retrieve id only
+                    );
+
+                    JSONArray values = jsonResponse.optJSONArray("value");
+                    if (values != null && values.length() > 0) {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Found event " + values.optJSONObject(0));
+                        }
+                        itemId = values.optJSONObject(0).optString("id");
+                    }
+                }
+
+            } catch (HttpNotFoundException e) {
+                LOGGER.debug("No event found for iCalUid " + iCalUid);
+            }
+
+        // fetch item by id
+        return getEventByIdIfExists(folderId, itemId);
+    }
+
+    protected JSONObject getEventByIdIfExists(FolderId folderId, String itemId) throws IOException {
         if (itemId != null) {
             try {
                 return executeJsonRequest(new GraphRequestBuilder()
@@ -4182,6 +4233,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
             }
         }
+
         return null;
     }
 
