@@ -71,6 +71,7 @@ public class GraphRequestBuilder {
     String expand;
 
     String filter;
+    String orderBy;
     String search;
     // sets $top parameter
     int sizeLimit;
@@ -196,6 +197,11 @@ public class GraphRequestBuilder {
 
     public GraphRequestBuilder setSearch(String search) {
         this.search = search;
+        return this;
+    }
+
+    public GraphRequestBuilder setOrderBy(String orderBy) {
+        this.orderBy = orderBy;
         return this;
     }
 
@@ -393,6 +399,10 @@ public class GraphRequestBuilder {
 
                 if (filter != null) {
                     uriBuilder.addParameter("$filter", filter);
+                }
+
+                if (orderBy != null) {
+                    uriBuilder.addParameter("$orderby", orderBy);
                 }
 
                 if (search != null) {
