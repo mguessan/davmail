@@ -6,7 +6,7 @@ import org.apache.log4j.Logger;
  * Validator for iCalendar data according to RFC 5545 specifications.
  * This implementation provides comprehensive validation and repair capabilities for iCalendar content,
  * specifically focusing on character validation rather than XML structure.
- *
+ * <p>
  * This helpful tool addresses synchronization issues between different calendar clients
  * (OWA, Outlook, and Thunderbird via DavMail) where calendar entries containing invalid
  * characters are handled differently across platforms. These problematic entries originate
@@ -16,14 +16,14 @@ import org.apache.log4j.Logger;
  * validator provides detailed validation information about invalid characters and offers
  * repair functionality to automatically remove problematic characters while preserving
  * valid content.
- *
+ * <p>
  * The implementation was developed to address a specific issue where calendar entries
  * containing invalid string content are hidden in OWA and Outlook, making them inaccessible
  * for manual deletion or repair. Since these entries are not visible in OWA and Outlook,
  * users cannot remove or fix them before synchronization to Thunderbird, where they cause
  * XML parsing errors. The solution provides a way to detect and repair these problematic
  * entries, which could otherwise be handled by DavMail during the synchronization process.
- * The issue is documented in Bugzilla at https://bugzilla.mozilla.org/show_bug.cgi?id=1941840.
+ * The issue is documented in Bugzilla at <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1941840">...</a>.
  *
  * @author ifrh (<a href="https://github.com/ifrh">GitHub</a>)
  * @author ifrh (<a href="https://sourceforge.net/u/ifrh/profile/">SourceForge</a>)
@@ -33,12 +33,12 @@ import org.apache.log4j.Logger;
 public class ICSCalendarValidator {
     protected static final Logger LOGGER = Logger.getLogger(ICSCalendarValidator.class);
     // Optimized pattern for validation, tab, CR and LF are allowed in icalendar content
+    // Excludes C1 control characters (0x80-0x9F), consistent with isValidChar() and validateWithDetails()
     private static final Pattern VALID_CHARS_PATTERN =
-            Pattern.compile("^[\r\n\t\\x20-\\x7E\u0080-\uFFFF]*$");
+            Pattern.compile("^[\r\n\t\\x20-\\x7E\u00A0-\uFFFF]*$");
 
     // Constants for better readability
     private static final char NULL_BYTE = '\u0000';
-    private static final char SPACE = ' ';
     private static final char DELETE = '\u007F';
 
     /**
@@ -82,7 +82,7 @@ public class ICSCalendarValidator {
         if (invalidChars.length() > 0) {
             if (issues.length() > 0) issues.append(", ");
             issues.append("Invalid character(s): ").append(
-                    invalidChars.substring(0, invalidChars.length() - 1));
+                    invalidChars, 0, invalidChars.length() - 1);
         }
 
         return new ValidationResult(issues.length() == 0, issues.toString());
@@ -90,45 +90,51 @@ public class ICSCalendarValidator {
 
     /**
      * Repairs an iCalendar string by removing invalid characters.
-     * Replaces multiple consecutive invalid characters with a single space.
+     * Invalid characters are dropped rather than replaced to avoid
+     * introducing unexpected spaces in ICS property values.
      * @param content The string to repair
-     * @return The repaired string
+     * @return The repaired string with invalid characters removed
      */
     public static String repairICSContent(String content) {
         if (content == null) return null;
-        String message ="ICSCalendarValidator repair characters in ICS content:";
+        String message = "ICSCalendarValidator repair characters in ICS content:";
 
         StringBuilder repaired = new StringBuilder();
-        boolean lastWasInvalid = false;
 
         for (char c : content.toCharArray()) {
             if (isValidChar(c)) {
                 repaired.append(c);
-                lastWasInvalid = false;
-            } else if (!lastWasInvalid) {
-                repaired.append(SPACE);
-                lastWasInvalid = true;
             }
         }
-        String fixed = repaired.toString().trim();
-        // just put output to debug logger, only if some invalid characters has been changed.
-        if (!content.equals(fixed)){
-            LOGGER.debug ( message + "\n[" + content + "]\n => [" + fixed + "]\n fix complete.");
+        String fixed = repaired.toString();
+        // just put output to debug logger, only if some invalid characters have been removed.
+        if (!content.equals(fixed)) {
+            LOGGER.debug(message + "\n[" + content + "]\n => [" + fixed + "]\n fix complete.");
         }
-        return fixed ;
+        return fixed;
     }
 
     /**
-     * Checks if a single character is valid.
+     * Checks if a single character is valid for iCalendar content.
      * A character is valid if it is:
-     * - Not a control character (ASCII 0-31)
-     * - Not a delete character (ASCII 127)
-     * - Not an invalid Unicode character (128-159)
+     * - A tab (0x09), carriage return (0x0D), or line feed (0x0A)
+     * - A printable ASCII character (0x20-0x7E)
+     * - A Unicode character above U+007F (0x80-0xFFFF), excluding C1 control range (0x80-0x9F)
+     * This is consistent with VALID_CHARS_PATTERN.
      * @param c The character to check
      * @return true if the character is valid
      */
     static boolean isValidChar(char c) {
-        return c > 0 && !(c == DELETE || (c >= 128 && c <= 159));
+        // Allow TAB, CR, LF
+        if (c == '\t' || c == '\r' || c == '\n') {
+            return true;
+        }
+        // Printable ASCII range (space through tilde)
+        if (c >= 0x20 && c <= 0x7E) {
+            return true;
+        }
+        // Valid Unicode above ASCII, excluding C1 control characters (0x80-0x9F)
+        return c >= 0xA0;
     }
 
     /**
