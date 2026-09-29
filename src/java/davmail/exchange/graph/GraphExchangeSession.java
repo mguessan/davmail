@@ -1406,6 +1406,14 @@ public class GraphExchangeSession extends ExchangeSession {
         try {
             TagNode node = cleaner.clean(new StringReader(htmlText));
             for (TagNode childNode : node.getAllElementsList(true)) {
+                if ("a".equals(childNode.getName())) {
+                    String href = childNode.getAttributeByName("href");
+                    String text = childNode.getText().toString().trim();
+                    if (href != null && !href.equals(text)) {
+                        builder.append(text).append(" (").append(href).append(")");
+                        continue;
+                    }
+                }
                 builder.append(childNode.getText());
             }
         } catch (IOException e) {
