@@ -181,6 +181,10 @@ public class GraphExchangeSession extends ExchangeSession {
                             }
                         }
 
+                        // register the stable uids of a list served from the delta sync cache,
+                        // so that live search results (fresh imapUid) are mapped back to them
+                        fixUids(messages);
+
                         // refresh folder level attributes before releasing lock
                         computeAttributes();
                     } finally {
