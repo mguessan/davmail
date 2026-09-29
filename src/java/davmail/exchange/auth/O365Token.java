@@ -273,7 +273,7 @@ public class O365Token {
         } catch (UnknownHostException e) {
             // unknown host on refresh means network is down
             LOGGER.debug("refresh token failed " + e.getMessage());
-            throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
+            throw e;
         }
 
         // persist provided new refresh token
