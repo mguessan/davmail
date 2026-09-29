@@ -26,6 +26,7 @@ import davmail.DavGateway;
 import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpForbiddenException;
+import davmail.exchange.NetworkDownException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.InsufficientStorageException;
 import davmail.exchange.ExchangeSession;
@@ -144,6 +145,10 @@ public class ImapConnection extends AbstractConnection {
                                 logConnection("LOGON", userName);
                                 sendClient(commandId + " OK Authenticated");
                                 state = State.AUTHENTICATED;
+                            } catch (NetworkDownException e) {
+                                LOGGER.warn(e.getMessage());
+                                sendClient("* BYE [NetworkDown] " + ((e.getMessage() == null) ? e.toString() : e.getMessage()).replaceAll("\\n", " "));
+                                break;
                             } catch (Exception e) {
                                 logConnection("FAILED", userName);
                                 DavGatewayTray.error(e);
@@ -171,6 +176,10 @@ public class ImapConnection extends AbstractConnection {
                                         logConnection("LOGON", userName);
                                         sendClient(commandId + " OK Authenticated");
                                         state = State.AUTHENTICATED;
+                                    } catch (NetworkDownException e) {
+                                        LOGGER.warn(e.getMessage());
+                                        sendClient("* BYE [NetworkDown] " + ((e.getMessage() == null) ? e.toString() : e.getMessage()).replaceAll("\\n", " "));
+                                        break;
                                     } catch (Exception e) {
                                         logConnection("FAILED", userName);
                                         DavGatewayTray.error(e);
@@ -686,6 +695,13 @@ public class ImapConnection extends AbstractConnection {
             }
         } catch (SocketException e) {
             LOGGER.warn(BundleMessage.formatLog("LOG_CLIENT_CLOSED_CONNECTION"));
+        } catch (NetworkDownException e) {
+            LOGGER.warn(e.getMessage());
+            try {
+                sendClient("* BYE [NetworkDown] " + ((e.getMessage() == null) ? e.toString() : e.getMessage()).replaceAll("\\n", " "));
+            } catch (IOException e2) {
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
+            }
         } catch (Exception e) {
             DavGatewayTray.log(e);
             try {
@@ -974,7 +990,7 @@ public class ImapConnection extends AbstractConnection {
                         partOutputStream = new PartOutputStream(baos, false, true, startIndex, maxSize);
                         partInputStream = messageWrapper.getRawInputStream();
                     } else if ("RFC822.HEADER".equals(param) || (partIndexString != null && partIndexString.startsWith("HEADER"))) {
-                        // Header requested fetch     headers
+                        // Header requested fetch headers
                         String[] requestedHeaders = getRequestedHeaders(partIndexString);
                         // OSX Lion special flags request
                         if (requestedHeaders != null && requestedHeaders.length == 1 && "content-class".equals(requestedHeaders[0]) && message.contentClass != null) {
