@@ -252,6 +252,13 @@ public class GraphExchangeSession extends ExchangeSession {
             this.folderId = folderId;
         }
 
+        public Event(String folderPath, FolderId folderId, String itemName, String etag, byte[] content) throws IOException {
+            this(folderId, content);
+            this.folderPath = folderPath;
+            this.itemName = itemName;
+            this.etag = etag;
+        }
+
         @Override
         public byte[] getEventContent() throws IOException {
             byte[] content;
@@ -3847,19 +3854,143 @@ public class GraphExchangeSession extends ExchangeSession {
         return results;
     }
 
+    protected static final String APPOINTMENT_END_WHOLE = "SystemTime {00062002-0000-0000-C000-000000000046} Id 0x820E";
+    protected static final String RECURRING = "Boolean {00062002-0000-0000-C000-000000000046} Id 0x8223";
+    protected static final int SERIES_LOOKAHEAD_DAYS = 365;
+
     /**
-     * Override getEventMessages to make sure we retrieve minimal information on items.
-     * Note: this is deprecated as auto scheduling is always enabled on O365
+     * Return meeting requests awaiting a response: Exchange already creates a tentative event for each request,
+     * the linked event response status tells whether the user responded from any client.
      * @param folderPath Exchange folder path
      * @return event messages from inbox
      * @throws IOException on error
      */
     @Override
     public List<ExchangeSession.Event> getEventMessages(String folderPath) throws IOException {
-        // retrieve event messages ids from inbox
-        return searchEvents(folderPath, false,
-                and(startsWith("outlookmessageclass", "IPM.Schedule.Meeting."),
-                        or(isNull("processed"), isFalse("processed"))));
+        FolderId folderId = getFolderId(folderPath);
+        Date now = new Date();
+
+        // end is the first occurrence end on series, include all series requests
+        String processed = GraphField.get("processed").getGraphId();
+        String filter = "singleValueExtendedProperties/Any(ep: ep/id eq '" + GraphField.get("outlookmessageclass").getGraphId()
+                + "' and ep/value eq 'IPM.Schedule.Meeting.Request')"
+                + " and (singleValueExtendedProperties/Any(ep: ep/id eq '" + APPOINTMENT_END_WHOLE
+                + "' and cast(ep/value, Edm.DateTimeOffset) ge " + formatSearchDate(now) + ")"
+                + " or singleValueExtendedProperties/Any(ep: ep/id eq '" + RECURRING + "' and cast(ep/value, Edm.Boolean) eq true))";
+
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(folderId.mailbox)
+                .setObjectType("mailFolders")
+                .setObjectId(folderId.id)
+                .setChildType("messages")
+                .setSelect("changeKey,receivedDateTime")
+                .setExpand("singleValueExtendedProperties($filter=id eq '" + processed + "'),"
+                        + "microsoft.graph.eventMessage/event($select=responseStatus,type,end)")
+                .setFilter(filter)
+                // Prefer odata.maxpagesize is ignored with $expand, set $top instead
+                .setSizeLimit(Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE));
+        LOGGER.debug("searchEventMessages " + folderId.getMailboxName() + " " + folderPath);
+
+        // keep the latest request per event, a request dismissed by a client hides earlier requests for the same event
+        Map<String, JSONObject> requestsByEventId = new HashMap<>();
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+        while (graphIterator.hasNext()) {
+            JSONObject jsonMessage = graphIterator.next();
+            JSONObject jsonEvent = jsonMessage.optJSONObject("event");
+            String eventId = jsonEvent == null ? null : jsonEvent.optString("id", null);
+            JSONObject responseStatus = jsonEvent == null ? null : jsonEvent.optJSONObject("responseStatus");
+            if (eventId != null && responseStatus != null && "notResponded".equals(responseStatus.optString("response"))) {
+                JSONObject previous = requestsByEventId.get(eventId);
+                if (previous == null || previous.optString("receivedDateTime").compareTo(jsonMessage.optString("receivedDateTime")) < 0) {
+                    requestsByEventId.put(eventId, jsonMessage);
+                }
+            }
+        }
+
+        ArrayList<ExchangeSession.Event> eventList = new ArrayList<>();
+        for (JSONObject jsonMessage : requestsByEventId.values()) {
+            try {
+                if (!isProcessed(jsonMessage, processed) && isPendingEvent(folderId, jsonMessage.optJSONObject("event"), now)) {
+                    eventList.add(buildEventMessage(folderPath, folderId, jsonMessage.optString("id"), jsonMessage.optString("changeKey")));
+                }
+            } catch (IOException | MessagingException e) {
+                LOGGER.warn("searchEventMessages " + jsonMessage.optString("id"), e);
+            }
+        }
+        return eventList;
+    }
+
+    protected boolean isProcessed(JSONObject jsonMessage, String processed) {
+        JSONArray properties = jsonMessage.optJSONArray("singleValueExtendedProperties");
+        if (properties != null) {
+            for (int i = 0; i < properties.length(); i++) {
+                JSONObject property = properties.optJSONObject(i);
+                if (property != null && processed.equals(property.optString("id"))) {
+                    return "true".equalsIgnoreCase(property.optString("value"));
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Single events and occurrences are pending until they end, a series while it has a future occurrence.
+     * @param folderId inbox folder id
+     * @param jsonEvent event linked to the meeting request
+     * @param now current date
+     * @return true if the event is still to come
+     * @throws IOException on error
+     */
+    protected boolean isPendingEvent(FolderId folderId, JSONObject jsonEvent, Date now) throws IOException {
+        String eventId = jsonEvent.optString("id");
+        if ("seriesMaster".equals(jsonEvent.optString("type"))) {
+            Calendar lookahead = Calendar.getInstance();
+            lookahead.setTime(now);
+            lookahead.add(Calendar.DAY_OF_MONTH, SERIES_LOOKAHEAD_DAYS);
+            JSONObject jsonResponse = executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("events")
+                    .setObjectId(eventId)
+                    .setChildType("instances")
+                    .setStartDateTime(formatSearchDate(now))
+                    .setEndDateTime(formatSearchDate(lookahead.getTime()))
+                    .setSelect("id")
+                    .setSizeLimit(1));
+            JSONArray values = jsonResponse.optJSONArray("value");
+            return values != null && values.length() > 0;
+        } else {
+            JSONObject end = jsonEvent.optJSONObject("end");
+            // end is returned in UTC without Prefer outlook.timezone header
+            String endDateTime = end == null ? null : end.optString("dateTime", null);
+            return endDateTime == null || endDateTime.compareTo(formatSearchDate(now).substring(0, 19)) >= 0;
+        }
+    }
+
+    /**
+     * Build CalDAV inbox item from meeting request calendar part.
+     * @param folderPath inbox folder path
+     * @param folderId inbox folder id
+     * @param messageId meeting request message id
+     * @param changeKey meeting request change key
+     * @return event
+     * @throws IOException on error
+     * @throws MessagingException on error
+     */
+    protected Event buildEventMessage(String folderPath, FolderId folderId, String messageId, String changeKey) throws IOException, MessagingException {
+        Message message = new Message();
+        message.folderId = folderId;
+        message.id = messageId;
+        byte[] content = getContent(message);
+        if (content == null) {
+            throw new IOException("empty event body");
+        }
+        byte[] ics = getICS(new SharedByteArrayInputStream(content));
+        if (ics == null) {
+            throw new IOException("no calendar part");
+        }
+        return new Event(folderPath, folderId, StringUtil.base64ToUrl(messageId) + ".EML", changeKey, ics);
     }
 
     @Override
@@ -4102,6 +4233,20 @@ public class GraphExchangeSession extends ExchangeSession {
                 return new Event(folderPath, folderId, new GraphObject(jsonResponse));
             } else {
                 throw new IOException("Item " + folderPath + " " + itemName + " not found");
+            }
+        } else if (folderId.isMail()) {
+            // meeting request in CalDAV inbox
+            String messageId = convertItemNameToItemId(convertItemNameToEML(itemName));
+            JSONObject jsonMessage = executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("messages")
+                    .setObjectId(messageId)
+                    .setSelect("changeKey"));
+            try {
+                return buildEventMessage(folderPath, folderId, messageId, jsonMessage.optString("changeKey"));
+            } catch (MessagingException e) {
+                throw new IOException(e.getMessage(), e);
             }
         } else {
             throw new UnsupportedOperationException("Item type " + folderId.folderClass + " not supported");
@@ -4415,7 +4560,23 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void processItem(String folderPath, String itemName) throws IOException {
-        // TODO mark event messages in inbox processed
+        FolderId folderId = getFolderId(folderPath);
+        try {
+            JSONObject processed = new JSONObject();
+            processed.put("id", GraphField.get("processed").getGraphId());
+            processed.put("value", "true");
+            JSONObject jsonBody = new JSONObject();
+            jsonBody.put("singleValueExtendedProperties", new JSONArray().put(processed));
+            jsonBody.put("isRead", true);
+            executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpPatch.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("messages")
+                    .setObjectId(convertItemNameToItemId(convertItemNameToEML(itemName)))
+                    .setJsonBody(jsonBody));
+        } catch (JSONException e) {
+            throw new IOException(e.getMessage(), e);
+        }
     }
 
     @Override
