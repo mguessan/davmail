@@ -793,7 +793,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 // id is empty on meeting response
                 if (graphResponse.optString("id", null) != null) {
                     // workaround for Thunderbird, keep a cache of itemName to id map
-                    urlcompnameToIdMap.put(itemName, graphResponse.optString("id"));
+                    urlcompnameToIdMap.put(convertItemNameToEML(itemName), graphResponse.optString("id"));
                 }
 
                 itemResult.itemName = itemName; // preserve requested itemName
