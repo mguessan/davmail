@@ -99,6 +99,10 @@ public class DateUtil {
             return timezoneId;
         } else if (EXCHANGE_TO_STD_TZ.containsKey(timezoneId)) {
             return EXCHANGE_TO_STD_TZ.getString(timezoneId);
+        } else if ("tzone://Microsoft/Utc".equals(timezoneId)) {
+            return "UTC";
+        } else if ("tzone://Microsoft/Custom".equals(timezoneId)) {
+            return null;
         } else {
             LOGGER.warn("Unknown timezone: " + timezoneId);
             return null;
@@ -109,10 +113,8 @@ public class DateUtil {
         String standardTimeZoneId = getStandardTimeZone(timezoneId);
         if (standardTimeZoneId != null) {
             return TimeZone.getTimeZone(standardTimeZoneId);
-        } else {
-            LOGGER.warn("Unknown timezone: " + timezoneId + ", using UTC");
-            return TimeZone.getTimeZone("UTC");
         }
+        return TimeZone.getTimeZone("UTC");
     }
 
     public static String getVTimeZone(String timezoneId) {
