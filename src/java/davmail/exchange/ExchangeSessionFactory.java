@@ -417,6 +417,9 @@ public final class ExchangeSessionFactory {
                 NetworkInterface networkInterface = enumeration.nextElement();
                 up = networkInterface.isUp() && !networkInterface.isLoopback()
                         && networkInterface.getInetAddresses().hasMoreElements();
+                if (up) {
+                    ExchangeSession.LOGGER.debug(networkInterface.getDisplayName() + " is up");
+                }
             }
         } catch (NoSuchMethodError error) {
             ExchangeSession.LOGGER.debug("Unable to test network interfaces (not available under Java 1.5)");
