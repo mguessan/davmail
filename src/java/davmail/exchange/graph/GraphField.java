@@ -141,6 +141,7 @@ public class GraphField {
         addFieldMap("cancelledOccurrences");
         addFieldMap("hasAttachments");
         addFieldMap("isOnlineMeeting");
+        addFieldMap("onlineMeeting");
         addFieldMap("isOrganizer");
         addFieldMap("location");
         addFieldMap("organizer");

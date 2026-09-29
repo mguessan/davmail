@@ -421,6 +421,11 @@ public class GraphExchangeSession extends ExchangeSession {
 
             vEvent.setPropertyValue("X-MICROSOFT-DISALLOW-COUNTER", jsonEvent.optBoolean("allowNewTimeProposals") ? "FALSE" : "TRUE");
 
+            String joinUrl = jsonEvent.optString("onlineMeeting", "joinUrl");
+            if (joinUrl != null) {
+                vEvent.setPropertyValue("X-MICROSOFT-SKYPETEAMSMEETINGURL", joinUrl);
+            }
+
             setAttendees(vEvent, jsonEvent);
 
             return vEvent;
@@ -2110,6 +2115,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("importance"));
         EVENT_ATTRIBUTES.add(GraphField.get("isAllDay"));
         EVENT_ATTRIBUTES.add(GraphField.get("isOnlineMeeting"));
+        EVENT_ATTRIBUTES.add(GraphField.get("onlineMeeting"));
         EVENT_ATTRIBUTES.add(GraphField.get("isOrganizer"));
         EVENT_ATTRIBUTES.add(GraphField.get("isReminderOn"));
         EVENT_ATTRIBUTES.add(GraphField.get("lastModifiedDateTime"));
