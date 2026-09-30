@@ -99,7 +99,8 @@ public class GraphObject {
                 // Iterates extended properties to find a matching value
                 for (int i = 0; i < singleValueExtendedProperties.length(); i++) {
                     JSONObject singleValueObject = singleValueExtendedProperties.optJSONObject(i);
-                    if (singleValueObject != null && key.equals(singleValueObject.optString("id"))) {
+                    // graph returns property set guids in lower case
+                    if (singleValueObject != null && key.equalsIgnoreCase(singleValueObject.optString("id"))) {
                         value = singleValueObject.optString("value");
                     }
                 }
@@ -131,6 +132,9 @@ public class GraphObject {
         if (iCalUId == null && Settings.getBooleanProperty("davmail.caldavUIDFromTransactionId",false)) {
             // restore pre 7.0.0 behavior, use transaction as UID
             iCalUId = optString("transactionId");
+        }
+        if (iCalUId == null) {
+            iCalUId = optString("eventuid");
         }
         if (iCalUId == null) {
             // default to O365 iCalUid
@@ -320,52 +324,25 @@ public class GraphObject {
     }
 
     /**
-     * Compute recurrenceId property based on the original start and timezone.
+     * Compute recurrenceId property in UTC based on the original start, as exported by Exchange.
      * @return recurrenceId property
      * @throws DavMailException on error
      */
     public VProperty getRecurrenceId() throws DavMailException {
-        // get the unmodified start date and timezone of occurrence
-        String originalStartTimeZone = optString("originalStartTimeZone");
-        // originalStart is always in UTC, see https://learn.microsoft.com/en-us/graph/api/resources/event
+        // originalStart is always in ISO8601 format with offset or Zulu, see https://learn.microsoft.com/en-us/graph/api/resources/event
         String originalStart = optString("originalStart");
-
-        if (originalStartTimeZone != null && originalStart != null && originalStart.length() >= 19) {
-            String convertedOriginalStart = originalStart;
-            // Per https://learn.microsoft.com/en-us/graph/api/resources/recurrencerange?view=graph-rest-1.0,
-            // originalStart is always in ISO8601 format with offset or Zulu
-            SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-            parser.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-            String standardTimeZoneId = DateUtil.getStandardTimeZone(originalStartTimeZone);
-            SimpleDateFormat formatter;
-            if (standardTimeZoneId == null) {
-                // format to zulu
-                formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-            } else {
-                // format to original timezone
-                formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
-                formatter.setTimeZone(DateUtil.getTimeZone(standardTimeZoneId));
-            }
-            try {
-                convertedOriginalStart = formatter.format(parser.parse(originalStart));
-            } catch (ParseException e) {
-                LOGGER.warn("Unable to convert to original timezone: " + originalStart + ", " + originalStartTimeZone);
-            }
-
-            // Convert date from graph to caldav format, keep timezone information
-            VProperty recurrenceId = new VProperty("RECURRENCE-ID", convertedOriginalStart);
-            if (standardTimeZoneId != null) {
-                recurrenceId.setParam("TZID", originalStartTimeZone);
-            }
-            return recurrenceId;
-        } else {
-            throw new DavMailException("LOG_MESSAGE", "Missing original start date and timezone");
+        if (originalStart == null || originalStart.length() < 19) {
+            throw new DavMailException("LOG_MESSAGE", "Missing original start date");
+        }
+        SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+        try {
+            return new VProperty("RECURRENCE-ID", formatter.format(parser.parse(originalStart)));
+        } catch (ParseException e) {
+            throw new DavMailException("LOG_MESSAGE", "Invalid original start date " + originalStart);
         }
     }
-
-
 
     public int optInt(String key) {
         return jsonObject.optInt(key);

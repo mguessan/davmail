@@ -72,6 +72,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -90,6 +91,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
@@ -300,7 +302,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     // experimental recurrence support
                     JSONObject recurrence = graphObject.optJSONObject("recurrence");
                     if (recurrence != null) {
-                        vTodo.setPropertyValue("RRULE", convertRecurrenceToRrule(recurrence));
+                        vTodo.setPropertyValue("RRULE", convertRecurrenceToRrule(recurrence, null));
                     }
 
                     localVCalendar.addVObject(vTodo);
@@ -360,14 +362,43 @@ public class GraphExchangeSession extends ExchangeSession {
 
             JSONArray exceptionOccurrences = graphObject.optJSONArray("exceptionOccurrences");
             if (exceptionOccurrences != null) {
+                List<VObject> seriesVEvents = new ArrayList<>();
+                seriesVEvents.add(localVCalendar.getFirstVevent());
                 for (int i = 0; i < exceptionOccurrences.length(); i++) {
-                    GraphObject exceptionOccurrence = new GraphObject(exceptionOccurrences.optJSONObject(i)
+                    JSONObject jsonOccurrence = exceptionOccurrences.optJSONObject(i)
                             // need to override uid, iCalUid is different for each occurrence on server
-                            .put("iCalUId", graphObject.getCalendarUid()));
+                            .put("iCalUId", graphObject.getCalendarUid())
+                            .put("uid", graphObject.getCalendarUid());
+                    GraphObject exceptionOccurrence = new GraphObject(jsonOccurrence);
                     VObject vEvent = buildVEvent(exceptionOccurrence);
+                    // Thunderbird properties are managed on the master only
+                    vEvent.removeProperty("X-MOZ-SEND-INVITATIONS");
+                    vEvent.removeProperty("X-MOZ-LASTACK");
+                    vEvent.removeProperty("X-MOZ-SNOOZE-TIME");
                     vEvent.addProperty(exceptionOccurrence.getRecurrenceId());
                     localVCalendar.addVObject(vEvent);
+                    seriesVEvents.add(vEvent);
                 }
+                setSeriesSequence(seriesVEvents);
+            }
+        }
+
+        /**
+         * Exchange exports the highest sequence of the master and its exceptions on every series component.
+         * @param seriesVEvents master and exception VEVENTs
+         */
+        private void setSeriesSequence(List<VObject> seriesVEvents) {
+            int sequence = 0;
+            for (VObject vEvent : seriesVEvents) {
+                try {
+                    sequence = Math.max(sequence, Integer.parseInt(vEvent.getPropertyValue("SEQUENCE")));
+                } catch (NumberFormatException e) {
+                    LOGGER.warn("Invalid sequence " + vEvent.getPropertyValue("SEQUENCE"));
+                }
+            }
+            for (VObject vEvent : seriesVEvents) {
+                vEvent.setPropertyValue("SEQUENCE", String.valueOf(sequence));
+                vEvent.setPropertyValue("X-MICROSOFT-CDO-APPT-SEQUENCE", String.valueOf(sequence));
             }
         }
 
@@ -387,10 +418,19 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start"), DateUtil.getExchangeTimeZone(originalStartTimeZone)));
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end"), DateUtil.getExchangeTimeZone(originalStartTimeZone)));
 
-            vEvent.setPropertyValue("LOCATION", jsonEvent.optString("location", "displayName"));
+            // Exchange exports PidLidLocation, which includes room country and place address
+            String location = jsonEvent.optString("appointmentlocation");
+            vEvent.setPropertyValue("LOCATION", location != null ? location : jsonEvent.optString("location", "displayName"));
             vEvent.setPropertyValue("CATEGORIES", jsonEvent.optString("categories"));
 
-            vEvent.setPropertyValue("CLASS", convertClassFromExchange(jsonEvent.optString("sensitivity")));
+            vEvent.setPropertyValue("CLASS", convertSensitivityToClass(jsonEvent.optString("sensitivity")));
+
+            String importance = jsonEvent.optString("importance");
+            vEvent.setPropertyValue("PRIORITY", convertImportanceToPriority(importance));
+            vEvent.setPropertyValue("X-MICROSOFT-CDO-IMPORTANCE", convertImportanceToCdoImportance(importance));
+
+            vEvent.setPropertyValue("STATUS", convertEventStatus(jsonEvent));
+            vEvent.setPropertyValue("X-MICROSOFT-CDO-INSTTYPE", convertTypeToInstanceType(jsonEvent.optString("type")));
 
             // custom microsoft properties
             String showAs = jsonEvent.optString("showAs");
@@ -403,7 +443,7 @@ public class GraphExchangeSession extends ExchangeSession {
             }
             String responseRequested = jsonEvent.optString("responseRequested");
             if (responseRequested != null) {
-                vEvent.setPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", responseRequested.toUpperCase());
+                vEvent.setPropertyValue("X-MICROSOFT-ISRESPONSEREQUESTED", responseRequested.toUpperCase());
             }
 
             if (jsonEvent.optBoolean("isReminderOn")) {
@@ -423,9 +463,30 @@ public class GraphExchangeSession extends ExchangeSession {
 
             vEvent.setPropertyValue("X-MICROSOFT-DISALLOW-COUNTER", jsonEvent.optBoolean("allowNewTimeProposals") ? "FALSE" : "TRUE");
 
+            for (ICalPropertyMapping mapping : ICAL_PROPERTY_MAPPINGS) {
+                String value = mapping.getValue(jsonEvent);
+                if (value != null) {
+                    vEvent.setPropertyValue(mapping.name, value);
+                }
+            }
+
             String joinUrl = jsonEvent.optString("onlineMeeting", "joinUrl");
-            if (joinUrl != null) {
+            if (joinUrl != null && vEvent.getPropertyValue("X-MICROSOFT-SKYPETEAMSMEETINGURL") == null) {
                 vEvent.setPropertyValue("X-MICROSOFT-SKYPETEAMSMEETINGURL", joinUrl);
+            }
+            if ("teamsForBusiness".equals(jsonEvent.optString("onlineMeetingProvider"))) {
+                vEvent.setPropertyValue("X-MICROSOFT-ONLINEMEETINGINFORMATION", "{\"OnlineMeetingChannelId\":null,\"OnlineMeetingProvider\":3}");
+            }
+            vEvent.setPropertyValue("X-MICROSOFT-REQUESTEDATTENDANCEMODE", "DEFAULT");
+
+            String language = LOCALE_ID_LANGUAGES.get(jsonEvent.optString("messagelocaleid"));
+            if (language != null) {
+                for (String propertyName : new String[]{"SUMMARY", "LOCATION", "DESCRIPTION"}) {
+                    VProperty property = vEvent.getProperty(propertyName);
+                    if (property != null && property.getValue() != null && !property.getValue().isEmpty()) {
+                        property.addParam("LANGUAGE", language);
+                    }
+                }
             }
 
             setAttendees(vEvent, jsonEvent);
@@ -436,11 +497,11 @@ public class GraphExchangeSession extends ExchangeSession {
         private void handleRecurrence(VCalendar localVCalendar, GraphObject graphObject) throws JSONException, DavMailException {
             JSONObject recurrence = graphObject.optJSONObject("recurrence");
             if (recurrence != null) {
-                localVCalendar.addFirstVeventProperty(new VProperty("RRULE", convertRecurrenceToRrule(recurrence)));
+                localVCalendar.addFirstVeventProperty(new VProperty("RRULE", convertRecurrenceToRrule(recurrence, localVCalendar.getFirstVevent().getProperty("DTSTART"))));
             }
         }
 
-        private String convertRecurrenceToRrule(JSONObject recurrence) throws JSONException, DavMailException {
+        private String convertRecurrenceToRrule(JSONObject recurrence, VProperty dtStart) throws JSONException, DavMailException {
             StringBuilder rruleValue = new StringBuilder();
             JSONObject pattern = recurrence.getJSONObject("pattern");
             JSONObject range = recurrence.getJSONObject("range");
@@ -484,7 +545,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 rruleValue.append(patternType.toUpperCase());
             }
             if (rangeType.equals("endDate")) {
-                String endDate = buildUntilDate(range.getString("endDate"), graphObject.optJSONObject("start"));
+                String endDate = buildUntilDate(range.getString("endDate"), dtStart);
                 rruleValue.append(";UNTIL=").append(endDate);
             } else if (rangeType.equals("numbered")) {
                 int numberOfOccurrences = range.getInt("numberOfOccurrences");
@@ -518,15 +579,15 @@ public class GraphExchangeSession extends ExchangeSession {
             return rruleValue.toString();
         }
 
-        private String buildUntilDate(String date, JSONObject startDate) throws DavMailException {
+        private String buildUntilDate(String date, VProperty dtStart) throws DavMailException {
             String result = null;
-            if (date != null && date.length() == 10) {
-                String startDateTimeZone = startDate.optString("timeZone");
-                String startDateDateTime = startDate.optString("dateTime");
-                // graph provided until date does not have time part, get value from startDate
-                String untilDateTime = date + startDateDateTime.substring(10);
-
-                result = DateUtil.convertDate(untilDateTime, "yyyy-MM-dd'T'HH:mm:ss", DateUtil.getTimeZone(startDateTimeZone),
+            if (date != null && date.length() == 10 && dtStart == null) {
+                // task recurrence, date only
+                result = date.replace("-", "");
+            } else if (date != null && date.length() == 10) {
+                // graph provided until date does not have time part, use local start time in the event timezone
+                String untilDateTime = date.replace("-", "") + dtStart.getValue().substring(8);
+                result = DateUtil.convertDate(untilDateTime, "yyyyMMdd'T'HHmmss", DateUtil.getTimeZone(dtStart.getParamValue("TZID")),
                         "yyyyMMdd'T'HHmmss'Z'", DateUtil.UTC);
             }
             return result;
@@ -553,6 +614,12 @@ public class GraphExchangeSession extends ExchangeSession {
             if (attendees != null) {
                 for (int i = 0; i < attendees.length(); i++) {
                     JSONObject attendee = attendees.getJSONObject(i);
+                    // the attendee type: required, optional, resource.
+                    String type = attendee.optString("type");
+                    // Exchange does not export resources as attendees
+                    if ("resource".equals(type)) {
+                        continue;
+                    }
                     JSONObject emailAddress = attendee.getJSONObject("emailAddress");
                     VProperty attendeeProperty = convertEmailAddressToVproperty("ATTENDEE", emailAddress);
 
@@ -560,8 +627,6 @@ public class GraphExchangeSession extends ExchangeSession {
                     String responseType = attendee.getJSONObject("status").optString("response");
                     attendeeProperty.addParam("PARTSTAT", responseTypeToPartstat(responseType));
 
-                    // the attendee type: required, optional, resource.
-                    String type = attendee.optString("type");
                     if ("required".equals(type)) {
                         attendeeProperty.addParam("ROLE", "REQ-PARTICIPANT");
                     } else if ("optional".equals(type)) {
@@ -2105,6 +2170,270 @@ public class GraphExchangeSession extends ExchangeSession {
     protected static final HashSet<GraphField> EVENT_LIST_ATTRIBUTES = new HashSet<>();
     protected static final HashSet<GraphField> EVENT_ATTRIBUTES = new HashSet<>();
 
+    /**
+     * Map a graph field to an iCalendar property, with optional value conversion and default value.
+     */
+    protected static class ICalPropertyMapping {
+        protected final String name;
+        protected final String alias;
+        protected final Function<GraphObject, String> source;
+
+        protected ICalPropertyMapping(String name, String alias, Function<GraphObject, String> source) {
+            this.name = name;
+            this.alias = alias;
+            this.source = source;
+        }
+
+        protected ICalPropertyMapping(String name, String alias, Function<String, String> converter, String defaultValue) {
+            this(name, alias, graphObject -> {
+                String value = graphObject.optString(alias);
+                if (value != null && converter != null) {
+                    value = converter.apply(value);
+                }
+                return value != null ? value : defaultValue;
+            });
+        }
+
+        protected ICalPropertyMapping(String name, String alias) {
+            this(name, alias, null, null);
+        }
+
+        protected String getValue(GraphObject graphObject) {
+            return source.apply(graphObject);
+        }
+    }
+
+    /**
+     * Get a non empty string value nested in graph object sections.
+     * @param graphObject graph object
+     * @param path section names followed by the value key
+     * @return value or null
+     */
+    protected static String optNestedString(GraphObject graphObject, String... path) {
+        JSONObject section = graphObject.optJSONObject(path[0]);
+        for (int i = 1; section != null && i < path.length - 1; i++) {
+            section = section.optJSONObject(path[i]);
+        }
+        String value = section != null ? section.optString(path[path.length - 1], null) : null;
+        return value == null || value.isEmpty() ? null : value;
+    }
+
+    /**
+     * Exchange exports the highest sequence sent by the organizer, see MS-OXOCAL section 3.1.5.4.
+     * @param graphObject graph event
+     * @return highest of PidLidAppointmentSequence and PidLidAppointmentLastSequence
+     */
+    protected static String getSequence(GraphObject graphObject) {
+        int sequence = 0;
+        for (String alias : new String[]{"appointmentsequence", "appointmentlastsequence"}) {
+            String value = graphObject.optString(alias);
+            if (value != null) {
+                try {
+                    sequence = Math.max(sequence, Integer.parseInt(value));
+                } catch (NumberFormatException e) {
+                    LOGGER.warn("Invalid sequence " + value + " on " + alias);
+                }
+            }
+        }
+        return String.valueOf(sequence);
+    }
+
+    /**
+     * Location source as exported by Exchange, see LocationSourceType in EWS.
+     * @param graphObject graph event
+     * @return location source or null without location
+     */
+    protected static String convertLocationSource(GraphObject graphObject) {
+        JSONObject location = graphObject.optJSONObject("location");
+        if (optNestedString(graphObject, "location", "displayName") == null) {
+            return null;
+        }
+        Integer locationSource = getLocationSource(location);
+        if (locationSource == null) {
+            return "None";
+        } else if (locationSource == 5) {
+            return "Resource";
+        } else {
+            return "LocationServices";
+        }
+    }
+
+    /**
+     * Location source value from a graph location, see LocationSourceType in EWS.
+     * Graph does not distinguish PhonebookServices (2), Device (3) and Contact (4), and locationStore unique ids
+     * were not observed, these return null. None (0) is also returned as null.
+     * @param location graph location
+     * @return 1 (LocationServices), 5 (Resource) or null
+     */
+    protected static Integer getLocationSource(JSONObject location) {
+        String uniqueIdType = location.optString("uniqueIdType");
+        if ("directory".equals(uniqueIdType) || "conferenceRoom".equals(location.optString("locationType"))) {
+            return 5;
+        } else if ("bing".equals(uniqueIdType) || ("private".equals(uniqueIdType) && location.has("address"))) {
+            return 1;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Build Exchange X-MICROSOFT-LOCATIONS value from graph locations.
+     * LocationAnnotation and LocationFullAddress have no graph equivalent and are exported empty.
+     * @param graphObject graph event
+     * @return JSON array of locations or null if not available
+     */
+    protected static String convertLocations(GraphObject graphObject) {
+        JSONArray locations = graphObject.optJSONArray("locations");
+        if (locations == null) {
+            return null;
+        }
+        JSONArray result = new JSONArray();
+        try {
+            for (int i = 0; i < locations.length(); i++) {
+                JSONObject location = locations.getJSONObject(i);
+                JSONObject address = location.optJSONObject("address");
+                if (address == null) {
+                    address = new JSONObject();
+                }
+                JSONObject exchangeLocation = new JSONObject()
+                        .put("DisplayName", location.optString("displayName", ""))
+                        .put("LocationAnnotation", "")
+                        .put("LocationUri", location.optString("locationUri", ""))
+                        .put("LocationStreet", address.optString("street", ""))
+                        .put("LocationCity", address.optString("city", ""))
+                        .put("LocationState", address.optString("state", ""))
+                        .put("LocationCountry", address.optString("countryOrRegion", ""))
+                        .put("LocationPostalCode", address.optString("postalCode", ""))
+                        .put("LocationFullAddress", "");
+                Integer locationSource = getLocationSource(location);
+                if (locationSource != null) {
+                    exchangeLocation.put("LocationSource", locationSource);
+                }
+                JSONObject coordinates = location.optJSONObject("coordinates");
+                if (coordinates != null && coordinates.has("latitude") && coordinates.has("longitude")) {
+                    exchangeLocation.put("Latitude", coordinates.getDouble("latitude"))
+                            .put("Longitude", coordinates.getDouble("longitude"));
+                }
+                result.put(exchangeLocation);
+            }
+        } catch (JSONException e) {
+            LOGGER.warn("Unable to convert locations: " + e.getMessage());
+            return null;
+        }
+        return result.toString();
+    }
+
+    /**
+     * iCalendar properties exported by Exchange, mapped from MAPI properties (see MS-OXCICAL) and graph fields
+     */
+    protected static final List<ICalPropertyMapping> ICAL_PROPERTY_MAPPINGS = Arrays.asList(
+            new ICalPropertyMapping("DTSTAMP", "ownercriticalchange"),
+            new ICalPropertyMapping("SEQUENCE", "appointmentsequence", GraphExchangeSession::getSequence),
+            new ICalPropertyMapping("X-MICROSOFT-CDO-APPT-SEQUENCE", "appointmentsequence", GraphExchangeSession::getSequence),
+            new ICalPropertyMapping("X-MICROSOFT-CDO-INTENDEDSTATUS", "intendedbusystatus", GraphExchangeSession::convertBusyStatus, null),
+            new ICalPropertyMapping("X-MICROSOFT-CDO-OWNERAPPTID", "ownerappointmentid"),
+            new ICalPropertyMapping("X-MICROSOFT-DONOTFORWARDMEETING", "donotforward", String::toUpperCase, "FALSE"),
+            new ICalPropertyMapping("X-MICROSOFT-SKYPETEAMSMEETINGURL", "skypeteamsmeetingurl"),
+            new ICalPropertyMapping("X-MICROSOFT-SKYPETEAMSPROPERTIES", "skypeteamsproperties"),
+            new ICalPropertyMapping("X-MICROSOFT-SCHEDULINGSERVICEUPDATEURL", "schedulingserviceupdateurl"),
+            new ICalPropertyMapping("X-MICROSOFT-MEETINGAGENDA", "meetingagenda"),
+            new ICalPropertyMapping("X-MICROSOFT-ONLINEMEETINGCONFLINK", "onlinemeetingconflink"),
+            new ICalPropertyMapping("X-MICROSOFT-ONLINEMEETINGEXTERNALLINK", "onlinemeetingexternallink"),
+            new ICalPropertyMapping("X-MICROSOFT-LOCATIONDISPLAYNAME", "location", graphObject -> optNestedString(graphObject, "location", "displayName")),
+            new ICalPropertyMapping("X-MICROSOFT-LOCATIONSOURCE", "location", GraphExchangeSession::convertLocationSource),
+            new ICalPropertyMapping("X-MICROSOFT-LOCATIONS", "locations", GraphExchangeSession::convertLocations),
+            new ICalPropertyMapping("X-MICROSOFT-LOCATIONURI", "location", graphObject -> optNestedString(graphObject, "location", "locationUri")),
+            new ICalPropertyMapping("X-MICROSOFT-LOCATIONSTREET", "location", graphObject -> optNestedString(graphObject, "location", "address", "street")),
+            new ICalPropertyMapping("X-MICROSOFT-LOCATIONCITY", "location", graphObject -> optNestedString(graphObject, "location", "address", "city")),
+            new ICalPropertyMapping("X-MICROSOFT-LOCATIONSTATE", "location", graphObject -> optNestedString(graphObject, "location", "address", "state")),
+            new ICalPropertyMapping("X-MICROSOFT-LOCATIONCOUNTRY", "location", graphObject -> optNestedString(graphObject, "location", "address", "countryOrRegion")),
+            new ICalPropertyMapping("X-MICROSOFT-LATITUDE", "location", graphObject -> optNestedString(graphObject, "location", "coordinates", "latitude")),
+            new ICalPropertyMapping("X-MICROSOFT-LONGITUDE", "location", graphObject -> optNestedString(graphObject, "location", "coordinates", "longitude"))
+    );
+
+    /**
+     * PidTagMessageLocaleId (LCID) to LANGUAGE parameter value, see MS-LCID, unknown values are not exported.
+     */
+    protected static final Map<String, String> LOCALE_ID_LANGUAGES = new HashMap<>();
+
+    static {
+        LOCALE_ID_LANGUAGES.put("1033", "en-US");
+        LOCALE_ID_LANGUAGES.put("2057", "en-GB");
+    }
+
+    protected static final String PREFER_TEXT_BODY = "outlook.body-content-type=\"text\"";
+
+    protected static final String[] BUSY_STATUS = {"FREE", "TENTATIVE", "BUSY", "OOF", "WORKINGELSEWHERE"};
+
+    /**
+     * Exchange exports BUSY when intended busy status is not set, graph returns NoData.
+     */
+    protected static String convertBusyStatus(String value) {
+        if ("NoData".equalsIgnoreCase(value)) {
+            return "BUSY";
+        }
+        try {
+            return BUSY_STATUS[Integer.parseInt(value)];
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            return value.toUpperCase();
+        }
+    }
+
+    /**
+     * Sensitivity is retrieved from PidTagSensitivity, see MS-OXCICAL CLASS mapping.
+     */
+    protected String convertSensitivityToClass(String sensitivity) {
+        if ("3".equals(sensitivity)) {
+            return "CONFIDENTIAL";
+        } else if ("1".equals(sensitivity) || "2".equals(sensitivity)) {
+            return "PRIVATE";
+        } else {
+            return convertClassFromExchange(sensitivity);
+        }
+    }
+
+    protected static String convertImportanceToPriority(String importance) {
+        if ("high".equals(importance)) {
+            return "1";
+        } else if ("low".equals(importance)) {
+            return "9";
+        } else {
+            return "5";
+        }
+    }
+
+    protected static String convertImportanceToCdoImportance(String importance) {
+        if ("high".equals(importance)) {
+            return "2";
+        } else if ("low".equals(importance)) {
+            return "0";
+        } else {
+            return "1";
+        }
+    }
+
+    protected static String convertEventStatus(GraphObject jsonEvent) {
+        if (jsonEvent.optBoolean("isCancelled")) {
+            return "CANCELLED";
+        } else if ("tentative".equals(jsonEvent.optString("showAs"))) {
+            return "TENTATIVE";
+        } else {
+            return "CONFIRMED";
+        }
+    }
+
+    protected static String convertTypeToInstanceType(String type) {
+        if ("seriesMaster".equals(type)) {
+            return "1";
+        } else if ("occurrence".equals(type)) {
+            return "2";
+        } else if ("exception".equals(type)) {
+            return "3";
+        } else {
+            return "0";
+        }
+    }
+
     static {
         EVENT_LIST_ATTRIBUTES.add(GraphField.get("id"));
         EVENT_LIST_ATTRIBUTES.add(GraphField.get("urlcompname"));
@@ -2149,6 +2478,16 @@ public class GraphExchangeSession extends ExchangeSession {
 
         EVENT_ATTRIBUTES.add(GraphField.get("xmozlastack"));
         EVENT_ATTRIBUTES.add(GraphField.get("xmozsnoozetime"));
+
+        EVENT_ATTRIBUTES.add(GraphField.get("eventuid"));
+        EVENT_ATTRIBUTES.add(GraphField.get("isCancelled"));
+        EVENT_ATTRIBUTES.add(GraphField.get("onlineMeetingProvider"));
+        EVENT_ATTRIBUTES.add(GraphField.get("appointmentlastsequence"));
+        EVENT_ATTRIBUTES.add(GraphField.get("messagelocaleid"));
+        EVENT_ATTRIBUTES.add(GraphField.get("appointmentlocation"));
+        for (ICalPropertyMapping mapping : ICAL_PROPERTY_MAPPINGS) {
+            EVENT_ATTRIBUTES.add(GraphField.get(mapping.alias));
+        }
     }
 
     protected class FolderId {
@@ -3989,6 +4328,7 @@ public class GraphExchangeSession extends ExchangeSession {
                             .setObjectId(jsonEvent.optString("id"))
                             .setSelectFields(EVENT_ATTRIBUTES)
                             .setTimezone(getTimezoneId())
+                            .addHeader("Prefer", PREFER_TEXT_BODY)
                     );
                     eventList.add(new Event(folderPath, folderId, new GraphObject(jsonResponse)));
                 } else {
@@ -4232,6 +4572,7 @@ public class GraphExchangeSession extends ExchangeSession {
                         .setObjectId(itemId)
                         .setSelectFields(EVENT_ATTRIBUTES)
                         .setTimezone(getTimezoneId())
+                        .addHeader("Prefer", PREFER_TEXT_BODY)
                 );
             } catch (HttpNotFoundException e) {
 
