@@ -141,6 +141,7 @@ public class HttpClientAdapter implements Closeable {
 
     HttpClientConnectionManager connectionManager;
     CloseableHttpClient httpClient;
+    boolean closed = false;
     CredentialsProvider provider = new BasicCredentialsProvider();
     BasicCookieStore cookieStore = new BasicCookieStore() {
         @Override
@@ -388,12 +389,19 @@ public class HttpClientAdapter implements Closeable {
 
     @Override
     public void close() {
-        DavMailIdleConnectionEvictor.removeConnectionManager(connectionManager);
-        try {
-            httpClient.close();
-        } catch (IOException e) {
-            LOGGER.warn("Exception closing http client", e);
+        if (!closed) {
+            closed = true;
+            DavMailIdleConnectionEvictor.removeConnectionManager(connectionManager);
+            try {
+                httpClient.close();
+            } catch (IOException e) {
+                LOGGER.warn("Exception closing http client", e);
+            }
         }
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 
     public static void close(HttpClientAdapter httpClientAdapter) {
