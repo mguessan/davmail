@@ -174,12 +174,14 @@ public class GraphExchangeSession extends ExchangeSession {
                         }
                         if (messages == null) {
                             messages = GraphExchangeSession.this.searchMessages(folderPath);
-                            fixUids(messages);
                             // store in map if delta sync is active
                             if (((MessageList) messages).deltaLink != null) {
                                 messagesListMap.put(folderId.id, messages);
                             }
                         }
+
+                        // populate permanentUrlToImapUidMap so live search results are mapped back to stable cached uids
+                        fixUids(messages);
 
                         // refresh folder level attributes before releasing lock
                         computeAttributes();
