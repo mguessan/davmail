@@ -1388,6 +1388,10 @@ public class GraphExchangeSession extends ExchangeSession {
      */
     @Override
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
+        if (httpClient.isClosed()) {
+            LOGGER.debug("Http client instance is closed");
+            return true;
+        }
         boolean isExpired = false;
         try {
             executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setObjectType("mailFolders").setSelect("id"));
