@@ -86,6 +86,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -418,9 +419,7 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start"), DateUtil.getExchangeTimeZone(originalStartTimeZone)));
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end"), DateUtil.getExchangeTimeZone(originalStartTimeZone)));
 
-            // Exchange exports PidLidLocation, which includes room country and place address
-            String location = jsonEvent.optString("appointmentlocation");
-            vEvent.setPropertyValue("LOCATION", location != null ? location : jsonEvent.optString("location", "displayName"));
+            vEvent.setPropertyValue("LOCATION", getLocation(jsonEvent));
             vEvent.setPropertyValue("CATEGORIES", jsonEvent.optString("categories"));
 
             vEvent.setPropertyValue("CLASS", convertSensitivityToClass(jsonEvent.optString("sensitivity")));
@@ -753,7 +752,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     graphResponse = updateReminder(currentItemId);
                 } else {
 
-                    GraphObject newGraphEvent = buildJsonEvent(vEvent);
+                    GraphObject newGraphEvent = buildJsonEvent(vEvent, existingJsonEvent);
 
                     // set client provided itemName in extended property
                     newGraphEvent.put("urlcompname", convertItemNameToEML(itemName));
@@ -1198,14 +1197,14 @@ public class GraphExchangeSession extends ExchangeSession {
                         String exceptionOriginalStart = convertOriginalStartDate(exceptionOccurrence.optString("originalStart"));
                         LOGGER.debug("Looking at occurrence " + exceptionOriginalStart + " for " + originalDateZulu);
                         if (originalDateZulu.equals(exceptionOriginalStart)) {
-                            updateExceptionOccurrence(modifiedOccurrence, exceptionOccurrence.getString("id"));
+                            updateExceptionOccurrence(modifiedOccurrence, exceptionOccurrence.getString("id"), exceptionOccurrence);
                             occurrenceFound = true;
                             break;
                         }
                     }
                 }
                 if (!occurrenceFound) {
-                    createNewModifiedOccurrence(modifiedOccurrence, existingJsonEvent.optString("id"), originalDateZulu);
+                    createNewModifiedOccurrence(modifiedOccurrence, existingJsonEvent, originalDateZulu);
                 }
             }
         }
@@ -1213,12 +1212,13 @@ public class GraphExchangeSession extends ExchangeSession {
         /**
          * Create a new modified occurrence on event.
          * @param modifiedOccurrence modified occurrence vEvent
-         * @param masterEventId master graph event id
+         * @param masterEvent master graph event
          * @param originalDateZulu original date in zulu format
          * @throws IOException on error
          * @throws JSONException on error
          */
-        private void createNewModifiedOccurrence(VObject modifiedOccurrence, String masterEventId, String originalDateZulu) throws IOException, JSONException {
+        private void createNewModifiedOccurrence(VObject modifiedOccurrence, JSONObject masterEvent, String originalDateZulu) throws IOException, JSONException {
+            String masterEventId = masterEvent.optString("id");
             // assume instance is on same day in UTC timezone
             String startDateTime = originalDateZulu.substring(0, 10) + "T00:00:00.0000000";
             String endDateTime = originalDateZulu.substring(0, 10) + "T23:59:59.9999999";
@@ -1237,7 +1237,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     JSONObject occurrence = occurrences.getJSONObject(i);
                     String occurrenceId = occurrence.optString("id");
                     if (occurrenceId != null) {
-                        updateExceptionOccurrence(modifiedOccurrence, occurrenceId);
+                        // occurrence matches master event until modified
+                        updateExceptionOccurrence(modifiedOccurrence, occurrenceId, masterEvent);
                     }
                 }
             } else {
@@ -1266,10 +1267,10 @@ public class GraphExchangeSession extends ExchangeSession {
             return null;
         }
 
-        private void updateExceptionOccurrence(VObject modifiedOccurrence, String exceptionOccurrenceId) throws IOException, JSONException {
+        private void updateExceptionOccurrence(VObject modifiedOccurrence, String exceptionOccurrenceId, JSONObject currentEvent) throws IOException, JSONException {
             LOGGER.debug("Updating occurrence " + modifiedOccurrence.getPropertyValue("SUMMARY") + " " + modifiedOccurrence.getPropertyValue("RECURRENCE-ID"));
 
-            GraphObject graphEventOccurrence = buildJsonEvent(modifiedOccurrence);
+            GraphObject graphEventOccurrence = buildJsonEvent(modifiedOccurrence, currentEvent);
 
             GraphObject graphResponse = executeGraphRequest(new GraphRequestBuilder()
                     .setMethod(HttpPatch.METHOD_NAME)
@@ -1281,7 +1282,13 @@ public class GraphExchangeSession extends ExchangeSession {
             LOGGER.debug("Updated occurrence: " + graphResponse.jsonObject.toString());
         }
 
-        private GraphObject buildJsonEvent(VObject vEvent) throws JSONException, IOException {
+        /**
+         * Build graph event from VEVENT.
+         * @param vEvent client VEVENT
+         * @param currentEvent current graph event, null on create
+         * @return graph event
+         */
+        private GraphObject buildJsonEvent(VObject vEvent, JSONObject currentEvent) throws JSONException, IOException {
             GraphObject newGraphEvent = new GraphObject();
 
             newGraphEvent.put("subject", vEvent.getPropertyValue("SUMMARY"));
@@ -1309,8 +1316,11 @@ public class GraphExchangeSession extends ExchangeSession {
                 newGraphEvent.put("body", new JSONObject().put("content", description).put("contentType", "text"));
             }
 
+            // keep current location, including room and address details, unless changed by client, as in EWS mode
             String location = vEvent.getPropertyValue("LOCATION");
-            newGraphEvent.put("location", new JSONObject().put("displayName", location));
+            if (currentEvent == null || !Objects.equals(location, getLocation(new GraphObject(currentEvent)))) {
+                newGraphEvent.put("location", new JSONObject().put("displayName", location));
+            }
 
             newGraphEvent.setCategories(vEvent.getPropertyValue("CATEGORIES"));
             // Collect categories on multiple lines
@@ -1345,6 +1355,18 @@ public class GraphExchangeSession extends ExchangeSession {
                                 jsonAttendee.put("type", "optional");
                             }
                             attendees.put(jsonAttendee);
+                        }
+                    }
+                }
+                // resources are not exported as attendees, keep current resources, as in EWS mode
+                JSONArray currentAttendees = currentEvent != null ? currentEvent.optJSONArray("attendees") : null;
+                if (currentAttendees != null) {
+                    for (int i = 0; i < currentAttendees.length(); i++) {
+                        JSONObject currentAttendee = currentAttendees.getJSONObject(i);
+                        if ("resource".equals(currentAttendee.optString("type"))) {
+                            attendees.put(new JSONObject()
+                                    .put("emailAddress", currentAttendee.getJSONObject("emailAddress"))
+                                    .put("type", "resource"));
                         }
                     }
                 }
@@ -2216,6 +2238,16 @@ public class GraphExchangeSession extends ExchangeSession {
         }
         String value = section != null ? section.optString(path[path.length - 1], null) : null;
         return value == null || value.isEmpty() ? null : value;
+    }
+
+    /**
+     * Exchange exports PidLidLocation, which includes room country and place address.
+     * @param graphObject graph event
+     * @return location
+     */
+    protected static String getLocation(GraphObject graphObject) {
+        String location = graphObject.optString("appointmentlocation");
+        return location != null ? location : graphObject.optString("location", "displayName");
     }
 
     /**
