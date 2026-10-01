@@ -566,11 +566,45 @@ public class GraphExchangeSession extends ExchangeSession {
                         attendeeProperty.addParam("ROLE", "REQ-PARTICIPANT");
                     } else if ("optional".equals(type)) {
                         attendeeProperty.addParam("ROLE", "OPT-PARTICIPANT");
+                    } else if ("resource".equals(type)) {
+                        // Determine CUTYPE from locations
+                        attendeeProperty.addParam("ROLE", "NON-PARTICIPANT");
+                        if (isRoom(jsonEvent, emailAddress.optString("address"))) {
+                            attendeeProperty.addParam("CUTYPE", "ROOM");
+                        } else {
+                            attendeeProperty.addParam("CUTYPE", "RESOURCE");
+                        }
                     }
 
                     vEvent.addProperty(attendeeProperty);
                 }
             }
+        }
+
+        /**
+         * Check if resource attendee is a room by matching against locations.
+         * A resource attendee whose email appears in locations with locationType "conferenceRoom" is a room.
+         * @param jsonEvent Graph event object
+         * @param address attendee email address
+         * @return true if the attendee is a conference room
+         */
+        private boolean isRoom(GraphObject jsonEvent, String address) {
+            if (address == null || address.isEmpty()) {
+                return false;
+            }
+            JSONArray locations = jsonEvent.optJSONArray("locations");
+            if (locations != null) {
+                for (int i = 0; i < locations.length(); i++) {
+                    JSONObject location = locations.optJSONObject(i);
+                    if (location != null
+                            && "conferenceRoom".equals(location.optString("locationType"))
+                            && (address.equalsIgnoreCase(location.optString("uniqueId"))
+                                || address.equalsIgnoreCase(location.optString("locationUri")))) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         /**
@@ -1274,7 +1308,10 @@ public class GraphExchangeSession extends ExchangeSession {
                                             .put("address", attendeeEmail));
 
                             String attendeeRole = property.getParamValue("ROLE");
-                            if ("REQ-PARTICIPANT".equals(attendeeRole)) {
+                            String cutype = property.getParamValue("CUTYPE");
+                            if ("ROOM".equals(cutype) || "RESOURCE".equals(cutype)) {
+                                jsonAttendee.put("type", "resource");
+                            } else if ("REQ-PARTICIPANT".equals(attendeeRole)) {
                                 jsonAttendee.put("type", "required");
                             } else {
                                 jsonAttendee.put("type", "optional");
@@ -2134,6 +2171,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("isReminderOn"));
         EVENT_ATTRIBUTES.add(GraphField.get("lastModifiedDateTime"));
         EVENT_ATTRIBUTES.add(GraphField.get("location"));
+        EVENT_ATTRIBUTES.add(GraphField.get("locations"));
         EVENT_ATTRIBUTES.add(GraphField.get("organizer"));
         EVENT_ATTRIBUTES.add(GraphField.get("originalStartTimeZone"));
         EVENT_ATTRIBUTES.add(GraphField.get("originalStart"));
@@ -3972,6 +4010,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setObjectId(folderId.id)
                     .setChildType("events")
                     .setSelectFields(EVENT_LIST_ATTRIBUTES)
+                    .setSizeLimit(Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE))
                     .setTimezone(getVTimezone().getPropertyValue("TZID"))
                     .setFilter(condition);
             LOGGER.debug("searchEvents " + folderId.getMailboxName() + " " + folderPath);

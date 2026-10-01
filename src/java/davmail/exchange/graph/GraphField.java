@@ -144,6 +144,7 @@ public class GraphField {
         addFieldMap("onlineMeeting");
         addFieldMap("isOrganizer");
         addFieldMap("location");
+        addFieldMap("locations"); // locations array
         addFieldMap("organizer");
         addFieldMap("originalStart");
         addFieldMap("recurrence");
