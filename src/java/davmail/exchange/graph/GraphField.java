@@ -113,6 +113,23 @@ public class GraphField {
 
         addFieldMap("isrecurring", DistinguishedPropertySetType.Appointment, 0x8223, PropertyType.Boolean); // PidLidRecurring
 
+        // MAPI properties exported by Exchange as iCalendar properties, see MS-OXCICAL and MS-OXPROPS
+        addFieldMap("appointmentsequence", DistinguishedPropertySetType.Appointment, 0x8201, PropertyType.Integer); // PidLidAppointmentSequence
+        addFieldMap("appointmentlastsequence", DistinguishedPropertySetType.Appointment, 0x8203, PropertyType.Integer); // PidLidAppointmentLastSequence
+        addFieldMap("intendedbusystatus", DistinguishedPropertySetType.Appointment, 0x8224, PropertyType.Integer); // PidLidIntendedBusyStatus
+        addFieldMap("appointmentlocation", DistinguishedPropertySetType.Appointment, 0x8208, PropertyType.String); // PidLidLocation
+        addFieldMap("ownerappointmentid", 0x0062, PropertyType.Integer); // PidTagOwnerAppointmentId
+        addFieldMap("messagelocaleid", 0x3ff1, PropertyType.Integer); // PidTagMessageLocaleId
+        addFieldMap("ownercriticalchange", DistinguishedPropertySetType.Meeting, 0x001A, PropertyType.SystemTime); // PidLidOwnerCriticalChange
+        addFieldMap("donotforward", DistinguishedPropertySetType.PublicStrings, "DoNotForward", PropertyType.Boolean); // PidNameMeetingDoNotForward
+        // undocumented named properties exported verbatim as X-MICROSOFT-<name>
+        addFieldMap("skypeteamsmeetingurl", DistinguishedPropertySetType.PublicStrings, "SkypeTeamsMeetingUrl");
+        addFieldMap("skypeteamsproperties", DistinguishedPropertySetType.PublicStrings, "SkypeTeamsProperties");
+        addFieldMap("schedulingserviceupdateurl", DistinguishedPropertySetType.PublicStrings, "SchedulingServiceUpdateUrl");
+        addFieldMap("meetingagenda", DistinguishedPropertySetType.PublicStrings, "MeetingAgenda");
+        addFieldMap("onlinemeetingconflink", DistinguishedPropertySetType.PublicStrings, "OnlineMeetingConfLink");
+        addFieldMap("onlinemeetingexternallink", DistinguishedPropertySetType.PublicStrings, "OnlineMeetingExternalLink");
+
         addFieldMap("dtstart", "start");
         addFieldMap("dtend", "end");
         addFieldMap("subject");
@@ -142,8 +159,13 @@ public class GraphField {
         addFieldMap("hasAttachments");
         addFieldMap("isOnlineMeeting");
         addFieldMap("onlineMeeting");
+        addFieldMap("onlineMeetingProvider");
+        addFieldMap("isCancelled", "isCancelled", PropertyType.Boolean);
+        // event uid, keeps the original UID of meetings created outside Exchange, uid alias maps to PR_RECORD_KEY
+        addFieldMap("eventuid", "uid");
         addFieldMap("isOrganizer");
         addFieldMap("location");
+        addFieldMap("locations");
         addFieldMap("organizer");
         addFieldMap("originalStart");
         addFieldMap("recurrence");
