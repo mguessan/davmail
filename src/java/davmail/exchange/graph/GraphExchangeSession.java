@@ -3906,18 +3906,15 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Override getEventMessages to make sure we retrieve minimal information on items.
-     * Note: this is deprecated as auto scheduling is always enabled on O365
+     * Override getEventMessages: inbox processing is deprecated,
+     * O365 auto scheduling is always enabled, return empty list.
      * @param folderPath Exchange folder path
-     * @return event messages from inbox
+     * @return empty list, O365 handles inbox scheduling automatically
      * @throws IOException on error
      */
     @Override
     public List<ExchangeSession.Event> getEventMessages(String folderPath) throws IOException {
-        // retrieve event messages ids from inbox
-        return searchEvents(folderPath, false,
-                and(startsWith("outlookmessageclass", "IPM.Schedule.Meeting."),
-                        or(isNull("processed"), isFalse("processed"))));
+        return new ArrayList<>();
     }
 
     @Override
