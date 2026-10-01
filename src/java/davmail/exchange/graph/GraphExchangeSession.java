@@ -578,20 +578,6 @@ public class GraphExchangeSession extends ExchangeSession {
             return rruleValue.toString();
         }
 
-        private String buildUntilDate(String date, VProperty dtStart) throws DavMailException {
-            String result = null;
-            if (date != null && date.length() == 10 && dtStart == null) {
-                // task recurrence, date only
-                result = date.replace("-", "");
-            } else if (date != null && date.length() == 10) {
-                // graph provided until date does not have time part, use local start time in the event timezone
-                String untilDateTime = date.replace("-", "") + dtStart.getValue().substring(8);
-                result = DateUtil.convertDate(untilDateTime, "yyyyMMdd'T'HHmmss", DateUtil.getTimeZone(dtStart.getParamValue("TZID")),
-                        "yyyyMMdd'T'HHmmss'Z'", DateUtil.UTC);
-            }
-            return result;
-        }
-
         private String convertOriginalStartDate(String originalStart) throws DavMailException {
             String result = originalStart;
             // originalStart is in ISO8601 format, convert if not already zulu
@@ -2223,6 +2209,26 @@ public class GraphExchangeSession extends ExchangeSession {
         protected String getValue(GraphObject graphObject) {
             return source.apply(graphObject);
         }
+    }
+
+    /**
+     * Build RRULE UNTIL value from graph recurrence range end date.
+     * Graph end date has no time part, use the local start time in the event timezone as Exchange does.
+     * @param date recurrence range end date (yyyy-MM-dd)
+     * @param dtStart event DTSTART, null for tasks
+     * @return UNTIL value, date only for tasks
+     * @throws DavMailException on error
+     */
+    protected static String buildUntilDate(String date, VProperty dtStart) throws DavMailException {
+        String result = null;
+        if (date != null && date.length() == 10 && dtStart == null) {
+            result = date.replace("-", "");
+        } else if (date != null && date.length() == 10) {
+            String untilDateTime = date.replace("-", "") + dtStart.getValue().substring(8);
+            result = DateUtil.convertDate(untilDateTime, "yyyyMMdd'T'HHmmss", DateUtil.getTimeZone(dtStart.getParamValue("TZID")),
+                    "yyyyMMdd'T'HHmmss'Z'", DateUtil.UTC);
+        }
+        return result;
     }
 
     /**
