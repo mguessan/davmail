@@ -66,6 +66,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -399,6 +400,25 @@ public class ImapConnection extends AbstractConnection {
                                             } catch (HttpResponseException e) {
                                                 sendClient(commandId + " NO " + e.getMessage());
                                             }
+                                        } else if ("expunge".equalsIgnoreCase(subcommand)) {
+                                            // RFC 4315 UID EXPUNGE: expunge only \Deleted messages within the UID set
+                                            if (currentFolder == null) {
+                                                sendClient(commandId + " NO no folder selected");
+                                            } else if (!tokens.hasMoreTokens()) {
+                                                sendClient(commandId + " BAD missing UID set parameter");
+                                            } else {
+                                                UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, tokens.nextToken());
+                                                Set<Long> uidSet = new HashSet<>();
+                                                while (uidRangeIterator.hasNext()) {
+                                                    uidSet.add(uidRangeIterator.next().getImapUid());
+                                                }
+                                                if (expunge(false, uidSet)) {
+                                                    session.refreshFolder(currentFolder);
+                                                }
+                                                sendClient(commandId + " OK UID EXPUNGE completed");
+                                            }
+                                        } else {
+                                            sendClient(commandId + " BAD unsupported UID subcommand " + subcommand);
                                         }
                                     } else {
                                         sendClient(commandId + " BAD command unrecognized");
@@ -1687,11 +1707,15 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected boolean expunge(boolean silent) throws IOException {
+        return expunge(silent, null);
+    }
+
+    protected boolean expunge(boolean silent, Set<Long> uidSet) throws IOException {
         boolean hasDeleted = false;
         if (currentFolder.messages != null) {
             int index = 1;
             for (ExchangeSession.Message message : currentFolder.messages) {
-                if (message.deleted) {
+                if (message.deleted && (uidSet == null || uidSet.contains(message.getImapUid()))) {
                     message.delete();
                     hasDeleted = true;
                     if (!silent) {
