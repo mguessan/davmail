@@ -76,14 +76,25 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static Shell shell;
     private boolean isActive = true;
     private static boolean isReady = false;
+    private static boolean isStarting = false;
     private static Error error;
     private boolean firstMessage = true;
 
     public static void initDisplay() {
-        if (!isReady) {
-            // ready
-            // start main loop, shell can be null before init
-            // dispose AWT frames
+        lock.lock();
+        try {
+            if (isReady || isStarting) {
+                // already started or starting, wait for completion if needed
+                while (!isReady) {
+                    ready.await();
+                    if (error != null) {
+                        throw error;
+                    }
+                }
+                return;
+            }
+            isStarting = true;
+            // start SWT thread
             Thread swtThread = new Thread("SWT") {
                 @Override
                 public void run() {
@@ -102,7 +113,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             lock.unlock();
                         }
 
-                        // start main loop, shell can be null before init
+                        // start main loop
                         while (!shell.isDisposed()) {
                             if (!display.readAndDispatch()) {
                                 display.sleep();
@@ -130,19 +141,16 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             };
             swtThread.start();
 
-            lock.lock();
-            try {
-                while (!isReady) {
-                    ready.await();
-                    if (error != null) {
-                        throw error;
-                    }
+            while (!isReady) {
+                ready.await();
+                if (error != null) {
+                    throw error;
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } finally {
-                lock.unlock();
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            lock.unlock();
         }
     }
 
