@@ -297,7 +297,7 @@ public class O365Token {
         return token;
     }
 
-    static O365Token load(String tenantId, String clientId, String redirectUri, String username, String password) throws UnknownHostException {
+    static O365Token load(String tenantId, String clientId, String redirectUri, String username, String password) throws IOException {
         O365Token token = null;
         if (Settings.getBooleanProperty("davmail.oauth.persistToken", true)) {
             String encryptedRefreshToken = Settings.loadRefreshToken(username);
@@ -313,7 +313,7 @@ public class O365Token {
                     LOGGER.debug("Authenticated user " + localToken.getUsername() + " from stored token");
                     token = localToken;
 
-                } catch (UnknownHostException e) {
+                } catch (NetworkDownException e) {
                     // network down, rethrow to avoid invalidating this token
                     throw e;
                 } catch (IOException e) {
