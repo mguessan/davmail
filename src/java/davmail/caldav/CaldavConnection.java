@@ -25,7 +25,6 @@ import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
-import davmail.exception.HttpPreconditionFailedException;
 import davmail.exception.HttpServerErrorException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
@@ -55,7 +54,16 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 /**
  * Handle a caldav connection.
@@ -492,6 +500,21 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void appendFolderOrItem(CaldavResponse response, CaldavRequest request, ExchangeSession.Folder folder, String subFolder) throws IOException {
+        appendFolderOrItem(response, request, folder, subFolder, false);
+    }
+
+    /**
+     * Append folder object to Caldav response.
+     *
+     * @param response Caldav response
+     * @param request Caldav request
+     * @param folder folder object
+     * @param subFolder calendar folder path relative to request path
+     * @param nestedCalendar folder is listed as a child of another calendar
+     * @throws IOException on error
+     */
+    public void appendFolderOrItem(CaldavResponse response, CaldavRequest request, ExchangeSession.Folder folder, String subFolder,
+                                   boolean nestedCalendar) throws IOException {
         response.startResponse(encodePath(request, request.getPath(subFolder)));
         response.startPropstat();
 
@@ -514,7 +537,10 @@ public class CaldavConnection extends AbstractConnection {
             }
         }
         if (request.hasProperty("getcontenttype")) {
-            if (folder.isContact()) {
+            if (nestedCalendar) {
+                // clients listing calendar items must not mistake a sub calendar for an event
+                response.appendProperty("D:getcontenttype", "httpd/unix-directory");
+            } else if (folder.isContact()) {
                 response.appendProperty("D:getcontenttype", "text/x-vcard");
             } else if (folder.isCalendar()) {
                 response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
@@ -724,7 +750,7 @@ public class CaldavConnection extends AbstractConnection {
                 // Send sub folders for multi-calendar support under iCal, except for public folders
                 if (folderList != null) {
                     for (ExchangeSession.Folder subFolder : folderList) {
-                        appendFolderOrItem(response, request, subFolder, subFolder.folderPath.substring(subFolder.folderPath.indexOf('/') + 1));
+                        appendFolderOrItem(response, request, subFolder, subFolder.folderPath.substring(subFolder.folderPath.indexOf('/') + 1), true);
                     }
                 }
             }
