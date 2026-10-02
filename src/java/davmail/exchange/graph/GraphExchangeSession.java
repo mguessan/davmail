@@ -1311,10 +1311,11 @@ public class GraphExchangeSession extends ExchangeSession {
                             String cutype = property.getParamValue("CUTYPE");
                             if ("ROOM".equals(cutype) || "RESOURCE".equals(cutype)) {
                                 jsonAttendee.put("type", "resource");
-                            } else if ("REQ-PARTICIPANT".equals(attendeeRole)) {
-                                jsonAttendee.put("type", "required");
-                            } else {
+                            } else if ("OPT-PARTICIPANT".equals(attendeeRole) || "NON-PARTICIPANT".equals(attendeeRole)) {
                                 jsonAttendee.put("type", "optional");
+                            } else {
+                                // default to required per RFC 5545 section 3.2.16
+                                jsonAttendee.put("type", "required");
                             }
                             attendees.put(jsonAttendee);
                         }

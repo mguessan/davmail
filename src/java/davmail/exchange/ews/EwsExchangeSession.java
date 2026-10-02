@@ -1789,10 +1789,11 @@ public class EwsExchangeSession extends ExchangeSession {
                         if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
                             if (!vCalendar.getCalendarEmail().equals(attendeeEmail)) {
                                 String attendeeRole = property.getParamValue("ROLE");
-                                if ("REQ-PARTICIPANT".equals(attendeeRole)) {
-                                    requiredAttendees.addValue(attendeeEmail);
-                                } else {
+                                if ("OPT-PARTICIPANT".equals(attendeeRole) || "NON-PARTICIPANT".equals(attendeeRole)) {
                                     optionalAttendees.addValue(attendeeEmail);
+                                } else {
+                                    // default to required per RFC 5545 section 3.2.16
+                                    requiredAttendees.addValue(attendeeEmail);
                                 }
                             }
                         }
@@ -2156,10 +2157,11 @@ public class EwsExchangeSession extends ExchangeSession {
                                 if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
                                     InternetAddress internetAddress = new InternetAddress(attendeeEmail, property.getParamValue("CN"));
                                     String attendeeRole = property.getParamValue("ROLE");
-                                    if ("REQ-PARTICIPANT".equals(attendeeRole)) {
-                                        requiredAttendees.add(internetAddress.toString());
-                                    } else {
+                                    if ("OPT-PARTICIPANT".equals(attendeeRole) || "NON-PARTICIPANT".equals(attendeeRole)) {
                                         optionalAttendees.add(internetAddress.toString());
+                                    } else {
+                                        // default to required per RFC 5545 section 3.2.16
+                                        requiredAttendees.add(internetAddress.toString());
                                     }
                                 }
                             }
