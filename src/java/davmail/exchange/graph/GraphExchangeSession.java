@@ -2755,6 +2755,75 @@ public class GraphExchangeSession extends ExchangeSession {
         return messageList;
     }
 
+    /**
+     * Raw internet headers (PR_TRANSPORT_MESSAGE_HEADERS, 0x007D) contains filter.
+     * Single form: the any() lambda on extended properties only allows and/eq
+     * plus one contains, so a single substring is all it can express.
+     */
+    static String buildInternetHeadersContains(String attributeName, String value) {
+        return "singleValueExtendedProperties/any(ep:ep/id eq 'String 0x007D' and contains(ep/value, '"
+                + attributeName + ": " + StringUtil.escapeQuotes(value) + "'))";
+    }
+
+    /**
+     * Improved IMAP FROM/TO/CC search (opt-in: davmail.improvedHeaderSearch).
+     * The raw header line is "From: First Last <local@domain>": the legacy single
+     * contains only matches the first name token, and never matches an address.
+     * Address values use the exact structured recipient filter (plus a header
+     * contains of the bracketed form, which is case-insensitive where eq is not);
+     * other values keep the legacy contains and add a second top-level lambda on
+     * the mid-line form ' value <' to match other name tokens. Note: an or INSIDE
+     * the any() lambda is rejected by Graph with ErrorInvalidUrlQueryFilter
+     * (only and/eq allowed there), hence the separate lambdas.
+     * Known limitation: name tokens that are neither the first nor the last word
+     * of the display name still do not match.
+     */
+    static void appendImprovedHeaderSearch(StringBuilder buffer, String attributeName, String value) {
+        String escapedValue = StringUtil.escapeQuotes(value);
+        String structuredFilter = buildStructuredRecipientFilter(attributeName, value);
+        if (structuredFilter != null) {
+            buffer.append('(').append(structuredFilter)
+                    .append(" or ").append(buildInternetHeadersBracketedContains(attributeName, escapedValue))
+                    .append(')');
+        } else {
+            buffer.append('(').append(buildInternetHeadersContains(attributeName, value))
+                    .append(" or ").append(buildInternetHeadersMidLineContains(attributeName, escapedValue))
+                    .append(')');
+        }
+    }
+
+    /**
+     * Exact structured filter for a full email address on from/to/cc recipients,
+     * null when the value is not a bare address or the field has no structured
+     * equivalent. Values with spaces or angle brackets (e.g. full header forms)
+     * deliberately fall back to the header contains path.
+     */
+    private static String buildStructuredRecipientFilter(String attributeName, String value) {
+        if (!value.matches("[^@<>,\\s]+@[^@<>,\\s]+")) {
+            return null;
+        }
+        String escapedValue = StringUtil.escapeQuotes(value);
+        if ("from".equals(attributeName)) {
+            return "from/emailAddress/address eq '" + escapedValue + "'";
+        } else if ("to".equals(attributeName)) {
+            return "toRecipients/any(r:r/emailAddress/address eq '" + escapedValue + "')";
+        } else if ("cc".equals(attributeName)) {
+            return "ccRecipients/any(r:r/emailAddress/address eq '" + escapedValue + "')";
+        }
+        return null;
+    }
+
+    private static String buildInternetHeadersBracketedContains(String attributeName, String escapedValue) {
+        // address in raw headers is always wrapped in angle brackets: <local@domain>
+        return "singleValueExtendedProperties/any(ep:ep/id eq 'String 0x007D' and contains(ep/value, '<"
+                + escapedValue + ">'))";
+    }
+
+    private static String buildInternetHeadersMidLineContains(String attributeName, String escapedValue) {
+        return "singleValueExtendedProperties/any(ep:ep/id eq 'String 0x007D' and contains(ep/value, ' "
+                + escapedValue + " <'))";
+    }
+
     static class AttributeCondition extends ExchangeSession.AttributeCondition {
 
         protected AttributeCondition(String attributeName, Operator operator, String value) {
@@ -2799,8 +2868,11 @@ public class GraphExchangeSession extends ExchangeSession {
             if (field.isExtended()) {
                 if (field.isInternetHeaders()) {
                     // header search does not work over graph, try to match full internet headers
-                    buffer.append("singleValueExtendedProperties/any(ep:ep/id eq 'String 0x007D' and contains(ep/value, '")
-                            .append(attributeName).append(": ").append(StringUtil.escapeQuotes(value)).append("'))");
+                    if (Settings.getBooleanProperty("davmail.improvedHeaderSearch", false)) {
+                        appendImprovedHeaderSearch(buffer, attributeName, value);
+                    } else {
+                        buffer.append(buildInternetHeadersContains(attributeName, value));
+                    }
                 } else if (field.isNumber()) {
                     // check value
                     int intValue = 0;
@@ -2872,8 +2944,11 @@ public class GraphExchangeSession extends ExchangeSession {
          * @param buffer search filter buffer
          */
         public void appendTo(StringBuilder buffer) {
-            buffer.append("singleValueExtendedProperties/any(ep:ep/id eq 'String 0x007D' and contains(ep/value, '")
-                    .append(attributeName).append(": ").append(StringUtil.escapeQuotes(value)).append("'))");
+            if (Settings.getBooleanProperty("davmail.improvedHeaderSearch", false)) {
+                appendImprovedHeaderSearch(buffer, attributeName, value);
+            } else {
+                buffer.append(buildInternetHeadersContains(attributeName, value));
+            }
         }
     }
 
