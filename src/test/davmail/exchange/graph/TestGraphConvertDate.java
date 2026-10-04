@@ -19,8 +19,9 @@
 
 package davmail.exchange.graph;
 
-import davmail.exchange.AbstractExchangeSessionTestCase;
+import davmail.exchange.ExchangeSession;
 import davmail.util.DateUtil;
+import junit.framework.TestCase;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -29,7 +30,7 @@ import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.ResourceBundle;
 
-public class TestGraphConvertDate extends AbstractExchangeSessionTestCase {
+public class TestGraphConvertDate extends TestCase {
     public void testConvertDate() throws IOException {
         Calendar date = Calendar.getInstance();
         String inputDateString = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(date.getTime());
@@ -81,5 +82,22 @@ public class TestGraphConvertDate extends AbstractExchangeSessionTestCase {
 
     }
 
+    public void testKeywordAndUnkeywordSearchExpression() {
+        ExchangeSession.Condition keywordCondition = new GraphExchangeSession.AttributeCondition("keywords", ExchangeSession.Operator.IsEqualTo, "Paperless");
+        StringBuilder buffer = new StringBuilder();
+        keywordCondition.appendTo(buffer);
+        assertEquals("categories/any(a:a eq 'Paperless')", buffer.toString());
 
+        ExchangeSession.Condition unkeywordCondition = new GraphExchangeSession.NotCondition(keywordCondition);
+        buffer.setLength(0);
+        unkeywordCondition.appendTo(buffer);
+        assertEquals("not (categories/any(a:a eq 'Paperless'))", buffer.toString());
+    }
+
+    public void testSinceDateSearchExpression() {
+        ExchangeSession.Condition sinceCondition = new GraphExchangeSession.AttributeCondition("date", ExchangeSession.Operator.IsGreaterThanOrEqualTo, "2026-08-21T00:00:00Z");
+        StringBuilder buffer = new StringBuilder();
+        sinceCondition.appendTo(buffer);
+        assertEquals("receivedDateTime ge 2026-08-21T00:00:00Z", buffer.toString());
+    }
 }
