@@ -45,6 +45,7 @@ public abstract class AbstractDavMailTestCase extends TestCase {
     @Override
     public void setUp() throws IOException {
         loadConfig();
+        Settings.setProperty("davmail.mode", "O365Graph");
     }
 
     public void loadConfig() throws IOException {
