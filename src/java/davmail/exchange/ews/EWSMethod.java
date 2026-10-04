@@ -549,6 +549,10 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
          * attendee fullname
          */
         public String name;
+        /**
+         * attendee calendar user type (ROOM, RESOURCE)
+         */
+        public String cutype;
     }
 
     /**
@@ -956,7 +960,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
                     responseItem.attachments = handleAttachments(reader);
                 } else if ("EmailAddresses".equals(tagLocalName)) {
                     handleEmailAddresses(reader, responseItem);
-                } else if ("RequiredAttendees".equals(tagLocalName) || "OptionalAttendees".equals(tagLocalName)) {
+                } else if ("RequiredAttendees".equals(tagLocalName) || "OptionalAttendees".equals(tagLocalName) || "Resources".equals(tagLocalName)) {
                     handleAttendees(reader, responseItem, tagLocalName);
                 } else if ("ModifiedOccurrences".equals(tagLocalName)) {
                     handleModifiedOccurrences(reader, responseItem);
@@ -1081,6 +1085,9 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         Attendee attendee = new Attendee();
         if ("RequiredAttendees".equals(attendeeType)) {
             attendee.role = "REQ-PARTICIPANT";
+        } else if ("Resources".equals(attendeeType)) {
+            attendee.role = "NON-PARTICIPANT";
+            attendee.cutype = "RESOURCE";
         } else {
             attendee.role = "OPT-PARTICIPANT";
         }

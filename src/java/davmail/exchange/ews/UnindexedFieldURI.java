@@ -121,7 +121,7 @@ public class UnindexedFieldURI implements FieldURI {
             buffer.append(fieldName);
             buffer.append('>');
             for (String value : values) {
-                if ("RequiredAttendees".equals(fieldName) || "OptionalAttendees".equals(fieldName)) {
+                if ("RequiredAttendees".equals(fieldName) || "OptionalAttendees".equals(fieldName) || "Resources".equals(fieldName)) {
                     buffer.append("<t:Attendee><t:Mailbox><t:EmailAddress>");
                     buffer.append(StringUtil.xmlEncodeAttribute(value));
                     buffer.append("</t:EmailAddress></t:Mailbox></t:Attendee>");

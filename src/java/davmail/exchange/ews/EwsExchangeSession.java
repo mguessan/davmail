@@ -1778,9 +1778,11 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 MultiValuedFieldUpdate requiredAttendees = new MultiValuedFieldUpdate(Field.get("requiredattendees"));
                 MultiValuedFieldUpdate optionalAttendees = new MultiValuedFieldUpdate(Field.get("optionalattendees"));
+                MultiValuedFieldUpdate resourceAttendees = new MultiValuedFieldUpdate(Field.get("resources"));
 
                 updates.add(requiredAttendees);
                 updates.add(optionalAttendees);
+                updates.add(resourceAttendees);
 
                 List<VProperty> attendees = vEvent.getProperties("ATTENDEE");
                 if (attendees != null) {
@@ -1788,12 +1790,17 @@ public class EwsExchangeSession extends ExchangeSession {
                         String attendeeEmail = vCalendar.getEmailValue(property);
                         if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
                             if (!vCalendar.getCalendarEmail().equals(attendeeEmail)) {
-                                String attendeeRole = property.getParamValue("ROLE");
-                                if ("OPT-PARTICIPANT".equals(attendeeRole) || "NON-PARTICIPANT".equals(attendeeRole)) {
-                                    optionalAttendees.addValue(attendeeEmail);
+                                String cutype = property.getParamValue("CUTYPE");
+                                if ("ROOM".equals(cutype) || "RESOURCE".equals(cutype)) {
+                                    resourceAttendees.addValue(attendeeEmail);
                                 } else {
-                                    // default to required per RFC 5545 section 3.2.16
-                                    requiredAttendees.addValue(attendeeEmail);
+                                    String attendeeRole = property.getParamValue("ROLE");
+                                    if ("OPT-PARTICIPANT".equals(attendeeRole) || "NON-PARTICIPANT".equals(attendeeRole)) {
+                                        optionalAttendees.addValue(attendeeEmail);
+                                    } else {
+                                        // default to required per RFC 5545 section 3.2.16
+                                        requiredAttendees.addValue(attendeeEmail);
+                                    }
                                 }
                             }
                         }
@@ -2327,6 +2334,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("organizer"));
                     getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
                     getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
+                    getItemMethod.addAdditionalProperty(Field.get("resources"));
                     getItemMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
@@ -2466,6 +2474,7 @@ public class EwsExchangeSession extends ExchangeSession {
             GetItemMethod getOccurrenceMethod = new GetItemMethod(BaseShape.ID_ONLY, occurrence.itemId, includeMimeContent);
             getOccurrenceMethod.addAdditionalProperty(Field.get("requiredattendees"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("optionalattendees"));
+            getOccurrenceMethod.addAdditionalProperty(Field.get("resources"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("organizer"));
@@ -2517,12 +2526,15 @@ public class EwsExchangeSession extends ExchangeSession {
                         vEvent.addProperty(organizerProperty);
                     }
 
-                    // Exchange did not provide attendees, rebuild from item attendees
+                    // rebuild attendees from item attendees (includes Resources with cutype)
                     for (EWSMethod.Attendee attendee : attendees) {
                         VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
                         attendeeProperty.addParam("CN", attendee.name);
                         attendeeProperty.addParam("PARTSTAT", attendee.partstat);
                         attendeeProperty.addParam("ROLE", attendee.role);
+                        if (attendee.cutype != null) {
+                            attendeeProperty.addParam("CUTYPE", attendee.cutype);
+                        }
                         vEvent.addProperty(attendeeProperty);
                     }
                 }

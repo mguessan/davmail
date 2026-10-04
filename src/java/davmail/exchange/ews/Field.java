@@ -241,6 +241,7 @@ public final class Field {
 
         FIELD_MAP.put("requiredattendees", new UnindexedFieldURI("calendar:RequiredAttendees"));
         FIELD_MAP.put("optionalattendees", new UnindexedFieldURI("calendar:OptionalAttendees"));
+        FIELD_MAP.put("resources", new UnindexedFieldURI("calendar:Resources"));
         FIELD_MAP.put("modifiedoccurrences", new UnindexedFieldURI("calendar:ModifiedOccurrences"));
         FIELD_MAP.put("deletedoccurrences", new UnindexedFieldURI("calendar:DeletedOccurrences"));
 
