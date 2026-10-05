@@ -220,7 +220,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
+    public boolean isExpired() throws IOException {
         // experimental: try to reset session timeout
         if ("Exchange2007".equals(serverVersion)) {
             HttpGet getMethod = new HttpGet("/owa/");

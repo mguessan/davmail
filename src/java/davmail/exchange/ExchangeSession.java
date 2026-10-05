@@ -35,6 +35,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
+import javax.net.ssl.SSLException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +43,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -216,14 +218,15 @@ public abstract class ExchangeSession {
      * Test if the session expired.
      *
      * @return true if this session expired
-     * @throws NoRouteToHostException on error
-     * @throws UnknownHostException   on error
+     * @throws IOException on transport-level network error
      */
-    public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
+    public boolean isExpired() throws IOException {
         boolean isExpired = false;
         try {
             getFolder("");
-        } catch (UnknownHostException | NoRouteToHostException exc) {
+        } catch (UnknownHostException | NoRouteToHostException |
+                 SocketTimeoutException | SSLException exc) {
+            // rethrow on network error to avoid reauthentication
             throw exc;
         } catch (IOException e) {
             isExpired = true;
