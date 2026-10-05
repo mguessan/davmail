@@ -48,6 +48,7 @@ import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
 import javax.mail.internet.MimeUtility;
 import javax.mail.util.SharedByteArrayInputStream;
+import javax.net.ssl.SSLException;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -57,6 +58,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -349,8 +351,9 @@ public class ImapConnection extends AbstractConnection {
                                                             handleFetch(message, uidRangeIterator.currentIndex, parameters);
                                                         } catch (HttpNotFoundException e) {
                                                             LOGGER.warn("Ignore missing message " + uidRangeIterator.currentIndex);
-                                                        } catch (SocketException e) {
-                                                            // client closed connection
+                                                        } catch (SocketException | SocketTimeoutException |
+                                                                 SSLException | UnknownHostException | NetworkDownException e) {
+                                                            // client closed connection or network error
                                                             throw e;
                                                         } catch (IOException e) {
                                                             DavGatewayTray.log(e);
@@ -460,8 +463,8 @@ public class ImapConnection extends AbstractConnection {
                                                 handleFetch(message, rangeIterator.currentIndex, parameters);
                                             } catch (HttpNotFoundException e) {
                                                 LOGGER.warn("Ignore missing message " + rangeIterator.currentIndex);
-                                            } catch (SocketException e) {
-                                                // client closed connection, rethrow exception
+                                            } catch (SocketException | SocketTimeoutException | SSLException | UnknownHostException | NetworkDownException e) {
+                                                // client closed connection or network error, rethrow exception
                                                 throw e;
                                             } catch (IOException e) {
                                                 DavGatewayTray.log(e);
