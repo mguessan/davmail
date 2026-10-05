@@ -24,6 +24,7 @@ import davmail.DavGateway;
 import davmail.exception.DavMailException;
 import davmail.exchange.DoubleDotInputStream;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.NetworkDownException;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 
@@ -36,6 +37,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -198,13 +201,28 @@ public class SmtpConnection extends AbstractConnection {
                 os.flush();
             }
 
+        } catch (SocketTimeoutException e) {
+            DavGatewayTray.debug(new BundleMessage("LOG_CLOSE_CONNECTION_ON_TIMEOUT"));
+            try {
+                sendClient("421 Closing connection on timeout");
+            } catch (IOException e1) {
+                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_CLOSING_CONNECTION_ON_TIMEOUT"));
+            }
         } catch (SocketException e) {
             DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
+        } catch (NetworkDownException | UnknownHostException e) {
+            DavGatewayTray.warn(e);
+            try {
+                sendClient("421 Service not available, network down: " +
+                        ((e.getMessage() == null) ? e.toString() : e.getMessage()).replaceAll("[\\r\\n]", " "));
+            } catch (IOException e2) {
+                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
+            }
         } catch (Exception e) {
             DavGatewayTray.log(e);
             try {
-                // append a line feed to avoid thunderbird dropping the error message
-                sendClient("421 " + ((e.getMessage() == null) ? e : e.getMessage()) + "\n");
+                String message = ((e.getMessage() == null) ? e.toString() : e.getMessage()).replaceAll("[\\r\\n]", " ");
+                sendClient("421 " + message);
             } catch (IOException e2) {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
@@ -235,6 +253,12 @@ public class SmtpConnection extends AbstractConnection {
             logConnection("LOGON", userName);
             sendClient("235 OK Authenticated");
             state = State.AUTHENTICATED;
+        } catch (NetworkDownException e) {
+            DavGatewayTray.warn(e);
+            sendClient("421 Service not available, network down: " +
+                    ((e.getMessage() == null) ? e.toString() : e.getMessage()).replaceAll("[\\r\\n]", " "));
+            // rethrow to close connection
+            throw e;
         } catch (Exception e) {
             logConnection("FAILED", userName);
             DavGatewayTray.error(e);
@@ -246,7 +270,6 @@ public class SmtpConnection extends AbstractConnection {
             sendClient("535 Authentication failed " + message);
             state = State.INITIAL;
         }
-
     }
 
     /**
