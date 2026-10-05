@@ -303,7 +303,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     // experimental recurrence support
                     JSONObject recurrence = graphObject.optJSONObject("recurrence");
                     if (recurrence != null) {
-                        vTodo.setPropertyValue("RRULE", convertRecurrenceToRrule(recurrence));
+                        vTodo.setPropertyValue("RRULE", convertRecurrenceToRrule(recurrence, null));
                     }
 
                     localVCalendar.addVObject(vTodo);
@@ -439,11 +439,12 @@ public class GraphExchangeSession extends ExchangeSession {
         private void handleRecurrence(VCalendar localVCalendar, GraphObject graphObject) throws JSONException, DavMailException {
             JSONObject recurrence = graphObject.optJSONObject("recurrence");
             if (recurrence != null) {
-                localVCalendar.addFirstVeventProperty(new VProperty("RRULE", convertRecurrenceToRrule(recurrence)));
+                VProperty dtStart = localVCalendar.getFirstVevent().getProperty("DTSTART");
+                localVCalendar.addFirstVeventProperty(new VProperty("RRULE", convertRecurrenceToRrule(recurrence, dtStart)));
             }
         }
 
-        private String convertRecurrenceToRrule(JSONObject recurrence) throws JSONException, DavMailException {
+        private String convertRecurrenceToRrule(JSONObject recurrence, VProperty dtStart) throws JSONException, DavMailException {
             StringBuilder rruleValue = new StringBuilder();
             JSONObject pattern = recurrence.getJSONObject("pattern");
             JSONObject range = recurrence.getJSONObject("range");
@@ -487,7 +488,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 rruleValue.append(patternType.toUpperCase());
             }
             if (rangeType.equals("endDate")) {
-                String endDate = buildUntilDate(range.getString("endDate"), graphObject.optJSONObject("start"));
+                String endDate = buildUntilDate(range.getString("endDate"), dtStart);
                 rruleValue.append(";UNTIL=").append(endDate);
             } else if (rangeType.equals("numbered")) {
                 int numberOfOccurrences = range.getInt("numberOfOccurrences");
@@ -521,15 +522,24 @@ public class GraphExchangeSession extends ExchangeSession {
             return rruleValue.toString();
         }
 
-        private String buildUntilDate(String date, JSONObject startDate) throws DavMailException {
+        /**
+         * Build RRULE UNTIL value from graph recurrence range end date.
+         * Graph end date has no time part, use the local start time in the event timezone.
+         * @param date recurrence range end date (yyyy-MM-dd)
+         * @param dtStart event DTSTART property with TZID param (series timezone), null for tasks
+         * @return UNTIL value in UTC, or date only for tasks
+         * @throws DavMailException on error
+         */
+        private String buildUntilDate(String date, VProperty dtStart) throws DavMailException {
             String result = null;
-            if (date != null && date.length() == 10) {
-                String startDateTimeZone = startDate.optString("timeZone");
-                String startDateDateTime = startDate.optString("dateTime");
-                // graph provided until date does not have time part, get value from startDate
-                String untilDateTime = date + startDateDateTime.substring(10);
-
-                result = DateUtil.convertDate(untilDateTime, "yyyy-MM-dd'T'HH:mm:ss", DateUtil.getTimeZone(startDateTimeZone),
+            if (date != null && date.length() == 10 && dtStart == null) {
+                // task: date only UNTIL
+                result = DateUtil.convertDate(date, "yyyy-MM-dd", DateUtil.UTC, "yyyyMMdd", DateUtil.UTC);
+            } else if (date != null && date.length() == 10) {
+                // Use DTSTART value (already converted to series timezone) to get local time and TZID
+                // Combine graph end date (yyyy-MM-dd) with DTSTART local time (THHmmss) and convert to UTC
+                String untilDateTime = date + dtStart.getValue().substring(8);
+                result = DateUtil.convertDate(untilDateTime, "yyyy-MM-dd'T'HHmmss", DateUtil.getTimeZone(dtStart.getParamValue("TZID")),
                         "yyyyMMdd'T'HHmmss'Z'", DateUtil.UTC);
             }
             return result;
