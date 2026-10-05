@@ -406,7 +406,7 @@ public class GraphExchangeSession extends ExchangeSession {
             }
             String responseRequested = jsonEvent.optString("responseRequested");
             if (responseRequested != null) {
-                vEvent.setPropertyValue("X-MICROSOFT-CDO-ISRESPONSEREQUESTED", responseRequested.toUpperCase());
+                vEvent.setPropertyValue("X-MICROSOFT-ISRESPONSEREQUESTED", responseRequested.toUpperCase());
             }
 
             if (jsonEvent.optBoolean("isReminderOn")) {
