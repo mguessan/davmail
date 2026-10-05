@@ -4953,9 +4953,12 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     private void waitRetryDelay(long retryDelay) {
-        LOGGER.debug("Waiting " + retryDelay + " seconds to retry request");
+        // add random jitter to avoid thundering herd on concurrent retries
+        long jitterMillis = (long) (retryDelay * 200 * Math.random());
+        long delayMillis = retryDelay * 1000L + jitterMillis;
+        LOGGER.debug("Waiting " + delayMillis + " ms to retry request");
         try {
-            Thread.sleep(retryDelay * 1000L);
+            Thread.sleep(delayMillis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
