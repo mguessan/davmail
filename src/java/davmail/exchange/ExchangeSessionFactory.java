@@ -49,8 +49,8 @@ import java.util.Objects;
 public final class ExchangeSessionFactory {
     private static final Object LOCK = new Object();
     private static final Map<PoolKey, ExchangeSession> POOL_MAP = new HashMap<>();
-    private static boolean configChecked;
-    private static boolean errorSent;
+    private static volatile boolean configChecked;
+    private static volatile boolean errorSent;
 
     static class PoolKey {
         final String url;
