@@ -964,6 +964,8 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
                     handleAttendees(reader, responseItem, tagLocalName);
                 } else if ("ModifiedOccurrences".equals(tagLocalName)) {
                     handleModifiedOccurrences(reader, responseItem);
+                } else if ("StartTimeZone".equals(tagLocalName)) {
+                    responseItem.put(tagLocalName, getAttributeValue(reader, "Id"));
                 } else {
                     if (tagLocalName.endsWith("Id")) {
                         value = getAttributeValue(reader, "Id");

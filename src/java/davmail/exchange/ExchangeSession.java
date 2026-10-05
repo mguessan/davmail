@@ -2122,6 +2122,7 @@ public abstract class ExchangeSession {
         protected String contentClass;
         protected String subject;
         protected VCalendar vCalendar;
+        protected String startTimeZone;
 
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, etag, noneMatch);
@@ -2239,6 +2240,9 @@ public abstract class ExchangeSession {
                 LOGGER.debug("Vcalendar body received from server:\n" + icsBody);
             }
             vCalendar = new VCalendar(icsContent, calendarEmail, getVTimezone());
+            if (startTimeZone != null) {
+                vCalendar.setStartTimeZone(startTimeZone);
+            }
             vCalendar.fixVCalendar(fromServer);
             if (LOGGER.isDebugEnabled() && !fromServer) {
                 String resultString = vCalendar.toString();

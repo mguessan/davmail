@@ -37,6 +37,16 @@ public class VCalendar extends VObject {
     protected VObject vTimezone;
     protected String email;
 
+    protected String startTimeZone;
+
+    /**
+     * Set the start timezone from EWS event.
+     * @param startTimeZone Exchange timezone ID
+     */
+    public void setStartTimeZone(String startTimeZone) {
+        this.startTimeZone = startTimeZone;
+    }
+
     /**
      * Create VCalendar object from reader;
      *
@@ -311,9 +321,20 @@ public class VCalendar extends VObject {
         }
         if (currentTzid != null && currentTzid.indexOf(' ') >= 0) {
             try {
+                // map tzid from MIME content
                 currentTzid = ResourceBundle.getBundle("timezones").getString(currentTzid);
             } catch (MissingResourceException e) {
-                LOGGER.debug("Timezone " + currentTzid + " not found in rename table");
+                // failover to event tzid
+                if (startTimeZone != null) {
+                    try {
+                        currentTzid = ResourceBundle.getBundle("timezones").getString(startTimeZone);
+                        LOGGER.debug("Timezone " + currentTzid + " resolved via StartTimeZone fallback: " + startTimeZone);
+                    } catch (MissingResourceException e2) {
+                        LOGGER.debug("Timezone " + currentTzid + " not found in rename table, StartTimeZone " + startTimeZone + " also not found");
+                    }
+                } else {
+                    LOGGER.debug("Timezone " + currentTzid + " not found in rename table");
+                }
             }
         }
         return currentTzid;

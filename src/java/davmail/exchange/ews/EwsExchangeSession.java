@@ -2336,6 +2336,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
                     getItemMethod.addAdditionalProperty(Field.get("resources"));
                     getItemMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
+                    getItemMethod.addAdditionalProperty(Field.get("starttimezone"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsendinvitations"));
@@ -2344,6 +2345,12 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
 
                 executeMethod(getItemMethod);
+
+                // retrieve starttimezone as a failover for tzid
+                if (getItemMethod.getResponseItem() != null) {
+                    startTimeZone = getItemMethod.getResponseItem().get("StartTimeZone");
+                }
+
                 if ("Task".equals(type)) {
                     VCalendar localVCalendar = new VCalendar();
                     localVCalendar.setPropertyValue("VERSION", "2.0");
@@ -2476,6 +2483,7 @@ public class EwsExchangeSession extends ExchangeSession {
             getOccurrenceMethod.addAdditionalProperty(Field.get("optionalattendees"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("resources"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
+            getOccurrenceMethod.addAdditionalProperty(Field.get("starttimezone"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("organizer"));
             executeMethod(getOccurrenceMethod);
