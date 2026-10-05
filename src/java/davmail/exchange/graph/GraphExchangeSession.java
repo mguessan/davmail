@@ -4924,7 +4924,8 @@ public class GraphExchangeSession extends ExchangeSession {
      */
     private boolean handleThrottling(CloseableHttpResponse response) {
         long retryDelay = 0;
-        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_TOO_MANY_REQUESTS) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode == HttpStatus.SC_TOO_MANY_REQUESTS) {
             LOGGER.info("Detected throttling " + response.getStatusLine());
             Header retryAfter = response.getFirstHeader("Retry-After");
             if (retryAfter != null) {
@@ -4934,9 +4935,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     LOGGER.debug("Unable to parse Retry-After value: " + retryAfter.getValue() + ", using default delay");
                     retryDelay = 10;
                 }
-                waitRetryDelay(retryDelay);
+            } else {
+                retryDelay = 10;
             }
-        } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_SERVICE_UNAVAILABLE) {
+            waitRetryDelay(retryDelay);
+        } else if (statusCode == HttpStatus.SC_SERVICE_UNAVAILABLE
+                || statusCode == HttpStatus.SC_BAD_GATEWAY
+                || statusCode == HttpStatus.SC_GATEWAY_TIMEOUT
+                || statusCode == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
             LOGGER.info("Detected graph request error, waiting to retry " + response.getStatusLine());
             retryDelay = 10;
             waitRetryDelay(retryDelay);
