@@ -26,6 +26,7 @@ import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.HttpPreconditionFailedException;
 import davmail.exception.HttpServerErrorException;
+import davmail.exception.HttpTokenExpiredException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
@@ -1432,7 +1433,7 @@ public class GraphExchangeSession extends ExchangeSession {
         }
         boolean isExpired = false;
         try {
-            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setObjectType("mailFolders").setSelect("id"));
+            checkToken();
         } catch (UnknownHostException | NoRouteToHostException exc) {
             throw exc;
         } catch (IOException e) {
@@ -1440,6 +1441,10 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         return isExpired;
+    }
+
+    protected void checkToken() throws IOException {
+        executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setObjectType("mailFolders").setSelect("id"));
     }
 
     private String convertHtmlToText(String htmlText) {
@@ -2278,8 +2283,16 @@ public class GraphExchangeSession extends ExchangeSession {
         this.userName = userName;
 
         buildSessionInfo(httpClient.getUri());
+
         // validate token is valid for graph
-        isExpired();
+        try {
+            checkToken();
+        } catch (HttpTokenExpiredException e) {
+            LOGGER.warn("Clear invalid token");
+            // erase invalid token
+            Settings.storeRefreshToken(userName, "");
+            throw e;
+        }
     }
 
     @Override
