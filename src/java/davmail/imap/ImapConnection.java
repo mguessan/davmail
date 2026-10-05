@@ -617,8 +617,12 @@ public class ImapConnection extends AbstractConnection {
                                                 // wait for input 1 second
                                                 try {
                                                     byte[] byteBuffer = new byte[1];
-                                                    if (in.read(byteBuffer) > 0) {
+                                                    int readResult = in.read(byteBuffer);
+                                                    if (readResult > 0) {
                                                         in.unread(byteBuffer);
+                                                    } else if (readResult == -1) {
+                                                        // client disconnected
+                                                        throw new SocketException("client closed connection");
                                                     }
                                                 } catch (SocketTimeoutException e) {
                                                     // ignore, read timed out
