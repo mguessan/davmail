@@ -720,7 +720,7 @@ public class ImapConnection extends AbstractConnection {
             }
         } catch (SocketException e) {
             LOGGER.warn(BundleMessage.formatLog("LOG_CLIENT_CLOSED_CONNECTION"));
-        } catch (NetworkDownException e) {
+        } catch (NetworkDownException | UnknownHostException e) {
             LOGGER.warn(e.getMessage());
             try {
                 sendClient("* BYE [NetworkDown] " + ((e.getMessage() == null) ? e.toString() : e.getMessage()).replaceAll("\\n", " "));
