@@ -29,6 +29,7 @@ import davmail.exception.HttpServerErrorException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
+import davmail.exchange.NetworkDownException;
 import davmail.exchange.XMLStreamUtil;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.http.URIUtil;
@@ -40,6 +41,7 @@ import org.apache.http.client.HttpResponseException;
 import org.apache.http.impl.EnglishReasonPhraseCatalog;
 import org.apache.log4j.Logger;
 
+import javax.net.ssl.SSLException;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.BufferedOutputStream;
@@ -52,6 +54,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -843,8 +846,9 @@ public class CaldavConnection extends AbstractConnection {
                         }
                         appendItemResponse(response, request, item);
                     }
-                } catch (SocketException e) {
-                    // rethrow SocketException (client closed connection)
+                } catch (SocketException | SocketTimeoutException |
+                         SSLException | UnknownHostException | NetworkDownException e) {
+                    // rethrow on client closed connection or network error
                     throw e;
                 } catch (Exception e) {
                     wireLogger.debug(e.getMessage(), e);
