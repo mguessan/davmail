@@ -393,7 +393,7 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.setPropertyValue("LOCATION", jsonEvent.optString("location", "displayName"));
             vEvent.setPropertyValue("CATEGORIES", jsonEvent.optString("categories"));
 
-            vEvent.setPropertyValue("CLASS", convertClassFromExchange(jsonEvent.optString("sensitivity")));
+            vEvent.setPropertyValue("CLASS", convertClassFromExchange(jsonEvent.optString("class")));
 
             // custom microsoft properties
             String showAs = jsonEvent.optString("showAs");
@@ -1294,6 +1294,8 @@ public class GraphExchangeSession extends ExchangeSession {
             String location = vEvent.getPropertyValue("LOCATION");
             newGraphEvent.put("location", new JSONObject().put("displayName", location));
 
+            newGraphEvent.put("class", convertClassToExchange(vEvent.getPropertyValue("CLASS")));
+
             newGraphEvent.setCategories(vEvent.getPropertyValue("CATEGORIES"));
             // Collect categories on multiple lines
             List<VProperty> categories = vEvent.getProperties("CATEGORIES");
@@ -1542,6 +1544,21 @@ public class GraphExchangeSession extends ExchangeSession {
         VProperty attendeeProperty = new VProperty(propertyName, "mailto:" + jsonEmailAddress.optString("address"));
         attendeeProperty.addParam("CN", jsonEmailAddress.optString("name"));
         return attendeeProperty;
+    }
+
+    /**
+     * Convert iCalendar CLASS value to Graph sensitivity value.
+     * @param eventClass iCalendar CLASS (PUBLIC, PRIVATE, CONFIDENTIAL)
+     * @return Graph sensitivity value (normal, private, confidential)
+     */
+    protected String convertClassToExchange(String eventClass) {
+        if ("PRIVATE".equals(eventClass)) {
+            return "private";
+        } else if ("CONFIDENTIAL".equals(eventClass)) {
+            return "confidential";
+        } else {
+            return "normal";
+        }
     }
 
     private String convertDateTimeTimeZoneToTaskDate(Date exchangeDateValue) {
@@ -2197,7 +2214,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("reminderMinutesBeforeStart"));
         EVENT_ATTRIBUTES.add(GraphField.get("responseRequested"));
         EVENT_ATTRIBUTES.add(GraphField.get("responseStatus"));
-        EVENT_ATTRIBUTES.add(GraphField.get("sensitivity"));
+        EVENT_ATTRIBUTES.add(GraphField.get("class"));
         EVENT_ATTRIBUTES.add(GraphField.get("showAs"));
         EVENT_ATTRIBUTES.add(GraphField.get("start"));
         EVENT_ATTRIBUTES.add(GraphField.get("subject"));

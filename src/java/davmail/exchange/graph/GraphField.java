@@ -270,6 +270,9 @@ public class GraphField {
 
         addFieldMap("sensitivity", 0x0036, PropertyType.Integer);
 
+        // for events map class to sensitivity
+        addFieldMap("class", "sensitivity");
+
         // does not map to anything over graph
         addFieldMap("msexchangecertificate");
         addFieldMap("usersmimecertificate");
