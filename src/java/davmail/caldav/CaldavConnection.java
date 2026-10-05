@@ -170,7 +170,15 @@ public class CaldavConnection extends AbstractConnection {
                     break;
                 }
                 tokens = new StringTokenizer(line);
+                if (!tokens.hasMoreTokens()) {
+                    sendErr(HttpStatus.SC_BAD_REQUEST, "Empty request line");
+                    break;
+                }
                 String command = tokens.nextToken();
+                if (!tokens.hasMoreTokens()) {
+                    sendErr(HttpStatus.SC_BAD_REQUEST, "Missing request path");
+                    break;
+                }
                 Map<String, String> headers = parseHeaders();
                 String encodedPath = StringUtil.encodePlusSign(tokens.nextToken());
                 String path = URIUtil.decode(encodedPath);
@@ -672,8 +680,8 @@ public class CaldavConnection extends AbstractConnection {
      */
     public void sendGetRoot() throws IOException {
         String buffer = "Connected to DavMail" + DavGateway.getCurrentVersion() + "<br/>" +
-                "UserName: " + userName + "<br/>" +
-                "Email: " + session.getEmail() + "<br/>";
+                "UserName: " + StringUtil.xmlEncode(userName) + "<br/>" +
+                "Email: " + StringUtil.xmlEncode(session.getEmail()) + "<br/>";
         sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer, true);
     }
 
@@ -1174,19 +1182,19 @@ public class CaldavConnection extends AbstractConnection {
             response.startRecipientResponse(attendee);
 
             StringBuilder ics = new StringBuilder();
-            ics.append("BEGIN:VCALENDAR").append((char) 13).append((char) 10)
-                    .append("VERSION:2.0").append((char) 13).append((char) 10)
-                    .append("PRODID:-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN").append((char) 13).append((char) 10)
-                    .append("METHOD:REPLY").append((char) 13).append((char) 10)
-                    .append("BEGIN:VFREEBUSY").append((char) 13).append((char) 10)
-                    .append("DTSTAMP:").append(valueMap.get("DTSTAMP")).append((char) 13).append((char) 10)
-                    .append("ORGANIZER:").append(valueMap.get("ORGANIZER")).append((char) 13).append((char) 10)
-                    .append("DTSTART:").append(valueMap.get("DTSTART")).append((char) 13).append((char) 10)
-                    .append("DTEND:").append(valueMap.get("DTEND")).append((char) 13).append((char) 10)
-                    .append("UID:").append(valueMap.get("UID")).append((char) 13).append((char) 10)
-                    .append(attendeeKeyMap.get(attendee)).append(':').append(attendee).append((char) 13).append((char) 10);
+            ics.append("BEGIN:VCALENDAR\r\n")
+                    .append("VERSION:2.0\r\n")
+                    .append("PRODID:-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN\r\n")
+                    .append("METHOD:REPLY\r\n")
+                    .append("BEGIN:VFREEBUSY\r\n")
+                    .append("DTSTAMP:").append(valueMap.get("DTSTAMP")).append("\r\n")
+                    .append("ORGANIZER:").append(valueMap.get("ORGANIZER")).append("\r\n")
+                    .append("DTSTART:").append(valueMap.get("DTSTART")).append("\r\n")
+                    .append("DTEND:").append(valueMap.get("DTEND")).append("\r\n")
+                    .append("UID:").append(valueMap.get("UID")).append("\r\n")
+                    .append(attendeeKeyMap.get(attendee)).append(':').append(attendee).append("\r\n");
             entry.getValue().appendTo(ics);
-            ics.append("END:VFREEBUSY").append((char) 13).append((char) 10)
+            ics.append("END:VFREEBUSY\r\n")
                     .append("END:VCALENDAR");
             response.appendCalendarData(ics.toString());
             response.endRecipientResponse();
@@ -1739,13 +1747,13 @@ public class CaldavConnection extends AbstractConnection {
                  * it'll fail.
                  */
                 String result = calendarPath.toString();
-                // replace unsupported spaces
-                if (result.indexOf(' ') >= 0) {
-                    result = result.replaceAll("___", " ");
+                // replace ___ encoding with spaces
+                if (result.contains("___")) {
+                    result = result.replace("___", " ");
                 }
                 // replace /addressbook suffix on public folders
                 if (result.startsWith("/public")) {
-                    result = result.replaceAll("/addressbook", "");
+                    result = result.replace("/addressbook", "");
                 }
 
                 return result;
