@@ -108,6 +108,9 @@ public class GraphField {
 
         addFieldMap("instancetype", DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype", PropertyType.Integer);
 
+        // PidLidOwnerCriticalChange: date/time the organizer sent/updated the meeting (used for DTSTAMP per MS-OXCICAL)
+        addFieldMap("dtstamp", DistinguishedPropertySetType.Meeting, 0x001A, PropertyType.SystemTime);
+
         addFieldMap("iCalUid");
         addFieldMap("calendaruid", DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:uid", PropertyType.String);
 

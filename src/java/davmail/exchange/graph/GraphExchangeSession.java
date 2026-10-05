@@ -383,7 +383,12 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.addProperty(convertBodyToVproperty(jsonEvent));
 
             vEvent.setPropertyValue("LAST-MODIFIED", jsonEvent.optString("lastModifiedDateTime"));
-            vEvent.setPropertyValue("DTSTAMP", jsonEvent.optString("lastModifiedDateTime"));
+            // DTSTAMP is PidLidOwnerCriticalChange per MS-OXCICAL, fall back to lastModifiedDateTime
+            String dtstamp = jsonEvent.optString("dtstamp");
+            if (dtstamp == null) {
+                dtstamp = jsonEvent.optString("lastModifiedDateTime");
+            }
+            vEvent.setPropertyValue("DTSTAMP", dtstamp);
 
             // retrieve original start timezone to restore original timezone on recurring events across DST
             String originalStartTimeZone = jsonEvent.optString("originalStartTimeZone");
@@ -2191,6 +2196,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("categories"));
         EVENT_ATTRIBUTES.add(GraphField.get("changeKey"));
         EVENT_ATTRIBUTES.add(GraphField.get("createdDateTime"));
+        EVENT_ATTRIBUTES.add(GraphField.get("dtstamp"));
         EVENT_ATTRIBUTES.add(GraphField.get("end"));
         EVENT_ATTRIBUTES.add(GraphField.get("exceptionOccurrences"));
         EVENT_ATTRIBUTES.add(GraphField.get("hasAttachments"));
