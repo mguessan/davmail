@@ -1089,7 +1089,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
             attendee.role = "REQ-PARTICIPANT";
         } else if ("Resources".equals(attendeeType)) {
             attendee.role = "NON-PARTICIPANT";
-            attendee.cutype = "RESOURCE";
+            attendee.cutype = "ROOM"; // make default CUTYPE room
         } else {
             attendee.role = "OPT-PARTICIPANT";
         }
