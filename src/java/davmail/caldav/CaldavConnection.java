@@ -931,13 +931,13 @@ public class CaldavConnection extends AbstractConnection {
                     IOUtil.encodeBase64AsString(rootFolder.ctag));
         }
         response.endPropStatOK();
+        response.endResponse();
         if (request.getDepth() == 1) {
             appendInbox(response, request, "inbox");
             appendOutbox(response, request, "outbox");
             appendFolderOrItem(response, request, session.getFolder(request.getFolderPath("calendar")), "calendar");
             appendFolderOrItem(response, request, session.getFolder(request.getFolderPath("contacts")), "contacts");
         }
-        response.endResponse();
         response.endMultistatus();
         response.close();
     }
