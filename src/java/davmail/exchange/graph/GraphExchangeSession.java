@@ -2778,11 +2778,22 @@ public class GraphExchangeSession extends ExchangeSession {
 
     @Override
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
-        executeJsonRequest(new GraphRequestBuilder()
-                .setMethod(HttpDelete.METHOD_NAME)
-                .setMailbox(((Message) message).folderId.mailbox)
-                .setObjectType("messages")
-                .setObjectId(((Message) message).id));
+        try {
+            executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpDelete.METHOD_NAME)
+                    .setMailbox(((Message) message).folderId.mailbox)
+                    .setObjectType("messages")
+                    .setObjectId(((Message) message).id));
+        } catch (HttpNotFoundException e) {
+            LOGGER.debug("Ignore already deleted message " + message.getImapUid());
+        } catch (HttpForbiddenException e) {
+            // workaround for Graph bug using immutableid
+            if (e.getMessage() != null && "ErrorCannotDeleteObject".equals(e.getCode())) {
+                LOGGER.warn("Ignore already deleted message " + message.getImapUid() + " (ErrorCannotDeleteObject)");
+            } else {
+                throw e;
+            }
+        }
     }
 
     @Override

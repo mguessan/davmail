@@ -93,7 +93,7 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
                 throw new HttpTokenExpiredException(errorMessage);
             }
             if (statusCode == HttpStatus.SC_FORBIDDEN) {
-                throw new HttpForbiddenException(errorMessage);
+                throw new HttpForbiddenException(errorCode, errorMessage);
             }
             if (statusCode == HttpStatus.SC_NOT_FOUND) {
                 throw new HttpNotFoundException(errorMessage);

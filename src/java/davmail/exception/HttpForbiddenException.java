@@ -25,6 +25,7 @@ import org.apache.http.client.HttpResponseException;
  * HttpResponseException with 403 forbidden status.
  */
 public class HttpForbiddenException extends HttpResponseException {
+    protected String code;
     /**
      * HttpResponseException with 403 forbidden status.
      *
@@ -32,5 +33,14 @@ public class HttpForbiddenException extends HttpResponseException {
      */
     public HttpForbiddenException(String message) {
         super(HttpStatus.SC_FORBIDDEN, message);
+    }
+
+    public HttpForbiddenException(String code, String message) {
+        super(HttpStatus.SC_FORBIDDEN, message);
+        this.code = code;
+    }
+
+    public String getCode() {
+        return code;
     }
 }
