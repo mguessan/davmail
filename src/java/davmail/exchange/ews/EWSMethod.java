@@ -1143,6 +1143,38 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
     }
 
 
+    /**
+     * Remove null bytes (0x00) from a byte array.
+     * Returns a new array without null bytes.
+     * 
+     * This helper is called from handleMimeContent(...)
+     */
+    protected static byte[] stripNullBytes(byte[] input) {
+        if (input == null || input.length == 0) {
+           return input;
+        }
+        // count non-null bytes
+        int count = 0;
+        for (byte b : input) {
+            if (b != 0) {
+                count++;
+            }
+        }
+        if (count == input.length) {
+           // nothing to do
+           return input;
+        }
+        byte[] result = new byte[count];
+        int i = 0;
+        for (byte b : input) {
+            if (b != 0) {
+                result[i++] = b;
+            }
+        }
+        return result;
+    }
+
+    
     protected void handleMimeContent(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         if (reader instanceof TypedXMLStreamReader) {
             // Stax2 parser: use enhanced base64 conversion
@@ -1150,6 +1182,11 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         } else {
             // failover: slow and memory consuming conversion
             responseItem.mimeContent = Base64.decodeBase64(reader.getElementText().getBytes(StandardCharsets.US_ASCII));
+        }
+
+        // Strip null bytes from MIME content to avoid XML parsing errors [ fixes https://github.com/mguessan/davmail/issues/557 ]
+        if (responseItem.mimeContent != null && responseItem.mimeContent.length > 0) {
+            responseItem.mimeContent = stripNullBytes(responseItem.mimeContent);
         }
     }
 
