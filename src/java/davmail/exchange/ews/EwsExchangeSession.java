@@ -2290,7 +2290,7 @@ public class EwsExchangeSession extends ExchangeSession {
                             LOGGER.debug("Attendee " + vCalendar.getCalendarEmail() + " status unchanged " + currentAttendeeStatus + " on instance " + instanceId);
                         }
                     } else {
-                        throw new IOException("Unable to find occurrence for id " + instanceId);
+                        LOGGER.debug("Client sent instanceId " + instanceId + " with attendee status " + attendeeStatus + " not found");
                     }
                 }
             }
