@@ -109,7 +109,18 @@ public class ICSCalendarValidator {
         String fixed = repaired.toString();
         // just put output to debug logger, only if some invalid characters have been removed.
         if (!content.equals(fixed)) {
-            LOGGER.debug(message + "\n[" + content + "]\n => [" + fixed + "]\n fix complete.");
+           // For logging, invalid characters (e.g. null bytes) are represented as Unicode hex escapes (\uXXXX)
+           // some editors cannot handle null bytes in text files, see comment https://github.com/mguessan/davmail/issues/533#issue-5601924334
+            StringBuilder escapedContent = new StringBuilder(content.length() + (content.length()-fixed.length())*6);
+            for (char c : content.toCharArray()) {
+                if (!isValidChar(c)) {
+                    escapedContent.append(String.format("\\u%04x", (int) c));
+                } else {
+                    escapedContent.append(c);
+                }
+            }
+            
+            LOGGER.debug(message + "\n[" + escapedContent.toString() + "]\n => [" + fixed + "]\n fix complete.");
         }
         return fixed;
     }
