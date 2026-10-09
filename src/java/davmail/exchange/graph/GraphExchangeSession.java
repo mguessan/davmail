@@ -3503,12 +3503,13 @@ public class GraphExchangeSession extends ExchangeSession {
         if ("/public".equals(folderPath)) {
             throw new UnsupportedOperationException("public folders not supported on Graph");
         } else if ("/archive".equals(folderPath)) {
-            return getWellKnownFolderId(mailbox, WellKnownFolderName.archive);
+            throw new UnsupportedOperationException("archive folders not (yet) supported on Graph");
         } else if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
             throw new UnsupportedOperationException("public folders not supported on Graph");
         } else if (isSubFolderOf(folderPath, ARCHIVE_ROOT)) {
-            currentFolderId = getWellKnownFolderId(mailbox, WellKnownFolderName.archive);
-            folderNames = folderPath.substring(ARCHIVE_ROOT.length()).split("/");
+            throw new UnsupportedOperationException("archive folders not (yet) supported on Graph");
+            // currentFolderId = TBD;
+            // folderNames = folderPath.substring(ARCHIVE_ROOT.length()).split("/");
         } else if (isSubFolderOf(folderPath, INBOX) ||
                 isSubFolderOf(folderPath, LOWER_CASE_INBOX) ||
                 isSubFolderOf(folderPath, MIXED_CASE_INBOX)) {
