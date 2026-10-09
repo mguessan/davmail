@@ -337,7 +337,13 @@ public final class ExchangeSessionFactory {
      * @throws IOException if unable to access Exchange server
      */
     public static void checkConfig() throws IOException {
-        String url = Settings.getProperty("davmail.url", Settings.getO365Url());
+        String url;
+        if (Settings.isGraphEnabled()) {
+            // In Graph mode, check the Graph endpoint instead of the legacy EWS endpoint
+            url = Settings.getGraphUrl();
+        } else {
+            url = Settings.getProperty("davmail.url", Settings.getO365Url());
+        }
         if (url == null || (!url.startsWith("http://") && !url.startsWith("https://"))) {
             throw new DavMailException("LOG_INVALID_URL", url);
         }
