@@ -400,6 +400,10 @@ public class GraphExchangeSession extends ExchangeSession {
 
             vEvent.setPropertyValue("CLASS", convertClassFromExchange(jsonEvent.optString("class")));
 
+            if (jsonEvent.optBoolean("isCancelled")) {
+                vEvent.setPropertyValue("STATUS", "CANCELLED");
+            }
+
             // custom microsoft properties
             String showAs = jsonEvent.optString("showAs");
             if (showAs != null) {
@@ -2206,6 +2210,7 @@ public class GraphExchangeSession extends ExchangeSession {
         EVENT_ATTRIBUTES.add(GraphField.get("id"));
         EVENT_ATTRIBUTES.add(GraphField.get("importance"));
         EVENT_ATTRIBUTES.add(GraphField.get("isAllDay"));
+        EVENT_ATTRIBUTES.add(GraphField.get("isCancelled"));
         EVENT_ATTRIBUTES.add(GraphField.get("isOnlineMeeting"));
         EVENT_ATTRIBUTES.add(GraphField.get("onlineMeeting"));
         EVENT_ATTRIBUTES.add(GraphField.get("isOrganizer"));

@@ -161,6 +161,7 @@ public class GraphField {
 
         addFieldMap("showAs");
         addFieldMap("isAllDay", "isAllDay", PropertyType.Boolean);
+        addFieldMap("isCancelled", "isCancelled", PropertyType.Boolean);
         addFieldMap("responseRequested");
         addFieldMap("responseStatus");
 
