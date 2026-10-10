@@ -4681,6 +4681,11 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public boolean supportsPeopleSearch() {
+        return true;
+    }
+
+    @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<>();
 
@@ -4691,7 +4696,9 @@ public class GraphExchangeSession extends ExchangeSession {
             if ("imapUid".equals(((AttributeCondition) condition).getAttributeName())) {
                 id = ((AttributeCondition) condition).getValue();
             } else {
-                search = ((AttributeCondition) condition).getValue();
+                String value = ((AttributeCondition) condition).getValue();
+                // empty or null search means broad people query (no $search param)
+                search = (value != null && !value.isEmpty()) ? value : null;
             }
         }
 

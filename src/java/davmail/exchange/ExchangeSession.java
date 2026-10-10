@@ -3061,6 +3061,16 @@ public abstract class ExchangeSession {
     }
 
     /**
+     * Check if the backend supports native people/directory search (e.g. Graph People API).
+     * When true, the LDAP layer can issue a single broad search instead of iterating A-to-Z.
+     *
+     * @return true if backend supports native people search
+     */
+    public boolean supportsPeopleSearch() {
+        return false;
+    }
+
+    /**
      * Search global address list
      *
      * @param condition           search filter
