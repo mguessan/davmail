@@ -4732,7 +4732,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     .setMethod(HttpGet.METHOD_NAME)
                     .addHeader("X-PeopleQuery-QuerySources", "Mailbox,Directory")
                     .setObjectType("people")
-                    .setSearch(search);
+                    .setSearch(search)
+                    .setSizeLimit(sizeLimit);
             LOGGER.debug("search users");
             GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
