@@ -2048,7 +2048,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 // update existing item
                 if (currentItemId != null) {
-                    if (isMeetingResponse && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
+                    if (isMeetingResponse) {
                         // meeting response with server managed notifications
                         SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                         MessageDisposition messageDisposition = MessageDisposition.SendAndSaveCopy;
@@ -2093,7 +2093,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 item
                         );
 
-                    } else if (Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
+                    } else {
                         // other changes with server side managed notifications
                         MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
 
@@ -2110,10 +2110,6 @@ public class EwsExchangeSession extends ExchangeSession {
                         if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                             createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
                         }
-                    } else {
-                        // old hard/delete approach on update, used with client side notifications
-                        DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
-                        executeMethod(deleteItemMethod);
                     }
                 }
 
@@ -2216,9 +2212,8 @@ public class EwsExchangeSession extends ExchangeSession {
                     newItem.setFieldUpdates(updates);
                     MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
                     SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToNone;
-                    if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer() && isMozSendInvitations
-                            && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
-                        // meeting request creation with server managed notifications
+                    if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer() && isMozSendInvitations) {
+                        // meeting request creation, send notifications to attendees
                         messageDisposition = MessageDisposition.SendAndSaveCopy;
                         sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                     }
@@ -2862,9 +2857,7 @@ public class EwsExchangeSession extends ExchangeSession {
             boolean hasAttendees = item.get(Field.get("displayto").getResponseName()) != null
                     || item.get(Field.get("displaycc").getResponseName()) != null;
 
-            if (isMeeting && isOrganizer && hasAttendees
-                    && !isSharedFolder(folderPath)
-                    && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
+            if (isMeeting && isOrganizer && hasAttendees && !isSharedFolder(folderPath)) {
                 // cancel meeting
                 SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                 MessageDisposition messageDisposition = MessageDisposition.SendAndSaveCopy;

@@ -1343,8 +1343,7 @@ public class CaldavConnection extends AbstractConnection {
             sendClient("Server: DavMail Gateway " + DavGateway.getCurrentVersion());
             String scheduleMode;
             // enable automatic scheduling over EWS, can be disabled
-            if (Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)
-                    && !(session instanceof DavExchangeSession)) {
+            if (!(session instanceof DavExchangeSession)) {
                 scheduleMode = "calendar-auto-schedule";
             } else {
                 scheduleMode = "calendar-schedule";
