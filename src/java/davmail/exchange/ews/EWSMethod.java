@@ -110,6 +110,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
     protected String serverVersion;
     protected String timezoneContext;
     private HttpResponse response;
+    private boolean enableNullFiltering;
 
     /**
      * Build EWS method
@@ -195,6 +196,10 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
 
         httpEntity.setContentType(CONTENT_TYPE);
         setEntity(httpEntity);
+    }
+
+    protected void enableNullFiltering(boolean enableNullFiltering) {
+        this.enableNullFiltering = enableNullFiltering;
     }
 
     protected void addAdditionalProperty(FieldURI additionalProperty) {
@@ -1240,7 +1245,45 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
         return this;
     }
 
-    protected void processResponseStream(InputStream inputStream) {
+    /**
+     * Check if byte array contains the ASCII sequence {@code &#x0} or {@code &#0}
+     *
+     * @param bytes response bytes
+     * @return true if null character reference pattern is detected
+     */
+    static boolean hasNullCharacterReference(byte[] bytes) {
+        // scan for &#x0 or &#0 byte patterns
+        for (int i = 0; i < bytes.length - 3; i++) {
+            if (bytes[i] == '&' && bytes[i + 1] == '#') {
+                if (bytes[i + 2] == 'x' && i + 3 < bytes.length && bytes[i + 3] == '0') {
+                    return true;
+                }
+                if (bytes[i + 2] == '0') {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Read all bytes from input stream.
+     *
+     * @param inputStream input stream to read
+     * @return byte array with all content
+     * @throws IOException on error
+     */
+    private static byte[] readAllBytes(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int count;
+        while ((count = inputStream.read(chunk)) != -1) {
+            buffer.write(chunk, 0, count);
+        }
+        return buffer.toByteArray();
+    }
+
+    protected void processResponseStream(InputStream inputStream) throws IOException {
         responseItems = new ArrayList<>();
         XMLStreamReader reader = null;
         try {
@@ -1263,7 +1306,19 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
                     return count;
                 }
             };
-            reader = XMLStreamUtil.createXMLStreamReader(inputStream);
+            if (enableNullFiltering) {
+                // workaround for invalid &#x0; and &#0; null character references in timezone name
+                byte[] responseBytes = readAllBytes(inputStream);
+                if (hasNullCharacterReference(responseBytes)) {
+                    LOGGER.warn("Stripping null character references from EWS response");
+                    String xml = new String(responseBytes, StandardCharsets.UTF_8);
+                    xml = xml.replaceAll("&#x0+;", "").replaceAll("&#0+;", "");
+                    responseBytes = xml.getBytes(StandardCharsets.UTF_8);
+                }
+                reader = XMLStreamUtil.createXMLStreamReader(new ByteArrayInputStream(responseBytes));
+            } else {
+                reader = XMLStreamUtil.createXMLStreamReader(inputStream);
+            }
             while (reader.hasNext()) {
                 reader.next();
                 handleErrors(reader);

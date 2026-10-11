@@ -2340,6 +2340,8 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsendinvitations"));
+
+                    getItemMethod.enableNullFiltering(true);
                 } else {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                 }
@@ -2486,6 +2488,7 @@ public class EwsExchangeSession extends ExchangeSession {
             getOccurrenceMethod.addAdditionalProperty(Field.get("starttimezone"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
             getOccurrenceMethod.addAdditionalProperty(Field.get("organizer"));
+            getOccurrenceMethod.enableNullFiltering(true);
             executeMethod(getOccurrenceMethod);
             return getOccurrenceMethod;
         }
