@@ -346,7 +346,7 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getKeystorePanel() {
-        JPanel keyStorePanel = new JPanel(new GridLayout(4, 2));
+        JPanel keyStorePanel = new JPanel(new GridLayout(5, 2));
         keyStorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_DAVMAIL_SERVER_CERTIFICATE")));
 
         keystoreTypeCombo = new JComboBox<>(new String[]{"JKS", "PKCS12"});
@@ -363,6 +363,17 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_KEY_STORE_PASSWORD_HELP"));
         addSettingComponent(keyStorePanel, BundleMessage.format("UI_KEY_PASSWORD"), keyPassField,
                 BundleMessage.format("UI_KEY_PASSWORD_HELP"));
+
+        JButton generateCertButton = new JButton(BundleMessage.format("UI_GENERATE_CERTIFICATE"));
+        generateCertButton.setToolTipText(BundleMessage.format("UI_GENERATE_CERTIFICATE_HELP"));
+        generateCertButton.addActionListener(evt -> generateSelfSignedCertificate());
+        keyStorePanel.add(new JLabel());
+        JPanel generateButtonPanel = new JPanel();
+        generateButtonPanel.setBorder(BorderFactory.createEmptyBorder(1, 0, 0, 0));
+        generateButtonPanel.setLayout(new BoxLayout(generateButtonPanel, BoxLayout.X_AXIS));
+        generateButtonPanel.add(generateCertButton);
+        keyStorePanel.add(generateButtonPanel);
+
         updateMaximumSize(keyStorePanel);
         return keyStorePanel;
     }
@@ -721,6 +732,41 @@ public class SettingsFrame extends JFrame {
         } else {
             return Settings.getProperty("davmail.ssl.keystoreFile") != null &&
                     (!Settings.getProperty("davmail.ssl.keystoreFile").isEmpty());
+        }
+    }
+
+    protected void generateSelfSignedCertificate() {
+        // Resolve keystore path: same directory as the settings file
+        String keystorePath;
+        String configFilePath = Settings.getConfigFilePath();
+        if (configFilePath == null || configFilePath.isEmpty()) {
+            // default settings location
+            configFilePath = System.getProperty("user.home") + java.io.File.separator + ".davmail.properties";
+        }
+        java.io.File configFile = new java.io.File(configFilePath);
+        java.io.File configDir = configFile.getParentFile();
+        if (configDir != null) {
+            keystorePath = new java.io.File(configDir, "davmail.p12").getPath();
+        } else {
+            keystorePath = "davmail.p12";
+        }
+
+        try {
+            davmail.http.SelfSignedCertificateGenerator.generateAndSave(keystorePath, "password");
+            keystoreTypeCombo.setSelectedItem("PKCS12");
+            keystoreFileField.setText(keystorePath);
+            keystorePassField.setText("password");
+            keyPassField.setText("password");
+            JOptionPane.showMessageDialog(this,
+                    BundleMessage.format("UI_GENERATE_CERTIFICATE_SUCCESS", keystorePath),
+                    BundleMessage.format("UI_GENERATE_CERTIFICATE"),
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception e) {
+            DavGatewayTray.error(new BundleMessage("UI_GENERATE_CERTIFICATE_ERROR", e.getMessage()));
+            JOptionPane.showMessageDialog(this,
+                    e.getMessage(),
+                    BundleMessage.format("UI_GENERATE_CERTIFICATE"),
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
