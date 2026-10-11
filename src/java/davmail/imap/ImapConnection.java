@@ -964,7 +964,7 @@ public class ImapConnection extends AbstractConnection {
                             || parameters.equals("RFC822.SIZE RFC822.HEADER FLAGS") // icedove
                             || Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize")) {   // Send approximate size
                         size = message.size;
-                        LOGGER.debug(String.format("Message %s sent approximate size %d bytes", message.getImapUid(), size));
+                        LOGGER.debug(String.format("Message %s in folder %s sent approximate size %d bytes", message.getImapUid(), currentFolder.folderPath, size));
                     } else {
                         size = messageWrapper.getMimeMessageSize();
                     }
