@@ -1267,6 +1267,27 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
     }
 
     /**
+     * Filter null character references ({@code &#x0;}, {@code &#x00;}, {@code &#0;}, {@code &#00;}, etc.)
+     * from XML response bytes. These are illegal in XML 1.0 and 1.1 but Exchange may return them
+     * in property values such as StartTimeZone Id when timezone names contain null-padded WCHAR arrays
+     * (e.g. from ActiveSync/TbSync clients).
+     * <p>
+     * Returns the original byte array unchanged if no null character references are found.
+     *
+     * @param responseBytes raw XML response bytes
+     * @return filtered bytes with null character references removed, or original array if clean
+     */
+    static byte[] filterNullCharacterReferences(byte[] responseBytes) {
+        if (responseBytes == null || responseBytes.length == 0 || !hasNullCharacterReference(responseBytes)) {
+            return responseBytes;
+        }
+        LOGGER.warn("Stripping null character references from EWS response");
+        String xml = new String(responseBytes, StandardCharsets.UTF_8);
+        xml = xml.replaceAll("&#x0+;", "").replaceAll("&#0+;", "");
+        return xml.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
      * Read all bytes from input stream.
      *
      * @param inputStream input stream to read
@@ -1308,13 +1329,7 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
             };
             if (enableNullFiltering) {
                 // workaround for invalid &#x0; and &#0; null character references in timezone name
-                byte[] responseBytes = readAllBytes(inputStream);
-                if (hasNullCharacterReference(responseBytes)) {
-                    LOGGER.warn("Stripping null character references from EWS response");
-                    String xml = new String(responseBytes, StandardCharsets.UTF_8);
-                    xml = xml.replaceAll("&#x0+;", "").replaceAll("&#0+;", "");
-                    responseBytes = xml.getBytes(StandardCharsets.UTF_8);
-                }
+                byte[] responseBytes = filterNullCharacterReferences(readAllBytes(inputStream));
                 reader = XMLStreamUtil.createXMLStreamReader(new ByteArrayInputStream(responseBytes));
             } else {
                 reader = XMLStreamUtil.createXMLStreamReader(inputStream);
