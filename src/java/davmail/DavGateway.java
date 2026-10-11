@@ -25,6 +25,7 @@ import davmail.exchange.auth.ExchangeAuthenticator;
 import davmail.exchange.auth.KerberosCheck;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.GetRequest;
+import davmail.http.SelfSignedCertificateGenerator;
 import davmail.imap.ImapServer;
 import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
@@ -63,10 +64,12 @@ public final class DavGateway {
         boolean server = false;
         boolean token = false;
         boolean kerberos = false;
+        boolean generateCert = false;
 
         // check environment for davmail settings path in Docker
         String configFilePath = Settings.getConfigFilePath();
-        for (String arg : args) {
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
             if (arg.startsWith("-")) {
                 switch (arg) {
                     case "-notray":
@@ -83,6 +86,9 @@ public final class DavGateway {
                         break;
                     case "-kerberos":
                         kerberos = true;
+                        break;
+                    case "-generateCert":
+                        generateCert = true;
                         break;
                     default:
                         LOGGER.warn("Unknown option: " + arg);
@@ -103,7 +109,10 @@ public final class DavGateway {
             Settings.setProperty("davmail.enableTray", "false");
         }
 
-        if (token) {
+        if (generateCert) {
+            SelfSignedCertificateGenerator.generate(configFilePath);
+            System.exit(0);
+        } else if (token) {
             try {
                 ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName("davmail.exchange.auth.O365InteractiveAuthenticator")
                         .getDeclaredConstructor().newInstance();
