@@ -243,6 +243,8 @@ public class CaldavConnection extends AbstractConnection {
         CaldavRequest request = new CaldavRequest(command, path, headers, body);
         if (request.isOptions()) {
             sendOptions();
+        } else if (request.isHead() && request.isRoot()) {
+            sendChunkedHttpResponse(HttpStatus.SC_OK, null);
         } else if (request.isPropFind() && request.isRoot()) {
             sendRoot(request);
         } else if (request.isGet() && request.isRoot()) {
