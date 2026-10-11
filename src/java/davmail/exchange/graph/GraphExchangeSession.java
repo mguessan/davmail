@@ -4728,9 +4728,10 @@ public class GraphExchangeSession extends ExchangeSession {
             }
 
         } else {
+            // X-PeopleQuery-QuerySources can be Mailbox, Directory or both, Mailbox already returned by searchContacts
             GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder()
                     .setMethod(HttpGet.METHOD_NAME)
-                    .addHeader("X-PeopleQuery-QuerySources", "Mailbox,Directory")
+                    .addHeader("X-PeopleQuery-QuerySources", "Directory")
                     .setObjectType("people")
                     .setSearch(search)
                     .setSizeLimit(sizeLimit);
