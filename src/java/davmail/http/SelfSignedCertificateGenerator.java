@@ -25,8 +25,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
@@ -55,11 +57,28 @@ public class SelfSignedCertificateGenerator {
     private static final int RSA_KEY_LENGTH = 2048;
     private static final int CERTIFICATE_VALIDITY_DAYS = 3650;
     private static final String KEY_ALIAS = "davmail";
-    private static final String DEFAULT_KEYSTORE_PASSWORD = "password";
+    static final String DEFAULT_KEYSTORE_PASSWORD = "password"; // NOSONAR default keystore password
     private static final String DEFAULT_KEYSTORE_FILENAME = "davmail.p12";
 
     private SelfSignedCertificateGenerator() {
         // utility class
+    }
+
+    /**
+     * Resolve keystore path: place davmail.p12 next to the given config file.
+     *
+     * @param configFilePath path to the DavMail properties file
+     * @return resolved keystore file path
+     */
+    public static String resolveKeystorePath(String configFilePath) {
+        if (configFilePath != null && !configFilePath.isEmpty()) {
+            File configFile = new File(configFilePath);
+            File configDir = configFile.getParentFile();
+            if (configDir != null) {
+                return new File(configDir, DEFAULT_KEYSTORE_FILENAME).getPath();
+            }
+        }
+        return DEFAULT_KEYSTORE_FILENAME;
     }
 
     /**
@@ -70,21 +89,9 @@ public class SelfSignedCertificateGenerator {
      * @param configFilePath path to the DavMail properties file
      */
     public static void generate(String configFilePath) {
-        try {
-            // Resolve keystore path next to config file
-            String keystorePath;
-            if (configFilePath != null && !configFilePath.isEmpty()) {
-                File configFile = new File(configFilePath);
-                File configDir = configFile.getParentFile();
-                if (configDir != null) {
-                    keystorePath = new File(configDir, DEFAULT_KEYSTORE_FILENAME).getPath();
-                } else {
-                    keystorePath = DEFAULT_KEYSTORE_FILENAME;
-                }
-            } else {
-                keystorePath = DEFAULT_KEYSTORE_FILENAME;
-            }
+        String keystorePath = resolveKeystorePath(configFilePath);
 
+        try {
             generateAndSave(keystorePath, DEFAULT_KEYSTORE_PASSWORD);
 
             // Update DavMail settings
@@ -94,13 +101,11 @@ public class SelfSignedCertificateGenerator {
             Settings.setProperty("davmail.ssl.keyPass", DEFAULT_KEYSTORE_PASSWORD);
             Settings.save();
 
-            System.out.println("Generated self-signed certificate: " + keystorePath);
-            System.out.println("DavMail settings updated");
-        } catch (Exception e) {
-            System.err.println("Failed to generate certificate: " + e.getMessage());
-            System.err.println("On Java 11+, add: --add-exports java.base/sun.security.x509=ALL-UNNAMED");
-            e.printStackTrace();
-            System.exit(1);
+            LOGGER.info("Generated self-signed certificate: " + keystorePath);
+            LOGGER.info("DavMail settings updated");
+        } catch (GeneralSecurityException | IOException e) {
+            LOGGER.error("Failed to generate certificate: " + e.getMessage(), e);
+            LOGGER.error("On Java 11+, add: --add-exports java.base/sun.security.x509=ALL-UNNAMED");
         }
     }
 
@@ -113,104 +118,101 @@ public class SelfSignedCertificateGenerator {
      * @throws IOException              if keystore file cannot be written
      */
     public static void generateAndSave(String keystoreFilename, String keystorePassword) throws GeneralSecurityException, IOException {
+        String hostname;
         try {
-            String hostname;
-            try {
-                hostname = InetAddress.getLocalHost().getCanonicalHostName();
-            } catch (Exception e) {
-                hostname = "localhost";
-            }
-            String cnString = "cn=" + hostname + ",ou=davmail";
-
-            LOGGER.info("Generating self-signed certificate for " + hostname);
-
-            // Generate RSA key pair (standard API, no reflection needed)
-            SecureRandom secureRandom = new SecureRandom();
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(RSA_KEY_LENGTH, secureRandom);
-            KeyPair pair = keyGen.generateKeyPair();
-            PublicKey publicKey = pair.getPublic();
-            PrivateKey privateKey = pair.getPrivate();
-
-            Date startDate = new Date();
-            Date endDate = new Date(startDate.getTime() + (long) CERTIFICATE_VALIDITY_DAYS * 24 * 3600 * 1000);
-
-            // All sun.security.x509 classes accessed via reflection
-            X509Certificate cert = createSelfSignedCertificate(
-                    cnString, publicKey, privateKey, startDate, endDate, secureRandom);
-
-            // Create PKCS12 keystore and store to file
-            KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            keyStore.load(null, null);
-            keyStore.setKeyEntry(KEY_ALIAS, privateKey, keystorePassword.toCharArray(),
-                    new X509Certificate[]{cert});
-
-            try (OutputStream os = Files.newOutputStream(Paths.get(keystoreFilename))) {
-                keyStore.store(os, keystorePassword.toCharArray());
-            }
-
-            LOGGER.info("Self-signed certificate saved to " + keystoreFilename);
-
-        } catch (GeneralSecurityException | IOException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new GeneralSecurityException("Failed to generate self-signed certificate: " + e.getMessage(), e);
+            hostname = InetAddress.getLocalHost().getCanonicalHostName();
+        } catch (UnknownHostException e) {
+            hostname = "localhost";
         }
+        String cnString = "cn=" + hostname + ",ou=davmail";
+
+        LOGGER.info("Generating self-signed certificate for " + hostname);
+
+        // Generate RSA key pair (standard API, no reflection needed)
+        SecureRandom secureRandom = new SecureRandom();
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(RSA_KEY_LENGTH, secureRandom);
+        KeyPair pair = keyGen.generateKeyPair();
+        PublicKey publicKey = pair.getPublic();
+        PrivateKey privateKey = pair.getPrivate();
+
+        Date startDate = new Date();
+        Date endDate = new Date(startDate.getTime() + (long) CERTIFICATE_VALIDITY_DAYS * 24 * 3600 * 1000);
+
+        // All sun.security.x509 classes accessed via reflection
+        X509Certificate cert = createSelfSignedCertificate(
+                cnString, publicKey, privateKey, startDate, endDate, secureRandom);
+
+        // Create PKCS12 keystore and store to file
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(null, null);
+        keyStore.setKeyEntry(KEY_ALIAS, privateKey, keystorePassword.toCharArray(),
+                new X509Certificate[]{cert});
+
+        try (OutputStream os = Files.newOutputStream(Paths.get(keystoreFilename))) {
+            keyStore.store(os, keystorePassword.toCharArray());
+        }
+
+        LOGGER.info("Self-signed certificate saved to " + keystoreFilename);
     }
 
     private static X509Certificate createSelfSignedCertificate(
             String cnString, PublicKey publicKey, PrivateKey privateKey,
-            Date startDate, Date endDate, SecureRandom secureRandom) throws Exception {
+            Date startDate, Date endDate, SecureRandom secureRandom) throws GeneralSecurityException {
+        try {
+            // Load classes via reflection
+            Class<?> x509CertInfoClass = Class.forName("sun.security.x509.X509CertInfo");
+            Class<?> x509CertImplClass = Class.forName("sun.security.x509.X509CertImpl");
+            Class<?> certificateVersionClass = Class.forName("sun.security.x509.CertificateVersion");
+            Class<?> certificateSerialNumberClass = Class.forName("sun.security.x509.CertificateSerialNumber");
+            Class<?> algorithmIdClass = Class.forName("sun.security.x509.AlgorithmId");
+            Class<?> certificateAlgorithmIdClass = Class.forName("sun.security.x509.CertificateAlgorithmId");
+            Class<?> x500NameClass = Class.forName("sun.security.x509.X500Name");
+            Class<?> certificateX509KeyClass = Class.forName("sun.security.x509.CertificateX509Key");
+            Class<?> certificateValidityClass = Class.forName("sun.security.x509.CertificateValidity");
 
-        // Load classes via reflection
-        Class<?> x509CertInfoClass = Class.forName("sun.security.x509.X509CertInfo");
-        Class<?> x509CertImplClass = Class.forName("sun.security.x509.X509CertImpl");
-        Class<?> certificateVersionClass = Class.forName("sun.security.x509.CertificateVersion");
-        Class<?> certificateSerialNumberClass = Class.forName("sun.security.x509.CertificateSerialNumber");
-        Class<?> algorithmIdClass = Class.forName("sun.security.x509.AlgorithmId");
-        Class<?> certificateAlgorithmIdClass = Class.forName("sun.security.x509.CertificateAlgorithmId");
-        Class<?> x500NameClass = Class.forName("sun.security.x509.X500Name");
-        Class<?> certificateX509KeyClass = Class.forName("sun.security.x509.CertificateX509Key");
-        Class<?> certificateValidityClass = Class.forName("sun.security.x509.CertificateValidity");
+            // Create X509CertInfo
+            Object info = x509CertInfoClass.getDeclaredConstructor().newInstance();
 
-        // Create X509CertInfo
-        Object info = x509CertInfoClass.getDeclaredConstructor().newInstance();
+            // CertificateVersion.V3 = 2
+            Object certVersion = certificateVersionClass.getDeclaredConstructor(int.class).newInstance(2);
 
-        // CertificateVersion.V3 = 2
-        Object certVersion = certificateVersionClass.getDeclaredConstructor(int.class).newInstance(2);
+            // CertificateSerialNumber
+            Object certSerial = certificateSerialNumberClass.getDeclaredConstructor(int.class)
+                    .newInstance(secureRandom.nextInt() & 0x7fffffff);
 
-        // CertificateSerialNumber
-        Object certSerial = certificateSerialNumberClass.getDeclaredConstructor(int.class)
-                .newInstance(secureRandom.nextInt() & 0x7fffffff);
+            // AlgorithmId.get(algorithm)
+            Method algorithmIdGet = algorithmIdClass.getMethod("get", String.class);
+            Object algId = algorithmIdGet.invoke(null, CERTIFICATE_SIGNATURE_ALGORITHM);
+            Object certAlgId = certificateAlgorithmIdClass.getDeclaredConstructor(algorithmIdClass).newInstance(algId);
 
-        // AlgorithmId.get(algorithm)
-        Method algorithmIdGet = algorithmIdClass.getMethod("get", String.class);
-        Object algId = algorithmIdGet.invoke(null, CERTIFICATE_SIGNATURE_ALGORITHM);
-        Object certAlgId = certificateAlgorithmIdClass.getDeclaredConstructor(algorithmIdClass).newInstance(algId);
+            // X500Name
+            Object x500Name = x500NameClass.getDeclaredConstructor(String.class).newInstance(cnString);
 
-        // X500Name
-        Object x500Name = x500NameClass.getDeclaredConstructor(String.class).newInstance(cnString);
+            // CertificateX509Key
+            Object certKey = certificateX509KeyClass.getDeclaredConstructor(PublicKey.class).newInstance(publicKey);
 
-        // CertificateX509Key
-        Object certKey = certificateX509KeyClass.getDeclaredConstructor(PublicKey.class).newInstance(publicKey);
+            // CertificateValidity
+            Object certValidity = certificateValidityClass.getDeclaredConstructor(Date.class, Date.class)
+                    .newInstance(startDate, endDate);
 
-        // CertificateValidity
-        Object certValidity = certificateValidityClass.getDeclaredConstructor(Date.class, Date.class)
-                .newInstance(startDate, endDate);
+            // Set fields on X509CertInfo - try setXXX methods first (newer JDK), fall back to set(String, Object)
+            setInfoField(info, x509CertInfoClass, "version", "setVersion", certVersion, certificateVersionClass);
+            setInfoField(info, x509CertInfoClass, "serialNumber", "setSerialNumber", certSerial, certificateSerialNumberClass);
+            setInfoField(info, x509CertInfoClass, "algorithmId", "setAlgorithmId", certAlgId, certificateAlgorithmIdClass);
+            setInfoField(info, x509CertInfoClass, "key", "setKey", certKey, certificateX509KeyClass);
+            setInfoField(info, x509CertInfoClass, "validity", "setValidity", certValidity, certificateValidityClass);
 
-        // Set fields on X509CertInfo - try setXXX methods first (newer JDK), fall back to set(String, Object)
-        setInfoField(info, x509CertInfoClass, "version", "setVersion", certVersion, certificateVersionClass);
-        setInfoField(info, x509CertInfoClass, "serialNumber", "setSerialNumber", certSerial, certificateSerialNumberClass);
-        setInfoField(info, x509CertInfoClass, "algorithmId", "setAlgorithmId", certAlgId, certificateAlgorithmIdClass);
-        setInfoField(info, x509CertInfoClass, "key", "setKey", certKey, certificateX509KeyClass);
-        setInfoField(info, x509CertInfoClass, "validity", "setValidity", certValidity, certificateValidityClass);
+            // Subject and Issuer need special handling due to API differences between JDK versions
+            setSubjectOrIssuer(info, x509CertInfoClass, "subject", "setSubject", x500Name, x500NameClass);
+            setSubjectOrIssuer(info, x509CertInfoClass, "issuer", "setIssuer", x500Name, x500NameClass);
 
-        // Subject and Issuer need special handling due to API differences between JDK versions
-        setSubjectOrIssuer(info, x509CertInfoClass, "subject", "setSubject", x500Name, x500NameClass);
-        setSubjectOrIssuer(info, x509CertInfoClass, "issuer", "setIssuer", x500Name, x500NameClass);
-
-        // Sign the certificate
-        return signCertificate(info, x509CertInfoClass, x509CertImplClass, privateKey);
+            // Sign the certificate
+            return signCertificate(info, x509CertInfoClass, x509CertImplClass, privateKey);
+        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException |
+                 IllegalAccessException | InvocationTargetException e) {
+            throw new GeneralSecurityException("Failed to generate self-signed certificate: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -218,7 +220,8 @@ public class SelfSignedCertificateGenerator {
      * fall back to the set(String, Object) method for older JDKs.
      */
     private static void setInfoField(Object info, Class<?> infoClass, String fieldName,
-                                     String setterName, Object value, Class<?> valueClass) throws Exception {
+                                     String setterName, Object value, Class<?> valueClass)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         try {
             // Try newer JDK setter method (e.g., setVersion, setSerialNumber)
             Method setter = infoClass.getMethod(setterName, valueClass);
@@ -236,7 +239,9 @@ public class SelfSignedCertificateGenerator {
      * - Java 8: set("subject", CertificateSubjectName) / set("issuer", CertificateIssuerName)
      */
     private static void setSubjectOrIssuer(Object info, Class<?> infoClass, String fieldName,
-                                           String setterName, Object x500Name, Class<?> x500NameClass) throws Exception {
+                                           String setterName, Object x500Name, Class<?> x500NameClass)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
+            ClassNotFoundException, InstantiationException {
         try {
             // Try newer JDK setter (takes X500Name directly)
             Method setter = infoClass.getMethod(setterName, x500NameClass);
@@ -267,7 +272,8 @@ public class SelfSignedCertificateGenerator {
      * fall back to instance sign method for Java 8.
      */
     private static X509Certificate signCertificate(Object info, Class<?> infoClass,
-                                                   Class<?> certImplClass, PrivateKey privateKey) throws Exception {
+                                                   Class<?> certImplClass, PrivateKey privateKey)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         try {
             // Try newer JDK: X509CertImpl.newSigned(X509CertInfo, PrivateKey, String)
             Method newSigned = certImplClass.getMethod("newSigned", infoClass, PrivateKey.class, String.class);
