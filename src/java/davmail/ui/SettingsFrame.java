@@ -736,27 +736,16 @@ public class SettingsFrame extends JFrame {
     }
 
     protected void generateSelfSignedCertificate() {
-        // Resolve keystore path: same directory as the settings file
-        String keystorePath;
         String configFilePath = Settings.getConfigFilePath();
-        if (configFilePath == null || configFilePath.isEmpty()) {
-            // default settings location
-            configFilePath = System.getProperty("user.home") + java.io.File.separator + ".davmail.properties";
-        }
-        java.io.File configFile = new java.io.File(configFilePath);
-        java.io.File configDir = configFile.getParentFile();
-        if (configDir != null) {
-            keystorePath = new java.io.File(configDir, "davmail.p12").getPath();
-        } else {
-            keystorePath = "davmail.p12";
-        }
+        String keystorePath = davmail.http.SelfSignedCertificateGenerator.resolveKeystorePath(configFilePath);
+        String keystorePassword = davmail.http.SelfSignedCertificateGenerator.DEFAULT_KEYSTORE_PASSWORD;
 
         try {
-            davmail.http.SelfSignedCertificateGenerator.generateAndSave(keystorePath, "password");
+            davmail.http.SelfSignedCertificateGenerator.generateAndSave(keystorePath, keystorePassword);
             keystoreTypeCombo.setSelectedItem("PKCS12");
             keystoreFileField.setText(keystorePath);
-            keystorePassField.setText("password");
-            keyPassField.setText("password");
+            keystorePassField.setText(keystorePassword);
+            keyPassField.setText(keystorePassword);
             JOptionPane.showMessageDialog(this,
                     BundleMessage.format("UI_GENERATE_CERTIFICATE_SUCCESS", keystorePath),
                     BundleMessage.format("UI_GENERATE_CERTIFICATE"),
