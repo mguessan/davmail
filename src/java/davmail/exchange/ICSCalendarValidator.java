@@ -109,7 +109,19 @@ public class ICSCalendarValidator {
         String fixed = repaired.toString();
         // just put output to debug logger, only if some invalid characters have been removed.
         if (!content.equals(fixed)) {
-            LOGGER.debug(message + "\n[" + content + "]\n => [" + fixed + "]\n fix complete.");
+            // strip invalid characters from debug message
+            if (LOGGER.isDebugEnabled()) {
+                StringBuilder escapedContent = new StringBuilder();
+                for (char c : content.toCharArray()) {
+                    if (!isValidChar(c)) {
+                        escapedContent.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        escapedContent.append(c);
+                    }
+                }
+
+                LOGGER.debug(message + "\n[" + escapedContent.toString() + "]\n => [" + fixed + "]\n fix complete.");
+            }
         }
         return fixed;
     }
