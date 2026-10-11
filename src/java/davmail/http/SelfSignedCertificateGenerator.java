@@ -57,7 +57,7 @@ public class SelfSignedCertificateGenerator {
     private static final int RSA_KEY_LENGTH = 2048;
     private static final int CERTIFICATE_VALIDITY_DAYS = 3650;
     private static final String KEY_ALIAS = "davmail";
-    static final String DEFAULT_KEYSTORE_PASSWORD = "password"; // NOSONAR default keystore password
+    public static final String DEFAULT_KEYSTORE_PASSWORD = "password"; // NOSONAR default keystore password
     private static final String DEFAULT_KEYSTORE_FILENAME = "davmail.p12";
 
     private SelfSignedCertificateGenerator() {
