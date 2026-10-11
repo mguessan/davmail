@@ -1240,7 +1240,7 @@ public class CaldavConnection extends AbstractConnection {
      */
     public void sendNotFound(CaldavRequest request) throws IOException {
         BundleMessage message = new BundleMessage("LOG_UNSUPPORTED_REQUEST", request);
-        DavGatewayTray.warn(message);
+        DavGatewayTray.debug(message);
         sendErr(HttpStatus.SC_NOT_FOUND, message.format());
     }
 
