@@ -66,10 +66,10 @@ See [Getting Started](https://davmail.sourceforge.net/gettingstarted.html).
 See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 ## Contribute
-Contributions are welcome, you can either [submit a patch](https://sourceforge.net/p/davmail/patches/) or create a [GitHub pull request](https://github.com/mguessan/davmail/pulls).
+Contributions are welcome, you can either create a [GitHub pull request](https://github.com/mguessan/davmail/pulls) (preferred) or [submit a patch](https://sourceforge.net/p/davmail/patches/).
 
-In case you are looking for tasks to work on, please check our current
-[Backlog](https://sourceforge.net/p/davmail/feature-requests/milestone/Backlog/).
+In case you are looking for tasks to work on, please check 
+[open issues](https://github.com/mguessan/davmail/issues).
 
 ## License
 
