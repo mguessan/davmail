@@ -911,6 +911,9 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("current-user-principal")) {
             response.appendHrefProperty("D:current-user-principal", encodePath(request, "/principals/users/" + session.getEmail()));
         }
+        if (request.hasProperty("principal-URL")) {
+            response.appendHrefProperty("D:principal-URL", encodePath(request, "/principals/users/" + session.getEmail()));
+        }
         response.endPropStatOK();
         response.endResponse();
         response.endMultistatus();
@@ -975,6 +978,9 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("current-user-principal")) {
             response.appendHrefProperty("D:current-user-principal", encodePath(request, "/principals/users/" + session.getEmail()));
+        }
+        if (request.hasProperty("principal-URL")) {
+            response.appendHrefProperty("D:principal-URL", encodePath(request, "/principals/users/" + session.getEmail()));
         }
         response.endPropStatOK();
         response.endResponse();
@@ -1073,7 +1079,7 @@ public class CaldavConnection extends AbstractConnection {
         response.startResponse(encodePath(request, "/principals/" + prefix + '/' + principal));
         response.startPropstat();
 
-        if (request.hasProperty("principal-URL") && request.isIcal5()) {
+        if (request.hasProperty("principal-URL")) {
             response.appendHrefProperty("D:principal-URL", encodePath(request, "/principals/" + prefix + '/' + actualPrincipal));
         }
 
