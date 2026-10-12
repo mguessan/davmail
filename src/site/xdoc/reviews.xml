@@ -14,68 +14,70 @@
             <p>In this page you find some independent reviews of DavMail and additional documentation on DavMail setup.
             </p>
 
-            <ul>
-                <li>
-                    <a href="http://olex.openlogic.com/wazi/2009/escaping-microsoft-exchange-via-davmail-fetchmail-postfix-courier-imap/">
-                        Escaping Microsoft Exchange via Davmail + Fetchmail + Postfix + Courier IMAP
-                    </a>
-                </li>
-                <li>
-                    <a href="http://www.intrasection.com/pjmorr/2010/01/21/snow-leopard-and-exchange-2003/">
-                        Getting mac mail, ical and address book to talk to Exchange 2003
-                    </a>
-                </li>
-                <li>
-                    <a href="http://www.oucs.ox.ac.uk/nexus/calendar/iCal/davmail.xml">
-                        Nexus Calendaring using Davmail and iCal
-                    </a>
-                </li>
-                <li>
-                    <a href="http://wiki.rcs.manchester.ac.uk/community/ExchangeThunderbird">
-                        Exchange Email/Calendars via DavMail with Thunderbird
-                    </a>
-                </li>
-                <li>
-                    <a href="http://www.ronakg.in/2010/07/thunderbird_lightning_davmail_ubuntu/">
-                        How to setup Thunderbird + Lightning + DavMail on Ubuntu 10.04 (Lucid Lynx)
-                    </a>
-                </li>
-                <li>
-                    <a href="http://karuppuswamy.com/wordpress/2010/05/13/how-to-integrate-thunderbird-with-ms-exchange-to-replace-ms-outlook/">
-                        How to use Thunderbird to send and receive Exchange email replacing MS-Outlook
-                    </a>
-                </li>
-                <li>
-                    <a href="http://guycoen.wordpress.com/2010/12/09/outlook-2011-on-mac-and-exchange-2003/">
-                        Outlook 2011 on Mac and Exchange 2003
-                    </a>
-                </li>
-                <li>
-                    <a href="http://techruminations.blogspot.com/2010/01/using-davmail-gateway-to-allow.html">
-                        Using DavMail Gateway To Allow Thunderbird To Access Microsoft Exchange Server 2007 &amp; Earlier
-                    </a>
-                </li>
-                <li>
-                    <a href="http://www.linux.com/learn/tutorials/265449-escaping-microsoft-exchange-via-davmail-fetchmail-postfix-courier-imap">
-                        Escaping Microsoft Exchange via DavMail Fetchmail Postfix Courier-imap
-                    </a>
-                </li>
-                <li>
-                    <a href="http://guzaho.wordpress.com/2011/10/12/thunderbird-as-client-for-microsoft-exchange-2010-server/">
-                        Thunderbird as client for Microsoft Exchange 2010 server
-                    </a>
-                </li>
-                <li>
-                    <a href="http://roger-almeida.blogspot.fr/2012/04/thunderbird-with-microsoft-owa-in.html">
-                        Thunderbird with Microsoft OWA in Ubuntu 11.10
-                    </a>
-                </li>
-                <li>
-                    <a href="http://www.docgreen.fr/?p=4">
-                        Utiliser Thunderbird avec un serveur Microsoft Exchange 2007 (French)
-                    </a>
-                </li>
-            </ul>
+            <subsection name="Recent reviews and articles">
+                <ul>
+                    <li>
+                        <a href="https://windowsforum.com/news/davmail-6-8-adds-active-microsoft-graph-support-ready-for-ews-retirement.425710/">
+                            DavMail 6.8 Adds Active Microsoft Graph Support — Ready for EWS Retirement (WindowsForum, 2026)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://tomadelstein.substack.com/p/bridge">
+                            Bridge — Deploying DavMail as a gateway for Exchange (Tom Adelstein on Substack, 2026)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://idroot.us/install-davmail-fedora-41/">
+                            How To Install DavMail on Fedora 41 (idroot, 2025)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://idroot.us/install-davmail-ubuntu-24-04/">
+                            How To Install DavMail on Ubuntu 24.04 LTS (idroot, 2025)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://douglasrumbaugh.com/post/davmail-authentication/">
+                            Outlook/Exchange Authentication in DavMail (Douglas Rumbaugh, 2022)
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://douglasrumbaugh.com/post/microsoft-email-on-linux/">
+                            Microsoft Exchange Email on Linux (Douglas Rumbaugh, 2021)
+                        </a>
+                    </li>
+                </ul>
+            </subsection>
+
+            <subsection name="Older reviews">
+                <ul>
+                    <li>
+                        <a href="https://www.intrasection.com/pjmorr/2010/01/21/snow-leopard-and-exchange-2003/">
+                            Getting Mac Mail, iCal and Address Book to talk to Exchange 2003
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://guycoen.wordpress.com/2010/12/09/outlook-2011-on-mac-and-exchange-2003/">
+                            Outlook 2011 on Mac and Exchange 2003
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://guzaho.wordpress.com/2011/10/12/thunderbird-as-client-for-microsoft-exchange-2010-server/">
+                            Thunderbird as client for Microsoft Exchange 2010 server
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://roger-almeida.blogspot.com/2012/04/thunderbird-with-microsoft-owa-in.html">
+                            Thunderbird with Microsoft OWA in Ubuntu 11.10
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.docgreen.fr/?p=4">
+                            Utiliser Thunderbird avec un serveur Microsoft Exchange 2007 (French)
+                        </a>
+                    </li>
+                </ul>
+            </subsection>
         </section>
     </body>
 </document>
