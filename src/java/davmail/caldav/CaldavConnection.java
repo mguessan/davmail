@@ -165,7 +165,7 @@ public class CaldavConnection extends AbstractConnection {
         try {
             while (!closed) {
                 line = readClient();
-                // unable to read line, connection closed ?
+                // unable to read line, connection closed?
                 if (line == null) {
                     break;
                 }
@@ -191,7 +191,7 @@ public class CaldavConnection extends AbstractConnection {
                 } else if (!headers.containsKey("authorization")) {
                     sendUnauthorized();
                 } else {
-                    // need to check session on each request, credentials may have changed or session expired
+                    // need to check session on each request, credentials may have changed, or session expired
                     try {
                         decodeCredentials(headers.get("authorization"));
                         session = ExchangeSessionFactory.getInstance(userName, password);
@@ -222,7 +222,7 @@ public class CaldavConnection extends AbstractConnection {
             try {
                 sendErr(e);
             } catch (IOException e2) {
-                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
+                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"));
             }
         } finally {
             close();
@@ -1427,7 +1427,7 @@ public class CaldavConnection extends AbstractConnection {
 
         protected CaldavRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
             this.command = command;
-            this.path = path.replaceAll("//", "/");
+            this.path = path.replace("//", "/");
             pathElements = this.path.split("/");
             this.headers = headers;
             buildDepth();
