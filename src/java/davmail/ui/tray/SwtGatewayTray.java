@@ -169,7 +169,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      */
     public void switchIcon() {
         isActive = true;
-        display.syncExec(() -> {
+        display.asyncExec(() -> {
             Image currentImage = trayItem.getImage();
             if (currentImage != null && currentImage.equals(image)) {
                 trayItem.setImage(image2);
@@ -184,7 +184,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      * Set tray icon to inactive (network down)
      */
     public void resetIcon() {
-        display.syncExec(() -> trayItem.setImage(image));
+        display.asyncExec(() -> trayItem.setImage(image));
     }
 
     /**
@@ -192,7 +192,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      */
     public void inactiveIcon() {
         isActive = false;
-        display.syncExec(() -> trayItem.setImage(inactiveImage));
+        display.asyncExec(() -> trayItem.setImage(inactiveImage));
     }
 
     /**
