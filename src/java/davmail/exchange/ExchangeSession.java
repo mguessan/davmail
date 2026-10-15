@@ -2018,9 +2018,16 @@ public abstract class ExchangeSession {
             writer.appendProperty("N", sn, get("givenName"), get("middlename"), get("personaltitle"), get("namesuffix"));
 
             if (distributionListMembers != null) {
-                writer.appendProperty("KIND", "group");
-                for (String member : distributionListMembers) {
-                    writer.appendProperty("MEMBER", member);
+                if ("3.0".equals(vCardVersion)) {
+                    writer.appendProperty("X-ADDRESSBOOKSERVER-KIND", "group");
+                    for (String member : distributionListMembers) {
+                        writer.appendProperty("X-ADDRESSBOOKSERVER-MEMBER", member);
+                    }
+                } else {
+                    writer.appendProperty("KIND", "group");
+                    for (String member : distributionListMembers) {
+                        writer.appendProperty("MEMBER", member);
+                    }
                 }
             }
 
@@ -2107,7 +2114,17 @@ public abstract class ExchangeSession {
             }
 
             if (contactPhoto != null) {
-                writer.writeLine("PHOTO:data:"+contactPhoto.contentType+";base64," +contactPhoto.content);
+                if ("3.0".equals(vCardVersion)) {
+                    // vCard 3.0: use ENCODING=b and TYPE parameter
+                    String photoType = contactPhoto.contentType;
+                    if (photoType != null && photoType.startsWith("image/")) {
+                        photoType = photoType.substring("image/".length()).toUpperCase();
+                    }
+                    writer.writeLine("PHOTO;ENCODING=b;TYPE=" + photoType + ":" + contactPhoto.content);
+                } else {
+                    // vCard 4.0: use data: URI
+                    writer.writeLine("PHOTO:data:" + contactPhoto.contentType + ";base64," + contactPhoto.content);
+                }
             }
 
             writer.appendProperty("KEY1;X509;ENCODING=BASE64", get("msexchangecertificate"));

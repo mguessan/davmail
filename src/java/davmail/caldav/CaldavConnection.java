@@ -403,7 +403,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     private boolean isOldCardavClient(CaldavRequest request) {
-        return request.isUserAgent("iOS/");
+        return request.isUserAgent("iOS/") || request.isUserAgent("Mac OS X/") || request.isUserAgent("macOS/");
     }
 
     private String getVCardVersion(CaldavRequest request) {
