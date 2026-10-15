@@ -390,13 +390,20 @@ public class ImapConnection extends AbstractConnection {
                                                     while (uidRangeIterator.hasNext()) {
                                                         messages.add(uidRangeIterator.next());
                                                     }
+                                                    long uidNextBefore = session.getFolder(targetName).uidNext;
                                                     if ("copy".equalsIgnoreCase(subcommand)) {
                                                         session.copyMessages(messages, targetName);
+                                                        sendClient(commandId + " OK " + buildCopyUid(messages, targetName, uidNextBefore) + subcommand + " completed");
                                                     } else {
                                                         session.moveMessages(messages, targetName);
+                                                        // RFC 6851: COPYUID goes in an untagged OK before the EXPUNGE responses
+                                                        String copyUid = buildCopyUid(messages, targetName, uidNextBefore);
+                                                        if (!copyUid.isEmpty()) {
+                                                            sendClient("* OK " + copyUid + "moved");
+                                                        }
                                                         refreshCurrentFolder();
+                                                        sendClient(commandId + " OK " + subcommand + " completed");
                                                     }
-                                                    sendClient(commandId + " OK " + subcommand + " completed");
                                                 }
                                             } catch (HttpNotFoundException e) {
                                                 sendClient(commandId + " NO [TRYCREATE] " + e.getMessage());
@@ -488,6 +495,8 @@ public class ImapConnection extends AbstractConnection {
                                         if (!rangeIterator.hasNext()) {
                                             sendClient(commandId + " NO " + "No message found");
                                         } else {
+                                            long uidNextBefore = session.getFolder(targetName).uidNext;
+                                            ArrayList<ExchangeSession.Message> messages = new ArrayList<>();
                                             while (rangeIterator.hasNext()) {
                                                 DavGatewayTray.switchIcon();
                                                 ExchangeSession.Message message = rangeIterator.next();
@@ -496,11 +505,19 @@ public class ImapConnection extends AbstractConnection {
                                                 } else {
                                                     session.moveMessage(message, targetName);
                                                 }
+                                                messages.add(message);
                                             }
+                                            String copyUid = buildCopyUid(messages, targetName, uidNextBefore);
                                             if ("move".equalsIgnoreCase(command)) {
+                                                // RFC 6851: COPYUID goes in an untagged OK before the EXPUNGE responses
+                                                if (!copyUid.isEmpty()) {
+                                                    sendClient("* OK " + copyUid + "moved");
+                                                }
                                                 refreshCurrentFolder();
+                                                sendClient(commandId + " OK " + command + " completed");
+                                            } else {
+                                                sendClient(commandId + " OK " + copyUid + command + " completed");
                                             }
-                                            sendClient(commandId + " OK " + command + " completed");
                                         }
                                     } catch (HttpResponseException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
@@ -840,6 +857,35 @@ public class ImapConnection extends AbstractConnection {
 
         sendClient("* " + currentFolder.count() + " EXISTS");
         sendClient("* " + currentFolder.recent + " RECENT");
+    }
+
+    /**
+     * Build the RFC 4315 COPYUID response code for messages just copied or moved to targetName.
+     * Exchange numbers messages in each folder from PR_ARTICLE_NUM_NEXT, so when UIDNEXT advanced
+     * by exactly the message count, the new UIDs are uidNextBefore..uidNextAfter-1 in copy order.
+     * Anything else (concurrent delivery, unknown UIDNEXT) means the mapping is unknown.
+     *
+     * @param messages      copied or moved messages, in copy order
+     * @param targetName    target folder path
+     * @param uidNextBefore target folder UIDNEXT before the copy
+     * @return COPYUID response code followed by a space, or an empty string
+     * @throws IOException on error
+     */
+    private String buildCopyUid(List<ExchangeSession.Message> messages, String targetName, long uidNextBefore) throws IOException {
+        long uidNextAfter = session.getFolder(targetName).uidNext;
+        if (uidNextBefore <= 0 || uidNextAfter - uidNextBefore != messages.size()) {
+            LOGGER.debug("No COPYUID: UIDNEXT " + uidNextBefore + " -> " + uidNextAfter + " for " + messages.size() + " messages");
+            return "";
+        }
+        StringBuilder sourceUids = new StringBuilder();
+        for (ExchangeSession.Message message : messages) {
+            if (sourceUids.length() > 0) {
+                sourceUids.append(',');
+            }
+            sourceUids.append(message.getImapUid());
+        }
+        String targetUids = messages.size() == 1 ? String.valueOf(uidNextBefore) : uidNextBefore + ":" + (uidNextAfter - 1);
+        return "[COPYUID 1 " + sourceUids + ' ' + targetUids + "] ";
     }
 
     /**
