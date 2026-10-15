@@ -100,4 +100,18 @@ public class TestGraphConvertDate extends TestCase {
         sinceCondition.appendTo(buffer);
         assertEquals("receivedDateTime ge 2026-08-21T00:00:00Z", buffer.toString());
     }
+
+    public void testParseDuration() {
+        // RFC 5545 durations, negative before the alarm anchor
+        assertEquals(Long.valueOf(-15 * 60 * 1000L), GraphExchangeSession.parseDuration("-PT15M"));
+        assertEquals(Long.valueOf(-(24 + 2) * 3600 * 1000L), GraphExchangeSession.parseDuration("-P1DT2H"));
+        assertEquals(Long.valueOf(7 * 24 * 3600 * 1000L), GraphExchangeSession.parseDuration("P1W"));
+        assertEquals(Long.valueOf(30 * 1000L), GraphExchangeSession.parseDuration("+PT30S"));
+        assertEquals(Long.valueOf(0L), GraphExchangeSession.parseDuration("PT0S"));
+        // incomplete or invalid values
+        assertNull(GraphExchangeSession.parseDuration("P"));
+        assertNull(GraphExchangeSession.parseDuration("-PT"));
+        assertNull(GraphExchangeSession.parseDuration("15M"));
+        assertNull(GraphExchangeSession.parseDuration("20261231T120000Z"));
+    }
 }
