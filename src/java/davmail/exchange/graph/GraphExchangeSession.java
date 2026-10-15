@@ -2060,6 +2060,7 @@ public class GraphExchangeSession extends ExchangeSession {
         wellKnownFolderMap.put(WellKnownFolderName.junkemail.name(), ExchangeSession.JUNK);
         wellKnownFolderMap.put(WellKnownFolderName.sentitems.name(), ExchangeSession.SENT);
         wellKnownFolderMap.put(WellKnownFolderName.deleteditems.name(), ExchangeSession.TRASH);
+        wellKnownFolderMap.put(WellKnownFolderName.outbox.name(), ExchangeSession.UNSENT);
     }
 
     protected static final HashSet<GraphField> IMAP_MESSAGE_ATTRIBUTES = new HashSet<>();
@@ -3328,13 +3329,13 @@ public class GraphExchangeSession extends ExchangeSession {
                 folder.isDefaultCalendar = jsonResponse.optBoolean("isDefaultCalendar");
             } else {
                 String wellKnownName = wellKnownFolderMap.get(jsonResponse.optString("wellKnownName"));
-                if (ExchangeSession.INBOX.equals(wellKnownName)) {
+                if (wellKnownName != null) {
+                    // normalize display name to short constants for consistency across backends
                     folder.displayName = wellKnownName;
-                } else {
-                    if (wellKnownName != null) {
+                    if (!ExchangeSession.INBOX.equals(wellKnownName)) {
                         folder.setSpecialFlag(wellKnownName);
                     }
-
+                } else {
                     folder.displayName = StringUtil.encodeFolderName(jsonResponse.getString("displayName"));
                 }
 
