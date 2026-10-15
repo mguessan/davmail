@@ -73,6 +73,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -89,10 +90,12 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
@@ -297,6 +300,21 @@ public class GraphExchangeSession extends ExchangeSession {
                     }
 
                     vTodo.setPropertyValue("COMPLETED;VALUE=DATE", convertDateTimeTimeZoneToTaskDate(graphObject.optDateTimeTimeZone("completedDateTime")));
+
+                    // To Do reminder is an absolute date time
+                    if (graphObject.optBoolean("isReminderOn")) {
+                        Date reminderDate = graphObject.optDateTimeTimeZone("reminderDateTime");
+                        if (reminderDate != null) {
+                            SimpleDateFormat zuluFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'", Locale.ENGLISH);
+                            zuluFormat.setTimeZone(GMT_TIMEZONE);
+                            VObject vAlarm = new VObject();
+                            vAlarm.type = "VALARM";
+                            vAlarm.setPropertyValue("ACTION", "DISPLAY");
+                            vAlarm.setPropertyValue("DESCRIPTION", "Reminder");
+                            vAlarm.setPropertyValue("TRIGGER;VALUE=DATE-TIME", zuluFormat.format(reminderDate));
+                            vTodo.addVObject(vAlarm);
+                        }
+                    }
 
                     vTodo.setPropertyValue("CATEGORIES", graphObject.optString("categories"));
 
@@ -1376,6 +1394,71 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         }
 
+        /**
+         * Compute the To Do reminder from the first VALARM of a VTODO.
+         * To Do reminders are absolute, a relative trigger is applied to DTSTART, or DUE with RELATED=END.
+         *
+         * @param vTodo VTODO object
+         * @return reminder UTC date time in Graph format, or null when there is no usable alarm
+         * @throws IOException on invalid date
+         */
+        private String getTaskReminderDateTime(VObject vTodo) throws IOException {
+            VObject vAlarm = vTodo.getFirstVAlarm();
+            VProperty trigger = vAlarm == null ? null : vAlarm.getProperty("TRIGGER");
+            if (trigger == null || trigger.getValue() == null || trigger.getValue().isEmpty()) {
+                return null;
+            }
+            String triggerValue = trigger.getValue();
+            Date reminderDate;
+            if ("DATE-TIME".equalsIgnoreCase(trigger.getParamValue("VALUE"))) {
+                reminderDate = parseTaskDate(triggerValue, null);
+            } else {
+                Long offset = parseDuration(triggerValue);
+                VProperty anchor = vTodo.getProperty("END".equalsIgnoreCase(trigger.getParamValue("RELATED")) ? "DUE" : "DTSTART");
+                if (anchor == null) {
+                    // clients often set a relative alarm on a task with only a due date
+                    anchor = vTodo.getProperty("DUE");
+                }
+                if (offset == null || anchor == null || anchor.getValue() == null) {
+                    LOGGER.debug("Ignore task alarm trigger " + triggerValue);
+                    return null;
+                }
+                String anchorTzid = anchor.getParamValue("TZID");
+                if (anchorTzid == null && !anchor.getValue().endsWith("Z")) {
+                    anchorTzid = vCalendar.getVTimezone().getPropertyValue("TZID");
+                }
+                reminderDate = new Date(parseTaskDate(anchor.getValue(), anchorTzid).getTime() + offset);
+            }
+            SimpleDateFormat graphFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
+            graphFormat.setTimeZone(GMT_TIMEZONE);
+            return graphFormat.format(reminderDate);
+        }
+
+        /**
+         * Parse an iCalendar date or date time, UTC when it ends with Z.
+         *
+         * @param value date (yyyyMMdd) or date time (yyyyMMdd'T'HHmmss[Z])
+         * @param tzid  timezone id for a local value
+         * @return date
+         * @throws IOException on invalid date
+         */
+        private Date parseTaskDate(String value, String tzid) throws IOException {
+            TimeZone timeZone;
+            if (value.endsWith("Z") || tzid == null) {
+                timeZone = GMT_TIMEZONE;
+            } else {
+                timeZone = vCalendar.getStandardTimezoneId(tzid);
+            }
+            String pattern = value.length() == 8 ? "yyyyMMdd" : "yyyyMMdd'T'HHmmss";
+            SimpleDateFormat parser = new SimpleDateFormat(pattern, Locale.ENGLISH);
+            parser.setTimeZone(timeZone);
+            try {
+                return parser.parse(value.endsWith("Z") ? value.substring(0, value.length() - 1) : value);
+            } catch (ParseException e) {
+                throw new IOException("Invalid date " + value + " with tzid " + tzid);
+            }
+        }
+
         private JSONObject buildJsonTask(VObject vTodo) throws JSONException, IOException {
             JSONObject jsonEvent = new JSONObject();
             GraphObject localGraphObject = new GraphObject(jsonEvent);
@@ -1415,6 +1498,14 @@ public class GraphExchangeSession extends ExchangeSession {
                     dueTzid = vCalendar.getVTimezone().getPropertyValue("TZID");
                 }
                 jsonEvent.put("dueDateTime", new JSONObject().put("dateTime", vCalendar.convertCalendarDateToGraph(due.getValue(), dueTzid)).put("timeZone", dueTzid));
+            }
+
+            // only set the reminder when the client sends an alarm: clients without task alarms (e.g. org-caldav)
+            // would otherwise clear reminders set in To Do on every update
+            String reminderDateTime = getTaskReminderDateTime(vTodo);
+            if (reminderDateTime != null) {
+                jsonEvent.put("isReminderOn", true);
+                jsonEvent.put("reminderDateTime", new JSONObject().put("dateTime", reminderDateTime).put("timeZone", "UTC"));
             }
 
             VProperty completed = vTodo.getProperty("COMPLETED");
@@ -1568,6 +1659,30 @@ public class GraphExchangeSession extends ExchangeSession {
         } else {
             return "normal";
         }
+    }
+
+    private static final Pattern DURATION_PATTERN = Pattern.compile("([+-])?P(?:(\\d+)W)?(?:(\\d+)D)?(?:T(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+)S)?)?");
+
+    /**
+     * Parse an iCalendar duration (RFC 5545 section 3.3.6), e.g. -PT15M or -P1DT2H.
+     *
+     * @param duration iCalendar duration
+     * @return duration in milliseconds, negative before the anchor, or null when invalid
+     */
+    protected static Long parseDuration(String duration) {
+        Matcher matcher = DURATION_PATTERN.matcher(duration.trim());
+        if (!matcher.matches() || duration.trim().endsWith("T") || duration.trim().endsWith("P")) {
+            return null;
+        }
+        long seconds = 0;
+        long[] unitSeconds = {7 * 24 * 3600, 24 * 3600, 3600, 60, 1};
+        for (int i = 0; i < unitSeconds.length; i++) {
+            String value = matcher.group(i + 2);
+            if (value != null) {
+                seconds += Long.parseLong(value) * unitSeconds[i];
+            }
+        }
+        return "-".equals(matcher.group(1)) ? -seconds * 1000 : seconds * 1000;
     }
 
     private String convertDateTimeTimeZoneToTaskDate(Date exchangeDateValue) {
