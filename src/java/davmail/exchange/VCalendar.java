@@ -522,6 +522,12 @@ public class VCalendar extends VObject {
             } else {
                 for (VObject vAlarm : vObject.vObjects) {
                     if ("VALARM".equals(vAlarm.type)) {
+                        // Exchange may return invalid empty duration P, default to 0 minutes
+                        String trigger = vAlarm.getPropertyValue("TRIGGER");
+                        if (fromServer && trigger != null && "P".equals(trigger)) {
+                            LOGGER.debug("Fixing invalid empty duration trigger to -PT0M");
+                            vAlarm.setPropertyValue("TRIGGER", "-PT0M");
+                        }
                         String action = vAlarm.getPropertyValue("ACTION");
                         if (fromServer && "DISPLAY".equals(action)
                                 // convert DISPLAY to AUDIO only if user defined an alarm sound
