@@ -294,7 +294,12 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
     protected void writeSavedItemFolderId(Writer writer) throws IOException {
         if (savedItemFolderId != null) {
             writer.write("<m:SavedItemFolderId>");
+            // do not send ChangeKey in SavedItemFolderId, not needed and may cause
+            // ErrorCannotCreateContactInNonContactFolder, ErrorCannotCreateCalendarItemInNonCalendarFolder
+            String savedChangeKey = savedItemFolderId.changeKey;
+            savedItemFolderId.changeKey = null;
             savedItemFolderId.write(writer);
+            savedItemFolderId.changeKey = savedChangeKey;
             writer.write("</m:SavedItemFolderId>");
         }
     }
