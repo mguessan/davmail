@@ -21,7 +21,6 @@ package davmail.exchange.graph;
 
 import davmail.Settings;
 import davmail.exception.DavMailException;
-import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.util.DateUtil;
@@ -37,11 +36,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.ResourceBundle;
 import java.util.TimeZone;
-
-import static davmail.util.DateUtil.CALDAV_DATE_TIME;
-import static davmail.util.DateUtil.GRAPH_DATE_TIME;
 
 /**
  * Wrapper for Graph API JsonObject
@@ -257,7 +252,7 @@ public class GraphObject {
      * @param key internal property name
      * @return value or null
      */
-    public String optString(String section, String key) {
+    public String optSectionString(String section, String key) {
         JSONObject sectionObject = jsonObject.optJSONObject(section);
         if (sectionObject != null) {
             return sectionObject.optString(key, null);

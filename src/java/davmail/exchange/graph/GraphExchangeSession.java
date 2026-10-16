@@ -395,7 +395,7 @@ public class GraphExchangeSession extends ExchangeSession {
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTSTART", jsonEvent.optJSONObject("start"), DateUtil.getExchangeTimeZone(originalStartTimeZone)));
             vEvent.addProperty(convertDateTimeTimeZoneToVproperty("DTEND", jsonEvent.optJSONObject("end"), DateUtil.getExchangeTimeZone(originalStartTimeZone)));
 
-            vEvent.setPropertyValue("LOCATION", jsonEvent.optString("location", "displayName"));
+            vEvent.setPropertyValue("LOCATION", jsonEvent.optSectionString("location", "displayName"));
             vEvent.setPropertyValue("CATEGORIES", jsonEvent.optString("categories"));
 
             vEvent.setPropertyValue("CLASS", convertClassFromExchange(jsonEvent.optString("class")));
@@ -435,7 +435,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
             vEvent.setPropertyValue("X-MICROSOFT-DISALLOW-COUNTER", jsonEvent.optBoolean("allowNewTimeProposals") ? "FALSE" : "TRUE");
 
-            String joinUrl = jsonEvent.optString("onlineMeeting", "joinUrl");
+            String joinUrl = jsonEvent.optSectionString("onlineMeeting", "joinUrl");
             if (joinUrl != null) {
                 vEvent.setPropertyValue("X-MICROSOFT-SKYPETEAMSMEETINGURL", joinUrl);
             }
@@ -854,7 +854,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 itemResult.etag = graphResponse.optString("changeKey");
 
                 // id is empty on meeting response
-                if (graphResponse.optString("id", null) != null) {
+                if (graphResponse.optString("id") != null) {
                     // workaround for Thunderbird, keep a cache of itemName to id map
                     urlcompnameToIdMap.put(convertItemNameToEML(itemName), graphResponse.optString("id"));
                 }
