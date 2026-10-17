@@ -1,3 +1,118 @@
+## DavMail 7.1.0 2026-10-17
+Maintenance release focused on Graph API improvements and network resilience.
+Implemented native people search for GAL, room booking support, and improved recurrence/timezone handling.
+Enhanced IMAP with UID EXPUNGE, UNKEYWORD and RFC 3501 date compliance.
+Added self-signed certificate generation, improved SWT stability, and hardened error handling across all protocols.
+
+### Graph
+- Graph: fix for https://github.com/mguessan/davmail/issues/522 user reports transactionId is not always unique, reimplement EWS approach based on calendaruid, keep transactionId to block duplicate creation over Graph
+- Graph: merge https://github.com/mguessan/davmail/pull/527, Use transactionId as backup in getCalendarUid - #527
+- Graph: merge https://github.com/mguessan/davmail/pull/528 Unilaterally set calendaruid for events
+- Graph: prepare orderBy in GraphRequestBuilder
+- Graph: implement workaround for out of sync calendar by fetching event by iCalUid, force isExpired check on session creation to validate token, use caldavPastDelay to build search task filter
+- Graph: cleanup from audit
+- Graph: fix https://github.com/mguessan/davmail/issues/532 O365Graph: refreshToken requests Outlook resource when enableOidc=false
+- Graph: fix for https://github.com/mguessan/davmail/issues/535, change urlcompnameToIdMap cache key to use EML form, fixes task GET/PUT/DELETE by client item name
+- Graph: fix for https://github.com/mguessan/davmail/issues/536, set X-MICROSOFT-SKYPETEAMSMEETINGURL from onlineMeeting joinUrl
+- Graph: fix for https://github.com/mguessan/davmail/issues/536, preserve link href in convertHtmlToText
+- Graph: improve timezone conversion in DateUtil to avoid unwanted warnings
+- Graph: ensure permanentUrlToImapUidMap is always populated
+- Graph: detect closed http client in isExpired()
+- Graph: initiate room booking implementation, change paging size on event search
+- Graph: fix https://github.com/mguessan/davmail/issues/548, do not lookup inbox for event messages over graph, rely on O365 to handle auto scheduling automatically
+- Graph: check token before returning session, detect invalid token (edge case after an EWS -> Graph switch and clear stored refresh token
+- Graph: improve handleThrottling, retry on transient graph endpoint errors
+- Graph: Change isExpired logic to rethrow exception on network error
+- Graph: randomize retry delay to avoid thundering herd on concurrent retries
+- Graph: fix recurrence UNTIL value, use timezone already fixed in DTSTART to match original event timezone instead of user timezone, see https://github.com/mguessan/davmail/issues/549
+- Graph: rename X-MICROSOFT-ISRESPONSEREQUESTED, see https://github.com/mguessan/davmail/issues/549
+- Graph: use native graph field for CLASS/sensitivity instead of the MAPI property see https://github.com/mguessan/davmail/issues/549
+- Graph: fetch PidLidOwnerCriticalChange on meetings to get correct owner timestamp see https://github.com/mguessan/davmail/issues/549
+- Graph: Fix for https://github.com/mguessan/davmail/issues/558 IMAP Connection Closes when Trying to Delete Mail Item that is Already Gone, workaround for Graph bug returning 403 forbidden for deleted messages
+- Graph: interim fix for https://github.com/mguessan/davmail/issues/556 Support Exchange Online Archive in O365Graph mode
+- Graph: handle isCancelled property on events, set STATUS to CANCELLED on occurrence
+- Graph: update checkConfig to hit Graph endpoint instead of legacy EWS endpoint
+- Graph: replace legacy A-Z search with native people search
+- Graph: set size limit in galFind matching ldap size limit
+- Graph: improve galFind search, leverage people search api to reduce redundant API calls
+- Graph: Use Directory source only to avoid duplicates with personal contacts which are already returned separately by the LDAP layer via searchContacts
+- Graph: fix https://github.com/mguessan/davmail/issues/566 normalize display name to short constants for consistency across backends
+- Graph: fix for https://github.com/mguessan/davmail/issues/563, force old VCARD 3 content with outdated macOS 27 Contacts application
+- Graph: grabbed fix from https://github.com/mguessan/davmail/pull/568, rename optString to optSectionString and fix issue on item name map
+
+### EWS
+- EWS: Detect EWS disabled on tenant
+- EWS: merge https://github.com/mguessan/davmail/pull/530, rebuild occurrences from occurrence items, do not trust Exchange to properly update MIME content
+- EWS: drop urlcompname on contacts, prefer itemId instead as more reliable id
+- EWS: implement room booking handling over EWS, based on Resources collection and cutype
+- EWS: fetch startTimeZone to provide a failover for localized tzid not available in timezones map, should fix https://github.com/mguessan/davmail/issues/542
+- EWS: make default CUTYPE room on attendee resources
+- EWS: implement null filtering on specific EWS calls that request starttimezone, remove &#x0; and &#0; from xml content
+- EWS: improve null character filtering implementation, add unit tests
+- EWS: initiate davmail.caldavAutoSchedule deprecation, Exchange always handle scheduling events automatically
+- EWS: fix for https://github.com/mguessan/davmail/issues/564 do not send ChangeKey in SavedItemFolderId, not needed and may cause ErrorCannotCreateContactInNonContactFolder, ErrorCannotCreateCalendarItemInNonCalendarFolder
+
+### O365
+- O365: fix https://github.com/mguessan/davmail/issues/520, print number matching in headless mode
+- O365: just rethrow UnknownHostException in refresh token, do not convert to NetworkDownException
+
+### CalDAV
+- Caldav: refactor ICSBufferedWriter to remove recurion and avoid stack overflow with very long lines
+- CalDAV: fix https://github.com/mguessan/davmail/issues/533 update ICSCalendarValidator, drop invalid characters instead of replacing with space
+- Caldav: fix https://github.com/mguessan/davmail/issues/550, default event participant to required per RFC 5545 section 3.2.16
+- Caldav: merge https://github.com/mguessan/davmail/pull/540 report sub calendars as httpd/unix-directory in calendar listings
+- Caldav: improve network error handling
+- Caldav: fix nested response end
+- Caldav: over both Graph and EWS, do not fail on missing occurrence id, may just be a cancelled occurrence, see https://github.com/mguessan/davmail/issues/559
+- Caldav: merge change ICSCalendarValidator from https://github.com/mguessan/davmail/pull/560
+- Caldav: send empty response on root HEAD request
+- Caldav: avoid warning on Thunderbird caldav probing
+- Caldav: no need to dump stack trace on client connection closed
+- Caldav: fix for https://github.com/mguessan/davmail/issues/562, send principal-URL property if requested on root, drop old isIcal5 check
+- Caldav: fix https://github.com/mguessan/davmail/issues/543 invalid duration value in alarm
+
+### LDAP
+- LDAP: lookup LDAP_TO_CONTACT_ATTRIBUTE_MAP before CONTACT_ATTRIBUTES
+
+### IMAP
+- IMAP: improve message thread error handling
+- IMAP: improve network down detection over IMAP, return *BYE instead of *BAD
+- IMAP: force refresh on MOVE to send EXPUNGE notifications, see https://github.com/mguessan/davmail/issues/546
+- IMAP: merge https://github.com/mguessan/davmail/pull/545 implement UID expunge
+- IMAP: merge changes from https://github.com/mguessan/davmail/pull/521, implement UNKEYWORD
+- IMAP: remove unnecessary IMAP messages content debug logging
+- IMAP: merge changes from https://github.com/mguessan/davmail/pull/521, align SINCE/BEFORE/ON with RFC 3501 INTERNALDATE
+- IMAP: merge changes from https://github.com/mguessan/davmail/pull/521, additional test cases
+- IMAP: ensure we don't silently network error during fetch
+- IMAP: Avoid infinite loop waiting on IDLE when client disconnects
+- IMAP: properly send * BYE on UnknownHostException
+- IMAP: cleanup from audit
+- IMAP: improve message fetch logging
+
+### SMTP
+- SMTP: improve network issues error handling
+
+### SWT
+- SWT: fix race condition in display initialization, see https://github.com/mguessan/davmail/issues/544
+- SWT: fix deadlock in switchIcon and resetIcon methods, use asyncExec
+
+### Enhancements
+- Merge https://github.com/mguessan/davmail/pull/531, Prefer NTLM over Basic auth against on-prem Exchange when both are offered
+- Implement HttpClientAdapter.isClosed()
+- Log which network interface is up in network down detection logic
+- Revert unwanted change in winrun4j config
+- Implement a new -generateCert command line option to generate a self-signed PKCS12 certificate
+- Add generate certificate button to settings window, will help users setup TLS with self-signed certificates.
+- Cleanup from audit
+
+### Documentation
+- Doc: update README contribute section to point to GitHub, we receive all user contributions there anyway
+- Doc: remove review no longer online, add newer reviews and articles
+
+### Test
+- Test: need to force O365Graph mode in AbstractDavMailTestCase
+
+
 ## DavMail 7.0.0 2026-09-19
 Major release focused on Graph API stability and performance,
 implemented folder delta sync with caching for efficient IMAP synchronization,

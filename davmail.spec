@@ -3,8 +3,8 @@
 
 Summary: A POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
 Name: davmail
-URL: http://davmail.sourceforge.net
-Version: 7.0.0
+URL: https://davmail.sourceforge.net
+Version: 7.1.0
 Release: 1%{?dist}
 License: GPL-2.0+
 Group: Productivity/Networking/Email/Utilities
@@ -271,5 +271,5 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
-* Sat Sep 19 2026 Mickael Guessant <mguessan@free.fr>
-- update to 7.0.0
+* Sat Oct 17 2026 Mickael Guessant <mguessan@free.fr>
+- update to 7.1.0
