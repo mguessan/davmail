@@ -502,9 +502,11 @@
     </target>
 
     <target name="upload-release" depends="release">
+        <echo file="dist/readme.md">Latest release is available at https://sourceforge.net/projects/davmail/files/davmail/${version}/</echo>
         <scp todir="${username},davmail@frs.sourceforge.net:/home/frs/project/d/da/davmail/davmail"
              keyfile="${keyfile}" passphrase="${passphrase}" verbose="true" trust="true">
             <fileset dir="dist">
+                <include name="readme.md"/>
                 <include name="${version}/*"/>
             </fileset>
         </scp>
