@@ -572,12 +572,12 @@ public class CaldavConnection extends AbstractConnection {
             if (subFolder == null || subFolder.isEmpty()) {
                 // use i18n calendar name as display name
                 String displayname = request.getLastPath();
-                if ("calendar".equals(displayname)) {
+                if ("calendar".equals(displayname) || "contacts".equals(displayname)) {
                     displayname = folder.displayName;
                 }
                 response.appendProperty("D:displayname", StringUtil.xmlEncode(displayname));
             } else {
-                response.appendProperty("D:displayname", StringUtil.xmlEncode(subFolder));
+                response.appendProperty("D:displayname", StringUtil.xmlEncode(folder.displayName));
             }
         }
         if (request.hasProperty("calendar-description")) {
@@ -744,6 +744,9 @@ public class CaldavConnection extends AbstractConnection {
         if (request.getDepth() == 1) {
             if (folder.isContact()) {
                 contacts = session.getAllContacts(folderPath, !isOldCardavClient(request) && !request.isLightning());
+                if (!folderPath.startsWith("/public")) {
+                    folderList = session.getSubContactFolders(folderPath, false);
+                }
             } else if (folder.isCalendar() || folder.isTask()) {
                 events = session.getAllEvents(folderPath);
                 if (!folderPath.startsWith("/public")) {
@@ -758,6 +761,12 @@ public class CaldavConnection extends AbstractConnection {
         if (request.getDepth() == 1) {
             if (folder.isContact()) {
                 appendContactsResponses(response, request, contacts);
+                // Send sub folders for multi-addressbook support
+                if (folderList != null) {
+                    for (ExchangeSession.Folder subFolder : folderList) {
+                        appendFolderOrItem(response, request, subFolder, subFolder.folderPath.substring(subFolder.folderPath.indexOf('/') + 1), true);
+                    }
+                }
             } else if (folder.isCalendar() || folder.isTask()) {
                 appendEventsResponses(response, request, events);
                 // Send sub folders for multi-calendar support under iCal, except for public folders

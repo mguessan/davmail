@@ -3215,6 +3215,29 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public List<ExchangeSession.Folder> getSubContactFolders(String folderPath, boolean recursive) throws IOException {
+        Folder parentFolder = internalGetFolder(folderPath);
+
+        GraphRequestBuilder httpRequestBuilder = new GraphRequestBuilder();
+        // search contact folders
+        httpRequestBuilder.setMethod(HttpGet.METHOD_NAME)
+                .setObjectType("contactFolders")
+                .setObjectId(parentFolder.folderId.id)
+                .setChildType("childFolders");
+
+        GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
+        List<ExchangeSession.Folder> folders = new ArrayList<>();
+        while (graphIterator.hasNext()) {
+            Folder folder = buildFolder(graphIterator.next());
+            folder.folderPath = folder.displayName;
+            // contactFolders endpoint does not return folderClass, set it explicitly
+            folder.folderClass = "IPF.Contact";
+            folders.add(folder);
+        }
+        return folders;
+    }
+
+    @Override
     public List<ExchangeSession.Folder> getSubFolders(String folderPath, Condition condition, boolean recursive) throws IOException {
 
         List<ExchangeSession.Folder> folders = new ArrayList<>();
