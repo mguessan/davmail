@@ -157,7 +157,7 @@ public class GraphObject {
             if (field.isBoolean() && value == null) {
                 value = "false";
             }
-            getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value == null ? JSONObject.NULL : value));
+            putSingleValueExtendedProperty(key, value);
         } else {
             jsonObject.put(key, value == null ? JSONObject.NULL : value);
         }
@@ -176,7 +176,7 @@ public class GraphObject {
         String key = field.getGraphId();
         // extended field values go under singleValueExtendedProperties
         if (field.isExtended()) {
-            getSingleValueExtendedProperties().put(new JSONObject().put("id", key).put("value", value));
+            putSingleValueExtendedProperty(key, value);
         } else {
             jsonObject.put(key, value);
         }
@@ -229,6 +229,25 @@ public class GraphObject {
             jsonObject.put("singleValueExtendedProperties", singleValueExtendedProperties);
         }
         return singleValueExtendedProperties;
+    }
+
+    /**
+     * Set or replace a single value extended property.
+     * If a property with the same id already exists, replace its value; otherwise append a new entry.
+     * @param key property id
+     * @param value property value
+     * @throws JSONException on error
+     */
+    protected void putSingleValueExtendedProperty(String key, Object value) throws JSONException {
+        JSONArray properties = getSingleValueExtendedProperties();
+        for (int i = 0; i < properties.length(); i++) {
+            JSONObject existing = properties.optJSONObject(i);
+            if (existing != null && key.equals(existing.optString("id"))) {
+                existing.put("value", value == null ? JSONObject.NULL : value);
+                return;
+            }
+        }
+        properties.put(new JSONObject().put("id", key).put("value", value == null ? JSONObject.NULL : value));
     }
 
 
