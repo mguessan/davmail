@@ -5026,8 +5026,7 @@ public class GraphExchangeSession extends ExchangeSession {
             waitRetryDelay(retryDelay);
         } else if (statusCode == HttpStatus.SC_SERVICE_UNAVAILABLE
                 || statusCode == HttpStatus.SC_BAD_GATEWAY
-                || statusCode == HttpStatus.SC_GATEWAY_TIMEOUT
-                || statusCode == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+                || statusCode == HttpStatus.SC_GATEWAY_TIMEOUT) {
             LOGGER.info("Detected graph request error, waiting to retry " + response.getStatusLine());
             retryDelay = 10;
             waitRetryDelay(retryDelay);
