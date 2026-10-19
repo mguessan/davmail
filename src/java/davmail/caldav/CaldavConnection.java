@@ -561,10 +561,10 @@ public class CaldavConnection extends AbstractConnection {
                 response.appendProperty("D:getcontenttype", "text/calendar; component=vtodo");
             }
         }
-        if (request.hasProperty("getetag")) {
+        if (request.hasProperty("getetag") && folder.etag != null) {
             response.appendProperty("D:getetag", folder.etag);
         }
-        if (request.hasProperty("getctag")) {
+        if (request.hasProperty("getctag") && folder.ctag != null) {
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
                     IOUtil.encodeBase64AsString(folder.ctag));
         }
