@@ -3472,7 +3472,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     // message deleted
                     Message deletedMessage = removeMessageFromList(messageList, id);
                     if (deletedMessage == null) {
-                        LOGGER.warn("Message " + id + " not found in message list");
+                        LOGGER.debug("Message " + id + " not found in message list");
                     } else {
                         LOGGER.debug("Removed message UID " + deletedMessage.imapUid+" FLAGS("+deletedMessage.getImapFlags()+") "+deletedMessage.date);
                     }
@@ -3547,7 +3547,6 @@ public class GraphExchangeSession extends ExchangeSession {
         String[] folderNames;
         FolderId currentFolderId;
 
-        // TODO test various use cases
         if ("/public".equals(folderPath)) {
             throw new UnsupportedOperationException("public folders not supported on Graph");
         } else if ("/archive".equals(folderPath)) {

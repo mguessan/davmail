@@ -1714,9 +1714,12 @@ public class ImapConnection extends AbstractConnection {
         boolean hasDeleted = false;
         if (currentFolder.messages != null) {
             int index = 1;
-            for (ExchangeSession.Message message : currentFolder.messages) {
+            Iterator<ExchangeSession.Message> iterator = currentFolder.messages.iterator();
+            while (iterator.hasNext()) {
+                ExchangeSession.Message message = iterator.next();
                 if (message.deleted && (uidSet == null || uidSet.contains(message.getImapUid()))) {
                     message.delete();
+                    iterator.remove();
                     hasDeleted = true;
                     if (!silent) {
                         sendClient("* " + index + " EXPUNGE");
