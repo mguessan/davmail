@@ -89,6 +89,7 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -3305,6 +3306,24 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("sendMail")
                 .setContentType("text/plain")
                 .setMimeContent(IOUtil.encodeBase64(byteArray)));
+    }
+
+    @Override
+    public boolean refreshFolder(ExchangeSession.Folder currentFolder) throws IOException {
+        // when delta sync is active, skip the ctag/count check and use delta sync directly
+        Folder graphFolder = (Folder) currentFolder;
+        MessageList messageList = (MessageList) messagesListMap.get(graphFolder.folderId.id);
+        if (messageList != null && messageList.deltaLink != null) {
+            int previousCount = currentFolder.messageCount;
+            TreeMap<Long, String> previousFlagMap = currentFolder.getImapFlagMap();
+            currentFolder.refreshMessages();
+            // detect changes by comparing count and flags
+            return currentFolder.messageCount != previousCount
+                    || !previousFlagMap.equals(currentFolder.getImapFlagMap());
+        } else {
+            // fall back to ctag/count based refresh for non-delta folders
+            return super.refreshFolder(currentFolder);
+        }
     }
 
     @Override
