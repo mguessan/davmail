@@ -22,7 +22,9 @@ package davmail.exchange.graph;
 import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpBadRequestException;
 import davmail.exception.HttpForbiddenException;
+import davmail.exception.HttpMethodNotAllowedException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.HttpPreconditionFailedException;
 import davmail.exception.HttpServerErrorException;
@@ -2412,29 +2414,46 @@ public class GraphExchangeSession extends ExchangeSession {
                 // save draft message id
                 draftMessageId = graphResponse.getString("id");
 
-                // unset draft flag on returned draft message properties
-                graphResponse.put("messageFlags", "4");
-                // read flag travels in the draft property (1 = read, see ImapConnection)
-                graphResponse.put("read", properties != null && "1".equals(properties.get("draft")));
-                applyMessageProperties(graphResponse, properties);
-                // the recreated message would otherwise carry the upload time and no
-                // Received: headers: Graph ignores receivedDateTime, sentDateTime and
-                // internetMessageHeaders on creation, but honours the MAPI properties
-                preserveMimeOrigin(graphResponse, mimeMessage, properties);
+                // try to recreate as non-draft in the target folder
+                try {
+                    // unset draft flag on returned draft message properties
+                    graphResponse.put("messageFlags", "4");
+                    // read flag travels in the draft property (1 = read, see ImapConnection)
+                    graphResponse.put("read", properties != null && "1".equals(properties.get("draft")));
+                    applyMessageProperties(graphResponse, properties);
+                    // the recreated message would otherwise carry the upload time and no
+                    // Received: headers: Graph ignores receivedDateTime, sentDateTime and
+                    // internetMessageHeaders on creation, but honours the MAPI properties
+                    preserveMimeOrigin(graphResponse, mimeMessage, properties);
 
-                // now use this to recreate message in the right folder
-                graphResponse = executeGraphRequest(new GraphRequestBuilder()
-                        .setMethod(HttpPost.METHOD_NAME)
-                        .setMailbox(folderId.mailbox)
-                        .setObjectType("mailFolders")
-                        .setObjectId(folderId.id)
-                        .setJsonBody(graphResponse.jsonObject)
-                        .setChildType("messages"));
+                    // now use this to recreate message in the right folder
+                    graphResponse = executeGraphRequest(new GraphRequestBuilder()
+                            .setMethod(HttpPost.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("mailFolders")
+                            .setObjectId(folderId.id)
+                            .setJsonBody(graphResponse.jsonObject)
+                            .setChildType("messages"));
+                } catch (HttpBadRequestException | HttpMethodNotAllowedException e) {
+                    // re-creation failed (e.g. embedded messages, complex content types)
+                    // fall back to moving the draft as-is
+                    LOGGER.warn("Failed to recreate message as non-draft, moving draft instead: " + e.getMessage());
+                    applyMessageProperties(graphResponse, properties);
+                    graphResponse = executeGraphRequest(new GraphRequestBuilder()
+                            .setMethod(HttpPost.METHOD_NAME)
+                            .setMailbox(folderId.mailbox)
+                            .setObjectType("messages")
+                            .setObjectId(draftMessageId)
+                            .setChildType("move")
+                            .setJsonBody(new JSONObject().put("destinationId", folderId.id)));
+                    // draft was moved, don't delete it
+                    draftMessageId = null;
+                }
 
             } catch (JSONException e) {
                 throw new IOException(e);
             } finally {
-                // delete draft message
+                // delete draft message (only if re-creation succeeded)
                 if (draftMessageId != null) {
                     executeJsonRequest(new GraphRequestBuilder()
                             .setMethod(HttpDelete.METHOD_NAME)
@@ -4987,7 +5006,7 @@ public class GraphExchangeSession extends ExchangeSession {
      * @return returned graph object
      * @throws IOException on error
      */
-    private GraphObject executeGraphRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
+    GraphObject executeGraphRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         GraphObject graphObject = null;
         boolean isThrottled;
         int retryCount = 0;
