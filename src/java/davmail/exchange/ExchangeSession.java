@@ -1377,7 +1377,9 @@ public abstract class ExchangeSession {
             for (ExchangeSession.Message message : messages) {
                 imapFlagMap.put(message.getImapUid(), message.getImapFlags());
             }
-            LOGGER.debug("imapFlagMap size: " + previousMessageCount + " -> " + imapFlagMap.size());
+            if (previousMessageCount != imapFlagMap.size()) {
+                LOGGER.debug("imapFlagMap size: " + previousMessageCount + " -> " + imapFlagMap.size());
+            }
         }
 
         /**
