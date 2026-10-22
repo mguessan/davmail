@@ -22,6 +22,7 @@ package davmail.exchange.graph;
 import davmail.exception.HttpBadRequestException;
 import davmail.exception.HttpConflictException;
 import davmail.exception.HttpForbiddenException;
+import davmail.exception.HttpMethodNotAllowedException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.HttpPreconditionFailedException;
 import davmail.exception.HttpTokenExpiredException;
@@ -107,6 +108,10 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
             if (statusCode == HttpStatus.SC_BAD_REQUEST) {
                 throw new HttpBadRequestException(errorMessage);
             }
+            if (statusCode == HttpStatus.SC_METHOD_NOT_ALLOWED) {
+                throw new HttpMethodNotAllowedException(errorMessage);
+            }
+
             throw new IOException(errorMessage);
         }
         // ensure non-null response
