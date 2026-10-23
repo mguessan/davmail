@@ -2435,19 +2435,25 @@ public class GraphExchangeSession extends ExchangeSession {
                             .setJsonBody(graphResponse.jsonObject)
                             .setChildType("messages"));
                 } catch (HttpBadRequestException | HttpMethodNotAllowedException e) {
-                    // re-creation failed (e.g. embedded messages, complex content types)
-                    // fall back to moving the draft as-is
-                    LOGGER.warn("Failed to recreate message as non-draft, moving draft instead: " + e.getMessage());
-                    applyMessageProperties(graphResponse, properties);
-                    graphResponse = executeGraphRequest(new GraphRequestBuilder()
-                            .setMethod(HttpPost.METHOD_NAME)
-                            .setMailbox(folderId.mailbox)
-                            .setObjectType("messages")
-                            .setObjectId(draftMessageId)
-                            .setChildType("move")
-                            .setJsonBody(new JSONObject().put("destinationId", folderId.id)));
-                    // draft was moved, don't delete it
-                    draftMessageId = null;
+                    // re-creation to clear draft flag failed (e.g. embedded messages, complex content types)
+                    // try Fast Transfer Stream export/import workaround, additional MailboxItem.ImportExport and User.Read.All scoper required
+                    try {
+                        LOGGER.warn("JSON message re-creation failed, trying Fast Transfer Stream import workaround");
+                        graphResponse = importMessageViaFastTransferStream(draftMessageId, folderId);
+                    } catch (HttpForbiddenException ftsException) {
+                        // Fast Transfer Stream import also failed, fall back to moving the draft as-is
+                        LOGGER.warn("Fast Transfer Stream import workaround failed, need the MailboxItem.ImportExport and User.Read.All scopes, moving draft instead");
+                        applyMessageProperties(graphResponse, properties);
+                        graphResponse = executeGraphRequest(new GraphRequestBuilder()
+                                .setMethod(HttpPost.METHOD_NAME)
+                                .setMailbox(folderId.mailbox)
+                                .setObjectType("messages")
+                                .setObjectId(draftMessageId)
+                                .setChildType("move")
+                                .setJsonBody(new JSONObject().put("destinationId", folderId.id)));
+                        // draft was moved, don't delete it
+                        draftMessageId = null;
+                    }
                 }
 
             } catch (JSONException e) {
@@ -2526,6 +2532,115 @@ public class GraphExchangeSession extends ExchangeSession {
         if (references != null) {
             graphResponse.put("references", references.trim());
         }
+    }
+
+    /**
+     * Import a draft message into a target folder as a non-draft using the Fast Transfer Stream export/import workaround.
+     * Requires MailboxItem.ImportExport and User.Read.All scopes.
+     *
+     * @param draftMessageId the id of the draft message to import
+     * @param folderId the target folder id
+     * @return the imported message as a GraphObject
+     * @throws IOException on error
+     * @see <a href="https://learn.microsoft.com/en-us/graph/mailbox-import-export-concept-overview">Mailbox import/export overview</a>
+     * @see <a href="https://glenscales.substack.com/p/work-around-for-importing-mime-messages">Work around for importing MIME messages</a>
+     */
+    private GraphObject importMessageViaFastTransferStream(String draftMessageId, FolderId folderId) throws IOException {
+        try {
+            // Get primary mailbox id from exchange settings (requires User.Read.All)
+            JSONObject exchangeSettings = executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpGet.METHOD_NAME)
+                    .setMailbox(folderId.mailbox)
+                    .setObjectType("settings/exchange"));
+            String primaryMailboxId = exchangeSettings.getString("primaryMailboxId");
+
+            // Export message via Fast Transfer Stream
+            JSONObject exportResult = executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpPost.METHOD_NAME)
+                    .setObjectType("mailboxes").setObjectId(primaryMailboxId).setChildType("exportItems")
+                    .setJsonBody(new JSONObject().put("itemIds", new JSONArray().put(draftMessageId))));
+            String base64Fts = exportResult.getJSONArray("value").getJSONObject(0).getString("data");
+            byte[] ftsData = IOUtil.decodeBase64(base64Fts);
+
+            // Patch PidTagMessageFlags in the FTS stream
+            // PidTagMessageFlags property tag: PT_LONG (0x0003) + PropId 0x0E07 => bytes 03 00 07 0E
+            patchMessageFlags(ftsData);
+
+            // Create import session
+            JSONObject importSession = executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpPost.METHOD_NAME)
+                    .setObjectType("mailboxes").setObjectId(primaryMailboxId).setChildType("createImportSession"));
+            String importUrl = importSession.getString("importUrl");
+
+            // Upload modified FTS to target folder
+            JSONObject uploadRequest = new JSONObject()
+                    .put("FolderId", folderId.id)
+                    .put("Mode", "create")
+                    .put("Data", IOUtil.encodeBase64AsString(ftsData));
+            JSONObject uploadResult = executeJsonRequest(new GraphRequestBuilder()
+                    .setMethod(HttpPost.METHOD_NAME)
+                    .setUrl(importUrl)
+                    .setSkipAuthorization()
+                    .setJsonBody(uploadRequest));
+
+            // map itemId from import response to id for the calling code
+            return new GraphObject().put("id", uploadResult.getString("itemId"));
+        } catch (JSONException e) {
+            throw new IOException("FTS import failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Find and patch PidTagMessageFlags (0x0E07) in an FTS byte stream.
+     * Clears the MSGFLAG_UNSENT (0x0008) bit and sets MSGFLAG_SUBMIT (0x0004) bit
+     * to make the message appear as a sent/non-draft message.
+     *
+     * @param data the FTS byte array to patch in-place
+     */
+    static void patchMessageFlags(byte[] data) {
+        // PidTagMessageFlags property tag in little-endian: PT_LONG=0x0003, PropId=0x0E07 => bytes: 03 00 07 0E
+        byte[] pattern = {0x03, 0x00, 0x07, 0x0E};
+        int tagIndex = findPattern(data, pattern);
+        if (tagIndex >= 0) {
+            int valueOffset = tagIndex + 4; // PT_LONG value follows the 4-byte tag
+            if (valueOffset + 4 <= data.length) {
+                int oldFlags = (data[valueOffset] & 0xFF)
+                        | ((data[valueOffset + 1] & 0xFF) << 8)
+                        | ((data[valueOffset + 2] & 0xFF) << 16)
+                        | ((data[valueOffset + 3] & 0xFF) << 24);
+                int newFlags = (oldFlags & ~0x0008) | 0x0004; // clear UNSENT, set SUBMIT
+                data[valueOffset] = (byte) (newFlags & 0xFF);
+                data[valueOffset + 1] = (byte) ((newFlags >> 8) & 0xFF);
+                data[valueOffset + 2] = (byte) ((newFlags >> 16) & 0xFF);
+                data[valueOffset + 3] = (byte) ((newFlags >> 24) & 0xFF);
+                LOGGER.debug("Patched PidTagMessageFlags: 0x" + Integer.toHexString(oldFlags) +
+                        " -> 0x" + Integer.toHexString(newFlags));
+            }
+        } else {
+            LOGGER.warn("PidTagMessageFlags not found in FTS stream");
+        }
+    }
+
+    /**
+     * Find pattern in byte array
+     * @param data byte array
+     * @param pattern pattern to find
+     * @return pattern offset or -1 if not found
+     */
+    private static int findPattern(byte[] data, byte[] pattern) {
+        for (int i = 0; i <= data.length - pattern.length; i++) {
+            boolean match = true;
+            for (int j = 0; j < pattern.length; j++) {
+                if (data[i + j] != pattern[j]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**

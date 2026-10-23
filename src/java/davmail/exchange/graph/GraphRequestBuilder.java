@@ -89,6 +89,8 @@ public class GraphRequestBuilder {
 
     String accessToken;
 
+    boolean skipAuthorization = false;
+
     JSONObject jsonBody = null;
 
     /**
@@ -136,6 +138,16 @@ public class GraphRequestBuilder {
 
     public GraphRequestBuilder setUrl(String url) {
         this.url = url;
+        return this;
+    }
+
+    /**
+     * Skip adding the Authorization header.
+     * Used for pre-authenticated URLs like import session upload.
+     * @return this
+     */
+    public GraphRequestBuilder setSkipAuthorization() {
+        this.skipAuthorization = true;
         return this;
     }
 
@@ -288,6 +300,8 @@ public class GraphRequestBuilder {
             buffer.append("/contacts");
         } else if ("users".equals(objectType)) {
             buffer.append("/users");
+        } else if ("mailboxes".equals(objectType)) {
+            buffer.append("/admin/exchange/mailboxes");
         } else {
             if (mailbox != null) {
                 buffer.append("/users/").append(mailbox);
@@ -453,7 +467,9 @@ public class GraphRequestBuilder {
                 httpRequest = new HttpGet(requestUrl);
             }
             httpRequest.setHeader("Content-Type", contentType);
-            httpRequest.setHeader("Authorization", "Bearer " + accessToken);
+            if (!skipAuthorization) {
+                httpRequest.setHeader("Authorization", "Bearer " + accessToken);
+            }
 
             // set custom headers
             if (headerMap != null) {
