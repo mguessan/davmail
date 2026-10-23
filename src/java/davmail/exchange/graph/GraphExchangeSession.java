@@ -5100,7 +5100,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                     LOGGER.warn(response.getStatusLine());
                 }
-                isThrottled = handleThrottling(response);
+                isThrottled = handleThrottling(request, response);
                 if (isThrottled) {
                     retryCount++;
                 } else {
@@ -5138,7 +5138,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                     LOGGER.warn("Request returned " + response.getStatusLine());
                 }
-                isThrottled = handleThrottling(response);
+                isThrottled = handleThrottling(request, response);
                 if (isThrottled) {
                     retryCount++;
                 } else {
@@ -5155,13 +5155,17 @@ public class GraphExchangeSession extends ExchangeSession {
 
     /**
      * Detect throttling and wait according to Retry-After header.
+     * Only retry non-idempotent methods (POST, PATCH, DELETE) on 429 (throttling),
+     * not on 502/503/504 which may have partially processed the request.
      * See <a href="https://learn.microsoft.com/en-us/graph/throttling">https://learn.microsoft.com/en-us/graph/throttling</a>
+     * @param request  HTTP request
      * @param response HTTP response
      * @return true if throttled, false otherwise
      */
-    private boolean handleThrottling(CloseableHttpResponse response) {
+    private boolean handleThrottling(HttpRequestBase request, CloseableHttpResponse response) {
         long retryDelay = 0;
         int statusCode = response.getStatusLine().getStatusCode();
+        boolean isIdempotent = HttpGet.METHOD_NAME.equals(request.getMethod());
         if (statusCode == HttpStatus.SC_TOO_MANY_REQUESTS) {
             LOGGER.info("Detected throttling " + response.getStatusLine());
             Header retryAfter = response.getFirstHeader("Retry-After");
@@ -5176,9 +5180,9 @@ public class GraphExchangeSession extends ExchangeSession {
                 retryDelay = 10;
             }
             waitRetryDelay(retryDelay);
-        } else if (statusCode == HttpStatus.SC_SERVICE_UNAVAILABLE
+        } else if (isIdempotent && (statusCode == HttpStatus.SC_SERVICE_UNAVAILABLE
                 || statusCode == HttpStatus.SC_BAD_GATEWAY
-                || statusCode == HttpStatus.SC_GATEWAY_TIMEOUT) {
+                || statusCode == HttpStatus.SC_GATEWAY_TIMEOUT)) {
             LOGGER.info("Detected graph request error, waiting to retry " + response.getStatusLine());
             retryDelay = 10;
             waitRetryDelay(retryDelay);
