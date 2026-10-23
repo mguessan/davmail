@@ -19,6 +19,7 @@
 package davmail.exchange;
 
 import javax.mail.MessagingException;
+import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         session.createMessageFolder("testfolder");
         MimeMessage mimeMessage = createMimeMessage();
         messageName = UUID.randomUUID().toString()+".EML";
-        HashMap<String, String> properties = new HashMap<String, String>();
+        HashMap<String, String> properties = new HashMap<>();
         properties.put("draft", "0");
         session.createMessage("testfolder", messageName, properties, mimeMessage);
     }
@@ -53,6 +54,8 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
     }
 
     public void testSearchMessage() throws IOException, MessagingException {
+        testCreateMessage();
+
         ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
         assertNotNull(messageList);
         assertEquals(1, messageList.size());
@@ -99,11 +102,68 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         assertTrue(folder.uidNext > 0);
     }
 
-    public void testDeleteMessage() throws IOException {
-        session.deleteMessage(message);
+    public void testMarkMessageDeleted() throws IOException, MessagingException {
+        testCreateMessage();
         ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
         assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+
+        message = messageList.get(0);
+
+        HashMap<String,String> properties = new HashMap<String,String>();
+        properties.put("deleted", "1");
+        properties.put("read", "1");
+        session.updateMessage(message, properties);
+
+        messageList = session.searchMessages("testfolder");
+        assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+        message = messageList.get(0);
+        assertTrue(message.deleted);
+    }
+
+    public void testDeleteMessage() throws IOException, MessagingException {
+        testCreateMessage();
+
+        // fetch message
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
+        assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+        message = messageList.get(0);
+
+        session.deleteMessage(message);
+
+        // try to delete already deleted message — should not throw (issue #558)
+        session.deleteMessage(message);
+
+        messageList = session.searchMessages("testfolder");
+        assertNotNull(messageList);
         assertEquals(0, messageList.size());
+
+    }
+
+    /**
+     * Test that deleting an already-deleted message does not throw.
+     * Regression test for <a href="https://github.com/mguessan/davmail/issues/558">#558</a>:
+     * Graph API returns 403 ErrorCannotDeleteObject or 404 when the item is already gone.
+     */
+    public void testDeleteAlreadyDeletedMessage() throws IOException, MessagingException {
+        testCreateMessage();
+
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
+        assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+        message = messageList.get(0);
+
+        // first delete should succeed
+        session.deleteMessage(message);
+
+        // second delete on same message should not throw
+        try {
+            session.deleteMessage(message);
+        } catch (IOException e) {
+            fail("Deleting an already-deleted message should not throw, but got: " + e.getMessage());
+        }
     }
 
     public void testSpecialMessageCharacter() throws IOException, MessagingException {
@@ -147,15 +207,102 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
     }
 
     /**
+     * Test creating a non-draft message with a calendar invite (text/calendar method=REQUEST).
+     * Regression test for <a href="https://github.com/mguessan/davmail/issues/572">#572</a>:
+     * Graph APPEND fails with ErrorInvalidRequest for messages containing calendar invites.
+     */
+    public void testCreateMessageWithCalendarInvite() throws IOException, MessagingException {
+        session.deleteFolder("testfolder");
+        session.createMessageFolder("testfolder");
+
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("To", "test@test.local");
+        mimeMessage.setSubject("Meeting invite test");
+
+        // build multipart with text + calendar invite
+        javax.mail.internet.MimeMultipart multipart = new javax.mail.internet.MimeMultipart("alternative");
+        javax.mail.internet.MimeBodyPart textPart = new javax.mail.internet.MimeBodyPart();
+        textPart.setText("Please join the meeting", "UTF-8");
+        multipart.addBodyPart(textPart);
+
+        javax.mail.internet.MimeBodyPart calendarPart = new javax.mail.internet.MimeBodyPart();
+        String ics = "BEGIN:VCALENDAR\r\n" +
+                "METHOD:REQUEST\r\n" +
+                "VERSION:2.0\r\n" +
+                "BEGIN:VEVENT\r\n" +
+                "DTSTART:20261022T100000Z\r\n" +
+                "DTEND:20261022T110000Z\r\n" +
+                "SUMMARY:Test meeting\r\n" +
+                "UID:" + UUID.randomUUID() + "\r\n" +
+                "END:VEVENT\r\n" +
+                "END:VCALENDAR\r\n";
+        calendarPart.setContent(ics, "text/calendar; method=REQUEST; charset=UTF-8");
+        multipart.addBodyPart(calendarPart);
+
+        mimeMessage.setContent(multipart);
+        mimeMessage.saveChanges();
+
+        messageName = UUID.randomUUID() + ".EML";
+        HashMap<String, String> properties = new HashMap<>();
+        properties.put("draft", "0");
+        session.createMessage("testfolder", messageName, properties, mimeMessage);
+
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
+        assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+        assertFalse(messageList.get(0).draft);
+    }
+
+    /**
+     * Test creating a non-draft message with an embedded message/rfc822 attachment.
+     * Regression test for <a href="https://github.com/mguessan/davmail/issues/572">#572</a>:
+     * Graph APPEND fails with ErrorInvalidProperty for messages containing embedded messages.
+     */
+    public void testCreateMessageWithEmbeddedMessage() throws IOException, MessagingException {
+        session.deleteFolder("testfolder");
+        session.createMessageFolder("testfolder");
+
+        // create the inner message
+        MimeMessage innerMessage = new MimeMessage((Session) null);
+        innerMessage.addHeader("To", "inner@test.local");
+        innerMessage.setSubject("Inner forwarded message");
+        innerMessage.setText("This is the forwarded content\n");
+        innerMessage.saveChanges();
+
+        // create the outer message with the inner message attached
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("To", "test@test.local");
+        mimeMessage.setSubject("Message with embedded rfc822");
+
+        javax.mail.internet.MimeMultipart multipart = new javax.mail.internet.MimeMultipart("mixed");
+        javax.mail.internet.MimeBodyPart textPart = new javax.mail.internet.MimeBodyPart();
+        textPart.setText("See forwarded message below", "UTF-8");
+        multipart.addBodyPart(textPart);
+
+        javax.mail.internet.MimeBodyPart attachedMessage = new javax.mail.internet.MimeBodyPart();
+        attachedMessage.setContent(innerMessage, "message/rfc822");
+        attachedMessage.setDisposition(javax.mail.Part.ATTACHMENT);
+        multipart.addBodyPart(attachedMessage);
+
+        mimeMessage.setContent(multipart);
+        mimeMessage.saveChanges();
+
+        messageName = UUID.randomUUID() + ".EML";
+        HashMap<String, String> properties = new HashMap<>();
+        properties.put("draft", "0");
+        session.createMessage("testfolder", messageName, properties, mimeMessage);
+
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
+        assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+        assertFalse(messageList.get(0).draft);
+    }
+
+    /**
      * Cleanup
      */
     public void testDeleteFolder() throws IOException {
         session.deleteFolder("testfolder");
-    }
-
-    public void testSearchAaa() throws IOException, MessagingException {
-        ExchangeSession.MessageList messageList = session.searchMessages("aabb");
-        assertNotNull(messageList);
     }
 
 }
