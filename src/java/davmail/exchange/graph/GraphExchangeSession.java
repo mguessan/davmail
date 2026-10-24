@@ -1071,26 +1071,29 @@ public class GraphExchangeSession extends ExchangeSession {
                     pattern.put("type", "weekly").put("daysOfWeek", byDay != null ? convertByDayToArray(byDay) : new JSONArray().put(DateUtil.getDayOfWeek(startDate)));
                     // firstDayOfWeek is required for weekly patterns in Graph
                     pattern.put("firstDayOfWeek", wkst != null ? convertCaldavDayToGraph(wkst) : "monday");
-                } else if ("MONTHLY".equals(frequency)) {
-                    if (byDay != null) {
-                        pattern.put("type", "relativeMonthly");
-                        setRelativePattern(pattern, byDay);
-                    } else {
-                        pattern.put("type", "absoluteMonthly");
-                        pattern.put("dayOfMonth", byMonthDay != null ? Integer.parseInt(byMonthDay) : Integer.parseInt(startDate.substring(8, 10)));
-                    }
-                } else if ("YEARLY".equals(frequency)) {
-                    if (byDay != null) {
-                        pattern.put("type", "relativeYearly");
-                        setRelativePattern(pattern, byDay);
-                    } else {
-                        pattern.put("type", "absoluteYearly")
-                                .put("dayOfMonth", byMonthDay != null ? Integer.parseInt(byMonthDay) : Integer.parseInt(startDate.substring(8, 10)));
-                    }
-                    if (byMonth != null) {
-                        pattern.put("month", Integer.parseInt(byMonth));
-                    } else {
-                        pattern.put("month", Integer.parseInt(startDate.substring(5, 7)));
+                } else {
+                    int dayOfMonth = byMonthDay != null ? Integer.parseInt(byMonthDay) : Integer.parseInt(startDate.substring(8, 10));
+                    if ("MONTHLY".equals(frequency)) {
+                        if (byDay != null) {
+                            pattern.put("type", "relativeMonthly");
+                            setRelativePattern(pattern, byDay);
+                        } else {
+                            pattern.put("type", "absoluteMonthly");
+                            pattern.put("dayOfMonth", dayOfMonth);
+                        }
+                    } else if ("YEARLY".equals(frequency)) {
+                        if (byDay != null) {
+                            pattern.put("type", "relativeYearly");
+                            setRelativePattern(pattern, byDay);
+                        } else {
+                            pattern.put("type", "absoluteYearly")
+                                    .put("dayOfMonth", dayOfMonth);
+                        }
+                        if (byMonth != null) {
+                            pattern.put("month", Integer.parseInt(byMonth));
+                        } else {
+                            pattern.put("month", Integer.parseInt(startDate.substring(5, 7)));
+                        }
                     }
                 }
 
@@ -1144,8 +1147,6 @@ public class GraphExchangeSession extends ExchangeSession {
 
         private String convertIndex(int index) {
             switch (index) {
-                case 1:
-                    return "first";
                 case 2:
                     return "second";
                 case 3:
@@ -1154,7 +1155,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     return "fourth";
                 case -1:
                     return "last";
-                default:
+                default: // and 1
                     return "first";
             }
         }
@@ -1903,18 +1904,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
 
                 // compute desired members from mailto: URIs
-                Set<String> desiredMembers = new LinkedHashSet<>();
-                if (distributionListMembers != null) {
-                    for (String member : distributionListMembers) {
-                        String email = member;
-                        if (email.startsWith("mailto:")) {
-                            email = email.substring(7);
-                        }
-                        if (!email.isEmpty()) {
-                            desiredMembers.add(email);
-                        }
-                    }
-                }
+                Set<String> desiredMembers = getDesiredMembers();
 
                 // remove members no longer in the list
                 Set<String> membersToRemove = new HashSet<>(existingMembers);
@@ -1971,6 +1961,22 @@ public class GraphExchangeSession extends ExchangeSession {
                 throw new IOException(e);
             }
             return itemResult;
+        }
+
+        public Set<String> getDesiredMembers() {
+            Set<String> desiredMembers = new LinkedHashSet<>();
+            if (distributionListMembers != null) {
+                for (String member : distributionListMembers) {
+                    String email = member;
+                    if (email.startsWith("mailto:")) {
+                        email = email.substring(7);
+                    }
+                    if (!email.isEmpty()) {
+                        desiredMembers.add(email);
+                    }
+                }
+            }
+            return desiredMembers;
         }
 
         private void updatePhoto(FolderId folderId, String contactId) throws IOException {
@@ -3025,10 +3031,6 @@ public class GraphExchangeSession extends ExchangeSession {
 
         protected AttributeCondition(String attributeName, Operator operator, String value) {
             super(attributeName, operator, value);
-        }
-
-        protected Operator getOperator() {
-            return operator;
         }
 
         protected GraphField getField() {
