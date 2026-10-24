@@ -39,7 +39,7 @@ import java.util.ArrayList;
  * Http post request with a string response handler.
  */
 public class PostRequest extends HttpPost implements ResponseHandler<String>, ResponseWrapper {
-    private ArrayList<NameValuePair> parameters = new ArrayList<>();
+    private final ArrayList<NameValuePair> parameters = new ArrayList<>();
     private String responseBodyAsString = null;
     private HttpResponse response;
 
