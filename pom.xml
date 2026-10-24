@@ -241,12 +241,16 @@
             <version>1.1.1</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse</groupId>
-            <artifactId>swt</artifactId>
-            <version>4.37</version>
+            <groupId>org.eclipse.platform</groupId>
+            <artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
+            <version>3.132.0</version>
             <optional>true</optional>
-            <scope>system</scope>
-            <systemPath>${pom.basedir}/lib/swt-4.37-win32-x86_64.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.platform</groupId>
+            <artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
+            <version>3.132.0</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.htmlcleaner</groupId>
