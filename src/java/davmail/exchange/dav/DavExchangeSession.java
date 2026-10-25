@@ -2145,9 +2145,7 @@ public class DavExchangeSession extends ExchangeSession {
         MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow, maxCount);
 
         for (MultiStatusResponse response : responses) {
-            Message message = buildMessage(response);
-            message.messageList = messages;
-            messages.add(message);
+            messages.add(buildMessage(response));
         }
         Collections.sort(messages);
         return messages;

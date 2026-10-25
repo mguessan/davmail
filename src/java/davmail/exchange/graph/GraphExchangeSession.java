@@ -3014,9 +3014,7 @@ public class GraphExchangeSession extends ExchangeSession {
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext() && messageList.size() < maxCount) {
-            Message message = buildMessage(folderId, graphIterator.next());
-            message.messageList = messageList;
-            messageList.add(message);
+            messageList.add(buildMessage(folderId, graphIterator.next()));
         }
         Collections.sort(messageList);
         return messageList;
@@ -3617,8 +3615,6 @@ public class GraphExchangeSession extends ExchangeSession {
                         LOGGER.debug("Restoring imapUid " + newMessage.imapUid + " -> " + currentMessage.imapUid);
                         newMessage.imapUid = currentMessage.imapUid;
                     }
-                    newMessage.messageList = messageList;
-                    newMessage.folderId = folderId;
                     messageList.add(newMessage);
                     if (currentMessage == null) {
                         LOGGER.debug("Inserted message UID " + newMessage.imapUid + " FLAGS (" + newMessage.getImapFlags()+") " + newMessage.date);

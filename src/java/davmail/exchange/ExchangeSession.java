@@ -1838,6 +1838,11 @@ public abstract class ExchangeSession {
          */
         protected transient byte[] cachedMimeContent;
 
+        @Override
+        public boolean add(Message message) {
+            message.messageList = this;
+            return super.add(message);
+        }
     }
 
     /**

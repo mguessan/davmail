@@ -643,9 +643,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         for (EWSMethod.Item response : responses) {
             if (MESSAGE_TYPES.contains(response.type)) {
-                ExchangeSession.Message message = buildMessage(response);
-                message.messageList = messages;
-                messages.add(message);
+                messages.add(buildMessage(response));
             }
         }
         Collections.sort(messages);
