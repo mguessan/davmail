@@ -36,7 +36,7 @@ import java.nio.charset.StandardCharsets;
  */
 public final class BerDecoder extends Ber {
 
-    private int origOffset;  // The start point in buf to decode
+    private final int origOffset;  // The start point in buf to decode
 
     /**
      * Creates a BER decoder that reads bytes from the specified buffer.
