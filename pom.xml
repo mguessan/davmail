@@ -265,7 +265,7 @@
         <dependency>
             <groupId>com.fasterxml.woodstox</groupId>
             <artifactId>woodstox-core</artifactId>
-            <version>6.4.0</version>
+            <version>6.5.1</version>
         </dependency>
         <dependency>
             <groupId>org.samba.jcifs</groupId>

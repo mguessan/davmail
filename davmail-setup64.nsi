@@ -119,7 +119,7 @@ Section "MainSection" SEC01
   File "dist\lib\stax2-api-3.1.1.jar"
   File "dist\lib\swt-4.37-win32-x86_64.jar"
   File "dist\lib\winrun4j-0.4.5.jar"
-  File "dist\lib\woodstox-core-6.4.0.jar"
+  File "dist\lib\woodstox-core-6.5.1.jar"
   SetOutPath "$InstDir\jre"
   File /r "dist\jre\*.*"
 SectionEnd
@@ -194,7 +194,7 @@ no_quest:
   Delete "$INSTDIR\lib\stax2-api-3.1.1.jar"
   Delete "$INSTDIR\lib\swt-4.37-win32-x86_64.jar"
   Delete "$INSTDIR\lib\winrun4j-0.4.5.jar"
-  Delete "$INSTDIR\lib\woodstox-core-6.4.0.jar"
+  Delete "$INSTDIR\lib\woodstox-core-6.5.1.jar"
 
   Delete "$INSTDIR\davmailservice64.exe"
   Delete "$INSTDIR\davmail64.exe"
