@@ -1721,7 +1721,9 @@ public class ImapConnection extends AbstractConnection {
                     message.delete();
                     iterator.remove();
                     hasDeleted = true;
-                    if (!silent) {
+                    if (silent) {
+                        LOGGER.debug("Silent expunge of message at index "+index+" uid "+message.getImapUid());
+                    } else {
                         sendClient("* " + index + " EXPUNGE");
                     }
                 } else {
