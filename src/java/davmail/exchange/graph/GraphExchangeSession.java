@@ -2475,12 +2475,8 @@ public class GraphExchangeSession extends ExchangeSession {
             }
 
         }
-        return buildMessage(executeJsonRequest(new GraphRequestBuilder()
-                .setMethod(HttpGet.METHOD_NAME)
-                .setObjectType("messages")
-                .setMailbox(folderId.mailbox)
-                .setObjectId(graphResponse.optString("id"))
-                .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)));
+
+        return getMessage(folderId, graphResponse.optString("id"));
     }
 
     /**
@@ -2667,7 +2663,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     protected Message getMessage(FolderId folderId, String messageId) throws IOException {
-        return buildMessage(executeJsonRequest(new GraphRequestBuilder()
+        return buildMessage(folderId, executeJsonRequest(new GraphRequestBuilder()
                 .setMethod(HttpGet.METHOD_NAME)
                 .setObjectType("messages")
                 .setMailbox(folderId.mailbox)
@@ -2752,7 +2748,7 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
-    private Message buildMessage(JSONObject response) {
+    private Message buildMessage(FolderId folderId, JSONObject response) {
         Message message = new Message();
         GraphObject graphResponse = new GraphObject(response);
 
@@ -2841,8 +2837,8 @@ public class GraphExchangeSession extends ExchangeSession {
             LOGGER.debug(buffer.toString());
         }
 
+        message.folderId = folderId;
         return message;
-
     }
 
     /**
@@ -3018,9 +3014,8 @@ public class GraphExchangeSession extends ExchangeSession {
         GraphIterator graphIterator = executeSearchRequest(httpRequestBuilder);
 
         while (graphIterator.hasNext() && messageList.size() < maxCount) {
-            Message message = buildMessage(graphIterator.next());
+            Message message = buildMessage(folderId, graphIterator.next());
             message.messageList = messageList;
-            message.folderId = folderId;
             messageList.add(message);
         }
         Collections.sort(messageList);
@@ -4291,8 +4286,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
             while (graphIterator.hasNext()) {
                 JSONObject jsonResponse = graphIterator.next();
-                GraphExchangeSession.Message message = buildMessage(jsonResponse);
-                message.folderId = folderId;
+                GraphExchangeSession.Message message = buildMessage(folderId, jsonResponse);
                 LOGGER.debug("searchEventMessages " + message.contentClass + " " + message.id);
                 try {
                     byte[] content = getContent(message);
