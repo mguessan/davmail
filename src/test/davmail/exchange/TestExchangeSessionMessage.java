@@ -40,7 +40,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         messageName = UUID.randomUUID().toString()+".EML";
         HashMap<String, String> properties = new HashMap<>();
         properties.put("draft", "0");
-        session.createMessage("testfolder", messageName, properties, mimeMessage);
+        message = session.createMessage("testfolder", messageName, properties, mimeMessage);
     }
 
     public void testSearchInbox() throws IOException, MessagingException {
@@ -71,8 +71,13 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
     }
 
     public void testFlagMessage() throws IOException, MessagingException {
+        testCreateMessage();
+
         ExchangeSession.Folder testFolder = session.getFolder("testfolder");
         testFolder.loadMessages();
+        // use the message from the folder so we have the uid assigned by the server
+        message = testFolder.get(0);
+        long uidBeforeFlag = message.getImapUid();
         HashMap<String,String> properties = new HashMap<String,String>();
         properties.put("flagged", "2");
         session.updateMessage(message, properties);
@@ -81,10 +86,11 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         testFolder.loadMessages();
         assertNotNull(testFolder.get(0));
         assertTrue(testFolder.get(0).flagged);
-        assertEquals(message.getImapUid(), testFolder.get(0).getImapUid());
+        assertEquals(uidBeforeFlag, testFolder.get(0).getImapUid());
     }
 
     public void testGetContent() throws IOException, MessagingException {
+        testCreateMessage();
         byte[] content = session.getContent(message);
         assertNotNull(content);
         MimeMessage mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(content));
