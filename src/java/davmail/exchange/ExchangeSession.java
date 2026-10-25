@@ -1265,7 +1265,7 @@ public abstract class ExchangeSession {
             computeAttributes();
         }
 
-        protected void computeAttributes() {
+        public void computeAttributes() {
             recent = 0;
             for (Message message : messages) {
                 if (message.recent) {

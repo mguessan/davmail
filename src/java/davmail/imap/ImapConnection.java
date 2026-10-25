@@ -1728,6 +1728,10 @@ public class ImapConnection extends AbstractConnection {
                     index++;
                 }
             }
+            if (hasDeleted) {
+                // update messageCount and imapFlagMap after removing messages
+                currentFolder.computeAttributes();
+            }
         }
         return hasDeleted;
     }
