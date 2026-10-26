@@ -72,11 +72,10 @@ elif  java -version 2>&1 >/dev/null | grep -q "version" ; then
     # matches Kubuntu
     echo "Enable OpenJFX"
     : "${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED}"
+  elif [ -e "/app/lib/jre/bin/java" ]; then
+    echo "Running in flatpak"
+    : "${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED}"
   else
-    # export internal java modules for interactive authentication and genereteCert
-    if java -version 2>&1 | grep -qv '"1\.8'; then
-      : "${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED}"
-    fi
     # add JFX to classpath with OpenJDK 11
     JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
   fi
