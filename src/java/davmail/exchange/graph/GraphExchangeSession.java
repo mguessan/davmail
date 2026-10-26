@@ -3503,7 +3503,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (wellKnownName != null) {
                     // normalize display name to short constants for consistency across backends
                     folder.displayName = wellKnownName;
-                    if (!ExchangeSession.INBOX.equals(wellKnownName)) {
+                    if (SPECIAL.contains(wellKnownName)) {
                         folder.setSpecialFlag(wellKnownName);
                     }
                 } else {
