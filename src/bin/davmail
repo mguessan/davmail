@@ -61,6 +61,11 @@ if [ -e "$BASE/jre/bin/java" ]; then
   : "${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED}"
   echo "Using embedded JRE"
   $JAVA -version
+
+elif [ -e "/app/lib/jre/bin/java" ]; then
+  echo "Running in flatpak"
+  : "${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED}"
+
 elif  java -version 2>&1 >/dev/null | grep -q "version" ; then
   echo "Using system provided JRE"
   java -version
@@ -71,9 +76,6 @@ elif  java -version 2>&1 >/dev/null | grep -q "version" ; then
   elif [ -e "/usr/share/openjfx" ]; then
     # matches Kubuntu
     echo "Enable OpenJFX"
-    : "${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED}"
-  elif [ -e "/app/lib/jre/bin/java" ]; then
-    echo "Running in flatpak"
     : "${JFX_JAVA_OPTS:=--add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED}"
   else
     # add JFX to classpath with OpenJDK 11
