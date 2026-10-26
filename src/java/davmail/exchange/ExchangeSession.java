@@ -102,7 +102,7 @@ public abstract class ExchangeSession {
     protected static final String JUNK = "Junk";
     protected static final String UNSENT = "Unsent Messages";
 
-    protected static final List<String> SPECIAL = Arrays.asList(SENT, DRAFTS, TRASH, JUNK);
+    protected static final List<String> SPECIAL = Arrays.asList(SENT, DRAFTS, TRASH, JUNK, ARCHIVE);
 
     // see https://learn.microsoft.com/en-us/openspecs/exchange_server_protocols/ms-oxomsg/87a8b6b8-59a4-4859-9dcd-8b0f36e3d729
     protected static final String REPLYTOSENDER = "102";
