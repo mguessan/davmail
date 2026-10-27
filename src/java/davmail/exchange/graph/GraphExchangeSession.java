@@ -51,6 +51,8 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.htmlcleaner.BaseToken;
+import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
@@ -1361,20 +1363,27 @@ public class GraphExchangeSession extends ExchangeSession {
         return isExpired;
     }
 
-    private String convertHtmlToText(String htmlText) {
+    protected static String convertHtmlToText(String htmlText) {
         StringBuilder builder = new StringBuilder();
-
         HtmlCleaner cleaner = new HtmlCleaner();
         cleaner.getProperties().setDeserializeEntities(true);
         try {
             TagNode node = cleaner.clean(new StringReader(htmlText));
-            for (TagNode childNode : node.getAllElementsList(true)) {
-                builder.append(childNode.getText());
-            }
+            appendNodeText(node, builder);
         } catch (IOException e) {
             LOGGER.error("Error converting html to text", e);
         }
         return builder.toString();
+    }
+
+    private static void appendNodeText(TagNode node, StringBuilder builder) {
+        for (BaseToken child : node.getAllChildren()) {
+            if (child instanceof ContentNode) {
+                builder.append(((ContentNode) child).getContent());
+            } else if (child instanceof TagNode) {
+                appendNodeText((TagNode) child, builder);
+            }
+        }
     }
 
     private VProperty convertBodyToVproperty(GraphObject graphObject) {
