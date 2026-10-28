@@ -1481,7 +1481,17 @@ public class GraphExchangeSession extends ExchangeSession {
         cleaner.getProperties().setDeserializeEntities(true);
         try {
             TagNode node = cleaner.clean(new StringReader(htmlText));
-            for (TagNode childNode : node.getAllElementsList(true)) {
+            convertNodeToText(node, builder);
+        } catch (IOException e) {
+            LOGGER.error("Error converting html to text", e);
+        }
+        return builder.toString();
+    }
+
+    private void convertNodeToText(TagNode node, StringBuilder builder) {
+        for (Object child : node.getAllChildren()) {
+            if (child instanceof TagNode) {
+                TagNode childNode = (TagNode) child;
                 if ("a".equals(childNode.getName())) {
                     String href = childNode.getAttributeByName("href");
                     String text = childNode.getText().toString().trim();
@@ -1490,12 +1500,13 @@ public class GraphExchangeSession extends ExchangeSession {
                         continue;
                     }
                 }
-                builder.append(childNode.getText());
+                // recurse into child elements
+                convertNodeToText(childNode, builder);
+            } else {
+                // ContentNode: append text content directly
+                builder.append(child.toString());
             }
-        } catch (IOException e) {
-            LOGGER.error("Error converting html to text", e);
         }
-        return builder.toString();
     }
 
     private VProperty convertBodyToVproperty(GraphObject graphObject) {
