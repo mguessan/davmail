@@ -41,10 +41,33 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
     protected static class DeviceCode {
         final private String deviceCode;
         final private String message;
+        final private int expiresIn;
+        final private int interval;
+        final private String verificationUri;
+        final private String userCode;
 
-        DeviceCode(String deviceCode, String message) {
+        DeviceCode(String deviceCode, String message, int expiresIn, int interval, String verificationUri, String userCode) {
             this.deviceCode = deviceCode;
             this.message = message;
+            this.expiresIn = expiresIn > 0 ? expiresIn : 900; // default to 15 minutes
+            this.interval = interval > 0 ? interval : 5; // default to 5 seconds
+            this.verificationUri = verificationUri;
+            this.userCode = userCode;
+        }
+
+        /**
+         * @return short code the user has to enter on the verification page, null if not provided by server.
+         * This is not the secret device_code used for polling.
+         */
+        public String getUserCode() {
+            return userCode;
+        }
+
+        /**
+         * @return url the user has to open to enter the user code, null if not provided by server
+         */
+        public String getVerificationUri() {
+            return verificationUri;
         }
 
         public String getDeviceCode() {
@@ -53,6 +76,20 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
 
         public String getMessage() {
             return message;
+        }
+
+        /**
+         * @return device code lifetime in seconds
+         */
+        public int getExpiresIn() {
+            return expiresIn;
+        }
+
+        /**
+         * @return minimum polling interval in seconds
+         */
+        public int getInterval() {
+            return interval;
         }
     }
 
@@ -89,7 +126,7 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
         token = O365Token.load(tenantId, clientId, "", username, password);
         if (token != null) {
             return;
-         }
+        }
 
         // build device code authorize url;
         String url;
@@ -117,30 +154,86 @@ public class O365DeviceCodeAuthenticator implements ExchangeAuthenticator {
             if (error != null) {
                 throw new IOException("Exception getting device code: " + error);
             }
-            deviceCode = new DeviceCode(deviceCodeResponse.getString("device_code"), deviceCodeResponse.getString("message"));
+            // expires_in and interval are numbers on the v2.0 endpoint and may be strings on the v1 endpoint
+            // v2.0 endpoint returns verification_uri, v1 endpoint returns verification_url
+            String verificationUri = deviceCodeResponse.optString("verification_uri", deviceCodeResponse.optString("verification_url", null));
+            deviceCode = new DeviceCode(deviceCodeResponse.getString("device_code"), deviceCodeResponse.getString("message"),
+                    parseSeconds(deviceCodeResponse.opt("expires_in")), parseSeconds(deviceCodeResponse.opt("interval")),
+                    verificationUri, deviceCodeResponse.optString("user_code", null));
         } catch (JSONException e) {
             throw new IOException("Exception parsing device code", e);
         }
 
-        // Polls for authorization completion; builds token on success
-        try {
-            while (token == null) {
-                System.out.println(deviceCode.getMessage());
+        token = pollForToken(tenantId, clientId, deviceCode);
+    }
 
-                //noinspection BusyWait
-                Thread.sleep(5000);
-
-                try {
-                    token = O365Token.build(tenantId, clientId, deviceCode, password);
-                } catch (O365AuthorizationPending e) {
-                    LOGGER.error("Authorization pending for device code");
-                }
-            }
-        } catch (InterruptedException e) {
-            LOGGER.error("Interrupted waiting for token " + e.getMessage());
-            Thread.currentThread().interrupt();
+    private static int parseSeconds(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
         }
+        if (value instanceof String) {
+            try {
+                return Integer.parseInt(((String) value).trim());
+            } catch (NumberFormatException e) {
+                LOGGER.debug("Invalid device code duration " + value);
+            }
+        }
+        // 0 means use default value
+        return 0;
+    }
 
+    /**
+     * Poll token endpoint until user completes authorization.
+     * Stops when the device code expires, the server reports a final error, or the thread is interrupted.
+     *
+     * @param tenantId   tenant id
+     * @param clientId   client id
+     * @param deviceCode device code
+     * @return token
+     * @throws IOException on error, expiration or interruption
+     */
+    protected O365Token pollForToken(String tenantId, String clientId, DeviceCode deviceCode) throws IOException {
+        // Display instructions once to the user
+        System.out.println(deviceCode.getMessage());
+
+        long deadline = System.currentTimeMillis() + deviceCode.getExpiresIn() * 1000L;
+        long intervalMillis = deviceCode.getInterval() * 1000L;
+        // also log instructions: stdout is not visible in service mode, and the message contains url and user code
+        LOGGER.info("Waiting for device code authorization. " + deviceCode.getMessage() + " Code expires in " + deviceCode.getExpiresIn()
+                + " seconds, checking every " + intervalMillis / 1000 + " seconds");
+
+        while (true) {
+            try {
+                //noinspection BusyWait
+                Thread.sleep(intervalMillis);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            try {
+                return O365Token.build(tenantId, clientId, deviceCode, password);
+            } catch (O365SlowDown e) {
+                // server asks to poll less frequently, RFC 8628 says add 5 seconds
+                intervalMillis += 5000;
+                LOGGER.info("Device code authorization pending, server requested slower polling, next check in "
+                        + intervalMillis / 1000 + " seconds");
+            } catch (O365AuthorizationPending e) {
+                long remainingSeconds = Math.max(0, (deadline - System.currentTimeMillis() + 999) / 1000);
+                String message = "Device code authorization pending, " + remainingSeconds + " seconds remaining";
+                if (deviceCode.getVerificationUri() != null) {
+                    message += ", sign in at " + deviceCode.getVerificationUri();
+                    if (deviceCode.getUserCode() != null) {
+                        message += " with code " + deviceCode.getUserCode();
+                    }
+                }
+                LOGGER.info(message);
+            }
+
+            if (System.currentTimeMillis() >= deadline) {
+                throw new IOException("Device code expired after " + deviceCode.getExpiresIn()
+                        + " seconds, authorization was not completed");
+            }
+        }
     }
 
     @Override
