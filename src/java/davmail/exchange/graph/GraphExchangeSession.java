@@ -796,7 +796,8 @@ public class GraphExchangeSession extends ExchangeSession {
                     newGraphEvent.put("isAllDay", vCalendar.isCdoAllDay());
 
                     // showAs: free, tentative, busy, oof, workingElsewhere, unknown
-                    newGraphEvent.put("showAs", getShowAs());
+                    String showAs = getShowAs();
+                    newGraphEvent.put("showAs", showAs != null ? showAs : "free");
 
                     if (isExistingEvent) {
                         graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
@@ -902,22 +903,20 @@ public class GraphExchangeSession extends ExchangeSession {
         }
 
         /**
-         * Compute the Graph showAs value from the iCalendar STATUS and X-MICROSOFT-CDO-BUSYSTATUS properties.
-         * showAs values: free, tentative, busy, oof, workingElsewhere, unknown
+         * Get Graph showAs value from the current calendar event.
+         *
+         * @return showAs value or null if the client did not provide a usable value
          */
         private String getShowAs() {
-            String status = vCalendar.getFirstVeventPropertyValue("STATUS");
-            if ("TENTATIVE".equals(status)) {
-                return "tentative";
-            } else {
-                // case matters in Graph API: "BUSY" -> "busy"
-                return "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "busy" : "free";
-            }
+            return convertShowAs(vCalendar.getFirstVeventPropertyValue("STATUS"),
+                    vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS"));
         }
 
         /**
-         * Update meeting as attended.
-         * Can only update reminder and showAs information
+         * Update meeting as attendee.
+         * Attendees can only update reminder and showAs information, everything else is ignored.
+         * showAs is only updated if the client provided a usable value.
+         *
          * @param currentItemId target item id
          * @return graph response
          * @throws JSONException on error
@@ -926,16 +925,21 @@ public class GraphExchangeSession extends ExchangeSession {
         private GraphObject updateMeetingAsAttendee(String currentItemId) throws JSONException, IOException {
             LOGGER.debug("Update on existing meeting, not organizer, not a meeting response or dismiss: allow reminder and showAs updates");
 
-            // handle reminder configuration and showAs
+            GraphObject attendeeUpdates = new GraphObject()
+                    .put("isReminderOn", vCalendar.hasVAlarm())
+                    .put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart());
+
+            // do not touch showAs if client does not provide it, e.g. a reminder only change
+            String showAs = getShowAs();
+            if (showAs != null) {
+                attendeeUpdates.put("showAs", showAs);
+            }
+
             GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("events")
                     .setObjectId(currentItemId)
-                    .setJsonBody(new GraphObject()
-                            .put("isReminderOn", vCalendar.hasVAlarm())
-                            .put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart())
-                            .put("showAs", getShowAs())
-                    );
+                    .setJsonBody(attendeeUpdates);
             return executeGraphRequest(graphRequestBuilder);
         }
 
@@ -1490,6 +1494,37 @@ public class GraphExchangeSession extends ExchangeSession {
 
     protected void checkToken() throws IOException {
         executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setObjectType("mailFolders").setSelect("id"));
+    }
+
+    /**
+     * Convert iCalendar STATUS and X-MICROSOFT-CDO-BUSYSTATUS to Graph showAs.
+     * Graph showAs values: free, tentative, busy, oof, workingElsewhere, unknown (case sensitive).
+     *
+     * @param status     iCalendar STATUS value, may be null
+     * @param busyStatus X-MICROSOFT-CDO-BUSYSTATUS value, may be null
+     * @return Graph showAs value or null if no usable value is provided
+     */
+    protected static String convertShowAs(String status, String busyStatus) {
+        if ("TENTATIVE".equals(status)) {
+            return "tentative";
+        }
+        if (busyStatus == null) {
+            return null;
+        }
+        switch (busyStatus.toUpperCase()) {
+            case "BUSY":
+                return "busy";
+            case "FREE":
+                return "free";
+            case "TENTATIVE":
+                return "tentative";
+            case "OOF":
+                return "oof";
+            case "WORKINGELSEWHERE":
+                return "workingElsewhere";
+            default:
+                return null;
+        }
     }
 
     protected static String convertHtmlToText(String htmlText) {
