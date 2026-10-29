@@ -746,7 +746,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 } else if (folderId.isTask()) {
                     graphResponse = createOrUpdateTask(currentItemId);
                 } else if (isExistingEvent && isMeeting && !isOrganizer) {
-                    graphResponse = updateReminder(currentItemId);
+                    graphResponse = updateMeetingAsAttendee(currentItemId);
                 } else {
 
                     GraphObject newGraphEvent = buildJsonEvent(vEvent);
@@ -796,15 +796,7 @@ public class GraphExchangeSession extends ExchangeSession {
                     newGraphEvent.put("isAllDay", vCalendar.isCdoAllDay());
 
                     // showAs: free, tentative, busy, oof, workingElsewhere, unknown
-                    String status = vCalendar.getFirstVeventPropertyValue("STATUS");
-                    if ("TENTATIVE".equals(status)) {
-                        // this is a tentative event
-                        newGraphEvent.put("showAs", "tentative");
-                    } else {
-                        // otherwise, we use the same value as before, as received from the server
-                        // however, the case matters, so we still have to transform it "BUSY" -> "Busy"
-                        newGraphEvent.put("showAs", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "busy" : "free");
-                    }
+                    newGraphEvent.put("showAs", getShowAs());
 
                     if (isExistingEvent) {
                         graphRequestBuilder.setMethod(HttpPatch.METHOD_NAME)
@@ -909,16 +901,40 @@ public class GraphExchangeSession extends ExchangeSession {
             return responseStatusUpdates;
         }
 
-        private GraphObject updateReminder(String currentItemId) throws JSONException, IOException {
-            LOGGER.debug("Update on existing meeting, not organizer, not a meeting response or dismiss: allow reminder updates only");
+        /**
+         * Compute the Graph showAs value from the iCalendar STATUS and X-MICROSOFT-CDO-BUSYSTATUS properties.
+         * showAs values: free, tentative, busy, oof, workingElsewhere, unknown
+         */
+        private String getShowAs() {
+            String status = vCalendar.getFirstVeventPropertyValue("STATUS");
+            if ("TENTATIVE".equals(status)) {
+                return "tentative";
+            } else {
+                // case matters in Graph API: "BUSY" -> "busy"
+                return "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "busy" : "free";
+            }
+        }
 
-            // handle reminder configuration
+        /**
+         * Update meeting as attended.
+         * Can only update reminder and showAs information
+         * @param currentItemId target item id
+         * @return graph response
+         * @throws JSONException on error
+         * @throws IOException on error
+         */
+        private GraphObject updateMeetingAsAttendee(String currentItemId) throws JSONException, IOException {
+            LOGGER.debug("Update on existing meeting, not organizer, not a meeting response or dismiss: allow reminder and showAs updates");
+
+            // handle reminder configuration and showAs
             GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder().setMethod(HttpPatch.METHOD_NAME)
                     .setMailbox(folderId.mailbox)
                     .setObjectType("events")
                     .setObjectId(currentItemId)
-                    .setJsonBody(new GraphObject().put("isReminderOn", vCalendar.hasVAlarm())
+                    .setJsonBody(new GraphObject()
+                            .put("isReminderOn", vCalendar.hasVAlarm())
                             .put("reminderMinutesBeforeStart", vCalendar.getReminderMinutesBeforeStart())
+                            .put("showAs", getShowAs())
                     );
             return executeGraphRequest(graphRequestBuilder);
         }
