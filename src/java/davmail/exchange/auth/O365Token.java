@@ -121,6 +121,9 @@ public class O365Token {
         try {
             final Object error = jsonToken.opt("error");
             if (error != null) {
+                if (error.equals("slow_down"))
+                    throw new O365SlowDown();
+
                 if (error.equals("authorization_pending"))
                     throw new O365AuthorizationPending();
 
