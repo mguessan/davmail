@@ -54,6 +54,8 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.htmlcleaner.BaseToken;
+import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
@@ -1474,7 +1476,7 @@ public class GraphExchangeSession extends ExchangeSession {
         executeJsonRequest(new GraphRequestBuilder().setMethod(HttpGet.METHOD_NAME).setObjectType("mailFolders").setSelect("id"));
     }
 
-    private String convertHtmlToText(String htmlText) {
+    protected static String convertHtmlToText(String htmlText) {
         StringBuilder builder = new StringBuilder();
 
         HtmlCleaner cleaner = new HtmlCleaner();
@@ -1488,8 +1490,8 @@ public class GraphExchangeSession extends ExchangeSession {
         return builder.toString();
     }
 
-    private void convertNodeToText(TagNode node, StringBuilder builder) {
-        for (Object child : node.getAllChildren()) {
+    private static void convertNodeToText(TagNode node, StringBuilder builder) {
+        for (BaseToken child : node.getAllChildren()) {
             if (child instanceof TagNode) {
                 TagNode childNode = (TagNode) child;
                 if ("a".equals(childNode.getName())) {
@@ -1502,9 +1504,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 }
                 // recurse into child elements
                 convertNodeToText(childNode, builder);
-            } else {
-                // ContentNode: append text content directly
-                builder.append(child.toString());
+            } else if (child instanceof ContentNode) {
+                builder.append(((ContentNode) child).getContent());
             }
         }
     }
