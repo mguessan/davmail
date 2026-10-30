@@ -141,7 +141,7 @@ public class HttpClientAdapter implements Closeable {
 
     HttpClientConnectionManager connectionManager;
     CloseableHttpClient httpClient;
-    boolean closed = false;
+    volatile boolean closed = false;
     CredentialsProvider provider = new BasicCredentialsProvider();
     BasicCookieStore cookieStore = new BasicCookieStore() {
         @Override
@@ -434,8 +434,22 @@ public class HttpClientAdapter implements Closeable {
     public CloseableHttpResponse execute(HttpRequestBase request, HttpClientContext context) throws IOException {
         // make sure request path is absolute
         handleURI(request);
+        // client closed on gateway restart or session expiration while a connection still uses this session:
+        // fail with an IOException instead of the unchecked IllegalStateException thrown by the closed
+        // connection pool, so callers handle it as a failed request (e.g. session isExpired => new session)
+        if (closed) {
+            throw new IOException("Http client closed");
+        }
         // execute request and return response
-        return httpClient.execute(request, context);
+        try {
+            return httpClient.execute(request, context);
+        } catch (IllegalStateException e) {
+            // client closed by another thread after the check above
+            if (closed) {
+                throw new IOException("Http client closed", e);
+            }
+            throw e;
+        }
     }
 
     /**
