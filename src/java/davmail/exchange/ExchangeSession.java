@@ -2799,6 +2799,44 @@ public abstract class ExchangeSession {
         }
     }
 
+    /**
+     * Select the contact field matching a vCard TEL property.
+     * Exchange supports one value per phone type, plus a secondary business and home phone.
+     * Specific types (fax, pager, car) are tested before generic work and home types:
+     * a work fax is TEL;TYPE=work;TYPE=fax and is a fax, not a business phone.
+     *
+     * @param property   vCard TEL property
+     * @param properties contact properties already collected, used to select primary or secondary phone
+     * @return contact field name, or null if there is no room left for this phone number
+     */
+    protected static String getContactPhoneField(VProperty property, Map<String, String> properties) {
+        if (property.hasParam("TYPE", "cell") || property.hasParam("X-GROUP", "cell")) {
+            return "mobile";
+        } else if (property.hasParam("TYPE", "fax")) {
+            return property.hasParam("TYPE", "home") ? "homefax" : "facsimiletelephonenumber";
+        } else if (property.hasParam("TYPE", "pager")) {
+            return "pager";
+        } else if (property.hasParam("TYPE", "car")) {
+            return "othermobile";
+        } else if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "work")) {
+            return firstAvailable(properties, "telephoneNumber", "otherBusinessTelephoneNumber");
+        } else if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "home")) {
+            return firstAvailable(properties, "homePhone", "otherHomePhone");
+        } else {
+            return "otherTelephone";
+        }
+    }
+
+    private static String firstAvailable(Map<String, String> properties, String primary, String secondary) {
+        if (!properties.containsKey(primary)) {
+            return primary;
+        } else if (!properties.containsKey(secondary)) {
+            return secondary;
+        } else {
+            return null;
+        }
+    }
+
     protected ItemResult createOrUpdateContact(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
         // parse VCARD body to build contact property map
         Map<String, String> properties = new HashMap<>();
@@ -2822,43 +2860,11 @@ public abstract class ExchangeSession {
                 } else if ("NICKNAME".equals(property.getKey())) {
                     properties.put("nickname", property.getValue());
                 } else if ("TEL".equals(property.getKey())) {
-                    if (property.hasParam("TYPE", "cell") || property.hasParam("X-GROUP", "cell")) {
-                        properties.put("mobile", property.getValue());
-                    } else if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "work")) {
-                        if (properties.containsKey("telephoneNumber")) {
-                            if (properties.containsKey("otherBusinessTelephoneNumber")) {
-                                LOGGER.warn("Ignore third work phone  " + property.getValue());
-                            } else {
-                                // secondary business phone
-                                properties.put("otherBusinessTelephoneNumber", property.getValue());
-                            }
-                        } else {
-                            properties.put("telephoneNumber", property.getValue());
-                        }
-                    } else if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "home")) {
-                        if (properties.containsKey("homePhone")) {
-                            if (properties.containsKey("otherHomePhone")) {
-                                LOGGER.warn("Ignore third home phone  " + property.getValue());
-                            } else {
-                                // secondary home phone
-                                properties.put("otherHomePhone", property.getValue());
-                            }
-                        } else {
-                            properties.put("homePhone", property.getValue());
-                        }
-
-                    } else if (property.hasParam("TYPE", "fax")) {
-                        if (property.hasParam("TYPE", "home")) {
-                            properties.put("homefax", property.getValue());
-                        } else {
-                            properties.put("facsimiletelephonenumber", property.getValue());
-                        }
-                    } else if (property.hasParam("TYPE", "pager")) {
-                        properties.put("pager", property.getValue());
-                    } else if (property.hasParam("TYPE", "car")) {
-                        properties.put("othermobile", property.getValue());
+                    String phoneField = getContactPhoneField(property, properties);
+                    if (phoneField != null) {
+                        properties.put(phoneField, property.getValue());
                     } else {
-                        properties.put("otherTelephone", property.getValue());
+                        LOGGER.warn("Ignore additional phone number " + property.getValue());
                     }
                 } else if ("ADR".equals(property.getKey())) {
                     // address
