@@ -39,8 +39,10 @@ import java.io.InterruptedIOException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -59,6 +61,11 @@ public final class ExchangeSessionFactory {
      * Session pool. Guarded by itself.
      */
     private static final Map<PoolKey, ExchangeSession> POOL_MAP = new HashMap<>();
+    /**
+     * Incremented by shutdown, to detect session creations started before a shutdown.
+     * Guarded by POOL_MAP.
+     */
+    private static int shutdownGeneration;
     /**
      * Session creations in progress, by key. Guarded by itself.
      */
@@ -265,11 +272,13 @@ public final class ExchangeSessionFactory {
      * @throws Exception on error
      */
     private static ExchangeSession getOrCreateSession(PoolKey poolKey, String mode) throws Exception {
+        int startGeneration;
         synchronized (POOL_MAP) {
             ExchangeSession cached = POOL_MAP.get(poolKey);
             if (cached != null) {
                 return cached;
             }
+            startGeneration = shutdownGeneration;
         }
 
         ExchangeSession session;
@@ -281,11 +290,16 @@ public final class ExchangeSessionFactory {
                 session = createSession(poolKey, mode);
             }
         }
-        // publish before ending this creation, so a new caller can not start a duplicate one
+        // publish before ending this creation, so a new caller can not start a duplicate one,
+        // unless shutdown was called during the creation: the session must not outlive the shutdown
         synchronized (POOL_MAP) {
-            POOL_MAP.put(poolKey, session);
+            if (shutdownGeneration == startGeneration) {
+                POOL_MAP.put(poolKey, session);
+                return session;
+            }
         }
-        return session;
+        session.close();
+        throw new InterruptedIOException("Session creation cancelled by shutdown");
     }
 
     /**
@@ -573,15 +587,20 @@ public final class ExchangeSessionFactory {
 
     /**
      * Reset config check status and clear session pool.
+     * Session creations in progress are cancelled: their session is closed instead of being added to the pool.
      */
     public static void shutdown() {
         configChecked = false;
         errorSent = false;
+        List<ExchangeSession> sessions;
         synchronized (POOL_MAP) {
-            for (ExchangeSession session : POOL_MAP.values()) {
-                session.close();
-            }
+            shutdownGeneration++;
+            sessions = new ArrayList<>(POOL_MAP.values());
             POOL_MAP.clear();
+        }
+        // close outside the monitor, close() may perform network I/O
+        for (ExchangeSession session : sessions) {
+            session.close();
         }
     }
 }
