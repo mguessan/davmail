@@ -21,12 +21,7 @@ package davmail.exchange.auth;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
-import davmail.exchange.ews.BaseShape;
-import davmail.exchange.ews.DistinguishedFolderId;
-import davmail.exchange.ews.GetFolderMethod;
-import davmail.exchange.ews.GetUserConfigurationMethod;
 import davmail.http.HttpClientAdapter;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -35,7 +30,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
-import java.security.Security;
 
 public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
