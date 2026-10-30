@@ -282,24 +282,63 @@ public final class ExchangeSessionFactory {
         }
 
         ExchangeSession session;
-        if (Settings.getBooleanProperty("davmail.server")) {
-            session = createSession(poolKey, mode);
-        } else {
-            // serialize session creation in workstation mode to avoid multiple OTP requests
-            synchronized (CREATION_LOCK) {
+        try {
+            if (Settings.getBooleanProperty("davmail.server")) {
                 session = createSession(poolKey, mode);
+            } else {
+                // serialize session creation in workstation mode to avoid multiple OTP requests
+                synchronized (CREATION_LOCK) {
+                    session = createSession(poolKey, mode);
+                }
             }
+        } catch (DavMailAuthenticationException e) {
+            if (hasSessionWithDifferentPassword(poolKey)) {
+                ExchangeSession.LOGGER.warn("Authentication failed for user " + poolKey.userName
+                        + ", but a session exists for this user with a different password: "
+                        + "a client may be configured with an outdated password");
+            }
+            throw e;
         }
         // publish before ending this creation, so a new caller can not start a duplicate one,
         // unless shutdown was called during the creation: the session must not outlive the shutdown
+        boolean published = false;
+        boolean otherPassword = false;
         synchronized (POOL_MAP) {
             if (shutdownGeneration == startGeneration) {
+                otherPassword = hasSessionWithDifferentPassword(poolKey);
                 POOL_MAP.put(poolKey, session);
-                return session;
+                published = true;
             }
+        }
+        if (published) {
+            if (otherPassword) {
+                ExchangeSession.LOGGER.warn("User " + poolKey.userName + " authenticated with a password different "
+                        + "from the one of an existing session: the password may have been changed, "
+                        + "check that all clients use the new password");
+            }
+            return session;
         }
         session.close();
         throw new InterruptedIOException("Session creation cancelled by shutdown");
+    }
+
+    /**
+     * Check if the pool holds a session for the same URL and user, authenticated with another password.
+     * Passwords are only compared, never logged.
+     *
+     * @param poolKey session key
+     * @return true if a session with a different password exists
+     */
+    private static boolean hasSessionWithDifferentPassword(PoolKey poolKey) {
+        synchronized (POOL_MAP) {
+            for (PoolKey other : POOL_MAP.keySet()) {
+                if (other.url.equals(poolKey.url) && other.userName.equals(poolKey.userName)
+                        && !other.password.equals(poolKey.password)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
