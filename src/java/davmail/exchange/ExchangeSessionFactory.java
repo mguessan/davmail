@@ -245,7 +245,8 @@ public final class ExchangeSessionFactory {
             configChecked = true;
             // Reset so next time a problem occurs message is sent once
             errorSent = false;
-        } catch (DavMailException | IllegalStateException | NullPointerException exc) {
+        } catch (DavMailException | InterruptedIOException | IllegalStateException | NullPointerException exc) {
+            // not a network problem: no network down handling for a cancelled wait
             throw exc;
         } catch (Exception exc) {
             handleNetworkDown(exc);
@@ -374,9 +375,10 @@ public final class ExchangeSessionFactory {
         }
         try {
             checkWhiteList(session.getEmail());
-        } catch (DavMailAuthenticationException e) {
+        } catch (Throwable t) {
+            // do not leak a session that will never be published to the pool
             session.close();
-            throw e;
+            throw t;
         }
         ExchangeSession.LOGGER.debug("Created new session " + session + " for user " + poolKey.userName);
         return session;
