@@ -110,7 +110,7 @@ public final class ExchangeSessionFactory {
      *
      * @param key         session key
      * @param sessionMode configured davmail.mode, may be null
-     * @return session created session
+     * @return created session
      * @throws Exception on creation failure, or InterruptedIOException if interrupted while waiting
      */
     static ExchangeSession singleFlightGetOrCreateSession(PoolKey key, String sessionMode) throws Exception {
@@ -576,9 +576,6 @@ public final class ExchangeSessionFactory {
                     ExchangeSession.LOGGER.debug(networkInterface.getDisplayName() + " is up");
                 }
             }
-        } catch (NoSuchMethodError error) {
-            ExchangeSession.LOGGER.debug("Unable to test network interfaces (not available under Java 1.5)");
-            up = true;
         } catch (SocketException exc) {
             ExchangeSession.LOGGER.error("DavMail configuration exception: \n Error listing network interfaces " + exc.getMessage(), exc);
         }
