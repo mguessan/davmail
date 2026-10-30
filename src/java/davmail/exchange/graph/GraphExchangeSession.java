@@ -1469,8 +1469,11 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Override isExpired check.
-     * @return false, token is automatically refreshed over Graph
+     * Override isExpired check with a lightweight Graph request.
+     * The session is expired if the http client is closed or the token check fails,
+     * network level errors are rethrown to avoid reauthentication.
+     *
+     * @return true if the session expired
      * @throws IOException on network error
      */
     @Override
@@ -3146,8 +3149,9 @@ public class GraphExchangeSession extends ExchangeSession {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value,Edm.Binary) ").append(convertOperator(operator)).append(" binary'").append(StringUtil.escapeQuotes(value)).append("')");
                 } else if (field.isDate()) {
+                    // OData v4 literal: graph rejects the v3 datetimeoffset'...' syntax
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
-                            .append("' and cast(ep/value,Edm.DateTimeOffset) ").append(convertOperator(operator)).append(" datetimeoffset'").append(StringUtil.escapeQuotes(value)).append("')");
+                            .append("' and cast(ep/value,Edm.DateTimeOffset) ").append(convertOperator(operator)).append(" ").append(StringUtil.escapeQuotes(value)).append(")");
                 } else if (field.isBoolean()) {
                     buffer.append("singleValueExtendedProperties/Any(ep: ep/id eq '").append(graphId)
                             .append("' and cast(ep/value,Edm.Boolean) ").append(convertOperator(operator)).append(" ").append(value).append(")");
@@ -4193,7 +4197,7 @@ public class GraphExchangeSession extends ExchangeSession {
     @Override
     public List<ExchangeSession.Event> getAllEvents(String folderPath) throws IOException {
         // list events with minimal information
-        List<ExchangeSession.Event> results = searchEvents(folderPath, false, getCalendarItemCondition(getPastDelayCondition("dtstart")));
+        List<ExchangeSession.Event> results = searchEvents(folderPath, false, getPastDelayCalendarItemCondition());
 
         if (!Settings.getBooleanProperty("davmail.caldavDisableTasks", false) && isMainCalendar(folderPath)) {
             // retrieve tasks from main tasks folder
@@ -4219,6 +4223,24 @@ public class GraphExchangeSession extends ExchangeSession {
     protected Condition getCalendarItemCondition(Condition dateCondition) {
         return or(isTrue("isrecurring"),
                 and(isFalse("isrecurring"), dateCondition));
+    }
+
+    /**
+     * Condition to list all events: non recurring events newer than the past delay limit,
+     * recurring events unless the series ended before the limit.
+     * Only used to list the calendar, time range searches keep all recurring events.
+     *
+     * @return calendar item condition
+     */
+    private Condition getPastDelayCalendarItemCondition() {
+        // recurrence end (PidLidClipEnd) must be after the past delay limit, no end series use a far future date
+        Condition recurrenceEndCondition = getPastDelayCondition("clipend");
+        if (recurrenceEndCondition == null) {
+            // no past delay limit, keep all events
+            return getCalendarItemCondition(null);
+        }
+        return or(and(isTrue("isrecurring"), recurrenceEndCondition),
+                and(isFalse("isrecurring"), getPastDelayCondition("dtstart")));
     }
 
     /**

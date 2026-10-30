@@ -115,6 +115,8 @@ public class GraphField {
         addFieldMap("calendaruid", DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:uid", PropertyType.String);
 
         addFieldMap("isrecurring", DistinguishedPropertySetType.Appointment, 0x8223, PropertyType.Boolean); // PidLidRecurring
+        // PidLidClipEnd: end of the recurrence range, used to skip series ended before caldavPastDelay
+        addFieldMap("clipend", DistinguishedPropertySetType.Appointment, 0x8236, PropertyType.SystemTime);
 
         addFieldMap("dtstart", "start");
         addFieldMap("dtend", "end");
