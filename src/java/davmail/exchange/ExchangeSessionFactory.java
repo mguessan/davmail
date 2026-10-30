@@ -35,6 +35,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 
 import java.awt.*;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -42,13 +43,26 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Create ExchangeSession instances.
  */
 public final class ExchangeSessionFactory {
-    private static final Object LOCK = new Object();
+    /**
+     * Serialize session creation for different users in workstation mode, to avoid multiple concurrent
+     * interactive authentications. Not held while accessing the session pool.
+     */
+    private static final Object CREATION_LOCK = new Object();
+    /**
+     * Session pool. Guarded by itself.
+     */
     private static final Map<PoolKey, ExchangeSession> POOL_MAP = new HashMap<>();
+    /**
+     * Session creations in progress, by key. Guarded by itself.
+     */
+    private static final Map<PoolKey, CompletableFuture<ExchangeSession>> SESSION_CREATORS = new HashMap<>();
     private static volatile boolean configChecked;
     private static volatile boolean errorSent;
 
@@ -78,6 +92,69 @@ public final class ExchangeSessionFactory {
         }
     }
 
+    /**
+     * Run at most one session creation at a time for a given key, and share its result with concurrent callers.
+     * <p>
+     * With an interactive authentication (device code, valid for several minutes), concurrent connections
+     * for the same user must wait for one authentication instead of each starting their own.
+     * If the creation fails, callers that were waiting get the same failure instead of each retrying in turn.
+     * Results are not cached here: a call made after completion starts a new creation (the session pool
+     * is checked first, see {@link #getOrCreateSession}).
+     *
+     * @param key         session key
+     * @param sessionMode configured davmail.mode, may be null
+     * @return session created session
+     * @throws Exception on creation failure, or InterruptedIOException if interrupted while waiting
+     */
+    static ExchangeSession singleFlightGetOrCreateSession(PoolKey key, String sessionMode) throws Exception {
+        CompletableFuture<ExchangeSession> future;
+        boolean owner = false;
+        // create a future if no session creation in progress
+        synchronized (SESSION_CREATORS) {
+            future = SESSION_CREATORS.get(key);
+            if (future == null) {
+                future = new CompletableFuture<>();
+                SESSION_CREATORS.put(key, future);
+                owner = true;
+            }
+        }
+
+        if (owner) {
+            ExchangeSession session;
+            try {
+                session = getOrCreateSession(key, sessionMode);
+            } catch (Throwable t) {
+                // unregister before completing, so a later caller starts a new creation instead of joining a failed one
+                removeSessionCreator(key);
+                future.completeExceptionally(t);
+                throw t;
+            }
+            removeSessionCreator(key);
+            future.complete(session);
+            return session;
+        }
+
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InterruptedIOException("Interrupted waiting for concurrent session creation");
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Exception) {
+                throw (Exception) cause;
+            }
+            // owner failed with an Error
+            throw new IllegalStateException("Concurrent session creation failed", cause);
+        }
+    }
+
+    private static void removeSessionCreator(PoolKey key) {
+        synchronized (SESSION_CREATORS) {
+            SESSION_CREATORS.remove(key);
+        }
+    }
+
     private ExchangeSessionFactory() {
     }
 
@@ -91,14 +168,25 @@ public final class ExchangeSessionFactory {
      */
     public static ExchangeSession getInstance(String userName, String password) throws IOException {
         String baseUrl = Settings.getProperty("davmail.url", Settings.getO365Url());
-        if (Settings.getBooleanProperty("davmail.server")) {
-            return getInstance(baseUrl, userName, password);
-        } else {
-            // serialize session creation in workstation mode to avoid multiple OTP requests
-            synchronized (LOCK) {
-                return getInstance(baseUrl, userName, password);
-            }
+        return getInstance(baseUrl, userName, password);
+    }
+
+    /**
+     * Build the session pool key, the same way for every lookup.
+     * In O365 mode the URL is forced, whatever the caller or davmail.url say.
+     *
+     * @param mode     configured davmail.mode, may be null
+     * @param baseUrl  OWA base URL
+     * @param userName user login
+     * @param password user password
+     * @return pool key
+     */
+    private static PoolKey buildPoolKey(String mode, String baseUrl, String userName, String password) {
+        if (Settings.O365.equals(mode)) {
+            // force url with O365
+            baseUrl = Settings.getO365Url();
         }
+        return new PoolKey(baseUrl, userName, password);
     }
 
     private static String convertUserName(String userName) {
@@ -124,14 +212,9 @@ public final class ExchangeSessionFactory {
         ExchangeSession session = null;
         try {
             String mode = Settings.getProperty("davmail.mode");
-            if (Settings.O365.equals(mode)) {
-                // force url with O365
-                baseUrl = Settings.getO365Url();
-            }
+            PoolKey poolKey = buildPoolKey(mode, baseUrl, userName, password);
 
-            PoolKey poolKey = new PoolKey(baseUrl, userName, password);
-
-            synchronized (LOCK) {
+            synchronized (POOL_MAP) {
                 session = POOL_MAP.get(poolKey);
             }
             if (session != null) {
@@ -139,103 +222,24 @@ public final class ExchangeSessionFactory {
             }
 
             if (session != null && session.isExpired()) {
-                synchronized (LOCK) {
-                    session.close();
-                    ExchangeSession.LOGGER.debug("Session " + session + " for user " + session.userName + " expired");
-                    session = null;
-                    // expired session, remove from cache
-                    POOL_MAP.remove(poolKey);
+                ExchangeSession.LOGGER.debug("Session " + session + " for user " + session.userName + " expired");
+                // only the thread that actually removes the expired session closes it: another thread may already
+                // have replaced it with a new session, which must stay in the pool
+                boolean removed;
+                synchronized (POOL_MAP) {
+                    removed = POOL_MAP.remove(poolKey, session);
                 }
+                if (removed) {
+                    session.close();
+                }
+                session = null;
             }
 
             if (session == null) {
-                // convert old setting
-                if (mode == null) {
-                    if ("false".equals(Settings.getProperty("davmail.enableEws"))) {
-                        mode = Settings.WEBDAV;
-                    } else {
-                        mode = Settings.EWS;
-                    }
-                }
-                // check for overridden authenticator
-                String authenticatorClass = Settings.getProperty("davmail.authenticator");
-                if (authenticatorClass == null && mode.startsWith("O365")) {
-                    // set authenticator class based on authentication mode
-                    String authentication = Settings.getProperty("davmail.authentication");
-                    authenticatorClass = getAuthenticatorClass(authentication);
-                    if (authenticatorClass == null) {
-                        // fallback to legacy modes
-                        authenticatorClass = getAuthenticatorClass(mode);
-                    }
-                }
-
-                if (authenticatorClass != null) {
-                    ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName(authenticatorClass)
-                            .getDeclaredConstructor().newInstance();
-                    authenticator.setUsername(poolKey.userName);
-                    authenticator.setPassword(poolKey.password);
-                    authenticator.authenticate();
-
-                    if (Settings.isGraphEnabled()) {
-                        session = new GraphExchangeSession(authenticator.getHttpClientAdapter(), authenticator.getToken(), poolKey.userName);
-                    } else {
-                        session = new EwsExchangeSession(authenticator.getExchangeUri(), authenticator.getToken(), poolKey.userName);
-                    }
-
-                } else if (
-                    // new mode
-                        Settings.EXCHANGE_EWS.equals(mode)
-                                // legacy
-                                || Settings.EWS.equals(mode) || Settings.O365.equals(mode)
-                                // direct EWS even if mode is different
-                                || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")
-                                || poolKey.url.toLowerCase().endsWith("/ews/services.wsdl")) {
-                    if (poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")
-                            || poolKey.url.toLowerCase().endsWith("/ews/services.wsdl")) {
-                        ExchangeSession.LOGGER.debug("Direct EWS authentication");
-                        session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
-                    } else {
-                        ExchangeSession.LOGGER.debug("OWA authentication in EWS mode");
-                        ExchangeFormAuthenticator exchangeFormAuthenticator = new ExchangeFormAuthenticator();
-                        exchangeFormAuthenticator.setUrl(poolKey.url);
-                        exchangeFormAuthenticator.setUsername(poolKey.userName);
-                        exchangeFormAuthenticator.setPassword(poolKey.password);
-                        exchangeFormAuthenticator.authenticate();
-                        session = new EwsExchangeSession(exchangeFormAuthenticator.getHttpClientAdapter(),
-                                exchangeFormAuthenticator.getExchangeUri(), exchangeFormAuthenticator.getUsername());
-                    }
-                } else {
-                    // Legacy Exchange 2003 WebDav mode
-                    ExchangeFormAuthenticator exchangeFormAuthenticator = new ExchangeFormAuthenticator();
-                    exchangeFormAuthenticator.setUrl(poolKey.url);
-                    exchangeFormAuthenticator.setUsername(poolKey.userName);
-                    exchangeFormAuthenticator.setPassword(poolKey.password);
-                    exchangeFormAuthenticator.authenticate();
-                    try {
-                        session = new DavExchangeSession(exchangeFormAuthenticator.getHttpClientAdapter(),
-                                exchangeFormAuthenticator.getExchangeUri(),
-                                exchangeFormAuthenticator.getUsername());
-                    } catch (WebdavNotAvailableException e) {
-                        if (Settings.AUTO.equals(mode)) {
-                            ExchangeSession.LOGGER.debug(e.getMessage() + ", retry with EWS");
-                            session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
-                try {
-                    checkWhiteList(session.getEmail());
-                } catch (DavMailAuthenticationException e) {
-                    session.close();
-                    session = null;
-                    throw e;
-                }
-                ExchangeSession.LOGGER.debug("Created new session " + session + " for user " + poolKey.userName);
-            }
-            // successful login, put session in cache
-            synchronized (LOCK) {
-                POOL_MAP.put(poolKey, session);
+                // one session creation at a time for a given user: concurrent connections wait for the
+                // same authentication (device code can take minutes) instead of each starting their own.
+                // The created session is published to the pool by getOrCreateSession.
+                session = singleFlightGetOrCreateSession(poolKey, mode);
             }
             // session opened; future failure will mean network down
             configChecked = true;
@@ -246,6 +250,135 @@ public final class ExchangeSessionFactory {
         } catch (Exception exc) {
             handleNetworkDown(exc);
         }
+        return session;
+    }
+
+    /**
+     * Get session from pool or create it, runs as the single session creation for this user.
+     * Pool is checked again: a previous creation for the same user may have completed
+     * after the caller checked the pool.
+     *
+     * @param poolKey session key
+     * @param mode    configured davmail.mode, may be null
+     * @return session
+     * @throws Exception on error
+     */
+    private static ExchangeSession getOrCreateSession(PoolKey poolKey, String mode) throws Exception {
+        synchronized (POOL_MAP) {
+            ExchangeSession cached = POOL_MAP.get(poolKey);
+            if (cached != null) {
+                return cached;
+            }
+        }
+
+        ExchangeSession session;
+        if (Settings.getBooleanProperty("davmail.server")) {
+            session = createSession(poolKey, mode);
+        } else {
+            // serialize session creation in workstation mode to avoid multiple OTP requests
+            synchronized (CREATION_LOCK) {
+                session = createSession(poolKey, mode);
+            }
+        }
+        // publish before ending this creation, so a new caller can not start a duplicate one
+        synchronized (POOL_MAP) {
+            POOL_MAP.put(poolKey, session);
+        }
+        return session;
+    }
+
+    /**
+     * Create a new session, called by at most one thread at a time for a given user.
+     *
+     * @param poolKey session key
+     * @param mode    configured davmail.mode, may be null
+     * @return new authenticated session
+     * @throws Exception on error
+     */
+    private static ExchangeSession createSession(PoolKey poolKey, String mode) throws Exception {
+        ExchangeSession session;
+        // convert old setting
+        if (mode == null) {
+            if ("false".equals(Settings.getProperty("davmail.enableEws"))) {
+                mode = Settings.WEBDAV;
+            } else {
+                mode = Settings.EWS;
+            }
+        }
+        // check for overridden authenticator
+        String authenticatorClass = Settings.getProperty("davmail.authenticator");
+        if (authenticatorClass == null && mode.startsWith("O365")) {
+            // set authenticator class based on authentication mode
+            String authentication = Settings.getProperty("davmail.authentication");
+            authenticatorClass = getAuthenticatorClass(authentication);
+            if (authenticatorClass == null) {
+                // fallback to legacy modes
+                authenticatorClass = getAuthenticatorClass(mode);
+            }
+        }
+
+        if (authenticatorClass != null) {
+            ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName(authenticatorClass)
+                    .getDeclaredConstructor().newInstance();
+            authenticator.setUsername(poolKey.userName);
+            authenticator.setPassword(poolKey.password);
+            authenticator.authenticate();
+
+            if (Settings.isGraphEnabled()) {
+                session = new GraphExchangeSession(authenticator.getHttpClientAdapter(), authenticator.getToken(), poolKey.userName);
+            } else {
+                session = new EwsExchangeSession(authenticator.getExchangeUri(), authenticator.getToken(), poolKey.userName);
+            }
+
+        } else if (
+            // new mode
+                Settings.EXCHANGE_EWS.equals(mode)
+                        // legacy
+                        || Settings.EWS.equals(mode) || Settings.O365.equals(mode)
+                        // direct EWS even if mode is different
+                        || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")
+                        || poolKey.url.toLowerCase().endsWith("/ews/services.wsdl")) {
+            if (poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")
+                    || poolKey.url.toLowerCase().endsWith("/ews/services.wsdl")) {
+                ExchangeSession.LOGGER.debug("Direct EWS authentication");
+                session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+            } else {
+                ExchangeSession.LOGGER.debug("OWA authentication in EWS mode");
+                ExchangeFormAuthenticator exchangeFormAuthenticator = new ExchangeFormAuthenticator();
+                exchangeFormAuthenticator.setUrl(poolKey.url);
+                exchangeFormAuthenticator.setUsername(poolKey.userName);
+                exchangeFormAuthenticator.setPassword(poolKey.password);
+                exchangeFormAuthenticator.authenticate();
+                session = new EwsExchangeSession(exchangeFormAuthenticator.getHttpClientAdapter(),
+                        exchangeFormAuthenticator.getExchangeUri(), exchangeFormAuthenticator.getUsername());
+            }
+        } else {
+            // Legacy Exchange 2003 WebDav mode
+            ExchangeFormAuthenticator exchangeFormAuthenticator = new ExchangeFormAuthenticator();
+            exchangeFormAuthenticator.setUrl(poolKey.url);
+            exchangeFormAuthenticator.setUsername(poolKey.userName);
+            exchangeFormAuthenticator.setPassword(poolKey.password);
+            exchangeFormAuthenticator.authenticate();
+            try {
+                session = new DavExchangeSession(exchangeFormAuthenticator.getHttpClientAdapter(),
+                        exchangeFormAuthenticator.getExchangeUri(),
+                        exchangeFormAuthenticator.getUsername());
+            } catch (WebdavNotAvailableException e) {
+                if (Settings.AUTO.equals(mode)) {
+                    ExchangeSession.LOGGER.debug(e.getMessage() + ", retry with EWS");
+                    session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                } else {
+                    throw e;
+                }
+            }
+        }
+        try {
+            checkWhiteList(session.getEmail());
+        } catch (DavMailAuthenticationException e) {
+            session.close();
+            throw e;
+        }
+        ExchangeSession.LOGGER.debug("Created new session " + session + " for user " + poolKey.userName);
         return session;
     }
 
@@ -314,10 +447,10 @@ public final class ExchangeSessionFactory {
                 ExchangeSession.LOGGER.debug("Session " + session + " expired, trying to open a new one");
                 session = null;
                 String baseUrl = Settings.getProperty("davmail.url", Settings.getO365Url());
-                PoolKey poolKey = new PoolKey(baseUrl, userName, password);
-                // expired session, remove from cache
-                synchronized (LOCK) {
-                    POOL_MAP.remove(poolKey);
+                PoolKey poolKey = buildPoolKey(Settings.getProperty("davmail.mode"), baseUrl, userName, password);
+                // expired session, remove from cache unless already replaced by another thread
+                synchronized (POOL_MAP) {
+                    POOL_MAP.remove(poolKey, currentSession);
                 }
                 session = getInstance(userName, password);
             }
@@ -399,7 +532,7 @@ public final class ExchangeSessionFactory {
      */
     public static String getUserPassword(String userName) {
         String fullUserName = convertUserName(userName);
-        synchronized (LOCK) {
+        synchronized (POOL_MAP) {
             for (PoolKey poolKey : POOL_MAP.keySet()) {
                 if (poolKey.userName.equals(fullUserName)) {
                     return poolKey.password;
@@ -442,7 +575,7 @@ public final class ExchangeSessionFactory {
     public static void shutdown() {
         configChecked = false;
         errorSent = false;
-        synchronized (LOCK) {
+        synchronized (POOL_MAP) {
             for (ExchangeSession session : POOL_MAP.values()) {
                 session.close();
             }
