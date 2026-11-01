@@ -4,7 +4,7 @@
           xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
-        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Frequently asked questions</title>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Building DavMail from source</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 
@@ -13,7 +13,7 @@
         <section name="Building DavMail from source">
             <p>Building DavMail is quite simple:</p>
             <ul>
-                <li>Make sure you have Java 6 or 7 installed and set as current version by checking
+                <li>Make sure you have Java 8 or later installed and set as the current version by checking
                     JAVA_HOME:
                     <br/>
                     <ul>
@@ -25,15 +25,18 @@
                         </li>
                     </ul>
                 </li>
-                <li>Check if you already have Apache Ant installed :<br/>
+                <li>Check if you already have Apache Ant installed:<br/>
                     <source>ant -version</source><br/>
                     If you don't, download and unzip ant from&#x20;<a href="https://ant.apache.org/">ant.apache.org</a>,
-                    add ant/bin full path to the PATH environment variable.
+                    add the ant/bin full path to the PATH environment variable.
                 </li>
-                <li>Get DavMail source package from sourceforge and uncompress it:
+                <li>Clone DavMail source with git:
+                    <source>git clone https://github.com/mguessan/davmail.git</source>
+                    <br/>
+                    or get DavMail source package from sourceforge and uncompress it:
                     <source>tar xvzf davmail-src-*.tgz</source>
                     <br/>
-                    or checkout trunk:
+                    or checkout subversion trunk:
                     <source>svn co https://svn.code.sf.net/p/davmail/code/trunk</source>
                     <br/>
                     or get and uncompress tarball from
@@ -43,8 +46,8 @@
                 </li>
                 <li>Additional steps on Windows:
                     <ul>
-                        <li>Download and install NSIS 2 from
-                            <a href="https://sourceforge.net/projects/nsis/files/NSIS%202/2.51/">https://sourceforge.net/projects/nsis/files/NSIS%202/2.51/</a>
+                        <li>Download and install NSIS 3 from
+                            <a href="https://sourceforge.net/projects/nsis/files">https://sourceforge.net/projects/nsis/files</a>
                         </li>
                         <li>Make sure NSIS install path (C:\Program Files\NSIS) is available in system path</li>
                         <li>Then get KillProcess plugin from DavMail source directory
@@ -55,8 +58,8 @@
                         <li>Copy the processwork.dll library to NSIS plugin directory.</li>
                     </ul>
                 </li>
-                <li>Go into davmail directory root directory (which contains the build.xml file) and
-                    type:
+                <li>Go into the davmail root directory (which contains the build.xml file) and
+                    run:
                     <source>ant</source>
                 </li>
             </ul>
@@ -64,7 +67,7 @@
             </p>
         </section>
         <section name="Generating DavMail website content">
-            <p>The source for the DavMail website is in the same version control system as the Davmail source.
+            <p>The source for the DavMail website is in the same version control system as the DavMail source.
             </p>
             <p>To generate the HTML, have maven and the maven site plugin installed.
             </p>
@@ -73,7 +76,7 @@
                     <source>sudo apt install maven libmaven-site-plugin-java</source>
                 </li>
                 <li>on .rpm systems:
-                    <source>sudo yum install maven libmaven-site-plugin-java</source>
+                    <source>sudo dnf install maven libmaven-site-plugin-java</source>
                 </li>
                 <li>on other systems:
                     <i>Install maven and maven-site-plugin</i>
