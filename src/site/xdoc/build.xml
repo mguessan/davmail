@@ -66,6 +66,28 @@
             <p>Packages are then available under dist
             </p>
         </section>
+        <section name="Building a Flatpak package">
+            <p>The Flatpak manifest is maintained in a separate repository on Flathub,
+                see <a href="https://github.com/flathub/org.davmail.DavMail">github.com/flathub/org.davmail.DavMail</a>.
+                The published package is available from
+                <a href="https://flathub.org/en/apps/org.davmail.DavMail">Flathub</a>; the steps below are only
+                needed to build it locally.
+            </p>
+            <ul>
+                <li>Install flatpak and flatpak-builder, and add the Flathub remote:
+                    <source>flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo</source>
+                </li>
+                <li>Clone the manifest repository:
+                    <source>git clone https://github.com/flathub/org.davmail.DavMail.git</source>
+                </li>
+                <li>Go into the cloned directory and build, then install the result for the current user:
+                    <source>flatpak-builder --force-clean --user --install-deps-from=flathub --repo=repo --install builddir org.davmail.DavMail.yaml</source>
+                </li>
+                <li>Run the locally built package:
+                    <source>flatpak run org.davmail.DavMail</source>
+                </li>
+            </ul>
+        </section>
         <section name="Generating DavMail website content">
             <p>The source for the DavMail website is in the same version control system as the DavMail source.
             </p>
