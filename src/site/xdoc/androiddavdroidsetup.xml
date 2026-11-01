@@ -4,32 +4,33 @@
           xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
-        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Android DavDroid setup</title>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Android DAVx5 setup</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 
     <body>
 
-        <section name="Android DavDroid setup">
-            <p>Note: you can't install DavMail directly on an phone, you need a separate DavMail server,
+        <section name="Android DAVx5 setup">
+            <p>Note: you can't install DavMail directly on a phone, you need a separate DavMail server,
                 see&#x20;<a href="androidsetup.html">Android setup</a>.
             </p>
 
-            <subsection name="Install DavDroid">
+            <subsection name="Install DAVx5">
                 <p>The easiest way to sync your Exchange calendar and contacts on Android is to rely on
-                    <a href="https://www.davdroid.com">DavDroid</a>.
-                    DavDroid is available on <a href="https://play.google.com/store/apps/details?id=at.bitfire.davdroid">Google play store</a>
+                    <a href="https://www.davx5.com">DAVx5</a>.
+                    DAVx5 is available on <a href="https://play.google.com/store/apps/details?id=at.bitfire.davdroid">Google play store</a>
                     and <a href="https://f-droid.org/en/packages/at.bitfire.davdroid/">F-Droid</a>.</p>
-                <p>DavDroid team checked compatibility with DavMail, see:
-                    <a href="https://www.davdroid.com/tested-with/davmail-gateway/">https://www.davdroid.com/tested-with/davmail-gateway/</a></p>
+                <p>The DAVx5 team checked compatibility with DavMail, see:
+                    <a href="https://www.davx5.com/tested-with/davmail-gateway">https://www.davx5.com/tested-with/davmail-gateway</a></p>
             </subsection>
 
             <subsection name="Create a new account">
-                <p>Open DavDroid and add a new account. Choose Login with URL and user name.
+                <p>Open DAVx5 and add a new account. Choose Login with URL and user name.
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img width="320" src="images/android/davdroidaddaccount1.png" alt=""/>
                 </div>
+                <!-- TODO: verify this option label against current DAVx5 UI (older DavDroid wording "Groups are separate VCards"; newer DAVx5 uses a "contact group method" with a "per-contact categories" choice) and refresh screenshots below -->
                 <p>On next screen, enter a name and choose <em>Groups are separate VCards</em>.</p>
                 <div style="width: 100%;text-align: center">
                     <img width="320" src="images/android/davdroidaddaccount2.png" alt=""/>
