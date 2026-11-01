@@ -29,12 +29,12 @@
     <body>
 
         <section name="Kerberos">
-            <p>DavMail now includes Windows authentication support, aka Kerberos.
-                A new option is available in DavMail settings to rely on Kerberos token for Exchange authentication.
+            <p>DavMail supports Kerberos with Microsoft Active Directory authentication on both Windows and Linux.
+                This is controlled by the <code>davmail.enableKerberos</code> setting.
             </p>
 
             <subsection name="Windows workstation Kerberos setup">
-                <p>On windows, you have a valid Kerberos ticket on any workstation using your
+                <p>On Windows, you have a valid Kerberos ticket on any workstation using your
                     Active Directory logon. However, on recent Windows versions the TGT is not readable from Java.
                     The workaround is to change the following registry key:
                 </p>
@@ -44,12 +44,12 @@ REG_DWORD name: allowtgtsessionkey
 Value: 1
 ]]></source>
                 <p>More details at:
-                    <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/security/jgss/tutorials/Troubleshooting.html">JGSS Troubleshooting</a>
+                    <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/Troubleshooting.html">JGSS Troubleshooting</a>
                 </p>
             </subsection>
 
             <subsection name="Linux workstation Kerberos setup">
-                <p>Windows kerberos token is not available on a default Linux workstation setup. You will need to
+                <p>Windows Kerberos token is not available on a default Linux workstation setup. You will need to
                     configure /etc/krb5.conf with your Active Directory domain name. You may also need to provide a kdc
                     (Active Directory Domain controller) address:
                 </p>
@@ -64,10 +64,10 @@ Value: 1
     }
 ]]></source>
                 <p>Then create Kerberos ticket: <code>kinit <i>username</i></code>.</p>
-                <p>Check ticket with<code>klist</code></p>
-                <p>Additional note: on recent linux distribution by default credential cache is stored in OS keyring
+                <p>Check ticket with <code>klist</code></p>
+                <p>Additional note: on recent linux distributions by default credential cache is stored in OS keyring
                 with: <code>default_ccache_name = KEYRING:persistent:%{uid}</code>, making it invisible to Java. The
-                    workaround is to set KRB5CCNAME environment variable first:
+                    workaround is to set KRB5CCNAME environment variable first:</p>
 
                 <source><![CDATA[
 # set ticket cache path
@@ -85,15 +85,16 @@ klist
 # Check authentication, should succeed without prompting for credentials
 davmail -kerberos
 ]]></source>
-                </p>
             </subsection>
             
             <subsection name="DavMail configuration">
-                <p>In Kerberos mode, password provided by clients (IMAP, SMTP, POP, HTTP, LDAP) is ignored, thus you
-                must make sure external connections to DavMail are disabled.</p>
+                <p>In Kerberos mode, the password provided by clients (IMAP, SMTP, POP, HTTP, LDAP) is ignored, thus you
+                must make sure external connections to DavMail are disabled. Keep the <code>Allow remote connections</code>
+                option (<code>davmail.allowRemote</code>) unchecked, which is the default: DavMail then only accepts
+                connections from localhost and refuses any remote connection.</p>
                 <p>There is no way in current implementation to define a local password to secure client to DavMail
                 communication.</p>
-                <p>DavMail needs direct access to Kerberos ticket, which means Kerberos will not work with a
+                <p>DavMail needs direct access to the Kerberos ticket, which means Kerberos will not work with a
                     remote DavMail instance.</p>
             </subsection>
 
