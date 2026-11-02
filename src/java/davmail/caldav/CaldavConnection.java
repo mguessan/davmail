@@ -139,7 +139,10 @@ public class CaldavConnection extends AbstractConnection {
         if (!rawContextPath.isEmpty() && !rawContextPath.startsWith("/")) {
             rawContextPath = "/" + rawContextPath;
         }
-        contextPath = rawContextPath.replaceFirst("/+$", "");
+        while (rawContextPath.endsWith("/")) {
+            rawContextPath = rawContextPath.substring(0, rawContextPath.length() - 1);
+        }
+        contextPath = rawContextPath;
     }
 
     protected Map<String, String> parseHeaders() throws IOException {
