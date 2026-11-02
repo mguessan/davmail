@@ -38,6 +38,11 @@
                         <td>false</td>
                     </tr>
                     <tr>
+                        <td>Disable tray icon activity</td>
+                        <td>Do not switch icons when DavMail is actively processing requests</td>
+                        <td>false</td>
+                    </tr>
+                    <tr>
                         <td>Disable update check</td>
                         <td>Disable DavMail check for new version</td>
                         <td>false</td>
@@ -60,6 +65,37 @@
                         <td>No proxy for</td>
                         <td>comma separated list of hosts accessible without a proxy</td>
                         <td>davmail.sourceforge.net</td>
+                    </tr>
+                    <tr>
+                        <td>Enable proxy</td>
+                        <td>Use an HTTP proxy to connect to Exchange</td>
+                        <td>false</td>
+                    </tr>
+                    <tr>
+                        <td>Use system proxy settings</td>
+                        <td>Use the operating system proxy settings instead of the values below
+                        </td>
+                        <td>false</td>
+                    </tr>
+                    <tr>
+                        <td>Proxy server</td>
+                        <td>HTTP proxy host name</td>
+                        <td>proxy.company.com</td>
+                    </tr>
+                    <tr>
+                        <td>Proxy port</td>
+                        <td>HTTP proxy port</td>
+                        <td>3128</td>
+                    </tr>
+                    <tr>
+                        <td>Proxy user</td>
+                        <td>User name for an authenticating proxy, leave empty if not required</td>
+                        <td>proxyuser</td>
+                    </tr>
+                    <tr>
+                        <td>Proxy password</td>
+                        <td>Password for an authenticating proxy</td>
+                        <td>password</td>
                     </tr>
                     <tr>
                         <td>Allow remote connections</td>
@@ -97,7 +133,7 @@
                         <td>Manually accepted server certificate hash, contains the SHA1 hash of
                             a manually accepted certificate (invalid or self signed)
                         </td>
-                        <td>9F:CC:59:82:1F:C:CD:29:7C:70:F0:D8:37:B1:77:3F:48:84:AE:C4</td>
+                        <td>9F:CC:59:82:1F:0C:CD:29:7C:70:F0:D8:37:B1:77:3F:48:84:AE:C4</td>
                     </tr>
                     <tr>
                         <td>Key store type</td>
@@ -168,10 +204,10 @@
                     </tr>
                     <tr>
                         <td>Sent Keep Delay (POP)</td>
-                        <td>Number of days to keep sent messages in Exchange sent folder,
-                            only for POP service
+                        <td>Number of days to keep sent messages in the Exchange sent folder,
+                            only for POP service. Set to 0 to disable.
                         </td>
-                        <td>90</td>
+                        <td>0</td>
                     </tr>
                     <tr>
                         <td>POP mark read</td>
@@ -204,10 +240,24 @@
                     </tr>
                     <tr>
                         <td>Caldav alarm sound</td>
-                        <td>Convert Caldav alarm to sound alarm supported by iCal, e.g. Basso. Leave empty for no
+                        <td>Convert Caldav alarm to sound alarm supported by macOS Calendar, e.g. Basso. Leave empty for no
                             conversion
                         </td>
                         <td>Basso</td>
+                    </tr>
+                </table>
+            </subsection>
+            <subsection name="Carddav (Contacts)">
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Description</th>
+                        <th>Sample value</th>
+                    </tr>
+                    <tr>
+                        <td>Carddav read photo</td>
+                        <td>Enable or disable contact photo support</td>
+                        <td>true</td>
                     </tr>
                 </table>
             </subsection>
@@ -219,7 +269,7 @@
                         <th>Sample value</th>
                     </tr>
                     <tr>
-                        <td>IDLE folder monitor delay (IMAP):</td>
+                        <td>IDLE folder monitor delay (IMAP)</td>
                         <td>IMAP folder idle monitor delay in minutes, leave empty to disable IDLE support</td>
                         <td>1</td>
                     </tr>
@@ -227,6 +277,13 @@
                         <td>IMAP auto expunge</td>
                         <td>Delete messages immediately on the server over IMAP, i.e. expunge message on \Deleted flag set</td>
                         <td>true</td>
+                    </tr>
+                    <tr>
+                        <td>Use Exchange message size in IMAP</td>
+                        <td>Always reply to IMAP RFC822.SIZE requests with Exchange approximate message size for
+                            performance reasons
+                        </td>
+                        <td>false</td>
                     </tr>
                 </table>
             </subsection>
@@ -238,7 +295,7 @@
                         <th>Sample value</th>
                     </tr>
                     <tr>
-                        <td>SMTP save in sent:</td>
+                        <td>SMTP save in sent</td>
                         <td>Save messages sent over SMTP in server Sent folder</td>
                         <td>true</td>
                     </tr>
@@ -267,7 +324,7 @@
                     <tr>
                         <td>Log file Size</td>
                         <td>Maximum log file size, use Log4J syntax, see
-                            <a href="http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/RollingFileAppender.html#setMaxFileSize%28java.lang.String%29">
+                            <a href="https://reload4j.qos.ch/apidocs/org/apache/log4j/RollingFileAppender.html#setMaxFileSize-java.lang.String-">
                                 RollingFileAppender
                             </a>. Set to 0 to use an external rotation mechanism, e.g. logrotate.
                         </td>
