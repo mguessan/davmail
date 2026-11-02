@@ -28,12 +28,11 @@
                 <p>Open DAVx5 and add a new account. Choose Login with URL and user name.
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img width="320" src="images/android/davdroidaddaccount1.png" alt=""/>
+                    <img width="320" src="images/android/davx5addaccount1.png" alt=""/>
                 </div>
-                <!-- TODO: verify this option label against current DAVx5 UI (older DavDroid wording "Groups are separate VCards"; newer DAVx5 uses a "contact group method" with a "per-contact categories" choice) and refresh screenshots below -->
-                <p>On next screen, enter a name and choose <em>Groups are separate VCards</em>.</p>
+                <p>On next screen, enter the URL, username and password, then click <em>Connect</em>.</p>
                 <div style="width: 100%;text-align: center">
-                    <img width="320" src="images/android/davdroidaddaccount2.png" alt=""/>
+                    <img width="320" src="images/android/davx5addaccount2.png" alt=""/>
                 </div>
             </subsection>
         </section>
