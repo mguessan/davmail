@@ -15,9 +15,20 @@
                 separately.
             </p>
 
-            <p>You can follow the instructions below or just use winget.
+            <p>Easiest way to install and update DavMail on windows is using winget.
             </p>
-            <source>winget install davmail</source>
+            <source>winget install mguessan.davmail</source>
+            <p>More information at: <a href="https://winstall.app/apps/mguessan.davmail">Install or upgrade DavMail with winget</a>.
+            </p>
+
+            <p>When we publish the winget package, Microsoft scans and validates the installer, which helps avoid
+                issues with Windows Defender SmartScreen.
+            </p>
+
+            <p>When downloading the installer directly, if you are blocked by SmartScreen, you can explicitly unblock it
+                with the following PowerShell command:
+            </p>
+            <source>Unblock-File .\davmail-*-setup64.exe</source>
 
             <p>DavMail setup is straightforward, just follow the setup wizard.
             </p>
