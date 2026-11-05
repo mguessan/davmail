@@ -733,12 +733,41 @@ public class TestImap extends AbstractImapTestCase {
         messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
 
+        // COPYUID is omitted when another message reached Trash in the meantime
         writeLine(". UID COPY " + messageUid + " Trash");
-        assertEquals(". OK COPY completed", readFullAnswer("."));
+        assertTrue(readFullAnswer(".").matches("\\. OK (\\[COPYUID 1 " + messageUid + " \\d+] )?COPY completed"));
 
         writeLine(". COPY 1 Trash");
-        assertEquals(". OK COPY completed", readFullAnswer("."));
+        assertTrue(readFullAnswer(".").matches("\\. OK (\\[COPYUID 1 " + messageUid + " \\d+] )?COPY completed"));
 
+    }
+
+    public void testCopyMoveUid() throws IOException {
+        resetTestFolder();
+        appendMessage();
+        writeLine(". DELETE testfolder2");
+        readFullAnswer(".");
+        writeLine(". CREATE testfolder2");
+        assertEquals(". OK folder created", readFullAnswer("."));
+
+        // RFC 4315: COPYUID maps the source UID to the UID in the target folder
+        writeLine(". UID COPY " + messageUid + " testfolder2");
+        assertEquals(". OK [COPYUID 1 " + messageUid + " 1] COPY completed", readFullAnswer("."));
+
+        // RFC 6851: on MOVE, COPYUID comes in an untagged OK before the EXPUNGE
+        writeLine(". UID MOVE " + messageUid + " testfolder2");
+        assertEquals("* OK [COPYUID 1 " + messageUid + " 2] moved", readLine());
+        assertEquals("* 1 EXPUNGE", readLine());
+        assertEquals(". OK MOVE completed", readFullAnswer("."));
+
+        writeLine(". SELECT testfolder2");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID SEARCH ALL");
+        assertEquals("* SEARCH 1 2", readLine());
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+
+        writeLine(". DELETE testfolder2");
+        assertEquals(". OK folder deleted", readFullAnswer("."));
     }
 
     public void testCopyMessageMissingFolder() throws IOException {
