@@ -108,6 +108,22 @@ public class VObject {
         return "VALARM".equals(type);
     }
 
+    /**
+     * Get first VALARM inner object.
+     *
+     * @return alarm or null
+     */
+    public VObject getFirstVAlarm() {
+        if (vObjects != null) {
+            for (VObject vObject : vObjects) {
+                if (vObject.isVAlarm()) {
+                    return vObject;
+                }
+            }
+        }
+        return null;
+    }
+
 
     protected void handleLine(String line, BufferedReader reader) throws IOException {
         // skip empty lines
