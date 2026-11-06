@@ -238,8 +238,15 @@ public class GraphExchangeSession extends ExchangeSession {
                 displayName = graphObject.optString("summary");
                 subject = graphObject.optString("summary");
 
-                // prefer id as itemName, insert prefix
-                itemName = "TODO."+StringUtil.base64ToUrl(id) + ".EML";
+                JSONObject taskExtension = getDavMailTaskExtension(graphObject.jsonObject);
+                if (taskExtension != null && !taskExtension.optString("itemName").isEmpty()) {
+                    // task created over CalDAV: keep the client item name
+                    itemName = taskExtension.optString("itemName");
+                    urlcompnameToIdMap.put(itemName, "TODO." + id);
+                } else {
+                    // prefer id as itemName, insert prefix
+                    itemName = "TODO." + StringUtil.base64ToUrl(id) + ".EML";
+                }
             } else {
                 displayName = graphObject.optString("subject");
                 subject = graphObject.optString("subject");
@@ -279,8 +286,13 @@ public class GraphExchangeSession extends ExchangeSession {
                     localVCalendar.setTimezone(getVTimezone());
                     vTodo.setPropertyValue("LAST-MODIFIED", graphObject.optString("lastModifiedDateTime"));
                     vTodo.setPropertyValue("CREATED", graphObject.optString("createdDateTime"));
-                    // use item id as uid
-                    vTodo.setPropertyValue("UID", graphObject.optString("id"));
+                    // client UID kept in an open extension, else use item id as uid
+                    JSONObject taskExtension = getDavMailTaskExtension(graphObject.jsonObject);
+                    if (taskExtension != null && !taskExtension.optString("uid").isEmpty()) {
+                        vTodo.setPropertyValue("UID", taskExtension.optString("uid"));
+                    } else {
+                        vTodo.setPropertyValue("UID", graphObject.optString("id"));
+                    }
                     vTodo.setPropertyValue("SUMMARY", graphObject.optString("summary"));
 
                     vTodo.addProperty(convertBodyToVproperty(graphObject));
@@ -950,6 +962,16 @@ public class GraphExchangeSession extends ExchangeSession {
             GraphRequestBuilder graphRequestBuilder = new GraphRequestBuilder();
 
             if (currentItemId == null) {
+                // To Do tasks have no field for the client UID, keep it with the item name in an open extension,
+                // which unlike a linked resource is not shown in To Do clients
+                String uid = vCalendar.getFirstVeventPropertyValue("UID");
+                if (uid != null && !uid.isEmpty()) {
+                    jsonTask.put("extensions", new JSONArray().put(new JSONObject()
+                            .put("@odata.type", "microsoft.graph.openTypeExtension")
+                            .put("extensionName", DAVMAIL_TASK_EXTENSION)
+                            .put("uid", uid)
+                            .put("itemName", convertItemNameToEML(itemName))));
+                }
                 graphRequestBuilder
                         .setMethod(HttpPost.METHOD_NAME)
                         .setMailbox(folderId.mailbox)
@@ -4269,7 +4291,8 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setMailbox(folderId.mailbox)
                 .setObjectType("todo/lists")
                 .setObjectId(folderId.id)
-                .setChildType("tasks");
+                .setChildType("tasks")
+                .setExpand(DAVMAIL_TASK_EXTENSION_EXPAND);
 
         // filter completed based on caldavPastDelay setting
         int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
@@ -4473,6 +4496,10 @@ public class GraphExchangeSession extends ExchangeSession {
             }
         } else if (folderId.isCalendar() || folderId.isTask()) {
             JSONObject jsonResponse = getEventIfExists(folderId, itemName);
+            if (jsonResponse == null && isMainCalendar(folderPath)) {
+                // task created over CalDAV in the main calendar, item name cache is empty after a restart
+                jsonResponse = getEventIfExists(getFolderId(TASKS), itemName);
+            }
             if (jsonResponse != null) {
                 return new Event(folderPath, folderId, new GraphObject(jsonResponse));
             } else {
@@ -4533,6 +4560,12 @@ public class GraphExchangeSession extends ExchangeSession {
                             LOGGER.debug("Found event " + values.optJSONObject(0));
                         }
                         itemId = values.optJSONObject(0).optString("id");
+                    }
+                } else if (folderId.isTask()) {
+                    // item name cache is empty after a restart, look for the client item name in task extensions
+                    String taskId = getTaskIdByItemName(folderId, urlcompname);
+                    if (taskId != null) {
+                        return getTaskIfExists(folderId, taskId);
                     }
                 }
 
@@ -4614,6 +4647,68 @@ public class GraphExchangeSession extends ExchangeSession {
         return null;
     }
 
+    /**
+     * Open extension holding the client UID and item name of a task created over CalDAV.
+     */
+    protected static final String DAVMAIL_TASK_EXTENSION = "net.sourceforge.davmail.caldav";
+
+    /**
+     * Graph only returns open extensions on To Do tasks when expanded by id.
+     */
+    protected static final String DAVMAIL_TASK_EXTENSION_EXPAND = "extensions($filter=id eq '" + DAVMAIL_TASK_EXTENSION + "')";
+
+    /**
+     * Get the DavMail open extension of a To Do task.
+     *
+     * @param task task JSON, with extensions expanded
+     * @return extension or null
+     */
+    protected static JSONObject getDavMailTaskExtension(JSONObject task) {
+        JSONArray extensions = task.optJSONArray("extensions");
+        if (extensions != null) {
+            for (int i = 0; i < extensions.length(); i++) {
+                JSONObject extension = extensions.optJSONObject(i);
+                if (extension != null && DAVMAIL_TASK_EXTENSION.equals(extension.optString("extensionName"))) {
+                    return extension;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find a task created over CalDAV by its client item name, kept in the DavMail open extension.
+     *
+     * @param folderId task folder id
+     * @param urlcompname client item name
+     * @return task id or null
+     * @throws IOException on error
+     */
+    private String getTaskIdByItemName(FolderId folderId, String urlcompname) throws IOException {
+        GraphIterator graphIterator = executeSearchRequest(new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setMailbox(folderId.mailbox)
+                .setObjectType("todo/lists")
+                .setObjectId(folderId.id)
+                .setChildType("tasks")
+                .setSelect("id")
+                .setExpand(DAVMAIL_TASK_EXTENSION_EXPAND));
+        try {
+            while (graphIterator.hasNext()) {
+                JSONObject task = graphIterator.next();
+                JSONObject taskExtension = getDavMailTaskExtension(task);
+                if (taskExtension != null && urlcompname.equals(taskExtension.optString("itemName"))) {
+                    String taskId = task.getString("id");
+                    urlcompnameToIdMap.put(urlcompname, "TODO." + taskId);
+                    return taskId;
+                }
+            }
+        } catch (JSONException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+        return null;
+    }
+
     private JSONObject getTaskIfExists(FolderId folderId, String itemId) throws IOException {
         // tasks not supported on shared folders, ignore
         if (folderId.mailbox == null) {
@@ -4627,6 +4722,7 @@ public class GraphExchangeSession extends ExchangeSession {
                                 .setObjectId(taskFolderId.id)
                                 .setChildType("tasks")
                                 .setChildId(itemId)
+                                .setExpand(DAVMAIL_TASK_EXTENSION_EXPAND)
                         //.setSelectFields(TODO_PROPERTIES) // bug on title breaks request
                 ).put("objecttype", FolderId.IPF_TASK); // mark object as task item
             } catch (JSONException jsonException) {
