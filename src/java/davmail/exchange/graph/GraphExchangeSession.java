@@ -3030,7 +3030,7 @@ public class GraphExchangeSession extends ExchangeSession {
                 public int read(byte[] buffer, int offset, int length) throws IOException {
                     int count = super.read(buffer, offset, length);
                     totalCount += count;
-                    if (totalCount - lastLogCount > 1024 * 128) {
+                    if (totalCount - lastLogCount > 1024 * 1024) {
                         DavGatewayTray.debug(new BundleMessage("LOG_DOWNLOAD_PROGRESS", String.valueOf(totalCount / 1024), message.getPermanentId()));
                         DavGatewayTray.switchIcon();
                         lastLogCount = totalCount;
