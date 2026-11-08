@@ -958,9 +958,7 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
                 } else if ("RFC822.SIZE".equals(param)) {
                     int size;
-                    if ((parameters.contains("BODY.PEEK[HEADER.FIELDS (")
-                            // exclude mutt header request
-                            && !parameters.contains("X-LABEL"))
+                    if (isHeaderOnlyRequest(parameters)
                             || parameters.equals("RFC822.SIZE RFC822.HEADER FLAGS") // icedove
                             || Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize")) {   // Send approximate size
                         size = message.size;
@@ -1036,16 +1034,10 @@ public class ImapConnection extends AbstractConnection {
                             baos.write(13);
                             baos.write(10);
                         } else if (requestedHeaders == null) {
-                            // load message and write all headers
-                            partOutputStream = new PartOutputStream(baos, true, false, startIndex, maxSize);
-                            partInputStream = messageWrapper.getRawInputStream();
+                            // All headers requested (RFC822.HEADER or BODY[HEADER]):
+                            writeHeaders(messageWrapper.getMatchingHeaderLines(null), baos);
                         } else {
-                            Enumeration<?> headerEnumeration = messageWrapper.getMatchingHeaderLines(requestedHeaders);
-                            while (headerEnumeration.hasMoreElements()) {
-                                baos.write(((String) headerEnumeration.nextElement()).getBytes(StandardCharsets.UTF_8));
-                                baos.write(13);
-                                baos.write(10);
-                            }
+                            writeHeaders(messageWrapper.getMatchingHeaderLines(requestedHeaders), baos);
                         }
                     } else if (partIndexString != null) {
                         MimePart bodyPart = messageWrapper.getMimeMessage();
@@ -1124,6 +1116,14 @@ public class ImapConnection extends AbstractConnection {
         message.dropMimeMessage();
     }
 
+    private void writeHeaders(Enumeration<?> headerEnumeration, ByteArrayOutputStream baos) throws IOException {
+        while (headerEnumeration.hasMoreElements()) {
+            baos.write(((String) headerEnumeration.nextElement()).getBytes(StandardCharsets.UTF_8));
+            baos.write(13);
+            baos.write(10);
+        }
+    }
+
     /**
      * Handle flags macro in fetch requests
      * @param parameters input fetch flags
@@ -1139,6 +1139,27 @@ public class ImapConnection extends AbstractConnection {
         } else {
             return parameters;
         }
+    }
+
+    /**
+     * Check whether the fetch request only asks for message headers.
+     * If this is the case we can return approximate message to avoid downloading full message content.
+     *
+     * @param parameters fetch parameters
+     * @return true if the request targets message headers only
+     */
+    protected boolean isHeaderOnlyRequest(String parameters) {
+        if (parameters == null) {
+            return false;
+        }
+        // exclude mutt header request which also fetches the full message
+        if (parameters.contains("X-LABEL")) {
+            return false;
+        }
+        return parameters.contains("BODY.PEEK[HEADER.FIELDS (")
+                || parameters.contains("BODY[HEADER.FIELDS (")
+                || parameters.contains("BODY.PEEK[HEADER]")
+                || parameters.contains("BODY[HEADER]");
     }
 
     protected String[] getRequestedHeaders(String partIndexString) {
