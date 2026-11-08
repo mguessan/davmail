@@ -1118,7 +1118,8 @@ public class ImapConnection extends AbstractConnection {
 
     private void writeHeaders(Enumeration<?> headerEnumeration, ByteArrayOutputStream baos) throws IOException {
         while (headerEnumeration.hasMoreElements()) {
-            baos.write(((String) headerEnumeration.nextElement()).getBytes(StandardCharsets.UTF_8));
+            // Preserve the original header bytes stored by JavaMail as ISO-8859-1 characters.
+            baos.write(((String) headerEnumeration.nextElement()).getBytes(StandardCharsets.ISO_8859_1));
             baos.write(13);
             baos.write(10);
         }
