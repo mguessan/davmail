@@ -5073,6 +5073,36 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setObjectType("mailboxSettings"));
     }
 
+    /**
+     * Retrieve the Windows timezone aliases supported by the server via the Graph
+     * {@code /me/outlook/supportedTimeZones} endpoint. The returned alias is the Windows
+     * TimeZoneId (e.g. "Manitoba Standard Time"), i.e. the key used in DavMail timezone tables.
+     *
+     * @return list of supported Windows timezone aliases
+     * @throws IOException on error
+     */
+    public List<String> getSupportedTimeZones() throws IOException {
+        List<String> aliases = new ArrayList<>();
+        JSONObject response = executeJsonRequest(new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setObjectType("outlook/supportedTimeZones"));
+        if (response != null) {
+            JSONArray values = response.optJSONArray("value");
+            if (values != null) {
+                for (int i = 0; i < values.length(); i++) {
+                    JSONObject timeZone = values.optJSONObject(i);
+                    if (timeZone != null) {
+                        String alias = timeZone.optString("alias", null);
+                        if (alias != null) {
+                            aliases.add(alias);
+                        }
+                    }
+                }
+            }
+        }
+        return aliases;
+    }
+
     protected class GraphIterator {
 
         private int count = 0;
