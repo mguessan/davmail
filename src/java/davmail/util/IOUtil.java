@@ -80,6 +80,9 @@ public final class IOUtil {
      * @return base64  value
      */
     public static String encodeBase64AsString(String value) {
+        if (value == null) {
+            return null;
+        }
         return new String(Base64.encodeBase64(value.getBytes(StandardCharsets.UTF_8)), StandardCharsets.US_ASCII);
     }
 

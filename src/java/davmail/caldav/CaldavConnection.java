@@ -666,8 +666,12 @@ public class CaldavConnection extends AbstractConnection {
         if (!session.isSharedFolder(folderPath)) {
             try {
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
-                ctag = IOUtil.encodeBase64AsString(folder.ctag);
-                etag = IOUtil.encodeBase64AsString(folder.etag);
+                if (folder.ctag != null) {
+                    ctag = IOUtil.encodeBase64AsString(folder.ctag);
+                }
+                if (folder.etag != null) {
+                    etag = IOUtil.encodeBase64AsString(folder.etag);
+                }
             } catch (HttpResponseException e) {
                 // unauthorized access, probably an inbox on shared calendar
                 DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", folderPath, e.getMessage()));
