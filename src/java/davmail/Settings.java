@@ -247,6 +247,7 @@ public final class Settings {
         SETTINGS_PROPERTIES.put("davmail.disableGuiNotifications", Boolean.FALSE.toString());
         SETTINGS_PROPERTIES.put("davmail.disableTrayActivitySwitch", Boolean.FALSE.toString());
         SETTINGS_PROPERTIES.put("davmail.imapAutoExpunge", Boolean.TRUE.toString());
+        SETTINGS_PROPERTIES.put("davmail.imapEnableCopyUid", Boolean.TRUE.toString());
         SETTINGS_PROPERTIES.put("davmail.imapAlwaysApproxMsgSize", Boolean.FALSE.toString());
         SETTINGS_PROPERTIES.put("davmail.popMarkReadOnRetr", Boolean.FALSE.toString());
         SETTINGS_PROPERTIES.put("davmail.smtpSaveInSent", Boolean.TRUE.toString());
