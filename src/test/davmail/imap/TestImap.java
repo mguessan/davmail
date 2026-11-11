@@ -578,6 +578,29 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK FETCH completed", readFullAnswer("."));
     }
 
+    /**
+     * Fetch all headers with BODY[HEADER] (no field list), as kmail2/akonadi does on refresh.
+     * See https://github.com/mguessan/davmail/issues/581: DavMail must not download the full
+     * message body to satisfy a header only request.
+     */
+    public void testFetchBodyHeader() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID FETCH 1:* (UID RFC822.SIZE FLAGS BODY.PEEK[HEADER])");
+        StringBuilder response = new StringBuilder();
+        String line = socketReader.readLine();
+        while (!line.startsWith(".")) {
+            response.append(line).append("\r\n");
+            line = socketReader.readLine();
+        }
+        assertEquals(". OK UID FETCH completed", line);
+        // response must contain the requested header section with the message subject
+        String responseContent = response.toString();
+        assertTrue("response should contain BODY[HEADER] section", responseContent.contains("BODY[HEADER]"));
+        assertTrue("response should contain the Subject header", responseContent.contains("Subject: Test subject"));
+    }
+
     public void testInvalidMime() throws MessagingException, IOException {
         resetTestFolder();
 
@@ -734,11 +757,51 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
 
         writeLine(". UID COPY " + messageUid + " Trash");
-        assertEquals(". OK COPY completed", readFullAnswer("."));
+        // response may carry an optional [COPYUID ...] response code (RFC 6851)
+        assertTrue(readFullAnswer(".").matches("\\. OK (\\[COPYUID [0-9]+ [0-9,:]+ [0-9,:]+] )?COPY completed"));
 
         writeLine(". COPY 1 Trash");
-        assertEquals(". OK COPY completed", readFullAnswer("."));
+        assertTrue(readFullAnswer(".").matches("\\. OK (\\[COPYUID [0-9]+ [0-9,:]+ [0-9,:]+] )?COPY completed"));
 
+    }
+
+    public void testCopyMoveUid() throws IOException {
+        resetTestFolder();
+        // create a dedicated target folder
+        writeLine(". DELETE testcopyuidtarget");
+        readFullAnswer(".");
+        writeLine(". CREATE testcopyuidtarget");
+        readFullAnswer(".");
+
+        // append 3 messages to source folder
+        appendMessage();
+        appendMessage();
+        appendMessage();
+
+        // collect source UIDs
+        writeLine(". UID FETCH 1:* (FLAGS)");
+        String line = readLine();
+        java.util.List<String> sourceUids = new java.util.ArrayList<String>();
+        while (!line.startsWith(".")) {
+            int uidIndex = line.indexOf("UID ");
+            if (uidIndex >= 0) {
+                uidIndex += 4;
+                sourceUids.add(line.substring(uidIndex, line.indexOf(' ', uidIndex)));
+            }
+            line = readLine();
+        }
+        assertEquals(3, sourceUids.size());
+
+        // COPY all 3 to target, expect COPYUID with 3 source and 3 target uids
+        writeLine(". UID COPY " + sourceUids.get(0) + ":" + sourceUids.get(2) + " testcopyuidtarget");
+        String copyResponse = readFullAnswer(".");
+        // must contain a COPYUID response code
+        assertTrue("expected COPYUID in: " + copyResponse,
+                copyResponse.matches("\\. OK \\[COPYUID [0-9]+ [0-9,:]+ [0-9,:]+] COPY completed"));
+
+        // clean up
+        writeLine(". DELETE testcopyuidtarget");
+        readFullAnswer(".");
     }
 
     public void testCopyMessageMissingFolder() throws IOException {

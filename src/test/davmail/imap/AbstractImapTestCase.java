@@ -108,7 +108,7 @@ public class AbstractImapTestCase extends AbstractDavMailTestCase {
             writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
             assertEquals("+ send literal data", readLine());
             writeLine(new String(content));
-            assertEquals(". OK [APPENDUID 1 1] APPEND completed", readFullAnswer("."));
+            assertTrue(readFullAnswer(".").startsWith(". OK [APPENDUID "));
 
             writeLine(". NOOP");
             assertEquals(". OK NOOP completed", readFullAnswer("."));

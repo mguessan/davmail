@@ -61,6 +61,7 @@ public class TestImapFolders extends AbstractImapTestCase {
     }
 
     public void testListWildcard() throws IOException {
+        resetTestFolder();
         writeLine(". LIST \"\" \"testfo%\"");
         assertEquals("* LIST (\\HasNoChildren) \"/\" \"testfolder\"", readLine());
         assertEquals(". OK LIST completed", readFullAnswer("."));
@@ -83,5 +84,10 @@ public class TestImapFolders extends AbstractImapTestCase {
 
         writeLine(". LIST (SUBSCRIBED SPECIAL-USE) \"\" \"*\"");
         assertEquals(". OK LIST completed", readFullAnswer("."));
+    }
+
+    public void testSelectArchive() throws IOException {
+        writeLine(". SELECT archive");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
     }
 }
