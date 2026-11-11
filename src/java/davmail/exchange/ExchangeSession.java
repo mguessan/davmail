@@ -296,6 +296,7 @@ public abstract class ExchangeSession {
     }
 
     protected static final Set<String> IMAP_MESSAGE_ATTRIBUTES = new HashSet<>();
+    protected static final Set<String> IMAPUID_MESSAGE_ATTRIBUTES = new HashSet<>();
 
     static {
         IMAP_MESSAGE_ATTRIBUTES.add("permanenturl");
@@ -314,6 +315,9 @@ public abstract class ExchangeSession {
         // OSX IMAP requests content-class
         IMAP_MESSAGE_ATTRIBUTES.add("contentclass");
         IMAP_MESSAGE_ATTRIBUTES.add("keywords");
+
+        IMAPUID_MESSAGE_ATTRIBUTES.add("uid");
+        IMAPUID_MESSAGE_ATTRIBUTES.add("imapUid");
     }
 
     protected static final Set<String> UID_MESSAGE_ATTRIBUTES = new HashSet<>();
@@ -1034,12 +1038,14 @@ public abstract class ExchangeSession {
      * @param targetFolder target folder
      * @throws IOException on error
      */
-    public abstract void copyMessage(Message message, String targetFolder) throws IOException;
+    public abstract Message copyMessage(Message message, String targetFolder) throws IOException;
 
-    public void copyMessages(List<Message> messages, String targetFolder) throws IOException {
+    public List<Message> copyMessages(List<Message> messages, String targetFolder) throws IOException {
+        List<Message> createdMessages = new ArrayList<>();
         for (Message message : messages) {
-            copyMessage(message, targetFolder);
+            createdMessages.add(copyMessage(message, targetFolder));
         }
+        return createdMessages;
     }
 
 
@@ -1050,12 +1056,14 @@ public abstract class ExchangeSession {
      * @param targetFolder target folder
      * @throws IOException on error
      */
-    public abstract void moveMessage(Message message, String targetFolder) throws IOException;
+    public abstract Message moveMessage(Message message, String targetFolder) throws IOException;
 
-    public void moveMessages(List<Message> messages, String targetFolder) throws IOException {
+    public List<Message> moveMessages(List<Message> messages, String targetFolder) throws IOException {
+        List<Message> createdMessages = new ArrayList<>();
         for (Message message : messages) {
-            moveMessage(message, targetFolder);
+            createdMessages.add(moveMessage(message, targetFolder));
         }
+        return createdMessages;
     }
 
     /**
