@@ -22,6 +22,7 @@ import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpTokenExpiredException;
 import davmail.exception.WebdavNotAvailableException;
 import davmail.exchange.auth.ExchangeAuthenticator;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
@@ -254,6 +255,10 @@ public final class ExchangeSessionFactory {
             errorSent = false;
         } catch (DavMailException | InterruptedIOException | IllegalStateException | NullPointerException exc) {
             // not a network problem: no network down handling for a cancelled wait
+            throw exc;
+        } catch (HttpTokenExpiredException exc) {
+            // invalid/expired stored token is an authentication failure, not a network problem;
+            // the token has already been cleared, so the next attempt will re-authenticate
             throw exc;
         } catch (Exception exc) {
             handleNetworkDown(exc);
