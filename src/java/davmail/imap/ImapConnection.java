@@ -390,13 +390,22 @@ public class ImapConnection extends AbstractConnection {
                                                     while (uidRangeIterator.hasNext()) {
                                                         messages.add(uidRangeIterator.next());
                                                     }
+                                                    String copyUidResponse;
+                                                    List<ExchangeSession.Message> createdMessages;
                                                     if ("copy".equalsIgnoreCase(subcommand)) {
-                                                        session.copyMessages(messages, targetName);
+                                                        createdMessages = session.copyMessages(messages, targetName);
+                                                        copyUidResponse = buildCopyUidResponse(messages, createdMessages);
                                                     } else {
-                                                        session.moveMessages(messages, targetName);
+                                                        createdMessages = session.moveMessages(messages, targetName);
+                                                        copyUidResponse = buildCopyUidResponse(messages, createdMessages);
+                                                        // RFC 6851 4.3: untagged OK COPYUID before EXPUNGE responses
+                                                        if (copyUidResponse != null) {
+                                                            sendClient("* OK " + copyUidResponse + "completed");
+                                                            copyUidResponse = null;
+                                                        }
                                                         refreshCurrentFolder();
                                                     }
-                                                    sendClient(commandId + " OK " + subcommand + " completed");
+                                                    sendClient(commandId + " OK " + (copyUidResponse != null ? copyUidResponse : "") + subcommand + " completed");
                                                 }
                                             } catch (HttpNotFoundException e) {
                                                 sendClient(commandId + " NO [TRYCREATE] " + e.getMessage());
@@ -488,19 +497,28 @@ public class ImapConnection extends AbstractConnection {
                                         if (!rangeIterator.hasNext()) {
                                             sendClient(commandId + " NO " + "No message found");
                                         } else {
+                                            ArrayList<ExchangeSession.Message> messages = new ArrayList<>();
+                                            ArrayList<ExchangeSession.Message> createdMessages = new ArrayList<>();
                                             while (rangeIterator.hasNext()) {
                                                 DavGatewayTray.switchIcon();
                                                 ExchangeSession.Message message = rangeIterator.next();
+                                                messages.add(message);
                                                 if ("copy".equalsIgnoreCase(command)) {
-                                                    session.copyMessage(message, targetName);
+                                                    createdMessages.add(session.copyMessage(message, targetName));
                                                 } else {
-                                                    session.moveMessage(message, targetName);
+                                                    createdMessages.add(session.moveMessage(message, targetName));
                                                 }
                                             }
+                                            String copyUidResponse = buildCopyUidResponse(messages, createdMessages);
                                             if ("move".equalsIgnoreCase(command)) {
+                                                // RFC 6851 4.3: untagged OK COPYUID before EXPUNGE responses
+                                                if (copyUidResponse != null) {
+                                                    sendClient("* OK " + copyUidResponse + "completed");
+                                                    copyUidResponse = null;
+                                                }
                                                 refreshCurrentFolder();
                                             }
-                                            sendClient(commandId + " OK " + command + " completed");
+                                            sendClient(commandId + " OK " + (copyUidResponse != null ? copyUidResponse : "") + command + " completed");
                                         }
                                     } catch (HttpResponseException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
@@ -852,6 +870,57 @@ public class ImapConnection extends AbstractConnection {
         if (session.refreshFolder(currentFolder)) {
             handleRefresh(previousImapFlagMap, currentFolder.getImapFlagMap());
         }
+    }
+
+    /**
+     * Build an RFC 6851 COPYUID response code for a set of copied or moved messages.
+     * <p>
+     * Source uids are the IMAP uids known to the client in the current folder. Target uids
+     * come from the messages returned by the COPY/MOVE itself: copyMessage/moveMessage resolve
+     * the created item after the operation, so each created message carries the authoritative
+     * target IMAP uid. Pairing source[i] to createdMessages[i] gives an exact, per-message
+     * mapping in copy order.
+     * <p>
+     * If the created messages cannot be paired with the source messages (size mismatch) or any
+     * created uid is unavailable (0), null is returned and COPYUID is omitted rather than guessed
+     * (COPYUID is optional per RFC 6851).
+     *
+     * @param messages        copied or moved source messages, in copy order
+     * @param createdMessages messages created in the target folder, same order as messages
+     * @return COPYUID response code (e.g. "[COPYUID 1 2,3,4 7,8,9] ") or null
+     */
+    private String buildCopyUidResponse(List<ExchangeSession.Message> messages,
+                                        List<ExchangeSession.Message> createdMessages) {
+        if (!Settings.getBooleanProperty("davmail.imapEnableCopyUid", true)) {
+            // COPYUID response disabled by configuration
+            return null;
+        }
+        if (messages.isEmpty() || createdMessages == null || createdMessages.size() != messages.size()) {
+            // cannot pair source and target, omit COPYUID
+            LOGGER.debug("COPYUID omitted: " + messages.size() + " messages copied, "
+                    + (createdMessages == null ? 0 : createdMessages.size()) + " created messages returned");
+            return null;
+        }
+        StringBuilder sourceUids = new StringBuilder();
+        StringBuilder targetUidSet = new StringBuilder();
+        for (int i = 0; i < messages.size(); i++) {
+            ExchangeSession.Message createdMessage = createdMessages.get(i);
+            // created message may be null (e.g. deprecated Dav backend does not resolve it)
+            long createdUid = createdMessage == null ? 0 : createdMessage.getImapUid();
+            if (createdUid == 0) {
+                // created uid unavailable, omit COPYUID
+                LOGGER.debug("COPYUID omitted: created message uid unavailable");
+                return null;
+            }
+            if (i > 0) {
+                sourceUids.append(',');
+                targetUidSet.append(',');
+            }
+            sourceUids.append(messages.get(i).getImapUid());
+            targetUidSet.append(createdUid);
+        }
+        // uidvalidity is hardcoded to 1 (see SELECT UIDVALIDITY response)
+        return "[COPYUID 1 " + sourceUids + " " + targetUidSet + "] ";
     }
 
     static private class KeepAlive {

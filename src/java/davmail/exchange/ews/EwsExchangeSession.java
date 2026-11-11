@@ -1278,16 +1278,17 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+    public ExchangeSession.Message moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         MoveItemMethod moveItemMethod = new MoveItemMethod(((EwsExchangeSession.Message) message).itemId, getFolderId(targetFolder));
         executeMethod(moveItemMethod);
+        return getImapUidMessage(moveItemMethod);
     }
 
     /**
      * @inheritDoc
      */
     @Override
-    public void moveMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
+    public List<ExchangeSession.Message> moveMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
         ArrayList<ItemId> itemIds = new ArrayList<>();
         for (ExchangeSession.Message message : messages) {
             itemIds.add(((EwsExchangeSession.Message) message).itemId);
@@ -1295,22 +1296,24 @@ public class EwsExchangeSession extends ExchangeSession {
 
         MoveItemMethod moveItemMethod = new MoveItemMethod(itemIds, getFolderId(targetFolder));
         executeMethod(moveItemMethod);
+        return getImapUidMessages(moveItemMethod);
     }
 
     /**
      * @inheritDoc
      */
     @Override
-    public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+    public ExchangeSession.Message copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         CopyItemMethod copyItemMethod = new CopyItemMethod(((EwsExchangeSession.Message) message).itemId, getFolderId(targetFolder));
         executeMethod(copyItemMethod);
+        return getImapUidMessage(copyItemMethod);
     }
 
     /**
      * @inheritDoc
      */
     @Override
-    public void copyMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
+    public List<ExchangeSession.Message> copyMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
         ArrayList<ItemId> itemIds = new ArrayList<>();
         for (ExchangeSession.Message message : messages) {
             itemIds.add(((EwsExchangeSession.Message) message).itemId);
@@ -1318,6 +1321,58 @@ public class EwsExchangeSession extends ExchangeSession {
 
         CopyItemMethod copyItemMethod = new CopyItemMethod(itemIds, getFolderId(targetFolder));
         executeMethod(copyItemMethod);
+        return getImapUidMessages(copyItemMethod);
+    }
+
+    /**
+     * Resolve the single message created by a COPY/MOVE to its target IMAP uid.
+     *
+     * @param method executed CopyItem/MoveItem method
+     * @return created message with imapUid populated, or null if the new item id is unavailable
+     * @throws IOException on error
+     */
+    private ExchangeSession.Message getImapUidMessage(EWSMethod method) throws IOException {
+        EWSMethod.Item responseItem = method.getResponseItem();
+        if (responseItem == null) {
+            return null;
+        }
+        return getImapUidMessage(new ItemId(responseItem));
+    }
+
+    /**
+     * Resolve the messages created by a COPY/MOVE to their target IMAP uids, in copy order.
+     *
+     * @param method executed CopyItem/MoveItem method
+     * @return created messages with imapUid populated, same order as the source messages
+     * @throws IOException on error
+     */
+    private List<ExchangeSession.Message> getImapUidMessages(EWSMethod method) throws IOException {
+        ArrayList<ExchangeSession.Message> createdMessages = new ArrayList<>();
+        for (EWSMethod.Item responseItem : method.getResponseItems()) {
+            createdMessages.add(getImapUidMessage(new ItemId(responseItem)));
+        }
+        return createdMessages;
+    }
+
+    /**
+     * Fetch a message by item id, requesting IMAP only uid.
+     *
+     * @param itemId target item id
+     * @return message with IMAP uid
+     * @throws IOException on error
+     */
+    private ExchangeSession.Message getImapUidMessage(ItemId itemId) throws IOException {
+        // save one request if copyuid is disabled
+        if (!Settings.getBooleanProperty("davmail.imapEnableCopyUid", true)) {
+            return null;
+        }
+
+        GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
+        for (String attribute : IMAPUID_MESSAGE_ATTRIBUTES) {
+            getItemMethod.addAdditionalProperty(Field.get(attribute));
+        }
+        executeMethod(getItemMethod);
+        return buildMessage(getItemMethod.getResponseItem());
     }
 
     /**

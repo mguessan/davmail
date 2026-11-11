@@ -86,12 +86,10 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.NoRouteToHostException;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLStreamHandler;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -3034,13 +3032,14 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+    public Message moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         try {
             moveMessage(message.permanentUrl, targetFolder);
         } catch (HttpNotFoundException e) {
             LOGGER.debug("404 not found at permanenturl: " + message.permanentUrl + ", retry with messageurl");
             moveMessage(message.messageUrl, targetFolder);
         }
+        return null;
     }
 
     protected void moveMessage(String sourceUrl, String targetFolder) throws IOException {
@@ -3065,13 +3064,14 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+    public ExchangeSession.Message copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         try {
             copyMessage(message.permanentUrl, targetFolder);
         } catch (HttpNotFoundException e) {
             LOGGER.debug("404 not found at permanenturl: " + message.permanentUrl + ", retry with messageurl");
             copyMessage(message.messageUrl, targetFolder);
         }
+        return null;
     }
 
     protected void copyMessage(String sourceUrl, String targetFolder) throws IOException {

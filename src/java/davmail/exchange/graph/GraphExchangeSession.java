@@ -2139,6 +2139,7 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     protected static final HashSet<GraphField> IMAP_MESSAGE_ATTRIBUTES = new HashSet<>();
+    protected static final HashSet<GraphField> IMAPUID_MESSAGE_ATTRIBUTES = new HashSet<>();
 
     static {
         // TODO: review, permanenturl is no longer relevant
@@ -2164,6 +2165,9 @@ public class GraphExchangeSession extends ExchangeSession {
         // OSX IMAP requests content-class
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("contentclass"));
         IMAP_MESSAGE_ATTRIBUTES.add(GraphField.get("keywords"));
+
+        IMAPUID_MESSAGE_ATTRIBUTES.add(GraphField.get("uid"));
+        IMAPUID_MESSAGE_ATTRIBUTES.add(GraphField.get("imapUid"));
     }
 
     protected static final HashSet<GraphField> IMAP_MESSAGE_DELTA_ATTRIBUTES = new HashSet<>();
@@ -2735,6 +2739,20 @@ public class GraphExchangeSession extends ExchangeSession {
                 .setMailbox(folderId.mailbox)
                 .setObjectId(messageId)
                 .setSelectFields(IMAP_MESSAGE_ATTRIBUTES)));
+    }
+
+    protected Message getImapUidMessage(FolderId folderId, String messageId) throws IOException {
+        // save one request if copyuid is disabled
+        if (!Settings.getBooleanProperty("davmail.imapEnableCopyUid", true)) {
+            return null;
+        }
+
+        return buildMessage(folderId, executeJsonRequest(new GraphRequestBuilder()
+                .setMethod(HttpGet.METHOD_NAME)
+                .setObjectType("messages")
+                .setMailbox(folderId.mailbox)
+                .setObjectId(messageId)
+                .setSelectFields(IMAPUID_MESSAGE_ATTRIBUTES)));
     }
 
     private void applyMessageProperties(GraphObject graphResponse, Map<String, String> properties) throws JSONException {
@@ -4010,16 +4028,18 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+    public Message copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         try {
             FolderId targetFolderId = getFolderId(targetFolder);
 
-            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
+            JSONObject response = executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
                     .setMailbox(((Message) message).folderId.mailbox)
                     .setObjectType("messages")
                     .setObjectId(((Message) message).id)
                     .setChildType("copy")
                     .setJsonBody(new JSONObject().put("destinationId", targetFolderId.id)));
+
+            return getImapUidMessage(targetFolderId, response.getString("id"));
 
         } catch (JSONException e) {
             throw new IOException(e);
@@ -4027,16 +4047,17 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+    public Message moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         try {
             FolderId targetFolderId = getFolderId(targetFolder);
 
-            executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
+            JSONObject response = executeJsonRequest(new GraphRequestBuilder().setMethod(HttpPost.METHOD_NAME)
                     .setMailbox(((Message) message).folderId.mailbox)
                     .setObjectType("messages")
                     .setObjectId(((Message) message).id)
                     .setChildType("move")
                     .setJsonBody(new JSONObject().put("destinationId", targetFolderId.id)));
+            return getImapUidMessage(targetFolderId, response.getString("id"));
         } catch (JSONException e) {
             throw new IOException(e);
         }
