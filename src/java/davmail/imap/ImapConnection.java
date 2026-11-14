@@ -1109,40 +1109,25 @@ public class ImapConnection extends AbstractConnection {
                             writeHeaders(messageWrapper.getMatchingHeaderLines(requestedHeaders), baos);
                         }
                     } else if (partIndexString != null) {
-                        MimePart bodyPart = messageWrapper.getMimeMessage();
                         String[] partIndexStrings = partIndexString.split("\\.");
-                        for (String subPartIndexString : partIndexStrings) {
-                            // ignore MIME subpart index, will return full part
-                            if ("MIME".equals(subPartIndexString)) {
-                                break;
-                            }
-                            int subPartIndex;
-                            // try to parse part index
-                            try {
-                                subPartIndex = Integer.parseInt(subPartIndexString);
-                            } catch (NumberFormatException e) {
-                                throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
-                            }
+                        // A trailing .MIME suffix requests the MIME header fields of the
+                        // selected part instead of its body (RFC 3501 6.4.5).
+                        boolean isMimeHeaderRequest = partIndexStrings.length > 0
+                                && "MIME".equals(partIndexStrings[partIndexStrings.length - 1]);
+                        MimePart bodyPart = getMimeSectionPart(messageWrapper.getMimeMessage(), partIndexStrings, isMimeHeaderRequest, param);
 
-                            Object mimeBody = bodyPart.getContent();
-                            if (mimeBody instanceof MimeMultipart) {
-                                MimeMultipart multiPart = (MimeMultipart) mimeBody;
-                                if (subPartIndex - 1 < multiPart.getCount()) {
-                                    bodyPart = (MimePart) multiPart.getBodyPart(subPartIndex - 1);
-                                } else {
-                                    throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
-                                }
-                            } else if (subPartIndex != 1) {
-                                throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
-                            }
-                        }
-
-                        // write selected part, without headers
-                        partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
-                        if (bodyPart instanceof MimeMessage) {
-                            partInputStream = ((MimeMessage) bodyPart).getRawInputStream();
+                        if (isMimeHeaderRequest) {
+                            // return the MIME header fields of the selected part,
+                            // followed by the terminating empty line (RFC 3501 6.4.5)
+                            writeHeaders(bodyPart.getAllHeaderLines(), baos);
                         } else {
-                            partInputStream = ((MimeBodyPart) bodyPart).getRawInputStream();
+                            // write selected part, without headers
+                            partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
+                            if (bodyPart instanceof MimeMessage) {
+                                partInputStream = ((MimeMessage) bodyPart).getRawInputStream();
+                            } else {
+                                partInputStream = ((MimeBodyPart) bodyPart).getRawInputStream();
+                            }
                         }
                     }
 
@@ -1184,6 +1169,58 @@ public class ImapConnection extends AbstractConnection {
         // do not keep message content in memory
         message.dropMimeMessage();
     }
+    /**
+     * Resolve the MIME part referenced by an IMAP body section path.
+     * The path is the dot separated section identifier of a BODY[section] request,
+     * e.g. {"2"} for section 2 or {"1","2"} for nested section 1.2.
+     * A trailing "MIME" token (BODY[section.MIME]) selects the same part, it only changes
+     * whether the caller returns the part headers or its body, so it is excluded from the walk.
+     *
+     * @param rootPart          message root MIME part
+     * @param partIndexStrings  dot separated section elements
+     * @param mimeHeaderRequest true when the last element is the MIME suffix
+     * @param param             original request parameter, used for error reporting
+     * @return the resolved MIME part
+     * @throws MessagingException on MIME parsing error
+     * @throws IOException        on content access error or invalid section path
+     */
+    protected static MimePart getMimeSectionPart(MimePart rootPart, String[] partIndexStrings,
+                                                 boolean mimeHeaderRequest, String param)
+            throws MessagingException, IOException {
+        MimePart bodyPart = rootPart;
+        // number of section elements to walk, excluding a trailing MIME token
+        int sectionCount = mimeHeaderRequest ? partIndexStrings.length - 1 : partIndexStrings.length;
+        // MIME without a part index (e.g. BODY[MIME]) is not valid
+        if (mimeHeaderRequest && sectionCount == 0) {
+            throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
+        }
+        for (int i = 0; i < sectionCount; i++) {
+            String subPartIndexString = partIndexStrings[i];
+            int subPartIndex;
+            // try to parse part index
+            try {
+                subPartIndex = Integer.parseInt(subPartIndexString);
+            } catch (NumberFormatException e) {
+                throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
+            }
+
+            Object mimeBody = bodyPart.getContent();
+            // Navigates nested MIME structure or validates single-part bounds
+            if (mimeBody instanceof MimeMultipart) {
+                MimeMultipart multiPart = (MimeMultipart) mimeBody;
+                if (subPartIndex - 1 < multiPart.getCount()) {
+                    bodyPart = (MimePart) multiPart.getBodyPart(subPartIndex - 1);
+                } else {
+                    throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
+                }
+            } else if (subPartIndex != 1) {
+                throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
+            }
+        }
+        return bodyPart;
+    }
+
+
 
     private void writeHeaders(Enumeration<?> headerEnumeration, ByteArrayOutputStream baos) throws IOException {
         while (headerEnumeration.hasMoreElements()) {
@@ -1192,6 +1229,9 @@ public class ImapConnection extends AbstractConnection {
             baos.write(13);
             baos.write(10);
         }
+        // terminating empty line between header and body (RFC 3501 6.4.5)
+        baos.write(13);
+        baos.write(10);
     }
 
     /**

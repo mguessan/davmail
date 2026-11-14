@@ -316,8 +316,32 @@ public class TestImap extends AbstractImapTestCase {
         resetTestFolder();
         appendMessage();
 
+        // BODY.PEEK[1.MIME] must return the MIME header fields of part 1 (RFC 3501 6.4.5), issue #587
         writeLine(". UID FETCH " + messageUid + " (BODY.PEEK[1.MIME])");
-        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+        StringBuilder mimeResponse = new StringBuilder();
+        String line = readLine();
+        while (!line.startsWith(".")) {
+            mimeResponse.append(line).append('\n');
+            line = readLine();
+        }
+        assertEquals(". OK UID FETCH completed", line);
+        String mimeResponseString = mimeResponse.toString();
+        assertTrue("BODY[1.MIME] response should echo the section identifier: " + mimeResponseString,
+                mimeResponseString.contains("BODY[1.MIME]"));
+        assertTrue("BODY[1.MIME] should return a Content-Type header: " + mimeResponseString,
+                mimeResponseString.toLowerCase().contains("content-type:"));
+
+        // BODY.PEEK[1] must return the body of part 1, which differs from the MIME headers
+        writeLine(". UID FETCH " + messageUid + " (BODY.PEEK[1])");
+        StringBuilder bodyResponse = new StringBuilder();
+        line = readLine();
+        while (!line.startsWith(".")) {
+            bodyResponse.append(line).append('\n');
+            line = readLine();
+        }
+        assertEquals(". OK UID FETCH completed", line);
+        assertFalse("BODY[1.MIME] must differ from BODY[1]",
+                mimeResponseString.equals(bodyResponse.toString()));
     }
 
     public void testHeaderFetch() throws IOException {
