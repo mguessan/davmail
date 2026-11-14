@@ -449,6 +449,12 @@ public class HttpClientAdapter implements Closeable {
                 throw new IOException("Http client closed", e);
             }
             throw e;
+        } catch (Error e) {
+            // HttpClient shuts down its connection pool on any Error (see MainClientExec) and this client
+            // is no longer usable: mark it closed so the session is detected as expired and replaced
+            close();
+            LOGGER.error("Http client closed on " + e, e);
+            throw e;
         }
     }
 
