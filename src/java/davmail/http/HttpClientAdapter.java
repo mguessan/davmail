@@ -444,11 +444,13 @@ public class HttpClientAdapter implements Closeable {
         try {
             return httpClient.execute(request, context);
         } catch (IllegalStateException e) {
-            // client closed by another thread after the check above
-            if (closed) {
-                throw new IOException("Http client closed", e);
+            // Either the client was closed by another thread after the check above, or HttpClient
+            // we receive this when connection pool is closed, mark this http client as closed
+            if (!closed) {
+                LOGGER.warn("Http client connection pool is down, closing session", e);
+                close();
             }
-            throw e;
+            throw new IOException("Http client closed", e);
         }
     }
 
