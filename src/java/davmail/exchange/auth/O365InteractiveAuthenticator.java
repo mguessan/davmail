@@ -138,10 +138,11 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         if (isSWTAvailable && !isDocker) {
             LOGGER.debug("Open SWT browser");
             try {
-                o365InteractiveAuthenticatorSWT = (O365InteractiveAuthenticatorBackend)Class.forName("davmail.exchange.auth.O365InteractiveAuthenticatorSWT").newInstance();
+                o365InteractiveAuthenticatorSWT = (O365InteractiveAuthenticatorBackend)Class.forName("davmail.exchange.auth.O365InteractiveAuthenticatorSWT").getDeclaredConstructor().newInstance();
                 o365InteractiveAuthenticatorSWT.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
                 o365InteractiveAuthenticatorSWT.authenticate(initUrl, redirectUri);
-            } catch (Error | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            } catch (Error | ClassNotFoundException | InstantiationException | IllegalAccessException |
+                     NoSuchMethodException | InvocationTargetException e) {
                 LOGGER.warn("Unable to load SWT browser: "+e.getMessage());
                 if (o365InteractiveAuthenticatorSWT != null) {
                     try {
@@ -160,13 +161,12 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             LOGGER.info("Open JavaFX (OpenJFX) browser");
             SwingUtilities.invokeLater(() -> {
                 try {
-                    o365InteractiveAuthenticatorFrame = (O365InteractiveAuthenticatorBackend)Class.forName("davmail.exchange.auth.O365InteractiveAuthenticatorFrame").newInstance();
+                    o365InteractiveAuthenticatorFrame = (O365InteractiveAuthenticatorBackend)Class.forName("davmail.exchange.auth.O365InteractiveAuthenticatorFrame").getDeclaredConstructor().newInstance();
                     o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
                     o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
-                } catch (NoClassDefFoundError | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                    LOGGER.warn("Unable to load JavaFX (OpenJFX)");
-                } catch (IllegalAccessError e) {
-                    LOGGER.warn("Unable to load JavaFX (OpenJFX), append --add-exports java.base/sun.net.www.protocol.https=ALL-UNNAMED to java options");
+                } catch (NoClassDefFoundError | ClassNotFoundException | InstantiationException | IllegalAccessException
+                         | IllegalAccessError | NoSuchMethodException | InvocationTargetException e) {
+                    LOGGER.warn("Unable to load JavaFX (OpenJFX), " + e.getClass().getName());
                 }
 
             });
