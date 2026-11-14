@@ -101,7 +101,6 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR\lib"
   File "dist\lib\activation-1.1.1.jar"
   File "dist\lib\commons-codec-1.23.0.jar"
-  File "dist\lib\commons-collections-3.1.jar"
   File "dist\lib\httpcore-4.4.16.jar"
   File "dist\lib\httpclient-4.5.14.jar"
   File "dist\lib\commons-logging-1.3.5.jar"
@@ -176,7 +175,6 @@ no_quest:
   
   Delete "$INSTDIR\lib\activation-1.1.1.jar"
   Delete "$INSTDIR\lib\commons-codec-1.23.0.jar"
-  Delete "$INSTDIR\lib\commons-collections-3.1.jar"
   Delete "$INSTDIR\lib\httpcore-4.4.16.jar"
   Delete "$INSTDIR\lib\httpclient-4.5.14.jar"
   Delete "$INSTDIR\lib\commons-logging-1.3.5.jar"
