@@ -25,6 +25,7 @@ import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpMethodNotAllowedException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.HttpPreconditionFailedException;
+import davmail.exception.HttpServerErrorException;
 import davmail.exception.HttpTokenExpiredException;
 import davmail.http.HttpClientAdapter;
 import davmail.util.IOUtil;
@@ -111,6 +112,10 @@ public class JsonResponseHandler implements ResponseHandler<JSONObject> {
             if (statusCode == HttpStatus.SC_METHOD_NOT_ALLOWED) {
                 throw new HttpMethodNotAllowedException(errorMessage);
             }
+            if (statusCode == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+                throw new HttpServerErrorException(errorMessage);
+            }
+
 
             throw new IOException(errorMessage);
         }
