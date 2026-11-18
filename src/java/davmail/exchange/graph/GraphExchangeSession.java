@@ -873,6 +873,13 @@ public class GraphExchangeSession extends ExchangeSession {
             HashMap<String, String> responseStatusUpdates = new HashMap<>();
             String masterEventId = existingJsonEvent.optString("id");
 
+            // Skip meeting response if organizer has not requested a response
+            String responseRequested = existingJsonEvent.optString("responseRequested");
+            if (Boolean.FALSE.toString().equalsIgnoreCase(responseRequested)) {
+                LOGGER.debug("Organizer did not request a response, skipping meeting response");
+                return responseStatusUpdates;
+            }
+
             if (!attendeeOccurrenceStatusMap.isEmpty()) {
                 for (Map.Entry<String, String> entry : attendeeOccurrenceStatusMap.entrySet()) {
                     String instanceId = entry.getKey();
