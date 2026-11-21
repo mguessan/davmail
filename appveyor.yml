@@ -35,6 +35,15 @@ install:
       }
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
+      # not cached: the version is only in the URL, extract and strip the versioned top-level directory
+      (new-object System.Net.WebClient).DownloadFile(
+      'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-8.4.0.16527.zip',
+        'C:\sonar-scanner-cli.zip'
+      )
+      [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sonar-scanner-cli.zip", "C:\sonar-scanner-tmp")
+      Move-Item (Get-ChildItem "C:\sonar-scanner-tmp" -Directory | Select-Object -First 1).FullName "C:\sonar-scanner"
+  - ps: |
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
         (new-object System.Net.WebClient).DownloadFile(
         'https://davmail.sourceforge.net/jacoco.xml', 'C:\projects\davmail\jacoco.xml'
         )
@@ -47,7 +56,7 @@ install:
 build_script:
   - IF "%JAVA_HOME%" == "C:\Program Files\Java\jdk25" copy /y C:\openjfx\javafx-sdk-25.0.4\lib\* lib
   - IF "%APPVEYOR_REPO_TAG%" == "true" (ant release) ELSE (ant dist)
-  - IF "%JAVA_HOME%" == "C:\Program Files\Java\jdk25" ant sonar -Dsonar.token=%SONAR_LOGIN%
+  - IF "%JAVA_HOME%" == "C:\Program Files\Java\jdk25" C:\sonar-scanner\bin\sonar-scanner.bat -Dproject.settings=sonar.properties
   - IF not "%JAVA_HOME%" == "C:\Program Files\Java\jdk1.8.0" echo remove artifacts && del /s /q dist
 test: false
 cache:
