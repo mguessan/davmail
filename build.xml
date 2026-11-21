@@ -213,11 +213,26 @@
                     <fileset dir="src/test" includes="davmail/smtp/*.java"/>
                     <fileset dir="src/test" includes="davmail/ldap/*.java"/>
                     <fileset dir="src/test" includes="davmail/imap/*.java"/-->
+                    <!-- Live integration tests (require test.properties + Exchange/O365 server) -->
                     <fileset dir="src/test" includes="davmail/imap/TestImap.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/TestExchangeSessionContact.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/TestO365EWSExchangeSessionContact.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/TestExchangeSessionCalendar.java"/>
+                    <!-- Standalone unit tests (no server) -->
+                    <fileset dir="src/test" includes="davmail/imap/TestImapTokenizer.java"/>
+                    <fileset dir="src/test" includes="davmail/imap/TestImapHeaderEncoding.java"/>
+                    <fileset dir="src/test" includes="davmail/imap/TestImapMimeSection.java"/>
                     <fileset dir="src/test" includes="davmail/util/*.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/TestDoubleDotInputStream.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/TestICSBufferedReader.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/TestICSBufferedWriter.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/TestICSCalendarValidator.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/TestVProperty.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphConvertDate.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphConvertHtmlToText.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphConvertShowAs.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphRecurrenceUntil.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphExchangeSessionPoolShutdown.java"/>
                 </batchtest>
             </junit>
         </coverage>
