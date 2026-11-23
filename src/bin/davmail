@@ -93,6 +93,10 @@ elif [ -e /usr/lib/java/swt.jar ]; then
     # latest SWT on Fedora
     : "${SWT_JAVA_OPTS:=--enable-native-access=ALL-UNNAMED}"
     SWT_CLASSPATH=/usr/lib/java/swt.jar
+elif [ -e /usr/share/java/swt.jar ]; then
+    # Arch Linux
+    : "${SWT_JAVA_OPTS:=--enable-native-access=ALL-UNNAMED}"
+    SWT_CLASSPATH=/usr/share/java/swt.jar
 elif [ -e /usr/share/java/swt4.jar ]; then
     # SWT 4 is available (debian, ubuntu)
     export LD_LIBRARY_PATH=/usr/lib/jni
