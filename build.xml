@@ -219,6 +219,7 @@
                     <fileset dir="src/test" includes="davmail/exchange/TestO365EWSExchangeSessionContact.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/TestExchangeSessionCalendar.java"/>
                     <!-- Standalone unit tests (no server) -->
+                    <fileset dir="src/test" includes="davmail/http/TestRestRequest.java"/>
                     <fileset dir="src/test" includes="davmail/imap/TestImapTokenizer.java"/>
                     <fileset dir="src/test" includes="davmail/imap/TestImapHeaderEncoding.java"/>
                     <fileset dir="src/test" includes="davmail/imap/TestImapMimeSection.java"/>
