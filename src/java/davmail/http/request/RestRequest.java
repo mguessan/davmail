@@ -23,6 +23,7 @@ import davmail.http.HttpClientAdapter;
 import davmail.util.IOUtil;
 import org.apache.http.Consts;
 import org.apache.http.Header;
+import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
@@ -43,7 +44,8 @@ import java.util.zip.GZIPInputStream;
  * Generic Rest request.
  */
 public class RestRequest extends HttpPost implements ResponseHandler<JSONObject> {
-    private static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+    private static final String JSON_MIME_TYPE = "application/json";
+    private static final String JSON_CONTENT_TYPE = JSON_MIME_TYPE + "; charset=utf-8";
     private static final Logger LOGGER = Logger.getLogger(RestRequest.class);
 
     private HttpResponse response;
@@ -115,7 +117,9 @@ public class RestRequest extends HttpPost implements ResponseHandler<JSONObject>
         this.response = response;
         JSONObject jsonResponse;
         Header contentTypeHeader = response.getFirstHeader("Content-Type");
-        if (contentTypeHeader != null && (JSON_CONTENT_TYPE.equals(contentTypeHeader.getValue()) || "application/json".equals(contentTypeHeader.getValue()))) {
+        HeaderElement[] contentTypes = contentTypeHeader == null
+                ? new HeaderElement[0] : contentTypeHeader.getElements();
+        if (contentTypes.length == 1 && JSON_MIME_TYPE.equalsIgnoreCase(contentTypes[0].getName())) {
             try (InputStream inputStream = response.getEntity().getContent()){
                 if (HttpClientAdapter.isGzipEncoded(response)) {
                     jsonResponse = processResponseStream(new GZIPInputStream(inputStream));
