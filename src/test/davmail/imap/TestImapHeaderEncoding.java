@@ -119,7 +119,8 @@ public class TestImapHeaderEncoding extends TestCase {
                 assertTrue("header octets changed for path " + path + " params " + fetchParameters,
                         indexOf(payload, selectedHeader) >= 0);
             } else {
-                byte[] expected = concatenate(selectedHeader, new byte[]{13, 10});
+                // header line terminator plus the empty line terminating the header block (RFC 3501 6.4.5)
+                byte[] expected = concatenate(selectedHeader, new byte[]{13, 10, 13, 10});
                 assertEquals("literal size for path " + path, expected.length, count);
                 assertArrayEquals("literal octets changed for path " + path + " params " + fetchParameters, expected, payload);
                 assertEquals("unexpected bytes after literal for path " + path,
