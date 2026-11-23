@@ -72,7 +72,8 @@ public class SelfSignedCertificateGenerator {
      */
     public static String resolveKeystorePath(String configFilePath) {
         if (configFilePath != null && !configFilePath.isEmpty()) {
-            File configFile = new File(configFilePath);
+            // force absolute file path to store certificate in config directory
+            File configFile = new File(configFilePath).getAbsoluteFile();
             File configDir = configFile.getParentFile();
             if (configDir != null) {
                 return new File(configDir, DEFAULT_KEYSTORE_FILENAME).getPath();

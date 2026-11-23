@@ -110,7 +110,8 @@ public final class DavGateway {
         }
 
         if (generateCert) {
-            SelfSignedCertificateGenerator.generate(configFilePath);
+            // use effective config file path (resolved by Settings.load() when not provided on command line)
+            SelfSignedCertificateGenerator.generate(Settings.getConfigFilePath());
             System.exit(0);
         } else if (token) {
             try {
