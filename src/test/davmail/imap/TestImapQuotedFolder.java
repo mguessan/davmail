@@ -24,24 +24,20 @@ import java.io.IOException;
  * Test folders with quotes.
  */
 public class TestImapQuotedFolder extends AbstractImapTestCase {
-    public void testListFolders() throws IOException {
-        writeLine(". LIST \"\" \"%/%\"");
-        assertEquals(". OK LIST completed", readFullAnswer("."));
-    }
-
-    public void testCreateQuotedFolder() throws IOException {
-        writeLine(". CREATE \"test \\\"quoted\\\" folder\"");
-        assertEquals(". OK folder created", readFullAnswer("."));
-    }
 
     public void testListQuotedFolder() throws IOException {
+        writeLine(". LIST \"\" \"%/%\"");
+        assertEquals(". OK LIST completed", readFullAnswer("."));
+
+        writeLine(". CREATE \"test \\\"quoted\\\" folder\"");
+        assertEquals(". OK folder created", readFullAnswer("."));
+
         writeLine(". LIST \"test \\\"quoted\\\" folder\" \"\"");
         assertEquals("* LIST (\\HasNoChildren) \"/\" \"test \\\"quoted\\\" folder\"", readLine());
         assertEquals(". OK LIST completed", readFullAnswer("."));
-    }
 
-    public void testDeleteQuotedFolder() throws IOException {
         writeLine(". DELETE \"test \\\"quoted\\\" folder\"");
         assertEquals(". OK folder deleted", readFullAnswer("."));
     }
+
 }
