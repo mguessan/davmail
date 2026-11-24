@@ -22,6 +22,8 @@ import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.http.HttpClientAdapter;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -30,6 +32,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
@@ -41,8 +48,8 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         System.setProperty("com.sun.webkit.useHTTP2Loader", "false");
     }
 
-    boolean isAuthenticated = false;
-    String errorCode = null;
+    volatile boolean isAuthenticated = false;
+    volatile String errorCode = null;
     String code = null;
 
     URI ewsUrl = URI.create(Settings.getO365Url());
@@ -224,26 +231,54 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     }
 
     /**
-     * Extract code from redirect location matching redirectUri
+     * Extract the OAuth response from a location matching the configured redirect URI.
      * @param location redirect location
      */
     public void handleCode(String location) {
-        isAuthenticated = location.contains("code=");
-        if (!isAuthenticated && location.contains("error=")) {
-            errorCode = location.substring(location.indexOf("error="));
+        if (isAuthenticated || errorCode != null) {
+            return;
         }
 
-        if (isAuthenticated) {
-            LOGGER.debug("Authenticated location: " + location);
-            if (location.contains("&session_state=")) {
-                code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
-            } else {
-                code = location.substring(location.indexOf("code=") + 5);
-            }
-            String sessionState = location.substring(location.lastIndexOf('=') + 1);
+        final List<NameValuePair> parameters;
+        try {
+            parameters = URLEncodedUtils.parse(new URI(location).getRawQuery(), StandardCharsets.UTF_8, '&');
+        } catch (URISyntaxException e) {
+            errorCode = "Invalid OAuth redirect URL";
+            return;
+        }
 
-            LOGGER.debug("Authentication Code: " + code);
-            LOGGER.debug("Authentication session state: " + sessionState);
+        NameValuePair authorizationCode = null;
+        NameValuePair error = null;
+        NameValuePair errorDescription = null;
+        for (NameValuePair parameter : parameters) {
+            switch (parameter.getName()) {
+                case "code":
+                    if (authorizationCode != null) {
+                        errorCode = "OAuth redirect provided multiple authentication codes";
+                        return;
+                    }
+                    authorizationCode = parameter;
+                    break;
+                case "error":
+                    error = parameter;
+                    break;
+                case "error_description":
+                    errorDescription = parameter;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (error != null) {
+            List<NameValuePair> errors = errorDescription == null
+                    ? Collections.singletonList(error) : Arrays.asList(error, errorDescription);
+            errorCode = URLEncodedUtils.format(errors, StandardCharsets.UTF_8);
+        } else if (authorizationCode == null || authorizationCode.getValue() == null || authorizationCode.getValue().isEmpty()) {
+            errorCode = "OAuth redirect did not provide an authentication code";
+        } else {
+            code = authorizationCode.getValue();
+            isAuthenticated = true;
         }
     }
 }
