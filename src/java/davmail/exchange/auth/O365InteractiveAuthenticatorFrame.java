@@ -143,10 +143,17 @@ public class O365InteractiveAuthenticatorFrame extends JFrame implements O365Int
 
 
         webViewEngine.getLoadWorker().stateProperty().addListener((ov, oldState, newState) -> {
-            // with Java 15 url with code returns as CANCELLED
-            if (newState == Worker.State.SUCCEEDED || newState == Worker.State.CANCELLED) {
+            String currentLocation = webViewEngine.getLocation();
+            // The callback may end up CANCELLED on Java 15 or FAILED with a localhost redirect.
+            if (currentLocation != null && currentLocation.startsWith(redirectUri)) {
+                if (newState == Worker.State.SUCCEEDED || newState == Worker.State.CANCELLED || newState == Worker.State.FAILED) {
+                    LOGGER.debug("Location starts with redirectUri, check code");
+                    authenticator.handleCode(currentLocation);
+                    close();
+                }
+            } else if (newState == Worker.State.SUCCEEDED || newState == Worker.State.CANCELLED) {
                 loadProgress.setVisible(false);
-                location = webViewEngine.getLocation();
+                location = currentLocation;
                 updateTitleAndFocus(location);
                 LOGGER.debug("Webview location: " + location);
                 // override console.log
@@ -154,28 +161,16 @@ public class O365InteractiveAuthenticatorFrame extends JFrame implements O365Int
                 if (Settings.getBooleanProperty("davmail.webview.debug", false)) {
                     LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
                 }
-                if (location.startsWith(redirectUri)) {
-                    LOGGER.debug("Location starts with redirectUri, check code");
-                    authenticator.handleCode(location);
-
-                    close();
-                }
             } else if (newState == Worker.State.FAILED) {
-                location = webViewEngine.getLocation();
+                location = currentLocation;
                 LOGGER.debug("Webview location: " + location);
-                if (location.startsWith(redirectUri)) {
-                    // with new default redirect https://localhost/common/oauth2/nativeclient we end up here
-                    LOGGER.debug("Location starts with redirectUri, check code");
-                    authenticator.handleCode(location);
-                } else {
-                    Throwable e = webViewEngine.getLoadWorker().getException();
-                    if (e != null) {
-                        handleError(e);
-                    }
+                Throwable e = webViewEngine.getLoadWorker().getException();
+                if (e != null) {
+                    handleError(e);
                 }
                 close();
             } else {
-                LOGGER.debug(webViewEngine.getLoadWorker().getState() + " " + webViewEngine.getLoadWorker().getMessage() + " " + webViewEngine.getLocation() + " ");
+                LOGGER.debug(webViewEngine.getLoadWorker().getState() + " " + webViewEngine.getLoadWorker().getMessage() + " " + currentLocation + " ");
             }
 
         });

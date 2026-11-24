@@ -90,23 +90,23 @@ public class O365InteractiveAuthenticatorSWT implements O365InteractiveAuthentic
                 browser.addLocationListener(new LocationListener() {
                     @Override
                     public void changing(LocationEvent locationEvent) {
-                        LOGGER.debug("Navigate to " + locationEvent.toString());
                         String location = locationEvent.location;
-
                         if (location.startsWith(redirectUri)) {
-
                             LOGGER.debug("Location starts with redirectUri, check code");
                             authenticator.handleCode(location);
-
                             shell.close();
                             close();
+                        } else {
+                            LOGGER.debug("Navigate to " + locationEvent);
                         }
 
                     }
 
                     @Override
                     public void changed(LocationEvent locationEvent) {
-                        LOGGER.debug("Page changed: " + locationEvent.toString());
+                        if (!locationEvent.location.startsWith(redirectUri)) {
+                            LOGGER.debug("Page changed: " + locationEvent);
+                        }
                     }
                 });
 
