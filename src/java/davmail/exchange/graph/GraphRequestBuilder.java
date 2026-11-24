@@ -337,6 +337,7 @@ public class GraphRequestBuilder {
     private void computeSelectAndExpand() {
         ArrayList<String> singleValueProperties = new ArrayList<>();
         ArrayList<String> multiValueProperties = new ArrayList<>();
+        ArrayList<String> navigationProperties = new ArrayList<>();
         ArrayList<String> selectProperties = new ArrayList<>();
         for (GraphField field : selectFields) {
             if (field.isExtended()) {
@@ -349,6 +350,10 @@ public class GraphRequestBuilder {
                         selectProperties.add("emailAddresses");
                     }
                 }
+            } else if (field.isNavigation()) {
+                // Contained navigation properties must go in $expand to be returned,
+                // $select on them is silently ignored by Graph.
+                navigationProperties.add(field.getGraphId());
             // etag is always returned, no a select field
             } else if (!GraphField.getGraphId("@odata.etag").equals(field.getGraphId())){
                 selectProperties.add(field.getGraphId());
@@ -367,6 +372,12 @@ public class GraphRequestBuilder {
             expandBuffer.append("multiValueExtendedProperties($filter=");
             appendExpandProperties(expandBuffer, multiValueProperties);
             expandBuffer.append(")");
+        }
+        for (String navigationProperty : navigationProperties) {
+            if (expandBuffer.length() > 0) {
+                expandBuffer.append(",");
+            }
+            expandBuffer.append(navigationProperty);
         }
         expand = expandBuffer.toString();
         if (!selectProperties.isEmpty()) {

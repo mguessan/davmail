@@ -142,8 +142,11 @@ public class GraphField {
         addFieldMap("bodyPreview");
         addFieldMap("body");
         addFieldMap("end");
-        addFieldMap("exceptionOccurrences");
-        addFieldMap("cancelledOccurrences");
+        // cancelledOccurrences and exceptionOccurrences are contained
+        // navigation properties on event; Graph only returns them when
+        // the client passes them in $expand, not $select.
+        addNavigationFieldMap("exceptionOccurrences");
+        addNavigationFieldMap("cancelledOccurrences");
         addFieldMap("hasAttachments");
         addFieldMap("isOnlineMeeting");
         addFieldMap("onlineMeeting");
@@ -296,6 +299,14 @@ public class GraphField {
         addFieldMap(alias, new GraphField(alias));
     }
 
+    /**
+     * Register a navigation property. These must be requested via $expand,
+     * not $select, to be returned in the response.
+     */
+    protected static void addNavigationFieldMap(String alias) {
+        addFieldMap(alias, new GraphField(alias, true));
+    }
+
     protected static void addFieldMap(String alias, String graphId) {
         addFieldMap(alias, new GraphField(alias, graphId));
     }
@@ -336,6 +347,7 @@ public class GraphField {
 
 
     private boolean extended = false;
+    private boolean navigation = false;
 
     /**
      * Basic graph field.
@@ -344,6 +356,22 @@ public class GraphField {
     public GraphField(String alias) {
         this.alias = alias;
         this.graphId = alias;
+    }
+
+    /**
+     * Graph field backed by a navigation property. Must be requested via
+     * $expand=&lt;name&gt; rather than $select, otherwise Graph silently
+     * omits it from the response.
+     * See https://learn.microsoft.com/en-us/graph/api/resources/event
+     * ("exceptionOccurrences", "cancelledOccurrences") for examples.
+     *
+     * @param alias      property alias (also used as the graph property name)
+     * @param navigation must be true; distinguishes this constructor
+     */
+    public GraphField(String alias, boolean navigation) {
+        this.alias = alias;
+        this.graphId = alias;
+        this.navigation = navigation;
     }
 
     public GraphField(String alias, String graphId) {
@@ -465,6 +493,10 @@ public class GraphField {
 
     public boolean isExtended() {
         return extended;
+    }
+
+    public boolean isNavigation() {
+        return navigation;
     }
 
     public String getAlias() {
