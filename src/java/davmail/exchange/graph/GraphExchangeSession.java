@@ -71,6 +71,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.StringReader;
 import java.net.NoRouteToHostException;
 import java.net.SocketTimeoutException;
@@ -96,6 +97,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
@@ -3043,6 +3045,7 @@ public class GraphExchangeSession extends ExchangeSession {
         // Load MIME content from $value endpoint
         byte[] mimeContent;
         try (
+                MailboxPermit ignored = acquireMailboxPermit(graphRequestBuilder);
                 CloseableHttpResponse response = httpClient.execute(graphRequestBuilder.build());
                 InputStream inputStream = response.getEntity().getContent()
         ) {
@@ -4751,6 +4754,7 @@ public class GraphExchangeSession extends ExchangeSession {
 
         byte[] contactPhotoBytes;
         try (
+                MailboxPermit ignored = acquireMailboxPermit(graphRequestBuilder);
                 CloseableHttpResponse response = httpClient.execute(graphRequestBuilder.build());
                 InputStream inputStream = response.getEntity().getContent()
         ) {
@@ -5218,6 +5222,61 @@ public class GraphExchangeSession extends ExchangeSession {
 
     private static final int MAX_RETRIES = 10;
 
+    /**
+     * Concurrent Graph requests per mailbox. Outlook allows 4 concurrent requests per app and mailbox,
+     * see <a href="https://learn.microsoft.com/en-us/graph/throttling-limits#outlook-service-limits">Outlook service limits</a>.
+     * More requests are throttled or time out, and their retries add even more load.
+     * A request keeps its slot while it waits to retry, so other requests do not add load
+     * to the mailbox during throttling or an outage.
+     */
+    static final int MAILBOX_CONCURRENCY = 4;
+    /**
+     * Maximum wait in seconds for a free request slot on a mailbox.
+     */
+    static final long MAILBOX_PERMIT_TIMEOUT = 60;
+    /**
+     * Request slots per mailbox, shared by all sessions: the Outlook limit applies per app and mailbox.
+     */
+    private static final Map<String, Semaphore> MAILBOX_PERMITS = new ConcurrentHashMap<>();
+
+    /**
+     * Request slot on a mailbox, released on close.
+     */
+    static final class MailboxPermit implements AutoCloseable {
+        private final Semaphore semaphore;
+
+        MailboxPermit(Semaphore semaphore) {
+            this.semaphore = semaphore;
+        }
+
+        @Override
+        public void close() {
+            semaphore.release();
+        }
+    }
+
+    /**
+     * Wait for a free request slot on the target mailbox of this request.
+     * @param httpRequestBuilder request builder
+     * @return mailbox permit, close it after the response is read
+     * @throws IOException when no slot is free after MAILBOX_PERMIT_TIMEOUT
+     */
+    MailboxPermit acquireMailboxPermit(GraphRequestBuilder httpRequestBuilder) throws IOException {
+        String mailbox = httpRequestBuilder.mailbox != null ? httpRequestBuilder.mailbox : userName;
+        String key = mailbox == null ? "" : mailbox.toLowerCase(Locale.ROOT);
+        Semaphore semaphore = MAILBOX_PERMITS.computeIfAbsent(key, k -> new Semaphore(MAILBOX_CONCURRENCY, true));
+        try {
+            if (!semaphore.tryAcquire(MAILBOX_PERMIT_TIMEOUT, TimeUnit.SECONDS)) {
+                throw new HttpServerErrorException("No free Graph request slot for mailbox " + key
+                        + " after " + MAILBOX_PERMIT_TIMEOUT + " seconds");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InterruptedIOException("Interrupted while waiting for a Graph request slot");
+        }
+        return new MailboxPermit(semaphore);
+    }
+
     private JSONObject executeJsonRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         JSONObject jsonResponse = null;
         boolean isThrottled;
@@ -5230,6 +5289,7 @@ public class GraphExchangeSession extends ExchangeSession {
             // DEBUG only, disable gzip encoding
             //request.setHeader("Accept-Encoding", "");
             try (
+                    MailboxPermit ignored = acquireMailboxPermit(httpRequestBuilder);
                     CloseableHttpResponse response = httpClient.execute(request)
             ) {
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
@@ -5268,6 +5328,7 @@ public class GraphExchangeSession extends ExchangeSession {
             // DEBUG only, disable gzip encoding
             //request.setHeader("Accept-Encoding", "");
             try (
+                    MailboxPermit ignored = acquireMailboxPermit(httpRequestBuilder);
                     CloseableHttpResponse response = httpClient.execute(request)
             ) {
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
