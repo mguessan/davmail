@@ -5216,12 +5216,38 @@ public class GraphExchangeSession extends ExchangeSession {
         }
     }
 
+    /**
+     * Retries after 429 Too Many Requests.
+     */
     private static final int MAX_RETRIES = 10;
+    /**
+     * Retries after 502, 503 and 504 answers to GET requests. Graph returns these errors in bursts:
+     * a few retries with exponential backoff ride them out, more retries only add load during an outage.
+     */
+    static final int MAX_SERVER_ERROR_RETRIES = 3;
+    /**
+     * First backoff delay in seconds after a server error, doubled on each retry: 2 s, 4 s, 8 s.
+     */
+    static final long SERVER_ERROR_RETRY_DELAY = 2;
+    /**
+     * Total time in seconds one request may wait for retries. IMAP clients drop a silent connection
+     * after about one minute and connect again, so a request must give up before that and return an error.
+     */
+    static final long RETRY_BUDGET = 40;
+
+    /**
+     * Retry state of one Graph request.
+     */
+    static class RetryState {
+        int throttledCount;
+        int serverErrorCount;
+        long waited;
+    }
 
     private JSONObject executeJsonRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         JSONObject jsonResponse = null;
         boolean isThrottled;
-        int retryCount = 0;
+        RetryState retryState = new RetryState();
         do {
             HttpRequestBase request = httpRequestBuilder
                     .setAccessToken(token.getAccessToken())
@@ -5235,17 +5261,12 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                     LOGGER.warn(response.getStatusLine());
                 }
-                isThrottled = handleThrottling(request, response);
-                if (isThrottled) {
-                    retryCount++;
-                } else {
+                isThrottled = handleThrottling(request, response, retryState);
+                if (!isThrottled) {
                     jsonResponse = new JsonResponseHandler().handleResponse(response);
                 }
             }
-        } while (isThrottled && retryCount < MAX_RETRIES);
-        if (isThrottled) {
-            throw new HttpServerErrorException("Throttled and retry count exceeded");
-        }
+        } while (isThrottled);
         return jsonResponse;
     }
 
@@ -5259,7 +5280,7 @@ public class GraphExchangeSession extends ExchangeSession {
     GraphObject executeGraphRequest(GraphRequestBuilder httpRequestBuilder) throws IOException {
         GraphObject graphObject = null;
         boolean isThrottled;
-        int retryCount = 0;
+        RetryState retryState = new RetryState();
         do {
             HttpRequestBase request = httpRequestBuilder
                     .setAccessToken(token.getAccessToken())
@@ -5273,18 +5294,13 @@ public class GraphExchangeSession extends ExchangeSession {
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                     LOGGER.warn("Request returned " + response.getStatusLine());
                 }
-                isThrottled = handleThrottling(request, response);
-                if (isThrottled) {
-                    retryCount++;
-                } else {
+                isThrottled = handleThrottling(request, response, retryState);
+                if (!isThrottled) {
                     graphObject = new GraphObject(new JsonResponseHandler().handleResponse(response));
                     graphObject.statusCode = response.getStatusLine().getStatusCode();
                 }
             }
-        } while (isThrottled && retryCount < MAX_RETRIES);
-        if (isThrottled) {
-            throw new HttpServerErrorException("Throttled and retry count exceeded");
-        }
+        } while (isThrottled);
         return graphObject;
     }
 
@@ -5292,37 +5308,61 @@ public class GraphExchangeSession extends ExchangeSession {
      * Detect throttling and wait according to Retry-After header.
      * Only retry non-idempotent methods (POST, PATCH, DELETE) on 429 (throttling),
      * not on 502/503/504 which may have partially processed the request.
+     * Server errors are retried at most MAX_SERVER_ERROR_RETRIES times with exponential backoff,
+     * and all retries of one request stop when RETRY_BUDGET is spent.
      * See <a href="https://learn.microsoft.com/en-us/graph/throttling">https://learn.microsoft.com/en-us/graph/throttling</a>
-     * @param request  HTTP request
-     * @param response HTTP response
+     * @param request    HTTP request
+     * @param response   HTTP response
+     * @param retryState retry state of this request
      * @return true if throttled, false otherwise
+     * @throws HttpServerErrorException when the retry count or the retry budget is exceeded
      */
-    private boolean handleThrottling(HttpRequestBase request, CloseableHttpResponse response) {
-        long retryDelay = 0;
+    private boolean handleThrottling(HttpRequestBase request, CloseableHttpResponse response, RetryState retryState) throws HttpServerErrorException {
+        long retryDelay;
         int statusCode = response.getStatusLine().getStatusCode();
         boolean isIdempotent = HttpGet.METHOD_NAME.equals(request.getMethod());
         if (statusCode == HttpStatus.SC_TOO_MANY_REQUESTS) {
-            LOGGER.info("Detected throttling " + response.getStatusLine());
-            Header retryAfter = response.getFirstHeader("Retry-After");
-            if (retryAfter != null) {
-                try {
-                    retryDelay = Long.parseLong(retryAfter.getValue()) + 1;
-                } catch (NumberFormatException e) {
-                    LOGGER.debug("Unable to parse Retry-After value: " + retryAfter.getValue() + ", using default delay");
-                    retryDelay = 10;
-                }
-            } else {
-                retryDelay = 10;
+            if (++retryState.throttledCount > MAX_RETRIES) {
+                throw new HttpServerErrorException("Throttled and retry count exceeded");
             }
-            waitRetryDelay(retryDelay);
+            LOGGER.info("Detected throttling " + response.getStatusLine());
+            retryDelay = getRetryAfter(response, 10);
         } else if (isIdempotent && (statusCode == HttpStatus.SC_SERVICE_UNAVAILABLE
                 || statusCode == HttpStatus.SC_BAD_GATEWAY
                 || statusCode == HttpStatus.SC_GATEWAY_TIMEOUT)) {
+            if (++retryState.serverErrorCount > MAX_SERVER_ERROR_RETRIES) {
+                throw new HttpServerErrorException("Graph request error and retry count exceeded: " + response.getStatusLine());
+            }
             LOGGER.info("Detected graph request error, waiting to retry " + response.getStatusLine());
-            retryDelay = 10;
-            waitRetryDelay(retryDelay);
+            // 2 s, 4 s, 8 s unless Retry-After is present
+            retryDelay = getRetryAfter(response, SERVER_ERROR_RETRY_DELAY << (retryState.serverErrorCount - 1));
+        } else {
+            return false;
         }
-        return retryDelay > 0;
+        if (retryState.waited + retryDelay > RETRY_BUDGET) {
+            throw new HttpServerErrorException("Retry budget of " + RETRY_BUDGET + " seconds exceeded: " + response.getStatusLine());
+        }
+        retryState.waited += retryDelay;
+        waitRetryDelay(retryDelay);
+        return true;
+    }
+
+    /**
+     * Get retry delay from Retry-After header.
+     * @param response     HTTP response
+     * @param defaultDelay delay in seconds without a valid Retry-After header
+     * @return retry delay in seconds
+     */
+    private long getRetryAfter(CloseableHttpResponse response, long defaultDelay) {
+        Header retryAfter = response.getFirstHeader("Retry-After");
+        if (retryAfter != null) {
+            try {
+                return Long.parseLong(retryAfter.getValue().trim()) + 1;
+            } catch (NumberFormatException e) {
+                LOGGER.debug("Unable to parse Retry-After value: " + retryAfter.getValue() + ", using default delay");
+            }
+        }
+        return defaultDelay;
     }
 
     private void waitRetryDelay(long retryDelay) {
