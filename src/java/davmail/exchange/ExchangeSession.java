@@ -888,7 +888,18 @@ public abstract class ExchangeSession {
             }
         }
         sendMessage(mimeMessage);
+        if (savesSentCopy()) {
+            // an IMAP client copy appended to Sent would be a duplicate, see SentCopies
+            SentCopies.record(getEmail(), messageId);
+        }
+    }
 
+    /**
+     * @return true when the server saves a copy in Sent of each message sent
+     * with {@link #sendMessage(MimeMessage)}
+     */
+    protected boolean savesSentCopy() {
+        return Settings.getBooleanProperty("davmail.smtpSaveInSent", true);
     }
 
     static final String[] RECIPIENT_HEADERS = {"to", "cc", "bcc"};

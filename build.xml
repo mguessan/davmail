@@ -228,6 +228,7 @@
                     <fileset dir="src/test" includes="davmail/exchange/TestICSBufferedWriter.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/TestICSCalendarValidator.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/TestVProperty.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/TestSentCopies.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphConvertDate.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphConvertHtmlToText.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphConvertShowAs.java"/>
