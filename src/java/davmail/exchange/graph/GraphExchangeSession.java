@@ -3576,6 +3576,10 @@ public class GraphExchangeSession extends ExchangeSession {
 
         Folder folder = buildFolder(jsonResponse);
         folder.folderPath = folderPath;
+        // keep the mailbox, as appendSubFolders does: without it every later
+        // request on a shared mailbox folder (delta sync) goes to /me
+        // with that folder's id and fails
+        folder.folderId.mailbox = folderId.mailbox;
 
         return folder;
     }
