@@ -3510,6 +3510,15 @@ public class GraphExchangeSession extends ExchangeSession {
     }
 
 
+    /**
+     * Graph sendMail with MIME content always saves a copy in Sent Items,
+     * davmail.smtpSaveInSent does not apply.
+     */
+    @Override
+    protected boolean savesSentCopy() {
+        return true;
+    }
+
     @Override
     public void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
         // https://learn.microsoft.com/en-us/graph/api/user-sendmail

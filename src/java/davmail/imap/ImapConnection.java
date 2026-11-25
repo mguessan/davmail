@@ -33,6 +33,7 @@ import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.MessageCreateThread;
 import davmail.exchange.MessageLoadThread;
+import davmail.exchange.SentCopies;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -605,17 +606,22 @@ public class ImapConnection extends AbstractConnection {
                                     readClient();
                                     MimeMessage mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(buffer));
 
-                                    String messageName = UUID.randomUUID() + ".EML";
-                                    try {
-                                        ExchangeSession.Message createdMessage = MessageCreateThread.createMessage(session, folderName, messageName, properties, mimeMessage, os, capabilities);
-                                        if (createdMessage != null) {
-                                            long uid = createdMessage.getImapUid();
-                                            sendClient(commandId + " OK [APPENDUID 1 "+uid+"] APPEND completed");
-                                        } else {
-                                            sendClient(commandId + " OK APPEND completed");
+                                    if (SentCopies.consume(session.getEmail(), folderName, mimeMessage.getMessageID())) {
+                                        // Exchange already saved this message in Sent when DavMail sent it
+                                        sendClient(commandId + " OK APPEND completed");
+                                    } else {
+                                        String messageName = UUID.randomUUID() + ".EML";
+                                        try {
+                                            ExchangeSession.Message createdMessage = MessageCreateThread.createMessage(session, folderName, messageName, properties, mimeMessage, os, capabilities);
+                                            if (createdMessage != null) {
+                                                long uid = createdMessage.getImapUid();
+                                                sendClient(commandId + " OK [APPENDUID 1 "+uid+"] APPEND completed");
+                                            } else {
+                                                sendClient(commandId + " OK APPEND completed");
+                                            }
+                                        } catch (InsufficientStorageException e) {
+                                            sendClient(commandId + " NO " + e.getMessage());
                                         }
-                                    } catch (InsufficientStorageException e) {
-                                        sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("idle".equalsIgnoreCase(command) && imapIdleDelay > 0) {
                                     if (currentFolder != null) {
