@@ -22,6 +22,7 @@ import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpServerErrorException;
 import davmail.exception.HttpTokenExpiredException;
 import davmail.exception.WebdavNotAvailableException;
 import davmail.exchange.auth.ExchangeAuthenticator;
@@ -229,7 +230,7 @@ public final class ExchangeSessionFactory {
                 ExchangeSession.LOGGER.debug("Got session " + session + " from cache");
             }
 
-            if (session != null && session.isExpired()) {
+            if (session != null && isExpiredOrKeep(session)) {
                 ExchangeSession.LOGGER.debug("Session " + session + " for user " + session.userName + " expired");
                 // only the thread that actually removes the expired session closes it: another thread may already
                 // have replaced it with a new session, which must stay in the pool
@@ -490,6 +491,26 @@ public final class ExchangeSessionFactory {
     }
 
     /**
+     * Check if a cached session expired, but keep it while the server is unavailable.
+     * When the session check fails with a server error (Graph 5xx), the token is not the problem:
+     * closing the session would close the HTTP client shared by all connections of this user
+     * ("Connection pool shut down") and fail the client login with a network down error.
+     * The next request fails on its own if the server is still unavailable.
+     *
+     * @param session cached session
+     * @return true if the session expired
+     * @throws IOException on network error
+     */
+    private static boolean isExpiredOrKeep(ExchangeSession session) throws IOException {
+        try {
+            return session.isExpired();
+        } catch (HttpServerErrorException e) {
+            ExchangeSession.LOGGER.warn("Server unavailable, keep session for user " + session.userName + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Get a non-expired session.
      * If the current session is not expired, return current session, else try to create a new session
      *
@@ -503,7 +524,7 @@ public final class ExchangeSessionFactory {
             throws IOException {
         ExchangeSession session = currentSession;
         try {
-            if (session.isExpired()) {
+            if (isExpiredOrKeep(session)) {
                 ExchangeSession.LOGGER.debug("Session " + session + " expired, trying to open a new one");
                 session = null;
                 String baseUrl = Settings.getProperty("davmail.url", Settings.getO365Url());

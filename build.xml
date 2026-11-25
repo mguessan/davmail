@@ -233,6 +233,7 @@
                     <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphConvertShowAs.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphRecurrenceUntil.java"/>
                     <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphExchangeSessionPoolShutdown.java"/>
+                    <fileset dir="src/test" includes="davmail/exchange/graph/TestGraphExchangeSessionServerError.java"/>
                 </batchtest>
             </junit>
         </coverage>

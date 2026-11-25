@@ -1478,7 +1478,7 @@ public class GraphExchangeSession extends ExchangeSession {
     /**
      * Override isExpired check with a lightweight Graph request.
      * The session is expired if the http client is closed or the token check fails,
-     * network level errors are rethrown to avoid reauthentication.
+     * network level errors and server errors are rethrown to avoid reauthentication.
      *
      * @return true if the session expired
      * @throws IOException on network error
@@ -1494,6 +1494,9 @@ public class GraphExchangeSession extends ExchangeSession {
             checkToken();
         } catch (UnknownHostException | NoRouteToHostException |
                  SocketTimeoutException | SSLException exc) {
+            throw exc;
+        } catch (HttpServerErrorException exc) {
+            // Graph is unavailable (5xx), the token is not the problem
             throw exc;
         } catch (IOException e) {
             isExpired = true;
