@@ -239,8 +239,11 @@ public class CaldavConnection extends AbstractConnection {
                     // need to check session on each request, credentials may have changed, or session expired
                     try {
                         decodeCredentials(headers.get("authorization"));
+                        boolean hadSession = session != null;
                         session = ExchangeSessionFactory.getInstance(userName, password);
-                        logConnection("LOGON", userName);
+                        if (!hadSession) {
+                            logConnection("LOGON", userName);
+                        }
                         handleRequest(command, path, headers, content);
                     } catch (DavMailAuthenticationException e) {
                         logConnection("FAILED", userName);
