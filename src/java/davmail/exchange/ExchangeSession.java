@@ -137,6 +137,20 @@ public abstract class ExchangeSession {
 
     protected String serverVersion;
 
+    /**
+     * Timestamp of last successful isExpired() check.
+     * Used to throttle network calls: isExpired() is called on every request
+     * via ExchangeSessionFactory.getInstance(), each call hits Exchange with
+     * getFolder(""). Cache the result for a short interval.
+     */
+    private volatile long lastExpiredCheckMs = 0;
+
+    /**
+     * Minimum interval between isExpired() network checks in milliseconds.
+     * Exchange sessions typically live for hours, so 30s is safe.
+     */
+    private static final long EXPIRED_CHECK_INTERVAL_MS = 30_000;
+
     protected static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
     private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
     protected static final String YYYY_MM_DD_T_HHMMSS_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
@@ -221,6 +235,11 @@ public abstract class ExchangeSession {
      * @throws IOException on transport-level network error
      */
     public boolean isExpired() throws IOException {
+        long now = System.currentTimeMillis();
+        if (now - lastExpiredCheckMs < EXPIRED_CHECK_INTERVAL_MS) {
+            // recently checked, assume still valid
+            return false;
+        }
         boolean isExpired = false;
         try {
             getFolder("");
@@ -231,7 +250,9 @@ public abstract class ExchangeSession {
         } catch (IOException e) {
             isExpired = true;
         }
-
+        if (!isExpired) {
+            lastExpiredCheckMs = now;
+        }
         return isExpired;
     }
 
