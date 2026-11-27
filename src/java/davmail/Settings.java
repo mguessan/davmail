@@ -218,6 +218,7 @@ public final class Settings {
         SETTINGS_PROPERTIES.put("davmail.keepDelay", "30");
         SETTINGS_PROPERTIES.put("davmail.sentKeepDelay", "0");
         SETTINGS_PROPERTIES.put("davmail.caldavPastDelay", "0");
+        SETTINGS_PROPERTIES.put("davmail.caldavBatchSize", "50");
         SETTINGS_PROPERTIES.put("davmail.caldavAutoSchedule", Boolean.TRUE.toString());
         SETTINGS_PROPERTIES.put("davmail.imapIdleDelay", "");
         SETTINGS_PROPERTIES.put("davmail.folderSizeLimit", "");

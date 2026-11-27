@@ -504,6 +504,9 @@ public class CaldavConnection extends AbstractConnection {
 
     protected void appendEventsResponses(CaldavResponse response, CaldavRequest request, List<ExchangeSession.Event> events) throws IOException {
         if (events != null) {
+            if (request.hasProperty("calendar-data")) {
+                session.prefetchEvents(events);
+            }
             int size = events.size();
             int count = 0;
             for (ExchangeSession.Event event : events) {
@@ -893,6 +896,8 @@ public class CaldavConnection extends AbstractConnection {
         if (request.isMultiGet()) {
             int count = 0;
             int total = request.getHrefs().size();
+            List<ExchangeSession.Item> items = new ArrayList<>();
+            List<String> itemHrefs = new ArrayList<>();
             for (String href : request.getHrefs()) {
                 DavGatewayTray.debug(new BundleMessage("LOG_REPORT_ITEM", ++count, total));
                 DavGatewayTray.switchIcon();
@@ -918,7 +923,8 @@ public class CaldavConnection extends AbstractConnection {
                             // force item name to requested value
                             item.setItemName(eventName);
                         }
-                        appendItemResponse(response, request, item);
+                        items.add(item);
+                        itemHrefs.add(href);
                     }
                 } catch (SocketException | SocketTimeoutException |
                          SSLException | UnknownHostException | NetworkDownException e) {
@@ -928,6 +934,25 @@ public class CaldavConnection extends AbstractConnection {
                     wireLogger.debug(e.getMessage(), e);
                     wireLogger.warn(new BundleMessage("LOG_ITEM_NOT_AVAILABLE", eventName, href).toString());
                     notFound.add(href);
+                }
+            }
+            List<ExchangeSession.Event> eventsToPrefetch = new ArrayList<>();
+            for (ExchangeSession.Item item : items) {
+                if (item instanceof ExchangeSession.Event) {
+                    eventsToPrefetch.add((ExchangeSession.Event) item);
+                }
+            }
+            session.prefetchEvents(eventsToPrefetch);
+            for (int i = 0; i < items.size(); i++) {
+                try {
+                    appendItemResponse(response, request, items.get(i));
+                } catch (SocketException | SocketTimeoutException |
+                         SSLException | UnknownHostException | NetworkDownException e) {
+                    throw e;
+                } catch (Exception e) {
+                    wireLogger.debug(e.getMessage(), e);
+                    wireLogger.warn(new BundleMessage("LOG_ITEM_NOT_AVAILABLE", items.get(i).getName(), itemHrefs.get(i)).toString());
+                    notFound.add(itemHrefs.get(i));
                 }
             }
         } else if (request.isPath(1, "users") && request.isPath(3, "inbox")) {

@@ -2189,6 +2189,10 @@ public abstract class ExchangeSession {
             return "text/calendar;charset=UTF-8";
         }
 
+        public boolean isBodyLoaded() {
+            return vCalendar != null;
+        }
+
         @Override
         public String getBody() throws IOException {
             if (vCalendar == null) {
@@ -2631,6 +2635,9 @@ public abstract class ExchangeSession {
         }
         return searchEvents(taskFolderPath, and(isEqualTo("outlookmessageclass", "IPM.Task"),
                 or(isNull("datecompleted"), getPastDelayCondition("datecompleted"))));
+    }
+
+    public void prefetchEvents(List<Event> events) throws IOException {
     }
 
     /**

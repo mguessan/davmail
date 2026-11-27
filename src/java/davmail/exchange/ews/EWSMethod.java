@@ -112,6 +112,16 @@ public abstract class EWSMethod extends HttpPost implements ResponseHandler<EWSM
     private HttpResponse response;
     private boolean enableNullFiltering;
 
+    void setSingleItemResponse(Item item, HttpResponse httpResponse) {
+        responseItems = new ArrayList<>();
+        responseItems.add(item);
+        this.response = httpResponse;
+    }
+
+    HttpResponse getHttpResponse() {
+        return response;
+    }
+
     /**
      * Build EWS method
      *
