@@ -2709,17 +2709,137 @@ public class EwsExchangeSession extends ExchangeSession {
         GetItemMethod batchMethod = new GetItemMethod(BaseShape.ID_ONLY, itemIds, true);
         addCalendarItemProperties(batchMethod);
         executeMethod(batchMethod);
-        for (EWSMethod.Item response : batchMethod.getResponseItems()) {
-            String id = response.get("ItemId");
-            for (Event event : chunk) {
-                if (event.itemId.id.equals(id)) {
-                    GetItemMethod singleMethod = new GetItemMethod(BaseShape.ID_ONLY, event.itemId, true);
-                    singleMethod.setSingleItemResponse(response, batchMethod.getHttpResponse());
-                    event.prefetchedMethod = singleMethod;
-                    break;
+        List<EWSMethod.Item> responses = batchMethod.getResponseItems();
+        // match responses to events by item id, fall back to response order
+        Map<String, EWSMethod.Item> responsesById = new HashMap<>();
+        for (EWSMethod.Item response : responses) {
+            String responseId = response.get("ItemId");
+            if (responseId != null) {
+                responsesById.put(responseId, response);
+            }
+        }
+        boolean positional = responses.size() == chunk.size();
+        for (int index = 0; index < chunk.size(); index++) {
+            Event event = chunk.get(index);
+            EWSMethod.Item response = responsesById.get(event.itemId.id);
+            if (response == null && positional) {
+                response = responses.get(index);
+            }
+            if (response != null) {
+                GetItemMethod singleMethod = new GetItemMethod(BaseShape.ID_ONLY, event.itemId, true);
+                singleMethod.setSingleItemResponse(response, batchMethod.getHttpResponse());
+                event.prefetchedMethod = singleMethod;
+            }
+        }
+    }
+
+    /**
+     * Convert item name to EWS item id when the name is a base64 encoded item id.
+     *
+     * @param itemName item name
+     * @return item id or null when item name is not an item id
+     */
+    private ItemId getItemIdFromItemName(String itemName) {
+        if (itemName == null || itemName.isEmpty()) {
+            return null;
+        }
+        String urlcompname = convertItemNameToEML(itemName);
+        int index = urlcompname.indexOf('.');
+        if (index > 0 && isItemId(urlcompname)) {
+            return new ItemId(StringUtil.urlToBase64(urlcompname.substring(0, index)));
+        }
+        return null;
+    }
+
+    @Override
+    public List<Item> getItems(String folderPath, List<String> itemNames) throws IOException {
+        int batchSize = Settings.getIntProperty("davmail.caldavBatchSize", 50);
+        if (batchSize <= 1 || itemNames == null || itemNames.size() < 2) {
+            return super.getItems(folderPath, itemNames);
+        }
+        int size = itemNames.size();
+        List<Item> items = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            items.add(null);
+        }
+        // resolve item ids from item names, only those can be batched
+        Map<String, Integer> indexByName = new LinkedHashMap<>();
+        Map<String, ItemId> idsByName = new LinkedHashMap<>();
+        for (int i = 0; i < size; i++) {
+            String itemName = itemNames.get(i);
+            if (indexByName.containsKey(itemName)) {
+                continue;
+            }
+            indexByName.put(itemName, i);
+            ItemId itemId = getItemIdFromItemName(itemName);
+            if (itemId != null) {
+                idsByName.put(itemName, itemId);
+            }
+        }
+        if (idsByName.size() > 1) {
+            List<String> names = new ArrayList<>(idsByName.keySet());
+            try {
+                for (int start = 0; start < names.size(); start += batchSize) {
+                    List<String> chunkNames = names.subList(start, Math.min(start + batchSize, names.size()));
+                    List<ItemId> chunkIds = new ArrayList<>(chunkNames.size());
+                    for (String name : chunkNames) {
+                        chunkIds.add(idsByName.get(name));
+                    }
+                    GetItemMethod batchMethod = new GetItemMethod(BaseShape.ID_ONLY, chunkIds, true);
+                    addCalendarItemProperties(batchMethod);
+                    executeMethod(batchMethod);
+                    List<EWSMethod.Item> responses = batchMethod.getResponseItems();
+                    Map<String, EWSMethod.Item> responsesById = new HashMap<>();
+                    for (EWSMethod.Item response : responses) {
+                        String responseId = response.get("ItemId");
+                        if (responseId != null) {
+                            responsesById.put(responseId, response);
+                        }
+                    }
+                    boolean positional = responses.size() == chunkNames.size();
+                    for (int index = 0; index < chunkNames.size(); index++) {
+                        String name = chunkNames.get(index);
+                        ItemId itemId = idsByName.get(name);
+                        EWSMethod.Item response = responsesById.get(itemId.id);
+                        if (response == null && positional) {
+                            response = responses.get(index);
+                        }
+                        if (response == null) {
+                            continue;
+                        }
+                        // tasks and messages need their own property set, keep the individual path for them
+                        String itemType = response.type;
+                        if (itemType != null && !"CalendarItem".equals(itemType)
+                                && !"MeetingMessage".equals(itemType) && !"MeetingRequest".equals(itemType)
+                                && !"MeetingResponse".equals(itemType) && !"MeetingCancellation".equals(itemType)) {
+                            continue;
+                        }
+                        Event event = new Event(folderPath, response);
+                        event.setItemName(name);
+                        GetItemMethod singleMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
+                        singleMethod.setSingleItemResponse(response, batchMethod.getHttpResponse());
+                        event.prefetchedMethod = singleMethod;
+                        items.set(indexByName.get(name), event);
+                    }
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Batched GetItem failed, falling back to individual requests", e);
+                for (int i = 0; i < size; i++) {
+                    items.set(i, null);
                 }
             }
         }
+        // resolve items not retrieved by the batch call
+        for (int i = 0; i < size; i++) {
+            if (items.get(i) == null) {
+                try {
+                    items.set(i, getItem(folderPath, itemNames.get(i)));
+                } catch (HttpNotFoundException e) {
+                    // keep null: item not found
+                }
+            }
+        }
+        return items;
     }
 
     @Override

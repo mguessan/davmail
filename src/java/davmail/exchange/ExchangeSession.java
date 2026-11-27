@@ -2696,6 +2696,28 @@ public abstract class ExchangeSession {
     public abstract Item getItem(String folderPath, String itemName) throws IOException;
 
     /**
+     * Get multiple items by name.
+     * Implementations may retrieve items in batches to limit network round trips.
+     * Returned list is aligned with itemNames, a null entry means the item was not found.
+     *
+     * @param folderPath Exchange folder path
+     * @param itemNames  item names
+     * @return list of items, aligned with itemNames
+     * @throws IOException on error
+     */
+    public List<Item> getItems(String folderPath, List<String> itemNames) throws IOException {
+        List<Item> items = new ArrayList<>(itemNames.size());
+        for (String itemName : itemNames) {
+            try {
+                items.add(getItem(folderPath, itemName));
+            } catch (HttpNotFoundException e) {
+                items.add(null);
+            }
+        }
+        return items;
+    }
+
+    /**
      * Contact picture
      */
     public static class ContactPhoto {
