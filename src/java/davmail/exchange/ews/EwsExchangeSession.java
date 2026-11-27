@@ -1620,6 +1620,12 @@ public class EwsExchangeSession extends ExchangeSession {
         ItemId itemId;
         String type;
         boolean isException;
+        GetItemMethod prefetchedMethod;
+
+        boolean isBatchableCalendarItem() {
+            return !"Task".equals(type) && !"Message".equals(type)
+                    && !"MeetingCancellation".equals(type) && !"MeetingResponse".equals(type);
+        }
 
         protected Event(String folderPath, EWSMethod.Item response) {
             this.folderPath = folderPath;
@@ -2375,26 +2381,17 @@ public class EwsExchangeSession extends ExchangeSession {
                         && !"MeetingCancellation".equals(type)
                         && !"MeetingResponse".equals(type)) {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
-                    getItemMethod.addAdditionalProperty(Field.get("lastmodified"));
-                    getItemMethod.addAdditionalProperty(Field.get("reminderset"));
-                    getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
-                    getItemMethod.addAdditionalProperty(Field.get("myresponsetype"));
-                    getItemMethod.addAdditionalProperty(Field.get("organizer"));
-                    getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
-                    getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
-                    getItemMethod.addAdditionalProperty(Field.get("resources"));
-                    getItemMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
-                    getItemMethod.addAdditionalProperty(Field.get("starttimezone"));
-                    getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
-                    getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
-                    getItemMethod.addAdditionalProperty(Field.get("xmozsendinvitations"));
-
-                    getItemMethod.enableNullFiltering(true);
+                    addCalendarItemProperties(getItemMethod);
                 } else {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                 }
 
-                executeMethod(getItemMethod);
+                if (prefetchedMethod != null) {
+                    getItemMethod = prefetchedMethod;
+                    prefetchedMethod = null;
+                } else {
+                    executeMethod(getItemMethod);
+                }
 
                 // retrieve starttimezone as a failover for tzid
                 if (getItemMethod.getResponseItem() != null) {
@@ -2659,6 +2656,190 @@ public class EwsExchangeSession extends ExchangeSession {
             contacts.add(new Contact(response));
         }
         return contacts;
+    }
+
+    @Override
+    public void prefetchEvents(List<ExchangeSession.Event> events) throws IOException {
+        int batchSize = Settings.getIntProperty("davmail.caldavBatchSize", 50);
+        if (batchSize <= 1 || events == null) {
+            return;
+        }
+        List<Event> batchable = new ArrayList<>();
+        for (ExchangeSession.Event event : events) {
+            if (event instanceof EwsExchangeSession.Event) {
+                Event ewsEvent = (Event) event;
+                if (!ewsEvent.isBodyLoaded() && ewsEvent.prefetchedMethod == null
+                        && ewsEvent.isBatchableCalendarItem()) {
+                    batchable.add(ewsEvent);
+                }
+            }
+        }
+        for (int start = 0; start < batchable.size(); start += batchSize) {
+            List<Event> chunk = batchable.subList(start, Math.min(start + batchSize, batchable.size()));
+            try {
+                prefetchChunk(chunk);
+            } catch (IOException e) {
+                LOGGER.warn("Batched GetItem failed, falling back to individual requests", e);
+            }
+        }
+    }
+
+    private static void addCalendarItemProperties(GetItemMethod getItemMethod) {
+        getItemMethod.addAdditionalProperty(Field.get("lastmodified"));
+        getItemMethod.addAdditionalProperty(Field.get("reminderset"));
+        getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
+        getItemMethod.addAdditionalProperty(Field.get("myresponsetype"));
+        getItemMethod.addAdditionalProperty(Field.get("organizer"));
+        getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
+        getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
+        getItemMethod.addAdditionalProperty(Field.get("resources"));
+        getItemMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
+        getItemMethod.addAdditionalProperty(Field.get("starttimezone"));
+        getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
+        getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
+        getItemMethod.addAdditionalProperty(Field.get("xmozsendinvitations"));
+        getItemMethod.enableNullFiltering(true);
+    }
+
+    private void prefetchChunk(List<Event> chunk) throws IOException {
+        List<ItemId> itemIds = new ArrayList<>();
+        for (Event event : chunk) {
+            itemIds.add(event.itemId);
+        }
+        GetItemMethod batchMethod = new GetItemMethod(BaseShape.ID_ONLY, itemIds, true);
+        addCalendarItemProperties(batchMethod);
+        executeMethod(batchMethod);
+        List<EWSMethod.Item> responses = batchMethod.getResponseItems();
+        // match responses to events by item id, fall back to response order
+        Map<String, EWSMethod.Item> responsesById = new HashMap<>();
+        for (EWSMethod.Item response : responses) {
+            String responseId = response.get("ItemId");
+            if (responseId != null) {
+                responsesById.put(responseId, response);
+            }
+        }
+        boolean positional = responses.size() == chunk.size();
+        for (int index = 0; index < chunk.size(); index++) {
+            Event event = chunk.get(index);
+            EWSMethod.Item response = responsesById.get(event.itemId.id);
+            if (response == null && positional) {
+                response = responses.get(index);
+            }
+            if (response != null) {
+                GetItemMethod singleMethod = new GetItemMethod(BaseShape.ID_ONLY, event.itemId, true);
+                singleMethod.setSingleItemResponse(response, batchMethod.getHttpResponse());
+                event.prefetchedMethod = singleMethod;
+            }
+        }
+    }
+
+    /**
+     * Convert item name to EWS item id when the name is a base64 encoded item id.
+     *
+     * @param itemName item name
+     * @return item id or null when item name is not an item id
+     */
+    private ItemId getItemIdFromItemName(String itemName) {
+        if (itemName == null || itemName.isEmpty()) {
+            return null;
+        }
+        String urlcompname = convertItemNameToEML(itemName);
+        int index = urlcompname.indexOf('.');
+        if (index > 0 && isItemId(urlcompname)) {
+            return new ItemId(StringUtil.urlToBase64(urlcompname.substring(0, index)));
+        }
+        return null;
+    }
+
+    @Override
+    public List<Item> getItems(String folderPath, List<String> itemNames) throws IOException {
+        int batchSize = Settings.getIntProperty("davmail.caldavBatchSize", 50);
+        if (batchSize <= 1 || itemNames == null || itemNames.size() < 2) {
+            return super.getItems(folderPath, itemNames);
+        }
+        int size = itemNames.size();
+        List<Item> items = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            items.add(null);
+        }
+        // resolve item ids from item names, only those can be batched
+        Map<String, Integer> indexByName = new LinkedHashMap<>();
+        Map<String, ItemId> idsByName = new LinkedHashMap<>();
+        for (int i = 0; i < size; i++) {
+            String itemName = itemNames.get(i);
+            if (indexByName.containsKey(itemName)) {
+                continue;
+            }
+            indexByName.put(itemName, i);
+            ItemId itemId = getItemIdFromItemName(itemName);
+            if (itemId != null) {
+                idsByName.put(itemName, itemId);
+            }
+        }
+        if (idsByName.size() > 1) {
+            List<String> names = new ArrayList<>(idsByName.keySet());
+            try {
+                for (int start = 0; start < names.size(); start += batchSize) {
+                    List<String> chunkNames = names.subList(start, Math.min(start + batchSize, names.size()));
+                    List<ItemId> chunkIds = new ArrayList<>(chunkNames.size());
+                    for (String name : chunkNames) {
+                        chunkIds.add(idsByName.get(name));
+                    }
+                    GetItemMethod batchMethod = new GetItemMethod(BaseShape.ID_ONLY, chunkIds, true);
+                    addCalendarItemProperties(batchMethod);
+                    executeMethod(batchMethod);
+                    List<EWSMethod.Item> responses = batchMethod.getResponseItems();
+                    Map<String, EWSMethod.Item> responsesById = new HashMap<>();
+                    for (EWSMethod.Item response : responses) {
+                        String responseId = response.get("ItemId");
+                        if (responseId != null) {
+                            responsesById.put(responseId, response);
+                        }
+                    }
+                    boolean positional = responses.size() == chunkNames.size();
+                    for (int index = 0; index < chunkNames.size(); index++) {
+                        String name = chunkNames.get(index);
+                        ItemId itemId = idsByName.get(name);
+                        EWSMethod.Item response = responsesById.get(itemId.id);
+                        if (response == null && positional) {
+                            response = responses.get(index);
+                        }
+                        if (response == null) {
+                            continue;
+                        }
+                        // tasks and messages need their own property set, keep the individual path for them
+                        String itemType = response.type;
+                        if (itemType != null && !"CalendarItem".equals(itemType)
+                                && !"MeetingMessage".equals(itemType) && !"MeetingRequest".equals(itemType)
+                                && !"MeetingResponse".equals(itemType) && !"MeetingCancellation".equals(itemType)) {
+                            continue;
+                        }
+                        Event event = new Event(folderPath, response);
+                        event.setItemName(name);
+                        GetItemMethod singleMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
+                        singleMethod.setSingleItemResponse(response, batchMethod.getHttpResponse());
+                        event.prefetchedMethod = singleMethod;
+                        items.set(indexByName.get(name), event);
+                    }
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Batched GetItem failed, falling back to individual requests", e);
+                for (int i = 0; i < size; i++) {
+                    items.set(i, null);
+                }
+            }
+        }
+        // resolve items not retrieved by the batch call
+        for (int i = 0; i < size; i++) {
+            if (items.get(i) == null) {
+                try {
+                    items.set(i, getItem(folderPath, itemNames.get(i)));
+                } catch (HttpNotFoundException e) {
+                    // keep null: item not found
+                }
+            }
+        }
+        return items;
     }
 
     @Override

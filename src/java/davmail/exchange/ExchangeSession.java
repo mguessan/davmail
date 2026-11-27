@@ -2189,6 +2189,10 @@ public abstract class ExchangeSession {
             return "text/calendar;charset=UTF-8";
         }
 
+        public boolean isBodyLoaded() {
+            return vCalendar != null;
+        }
+
         @Override
         public String getBody() throws IOException {
             if (vCalendar == null) {
@@ -2633,6 +2637,9 @@ public abstract class ExchangeSession {
                 or(isNull("datecompleted"), getPastDelayCondition("datecompleted"))));
     }
 
+    public void prefetchEvents(List<Event> events) throws IOException {
+    }
+
     /**
      * Search calendar events in the provided folder.
      *
@@ -2687,6 +2694,28 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public abstract Item getItem(String folderPath, String itemName) throws IOException;
+
+    /**
+     * Get multiple items by name.
+     * Implementations may retrieve items in batches to limit network round trips.
+     * Returned list is aligned with itemNames, a null entry means the item was not found.
+     *
+     * @param folderPath Exchange folder path
+     * @param itemNames  item names
+     * @return list of items, aligned with itemNames
+     * @throws IOException on error
+     */
+    public List<Item> getItems(String folderPath, List<String> itemNames) throws IOException {
+        List<Item> items = new ArrayList<>(itemNames.size());
+        for (String itemName : itemNames) {
+            try {
+                items.add(getItem(folderPath, itemName));
+            } catch (HttpNotFoundException e) {
+                items.add(null);
+            }
+        }
+        return items;
+    }
 
     /**
      * Contact picture

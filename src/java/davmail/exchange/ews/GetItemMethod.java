@@ -18,6 +18,8 @@
  */
 package davmail.exchange.ews;
 
+import java.util.List;
+
 /**
  * Get Item method.
  */
@@ -33,6 +35,13 @@ public class GetItemMethod extends EWSMethod {
         super("Item", "GetItem");
         this.baseShape = baseShape;
         this.itemId = itemId;
+        this.includeMimeContent = includeMimeContent;
+    }
+
+    public GetItemMethod(BaseShape baseShape, List<ItemId> itemIds, boolean includeMimeContent) {
+        super("Item", "GetItem");
+        this.baseShape = baseShape;
+        this.itemIds = itemIds;
         this.includeMimeContent = includeMimeContent;
     }
 
