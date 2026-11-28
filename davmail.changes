@@ -4,6 +4,7 @@ Sat Nov 28 13:23:46 UTC 2026 - Björn Kettunen <bjorn.kettunen@thaodan.de>
 - Harden systemd service
 - Add systemd system sevice template unit
 - Don't create user for systemd units use sysusers
+- Create statedirectory with systemd
 
 -------------------------------------------------------------------
 Sat Oct 17 2026 Mickael Guessant <mguessan@free.fr>

@@ -104,7 +104,6 @@ ant prepare-dist
 %endif
 
 %install
-rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_bindir}
 mkdir -p $RPM_BUILD_ROOT%{_sbindir}
 %if !%systemd_support
@@ -114,7 +113,9 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/pixmaps
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/davmail/lib
+%if 0%{?!systemd_support:1}
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail
+%endif
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log
 
 # Init scripts, icons, configurations
@@ -271,6 +272,8 @@ fi
 %{_datadir}/pixmaps/*
 %{_datadir}/davmail/
 %{_datadir}/metainfo/org.davmail.DavMail.appdata.xml
+%if 0%{?!systemd_support:1}
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
+%endif
 
 %changelog
