@@ -271,5 +271,3 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
-* Sat Oct 17 2026 Mickael Guessant <mguessan@free.fr>
-- update to 7.1.0
