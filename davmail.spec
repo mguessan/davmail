@@ -126,6 +126,7 @@ desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ src/desktop/
 
 %if %systemd_support
 install -D -m 644 src/init/davmail.service %{buildroot}%{_unitdir}/davmail.service
+install -D -m 644 src/init/davmail@.service %{buildroot}%{_unitdir}/davmail@.service
 install -D -m 644 src/init/davmail-user@.service %{buildroot}%{_userunitdir}/davmail@.service
 install -D -m 644 src/init/davmail.conf %{buildroot}%{_tmpfilesdir}/davmail.conf
 %else
@@ -261,6 +262,7 @@ fi
 
 %if %systemd_support
 %{_unitdir}/davmail.service
+%{_unitdir}/davmail@.service
 %{_userunitdir}/davmail@.service
 %{_tmpfilesdir}/davmail.conf
 %else

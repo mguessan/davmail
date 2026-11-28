@@ -1,0 +1,21 @@
+[Unit]
+Description=Davmail Exchange gateway for %i
+Documentation=http://davmail.sourceforge.net/serversetup.html
+Documentation=http://davmail.sourceforge.net/advanced.html
+Documentation=http://davmail.sourceforge.net/sslsetup.html
+After=network.target
+
+[Service]
+Type=simple
+User=davmail
+PermissionsStartOnly=true
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ExecStart=/usr/bin/davmail -server /etc/davmail/%i.properties
+SuccessExitStatus=143
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target
+DefaultInstance=davmail
