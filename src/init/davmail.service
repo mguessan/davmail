@@ -10,8 +10,6 @@ Type=simple
 User=davmail
 PermissionsStartOnly=true
 AmbientCapabilities=CAP_NET_BIND_SERVICE
-ExecStartPre=/usr/bin/touch /var/log/davmail.log
-ExecStartPre=/bin/chown davmail:davmail /var/log/davmail.log
 ExecStart=/usr/bin/davmail -server /etc/davmail.properties
 SuccessExitStatus=143
 

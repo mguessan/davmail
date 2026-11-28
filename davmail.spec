@@ -110,8 +110,8 @@ mkdir -p $RPM_BUILD_ROOT%{_bindir}
 mkdir -p $RPM_BUILD_ROOT%{_sbindir}
 %if !%systemd_support
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
-%endif
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
+%endif
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/pixmaps
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/davmail/lib
@@ -127,6 +127,7 @@ desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ src/desktop/
 %if %systemd_support
 install -D -m 644 src/init/davmail.service %{buildroot}%{_unitdir}/davmail.service
 install -D -m 644 src/init/davmail-user@.service %{buildroot}%{_userunitdir}/davmail@.service
+install -D -m 644 src/init/davmail.conf %{buildroot}%{_tmpfilesdir}/davmail.conf
 %else
 install -m 0644 src/init/davmail-logrotate $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/davmail
 install -m 0755 src/init/davmail-wrapper $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail/davmail
@@ -169,6 +170,7 @@ install -m 0644 %{name}-user.conf %{buildroot}%{_sysusersdir}/
 %endif
 
 %post
+%if 0%{!?systemd_macros:1}
 file=/var/log/davmail.log
 if [ ! -f ${file} ]
     then
@@ -176,12 +178,13 @@ if [ ! -f ${file} ]
 fi
 /bin/chown davmail:davmail ${file}
 /bin/chmod 0640 ${file}
+%endif
 
 %if %systemd_macros && 0%{?suse_version}
 %service_add_post davmail.service
-%endif
+# Ensure that tmpfiles are created after the package is installed or updated
+%tmpfiles_create %{_tmpfilesdir}/davmail.conf
 
-%if %systemd_support
 %else
 # proper service handling http://en.opensuse.org/openSUSE:Cron_rename
 %{?fillup_and_insserv:
@@ -259,6 +262,7 @@ fi
 %if %systemd_support
 %{_unitdir}/davmail.service
 %{_userunitdir}/davmail@.service
+%{_tmpfilesdir}/davmail.conf
 %else
 %{_sysconfdir}/init.d/davmail
 %{_sbindir}/rcdavmail
@@ -266,6 +270,11 @@ fi
 %endif
 
 %config(noreplace) %{_sysconfdir}/davmail.properties
+# As sugggested by rpmlint:
+# tmpfile-not-in-filelist
+# declare ownership of the log file but prevent
+# it from being erased by rpm -e
+%ghost %attr (640,davmail,davmail)  %{_var}/log/davmail.log
 %{_datadir}/applications/*
 %{_datadir}/pixmaps/*
 %{_datadir}/davmail/
