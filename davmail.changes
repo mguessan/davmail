@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Sat Nov 28 13:23:46 UTC 2026 - Björn Kettunen <bjorn.kettunen@thaodan.de>
+
+- Harden systemd service
+
+-------------------------------------------------------------------
 Sat Oct 17 2026 Mickael Guessant <mguessan@free.fr>
   - update to 7.1.0
 
