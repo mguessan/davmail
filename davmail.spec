@@ -43,12 +43,8 @@ BuildRequires: java-1.8.0-openjdk-devel
 BuildRequires: openjfx
 %endif
 
-Requires: coreutils
-Requires: filesystem
-Requires(post): coreutils, filesystem
-Requires(postun): /sbin/service
-%if %systemd_macros
-Requires(preun): /sbin/service, coreutils
+%if %systemd_support
+%systemd_requires
 %if 0%{?suse_version}
 BuildRequires: sysuser-tools
 %sysusers_requires
@@ -57,6 +53,9 @@ BuildRequires: sysuser-tools
 %else
 Requires(preun): /sbin/service, coreutils, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
+Requires(post): coreutils, filesystem, /sbin/chkconfig
+Requires(preun): /sbin/service, coreutils, /sbin/chkconfig, /usr/sbin/userdel, /usr/sbin/groupdel
+Requires(postun): /sbin/service
 %endif
 
 %if 0%{?el9} || 0%{?fedora}
@@ -100,35 +99,39 @@ export ANT_OPTS="-Dfile.encoding=UTF-8"
 
 ant prepare-dist
 
-%if %systemd_macros && 0%{?suse_version}
-%sysusers_generate_pre %{name}-user.conf davmail %{name}-user.conf
+%if %systemd_support && 0%{?suse_version}
+%sysusers_generate_pre %{name}.conf davmail %{name}.conf
 %endif
 
 %install
-rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_bindir}
 mkdir -p $RPM_BUILD_ROOT%{_sbindir}
 %if !%systemd_support
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
-%endif
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
+%endif
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/pixmaps
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/davmail/lib
+%if 0%{?!systemd_support:1}
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail
+%endif
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log
 
 # Init scripts, icons, configurations
 install -m 0755 src/bin/davmail $RPM_BUILD_ROOT%{_bindir}/davmail
-install -m 0644 src/etc/davmail.properties $RPM_BUILD_ROOT%{_sysconfdir}
+install -D -m 0644 src/etc/davmail.properties $RPM_BUILD_ROOT%{_sysconfdir}/davmail.properties
 # https://fedoraproject.org/wiki/TomCallaway/DesktopFileVendor
 desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ src/desktop/davmail.desktop --vendor=""
 
 %if %systemd_support
 install -D -m 644 src/init/davmail.service %{buildroot}%{_unitdir}/davmail.service
+install -D -m 644 src/init/davmail@.service %{buildroot}%{_unitdir}/davmail@.service
+install -D -m 644 src/init/davmail-user@.service %{buildroot}%{_userunitdir}/davmail@.service
+install -D -m 644 src/init/davmail.conf %{buildroot}%{_tmpfilesdir}/davmail.conf
+install -D -m 644 src/init/davmail_sysusers.conf %{buildroot}%{_sysusersdir}/davmail.conf
 %else
 install -m 0644 src/init/davmail-logrotate $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/davmail
-install -m 0755 src/init/davmail-wrapper $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail/davmail
 install -m 0755 src/init/davmail-init $RPM_BUILD_ROOT%{_sysconfdir}/init.d/davmail
 ln -sf %{_sysconfdir}/init.d/davmail $RPM_BUILD_ROOT%{_sbindir}/rcdavmail
 %endif
@@ -151,11 +154,6 @@ mkdir -p $RPM_BUILD_ROOT%{_datadir}/metainfo
 install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_datadir}/metainfo
 
 %if %systemd_macros
-mkdir -p %{buildroot}%{_sysusersdir}
-install -m 0644 %{name}-user.conf %{buildroot}%{_sysusersdir}/
-%endif
-
-%if %systemd_macros
 %if 0%{?suse_version}
 %pre -f davmail.pre
 %service_add_pre davmail.service
@@ -168,6 +166,7 @@ install -m 0644 %{name}-user.conf %{buildroot}%{_sysusersdir}/
 %endif
 
 %post
+%if 0%{!?systemd_macros:1}
 file=/var/log/davmail.log
 if [ ! -f ${file} ]
     then
@@ -175,12 +174,13 @@ if [ ! -f ${file} ]
 fi
 /bin/chown davmail:davmail ${file}
 /bin/chmod 0640 ${file}
+%endif
 
 %if %systemd_macros && 0%{?suse_version}
 %service_add_post davmail.service
-%endif
+# Ensure that tmpfiles are created after the package is installed or updated
+%tmpfiles_create %{_tmpfilesdir}/davmail.conf
 
-%if %systemd_support
 %else
 # proper service handling http://en.opensuse.org/openSUSE:Cron_rename
 %{?fillup_and_insserv:
@@ -200,8 +200,7 @@ fi
 %endif
 %endif
 
-%if %systemd_support
-%else
+%if 0%{?!systemd_support:1}
 if [ "$1" = "0" ]; then
     /sbin/service davmail stop > /dev/null 2>&1 || :
     /bin/rm -f /var/lib/davmail/pid > /dev/null 2>&1 || :
@@ -249,14 +248,13 @@ fi
 %endif
 
 %files
-%defattr (-,root,root,-)
 %{_bindir}/*
-%if %systemd_macros
-%{_sysusersdir}/%{name}-user.conf
-%endif
-
 %if %systemd_support
 %{_unitdir}/davmail.service
+%{_unitdir}/davmail@.service
+%{_userunitdir}/davmail@.service
+%{_tmpfilesdir}/davmail.conf
+%{_sysusersdir}/davmail.conf
 %else
 %{_sysconfdir}/init.d/davmail
 %{_sbindir}/rcdavmail
@@ -264,12 +262,17 @@ fi
 %endif
 
 %config(noreplace) %{_sysconfdir}/davmail.properties
+# As sugggested by rpmlint:
+# tmpfile-not-in-filelist
+# declare ownership of the log file but prevent
+# it from being erased by rpm -e
+%ghost %attr (640,davmail,davmail)  %{_var}/log/davmail.log
 %{_datadir}/applications/*
 %{_datadir}/pixmaps/*
 %{_datadir}/davmail/
 %{_datadir}/metainfo/org.davmail.DavMail.appdata.xml
+%if 0%{?!systemd_support:1}
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
+%endif
 
 %changelog
-* Sat Oct 17 2026 Mickael Guessant <mguessan@free.fr>
-- update to 7.1.0
