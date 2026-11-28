@@ -100,7 +100,7 @@ export ANT_OPTS="-Dfile.encoding=UTF-8"
 ant prepare-dist
 
 %if %systemd_support && 0%{?suse_version}
-%sysusers_generate_pre %{name}-user.conf davmail %{name}-user.conf
+%sysusers_generate_pre %{name}.conf davmail %{name}.conf
 %endif
 
 %install
@@ -128,6 +128,7 @@ install -D -m 644 src/init/davmail.service %{buildroot}%{_unitdir}/davmail.servi
 install -D -m 644 src/init/davmail@.service %{buildroot}%{_unitdir}/davmail@.service
 install -D -m 644 src/init/davmail-user@.service %{buildroot}%{_userunitdir}/davmail@.service
 install -D -m 644 src/init/davmail.conf %{buildroot}%{_tmpfilesdir}/davmail.conf
+install -D -m 644 src/init/davmail_sysusers.conf %{buildroot}%{_sysusersdir}/davmail.conf
 %else
 install -m 0644 src/init/davmail-logrotate $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/davmail
 install -m 0755 src/init/davmail-wrapper $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail/davmail
@@ -151,11 +152,6 @@ install -m 0664 dist/*.jar $RPM_BUILD_ROOT%{_datadir}/davmail/
 
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/metainfo
 install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_datadir}/metainfo
-
-%if %systemd_macros
-mkdir -p %{buildroot}%{_sysusersdir}
-install -m 0644 %{name}-user.conf %{buildroot}%{_sysusersdir}/
-%endif
 
 %if %systemd_macros
 %if 0%{?suse_version}
@@ -204,8 +200,7 @@ fi
 %endif
 %endif
 
-%if %systemd_support
-%else
+%if 0%{?!systemd_support:1}
 if [ "$1" = "0" ]; then
     /sbin/service davmail stop > /dev/null 2>&1 || :
     /bin/rm -f /var/lib/davmail/pid > /dev/null 2>&1 || :
@@ -253,17 +248,13 @@ fi
 %endif
 
 %files
-%defattr (-,root,root,-)
 %{_bindir}/*
-%if %systemd_macros
-%{_sysusersdir}/%{name}-user.conf
-%endif
-
 %if %systemd_support
 %{_unitdir}/davmail.service
 %{_unitdir}/davmail@.service
 %{_userunitdir}/davmail@.service
 %{_tmpfilesdir}/davmail.conf
+%{_sysusersdir}/davmail.conf
 %else
 %{_sysconfdir}/init.d/davmail
 %{_sbindir}/rcdavmail
