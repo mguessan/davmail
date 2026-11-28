@@ -120,7 +120,7 @@ mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log
 
 # Init scripts, icons, configurations
 install -m 0755 src/bin/davmail $RPM_BUILD_ROOT%{_bindir}/davmail
-install -m 0644 src/etc/davmail.properties $RPM_BUILD_ROOT%{_sysconfdir}
+install -D -m 0644 src/etc/davmail.properties $RPM_BUILD_ROOT%{_sysconfdir}/davmail.properties
 # https://fedoraproject.org/wiki/TomCallaway/DesktopFileVendor
 desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ src/desktop/davmail.desktop --vendor=""
 
