@@ -43,12 +43,8 @@ BuildRequires: java-1.8.0-openjdk-devel
 BuildRequires: openjfx
 %endif
 
-Requires: coreutils
-Requires: filesystem
-Requires(post): coreutils, filesystem
-Requires(postun): /sbin/service
-%if %systemd_macros
-Requires(preun): /sbin/service, coreutils
+%if %systemd_support
+%systemd_requires
 %if 0%{?suse_version}
 BuildRequires: sysuser-tools
 %sysusers_requires
@@ -57,6 +53,9 @@ BuildRequires: sysuser-tools
 %else
 Requires(preun): /sbin/service, coreutils, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
+Requires(post): coreutils, filesystem, /sbin/chkconfig
+Requires(preun): /sbin/service, coreutils, /sbin/chkconfig, /usr/sbin/userdel, /usr/sbin/groupdel
+Requires(postun): /sbin/service
 %endif
 
 %if 0%{?el9} || 0%{?fedora}
@@ -100,7 +99,7 @@ export ANT_OPTS="-Dfile.encoding=UTF-8"
 
 ant prepare-dist
 
-%if %systemd_macros && 0%{?suse_version}
+%if %systemd_support && 0%{?suse_version}
 %sysusers_generate_pre %{name}-user.conf davmail %{name}-user.conf
 %endif
 
